@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>AI Login</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <link rel="stylesheet" href="./assets/css/main.css">
+</head>
+<body class="is-preload">
+    <!-- Header -->
+    <header id="header">
+        <h1>Welcome To One1 AI</h1>
+        <p>Artificial Intelligence at your doorstep. Success is our only goal. Brought to you by <a href="">One1ai</a>.</p>
+    </header>
+
+    <h2>Secure Login</h2>
+    <form id="loginForm">
+        <input type="email" id="loginEmail" placeholder="Email" required />
+        <input type="password" id="loginPassword" placeholder="Password" required />
+        <button type="submit">Login Securely</button>
+    </form>
+    <div id="loginMessage" class="auth-message"></div>
+
+    <button onclick="goToDashboard()">Go to Dashboard</button>
+
+    <script>
+        // Session validation on page load
+        document.addEventListener('DOMContentLoaded', async () => {
+            const token = localStorage.getItem('authToken');
+            const userID = localStorage.getItem('userID');
+            const expiresIn = localStorage.getItem('tokenExp');
+
+            if (token && userID && expiresIn) {
+                try {
+                    // Validate session with server
+                    const validation = await fetch('https://otpgen-84pg.onrender.com/validate', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'X-User-ID': userID
+                        }
+                    });
+
+                    if (!validation.ok) throw new Error('Session expired');
+                    window.location.href = 'dashboard.html';
+                } catch (error) {
+                    localStorage.removeItem('authToken');
+                    localStorage.removeItem('userID');
+                    localStorage.removeItem('tokenExp');
+                }
+            }
+        });
+
+        // Login form handler
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const messageElement = document.getElementById('loginMessage');
+            messageElement.innerText = '';
+
+            try {
+                const response = await fetch('https://otpgen-84pg.onrender.com/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: document.getElementById('loginEmail').value,
+                        password: document.getElementById('loginPassword').value
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    messageElement.innerText = data.message || 'Authentication failed';
+                    return;
+                }
+
+                // Store authentication data
+                localStorage.setItem('userID', data.userID);
+                localStorage.setItem('authToken', data.token);
+                localStorage.setItem('tokenExp', data.expiresIn);
+                
+                window.location.href = 'dashboard.html';
+
+            } catch (error) {
+                messageElement.innerText = 'Secure connection failed';
+                localStorage.clear();
+            }
+        });
+
+        async function goToDashboard() {
+            const token = localStorage.getItem('authToken');
+            const userID = localStorage.getItem('userID');
+
+            if (!token || !userID) {
+                alert('Please login first!');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            try {
+                const response = await fetch('https://otpgen-84pg.onrender.com/validate', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'X-User-ID': userID
+                    }
+                });
+
+                if (response.ok) {
+                    window.location.href = 'dashboard.html';
+                } else {
+                    const result = await response.json();
+                    alert(result.message || 'Access denied');
+                    localStorage.clear();
+                }
+            } catch (error) {
+                alert('Connection error. Please try again.');
+                localStorage.clear();
+            }
+        }
+    </script>
+    
+    <script src="./assets/js/main.js"></script>
+</body>
+</html>

