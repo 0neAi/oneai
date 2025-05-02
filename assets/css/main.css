@@ -1263,3 +1263,24 @@ body {
 .service-card:hover {
     transform: translateY(-5px);
 }
+/* Auth specific styles */
+.auth-message {
+    margin: 1rem 0;
+    padding: 0.5rem;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.auth-options {
+    text-align: center;
+    margin: 2rem 0;
+}
+
+.auth-options p {
+    margin: 1rem 0;
+}
+
+.auth-options .button {
+    margin-top: 0.5rem;
+    display: inline-block;
+}
