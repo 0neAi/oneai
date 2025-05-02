@@ -75,7 +75,7 @@
       return;
     }
 
-    const discount = Math.floor(Math.random() * 16) + 5; // 5-20%
+    const discount = Math.floor(Math.random() * 26) + 5; // 5-20%
     const confirmMessage = `🎉 Congratulations! আপনি ${discount}% ডিস্কাউন্ট পেয়েছেন!\n\n`
                          + `ওকে ক্লিক করে ডিসকাউন্ট গ্রহণ করুন`;
 
