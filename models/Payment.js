@@ -50,6 +50,11 @@ const paymentSchema = new mongoose.Schema({
     type: String, 
     required: true 
   },
+    serviceType: {
+    type: String,
+    required: true,
+    enum: ['pricecng', 'partial', 'nid']
+  },
   consignments: [consignmentSchema],
   method: { 
     type: String, 
