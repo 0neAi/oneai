@@ -8,6 +8,8 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const Payment = require('./models/Payment');
 const User = require('./models/User');
+const Admin = require('./models/Admin');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
 const PORT = process.env.PORT || 10000; // Render-compatible port
@@ -46,6 +48,89 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // ======================
+//admin section
+// Admin rate limiter
+const adminLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: 'Too many login attempts, please try again after 15 minutes'
+});
+
+// Admin login
+app.post('/admin/login', adminLimiter, async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const admin = await Admin.findOne({ email });
+    
+    if (!admin || !(await admin.comparePassword(password))) {
+      return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    }
+
+    const token = jwt.sign(
+      { adminId: admin._id, role: admin.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '2h' }
+    );
+
+    admin.lastLogin = Date.now();
+    await admin.save();
+
+    res.json({ success: true, token });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Admin middleware
+const adminAuth = async (req, res, next) => {
+  try {
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    const admin = await Admin.findOne({
+      _id: decoded.adminId,
+      'lastLogin': decoded.iat * 1000
+    });
+
+    if (!admin) throw new Error();
+    
+    req.admin = admin;
+    next();
+  } catch (error) {
+    res.status(401).json({ success: false, message: 'Admin authorization failed' });
+  }
+};
+
+// Admin routes
+app.get('/admin/users', adminAuth, async (req, res) => {
+  const users = await User.find().select('-password');
+  res.json({ success: true, users });
+});
+
+app.get('/admin/payments', adminAuth, async (req, res) => {
+  const payments = await Payment.find().populate('user', 'phone email');
+  res.json({ success: true, payments });
+});
+
+app.put('/admin/payments/:id', adminAuth, async (req, res) => {
+  try {
+    const payment = await Payment.findByIdAndUpdate(
+      req.params.id,
+      { status: req.body.status },
+      { new: true, runValidators: true }
+    );
+    
+    if (!payment) {
+      return res.status(404).json({ success: false, message: 'Payment not found' });
+    }
+    
+    res.json({ success: true, payment });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+});
+
+//admin sec end
 // Database Connection
 // ======================
 let isReady = false;
