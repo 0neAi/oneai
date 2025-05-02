@@ -13,14 +13,23 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ======================
+// Environment Validation
+// ======================
+if (!process.env.MONGODB_URI || !process.env.JWT_SECRET) {
+  console.error('❌ Missing required environment variables');
+  process.exit(1);
+}
+
+// ======================
 // Security Middlewares
 // ======================
 app.use(helmet());
-origin: [
-  'https://0neai.github.io',
-  'https://0neai.github.io/oneai', // Add this exact URL
-  'http://localhost:3000'
-],
+app.use(cors({
+  origin: [
+    'https://0neai.github.io',
+    'https://0neai.github.io/oneai',
+    'http://localhost:3000'
+  ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-User-ID'],
   credentials: true,
@@ -38,17 +47,44 @@ app.use(limiter);
 // ======================
 // Database Connection
 // ======================
-mongoose.connect(process.env.MONGODB_URI)
-.then(() => console.log('✅ MongoDB connected'))
+let isReady = false;
+
+mongoose.connect(process.env.MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => console.log('✅ MongoDB connected successfully'))
 .catch(err => console.error('❌ MongoDB connection error:', err));
 
+mongoose.connection.on('connected', () => {
+  isReady = true;
+  console.log('✅ Server ready to accept requests');
+});
+
+// ======================
+// Server Readiness Check
+// ======================
+app.use((req, res, next) => {
+  if (!isReady) {
+    return res.status(503).json({
+      success: false,
+      message: 'Server warming up... Try again in 10 seconds'
+    });
+  }
+  next();
+});
+
+// ======================
+// Status Endpoint
 // ======================
 app.get('/status', (req, res) => {
-  res.json({ 
+  res.json({
     status: 'live',
     db: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
   });
 });
+
+// ======================
 // Enhanced Auth Middleware
 // ======================
 const authMiddleware = async (req, res, next) => {
@@ -89,7 +125,7 @@ const authMiddleware = async (req, res, next) => {
 };
 
 // ======================
-// Routes
+// Application Routes
 // ======================
 
 // Health Check
@@ -97,11 +133,12 @@ app.get('/', (req, res) => {
   res.status(200).json({ success: true, message: 'Server operational' });
 });
 
-// Enhanced Registration
+// Registration Endpoint
 app.post('/register', async (req, res) => {
   try {
     const { phone, email, password } = req.body;
     
+    // Validation
     if (!phone || !email || !password) {
       return res.status(400).json({ 
         success: false, 
@@ -116,6 +153,7 @@ app.post('/register', async (req, res) => {
       });
     }
 
+    // User Creation
     const user = new User({
       phone,
       email,
@@ -124,12 +162,14 @@ app.post('/register', async (req, res) => {
 
     await user.save();
 
+    // JWT Generation
     const token = jwt.sign(
       { userId: user._id },
       process.env.JWT_SECRET,
       { expiresIn: '1h' }
     );
 
+    // Response
     res.status(201).json({
       success: true,
       message: 'Registration successful',
@@ -147,12 +187,13 @@ app.post('/register', async (req, res) => {
   }
 });
 
-// Enhanced Login
+// Login Endpoint
 app.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
 
+    // Credential Validation
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ 
         success: false, 
@@ -160,12 +201,14 @@ app.post('/login', async (req, res) => {
       });
     }
 
+    // Token Generation
     const token = jwt.sign(
       { userId: user._id }, 
       process.env.JWT_SECRET, 
       { expiresIn: '1h' }
     );
 
+    // Response
     res.json({
       success: true,
       token,
@@ -195,10 +238,10 @@ app.get('/validate', authMiddleware, (req, res) => {
   });
 });
 
-// Protected Payment Route with Discount Handling
+// Payment Processing
 app.post('/payment', authMiddleware, async (req, res) => {
   try {
-    // Validate discount range
+    // Discount Validation
     const discount = req.body.discount || 0;
     if (discount < 0 || discount > 20) {
       return res.status(400).json({
@@ -207,15 +250,14 @@ app.post('/payment', authMiddleware, async (req, res) => {
       });
     }
 
-    // Calculate original amount
+    // Amount Calculation
     const originalAmount = req.body.consignments.reduce((acc, curr) => {
       return acc + (curr.amount1 - curr.amount2) / 2;
     }, 0);
 
-    // Calculate expected amount with discount
     const expectedAmount = originalAmount * (1 - (discount / 100));
 
-    // Validate amount with 2 decimal precision
+    // Amount Validation
     if (expectedAmount.toFixed(2) !== req.body.amount3.toFixed(2)) {
       return res.status(400).json({
         success: false,
@@ -223,7 +265,7 @@ app.post('/payment', authMiddleware, async (req, res) => {
       });
     }
 
-    // Create payment record
+    // Payment Record Creation
     const payment = new Payment({
       user: req.user._id,
       ...req.body,
@@ -233,6 +275,7 @@ app.post('/payment', authMiddleware, async (req, res) => {
 
     await payment.save();
 
+    // Response
     res.status(201).json({
       success: true,
       message: 'Payment processed successfully',
@@ -257,7 +300,9 @@ app.post('/payment', authMiddleware, async (req, res) => {
   }
 });
 
-// Error Handler
+// ======================
+// Error Handling
+// ======================
 app.use((err, req, res, next) => {
   console.error('Global Error:', {
     error: err.stack,
@@ -270,7 +315,9 @@ app.use((err, req, res, next) => {
   });
 });
 
+// ======================
 // Server Initialization
+// ======================
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   process.on('unhandledRejection', err => {
