@@ -152,7 +152,7 @@
       const email = formData.get('email');
       const password = formData.get('password');
 
-      fetch('https://otpgen-84pg.onrender.com/register', {
+      fetch('https://oneai-wjox.onrender.com/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, email, password })
