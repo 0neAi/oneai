@@ -286,6 +286,7 @@ app.post('/payment', authMiddleware, async (req, res) => {
         id: payment._id,
         trxid: payment.trxid,
         status: payment.status,
+        serviceType: payment.serviceType,
         originalAmount: payment.originalAmount,
         discount: payment.discount,
         finalAmount: payment.amount3
