@@ -41,7 +41,7 @@
         <section class="services-section">
             <h2><i class="fas fa-cogs"></i> Our Services</h2>
             <div class="services-grid">
-                <a href="otpgen.html">
+                <a href="otpgen.html" class="service-card">
                     <i class="fas fa-shield-alt fa-3x"></i>
                     <h3>OTP Generator</h3>
                 </a>
@@ -61,8 +61,8 @@
                     <i class="fas fa-mobile-alt fa-3x"></i>
                     <h3>Android Remote</h3>
                 </div>
-                <div 
-                     onclick="window.open('https://wa.me/8801568760780?text=HELP%20ME', '_blank');"
+                <div class="service-card" 
+                     onclick="sendHelpRequest()"
                      style="cursor: pointer;">
                     <i class="fas fa-mobile-alt fa-3x"></i>
                     <h3>HELPLINE</h3>
@@ -92,7 +92,7 @@
                 `;
 
                 const countdownElement = document.querySelector('.countdown-timer');
-                const targetTime = paymentData.timestamp + 86400000; // 24 hours
+                const targetTime = paymentData.timestamp + 86400000;
                 let timerInterval;
 
                 function updateTimer() {
@@ -123,6 +123,26 @@
 
             loadingOverlay.style.display = 'none';
         });
+
+        // Helpline payment data sharing
+        function sendHelpRequest() {
+            const paymentData = JSON.parse(localStorage.getItem('recentPayment'));
+            const defaultMessage = "I need assistance with my service request";
+            
+            let message = paymentData ? 
+                `Service Help Request:%0A%0A` +
+                `Company: ${paymentData.company}%0A` +
+                `TRX ID: ${paymentData.trxid}%0A` +
+                `Amount: ৳${paymentData.amount.toFixed(2)}%0A` +
+                `Status: ${paymentData.status}%0A` +
+                `Time Remaining: ${document.querySelector('.countdown-timer')?.innerHTML || 'N/A'}`
+                : defaultMessage;
+
+            window.open(
+                `https://wa.me/8801568760780?text=${encodeURIComponent(message)}`,
+                '_blank'
+            );
+        }
 
         // Service card interactions
         document.querySelectorAll('.service-card').forEach(card => {
