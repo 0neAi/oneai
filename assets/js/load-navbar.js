@@ -12,7 +12,7 @@
       <div class="nav-links">
         <a href="./dashboard.html" class="icon solid fa-home"><span>Dashboard</span></a>
         <a href="./otpgen.html" class="icon solid fa-key"><span>OTP Generator</span></a>
-        <button onclick="applyDiscount()" class="icon solid fa-tag discount-btn">
+        <button onclick="applyDiscount()" class="icon solid fa-tag discount-btn">discount
           <span>Get Discount</span>
         </button>
       </div>
