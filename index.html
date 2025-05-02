@@ -38,7 +38,7 @@
             };
 
             try {
-                const response = await fetch('https://oneai-u23h.onrender.com/register', {
+                const response = await fetch('https://oneai-wjox.onrender.com/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(formData)
@@ -68,7 +68,7 @@
             
             if (token && userID) {
                 try {
-                    const validation = await fetch(`https://oneai-u23h.onrender.com/validate`, {
+                    const validation = await fetch(`https://oneai-wjox.onrender.com/validate`, {
                         headers: {
                             'Authorization': `Bearer ${token}`,
                             'X-User-ID': userID
