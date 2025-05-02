@@ -1,0 +1,189 @@
+<!-- admin.html -->
+<!DOCTYPE HTML>
+<html>
+<head>
+    <title>Admin Dashboard</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="./assets/css/main.css">
+</head>
+<body>
+    <div id="admin-app">
+        <!-- Login View -->
+        <div v-if="!isAuthenticated" class="admin-login">
+            <h2>Admin Portal</h2>
+            <form @submit.prevent="login">
+                <input type="email" v-model="admin.email" placeholder="Admin Email" required>
+                <input type="password" v-model="admin.password" placeholder="Password" required>
+                <button type="submit">Login</button>
+                <div v-if="loginError" class="error-message">{{ loginError }}</div>
+            </form>
+        </div>
+
+        <!-- Dashboard View -->
+        <div v-else>
+            <nav class="admin-nav">
+                <button @click="currentView = 'users'">Manage Users</button>
+                <button @click="currentView = 'payments'">Manage Payments</button>
+                <button @click="logout">Logout</button>
+            </nav>
+
+            <!-- Users View -->
+            <div v-if="currentView === 'users'" class="user-management">
+                <h3>Registered Users ({{ users.length }})</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Phone</th>
+                            <th>Email</th>
+                            <th>Registered At</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="user in users" :key="user._id">
+                            <td>{{ user.phone }}</td>
+                            <td>{{ user.email }}</td>
+                            <td>{{ new Date(user.createdAt).toLocaleString() }}</td>
+                            <td>
+                                <button @click="viewUserPayments(user._id)">View Payments</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Payments View -->
+            <div v-if="currentView === 'payments'" class="payment-management">
+                <h3>Payment Transactions</h3>
+                <div class="filters">
+                    <select v-model="paymentFilter">
+                        <option value="all">All Payments</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Failed">Failed</option>
+                    </select>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>TRX ID</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="payment in filteredPayments" :key="payment._id">
+                            <td>{{ payment.user.email }}</td>
+                            <td>{{ payment.trxid }}</td>
+                            <td>৳{{ payment.amount3 }}</td>
+                            <td>
+                                <select :value="payment.status" 
+                                        @change="updatePaymentStatus(payment._id, $event)">
+                                    <option>Pending</option>
+                                    <option>Completed</option>
+                                    <option>Failed</option>
+                                </select>
+                            </td>
+                            <td>{{ new Date(payment.createdAt).toLocaleDateString() }}</td>
+                            <td>
+                                <button @click="viewPaymentDetails(payment)">Details</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/vue@3"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script>
+        const AdminApp = {
+            data() {
+                return {
+                    isAuthenticated: false,
+                    currentView: 'users',
+                    paymentFilter: 'all',
+                    admin: { email: '', password: '' },
+                    users: [],
+                    payments: [],
+                    loginError: ''
+                }
+            },
+            computed: {
+                filteredPayments() {
+                    if (this.paymentFilter === 'all') return this.payments;
+                    return this.payments.filter(p => p.status === this.paymentFilter);
+                }
+            },
+            methods: {
+                async login() {
+                    try {
+                        const response = await axios.post('/admin/login', this.admin);
+                        localStorage.setItem('adminToken', response.data.token);
+                        this.isAuthenticated = true;
+                        this.loadData();
+                    } catch (error) {
+                        this.loginError = error.response?.data.message || 'Login failed';
+                    }
+                },
+                async loadData() {
+                    const [usersRes, paymentsRes] = await Promise.all([
+                        axios.get('/admin/users', {
+                            headers: { Authorization: `Bearer ${localStorage.adminToken}` }
+                        }),
+                        axios.get('/admin/payments', {
+                            headers: { Authorization: `Bearer ${localStorage.adminToken}` }
+                        })
+                    ]);
+                    
+                    this.users = usersRes.data.users;
+                    this.payments = paymentsRes.data.payments;
+                },
+                async updatePaymentStatus(paymentId, event) {
+                    const newStatus = event.target.value;
+                    try {
+                        await axios.put(`/admin/payments/${paymentId}`, 
+                            { status: newStatus },
+                            { headers: { Authorization: `Bearer ${localStorage.adminToken}` } }
+                        );
+                        this.payments = this.payments.map(p => 
+                            p._id === paymentId ? { ...p, status: newStatus } : p
+                        );
+                    } catch (error) {
+                        alert('Update failed: ' + error.message);
+                    }
+                },
+                viewPaymentDetails(payment) {
+                    // Implement detailed view modal
+                    console.log('Payment details:', payment);
+                    alert(`Payment Details:\n${JSON.stringify(payment, null, 2)}`);
+                },
+                logout() {
+                    localStorage.removeItem('adminToken');
+                    this.isAuthenticated = false;
+                }
+            },
+            async mounted() {
+                if (localStorage.adminToken) {
+                    try {
+                        await axios.get('/admin/users', {
+                            headers: { Authorization: `Bearer ${localStorage.adminToken}` }
+                        });
+                        this.isAuthenticated = true;
+                        this.loadData();
+                    } catch (error) {
+                        localStorage.removeItem('adminToken');
+                    }
+                }
+            }
+        };
+
+        Vue.createApp(AdminApp).mount('#admin-app');
+    </script>
+</body>
+</html>
