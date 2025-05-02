@@ -318,7 +318,7 @@ app.use((err, req, res, next) => {
 // ======================
 // Server Initialization
 // ======================
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
   process.on('unhandledRejection', err => {
     console.error('Unhandled Rejection:', err);
