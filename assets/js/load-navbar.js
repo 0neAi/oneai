@@ -24,7 +24,7 @@
       <div class="notice-content">
         <span class="icon solid fa-bullhorn"></span>
         <marquee behavior="scroll" direction="left">
-          Daily  discounts upto 20% available! Try your luck! Contact WhatsApp: 01568760780 for any issues.
+          Daily discounts upto 20% available! Try your luck! Contact WhatsApp: 01568760780 for any issues.
         </marquee>
       </div>
     </div>
@@ -48,7 +48,16 @@
     }
   }
 
-  // ... rest of the loadNavbar functions remain same ...
+  // Add logout function
+  window.logout = function() {
+    if (confirm('Are you sure you want to logout?')) {
+      // Clear user session data
+      localStorage.removeItem('userToken');
+      localStorage.removeItem('activeDiscount');
+      // Redirect to login page
+      window.location.href = './login.html';
+    }
+  };
 
   window.applyDiscount = function() {
     const today = new Date().toDateString();
@@ -79,6 +88,6 @@
       }
     }
   };
-  loadNavbar(); 
-  // ... rest of the file remains same ...
+
+  loadNavbar();
 })();
