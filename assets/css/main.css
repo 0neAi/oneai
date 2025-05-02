@@ -1198,3 +1198,68 @@ body {
 .countdown-expired {
   color: #ff4444 !important;
 }
+/* Loading overlay */
+.loading-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255,255,255,0.8);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+/* Payment status table */
+.payment-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+}
+
+.payment-table th,
+.payment-table td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.status-indicator {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 500;
+}
+
+.status-pending { background: #fff3e0; color: #f1c40f; }
+.status-completed { background: #e8f5e9; color: #27ae60; }
+
+.countdown-timer {
+    font-weight: 600;
+    color: #3498db;
+}
+
+.countdown-expired {
+    color: #e74c3c !important;
+}
+
+/* Services grid */
+.services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+
+.service-card {
+    padding: 1.5rem;
+    border-radius: 10px;
+    text-align: center;
+    transition: transform 0.2s;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.service-card:hover {
+    transform: translateY(-5px);
+}
