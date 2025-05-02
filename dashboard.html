@@ -190,7 +190,59 @@
             });
         });
     </script>
-    
+    <script>
+document.addEventListener('DOMContentLoaded', async () => {
+  document.querySelector('.loading-overlay').style.display = 'flex';
+  
+  // Load payment data
+  const paymentData = JSON.parse(localStorage.getItem('recentPayment'));
+  const tbody = document.getElementById('payment-status');
+
+  if (paymentData) {
+    tbody.innerHTML = `
+      <tr>
+        <td>${paymentData.company}</td>
+        <td>${paymentData.trxid}</td>
+        <td>৳${paymentData.amount.toFixed(2)}</td>
+        <td><span class="status-indicator status-pending">Pending</span></td>
+        <td class="countdown-timer"></td>
+      </tr>
+    `;
+
+    // Start countdown timer
+    const countdownElement = document.querySelector('.countdown-timer');
+    const targetTime = paymentData.timestamp + 86400000; // 24 hours
+
+    function updateTimer() {
+      const now = new Date().getTime();
+      const remaining = targetTime - now;
+
+      if (remaining <= 0) {
+        countdownElement.innerHTML = 'Expired';
+        countdownElement.classList.add('countdown-expired');
+        return;
+      }
+
+      const hours = Math.floor(remaining / (1000 * 60 * 60));
+      const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+
+      countdownElement.innerHTML = `
+        <span class="countdown-timer">
+          ${hours.toString().padStart(2, '0')}h 
+          ${minutes.toString().padStart(2, '0')}m 
+          ${seconds.toString().padStart(2, '0')}s
+        </span>
+      `;
+    }
+
+    updateTimer();
+    setInterval(updateTimer, 1000);
+  }
+
+  document.querySelector('.loading-overlay').style.display = 'none';
+});
+</script>
   <script src="./assets/js/load-navbar.js"></script>
   <script src="./assets/js/main.js"></script>
 </body>
