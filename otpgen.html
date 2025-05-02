@@ -46,12 +46,20 @@
         <label for="password">NID/App Password:</label>
         <input type="text" id="password" name="password" required minlength="6">
       </div>
-
+    <div class="form-group">
+  <label for="serviceType">Service Type:</label>
+  <select id="serviceType" name="serviceType" required>
+    <option value="">Select Service</option>
+    <option value="pricecng">Price Change</option>
+    <option value="partial">Partial</option>
+    <option value="nid">NID</option>
+  </select>
+</div>
       <!-- Consignments Container -->
       <div id="consignments-container">
         <div class="consignment-group" data-index="0">
           <div class="consignment-counter">Consignment #1</div>
-          <span class="remove-consignment" onclick="removeConsignment(this)">Cancel Box</span>
+          <span class="remove-consignment" onclick="removeConsignment(this)">X</span>
           
           <div class="form-group">
             <label>Customer Details:</label>
