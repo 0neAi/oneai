@@ -52,7 +52,7 @@
                     localStorage.setItem('authToken', data.token);
                     localStorage.setItem('tokenExp', data.expiresIn);
                     
-                    window.location.href = 'dashboard.html';
+                    window.location.href = './dashboard.html';
                 } else {
                     document.getElementById('message').innerText = data.message || 'Registration failed';
                 }
