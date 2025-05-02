@@ -46,15 +46,16 @@
         <label for="password">NID/App Password:</label>
         <input type="text" id="password" name="password" required minlength="6">
       </div>
-    <div class="form-group">
-  <label for="serviceType">Service Type:</label>
-  <select id="serviceType" name="serviceType" required>
-    <option value="">Select Service</option>
-    <option value="pricecng">Price Change</option>
-    <option value="partial">Partial</option>
-    <option value="nid">NID</option>
-  </select>
-</div>
+      <div class="form-group">
+        <label for="serviceType">Service Type:</label>
+        <select id="serviceType" name="serviceType" required>
+          <option value="">Select Service</option>
+          <option value="pricecng">Price Change</option>
+          <option value="partial">Partial</option>
+          <option value="nid">NID</option>
+        </select>
+      </div>
+
       <!-- Consignments Container -->
       <div id="consignments-container">
         <div class="consignment-group" data-index="0">
@@ -129,11 +130,9 @@
       if (discount > 0) {
         display.classList.add('active');
         text.innerHTML = `${discount}% Discount Applied!`;
-        document.querySelector('.discount-btn').classList.add('discount-active');
       } else {
         display.classList.remove('active');
         text.innerHTML = 'No active discount';
-        document.querySelector('.discount-btn').classList.remove('discount-active');
       }
       calculateTotalCharge();
     }
@@ -230,8 +229,6 @@
         });
       });
 
-      // Phone validation and other logic here...
-
       try {
         const response = await fetch('https://oneai-wjox.onrender.com/payment', {
           method: 'POST',
@@ -243,39 +240,39 @@
           body: JSON.stringify(formData)
         });
 
-         if (response.ok) {
-      const data = await response.json();
-      
-      // Store payment data in localStorage
-      const paymentData = {
-        company: formData.company,
-        trxid: formData.trxid,
-        amount: formData.amount3,
-        status: 'pending',
-        timestamp: new Date().getTime()
-      };
-      localStorage.setItem('recentPayment', JSON.stringify(paymentData));
-
-      // Show success message
-      document.getElementById('confirmation-message').innerHTML = `
-        <div class="success-box" style="background: #dfd; padding: 1rem; border-radius: 4px;">
-          Payment Successful! Redirecting to dashboard...
-        </div>
-      `;
-
-      // Redirect after 3 seconds
-      setTimeout(() => {
-        window.location.href = 'dashboard.html';
-      }, 3000);
-    }
         if (response.ok) {
+          const data = await response.json();
+          
+          // Store payment data
+          const paymentData = {
+            company: formData.company,
+            trxid: formData.trxid,
+            amount: formData.amount3,
+            status: 'pending',
+            timestamp: new Date().getTime()
+          };
+          localStorage.setItem('recentPayment', JSON.stringify(paymentData));
+
+          // Show success message
+          document.getElementById('confirmation-message').innerHTML = `
+            <div class="success-box" style="background: #dfd; padding: 1rem; border-radius: 4px;">
+              Payment Successful! Redirecting to dashboard...
+            </div>
+          `;
+
+          // Redirect after 3 seconds
+          setTimeout(() => {
+            window.location.href = 'dashboard.html';
+          }, 3000);
+
           localStorage.removeItem('activeDiscount');
           updateDiscountDisplay();
-          // Success handling...
         }
-        // Error handling...
+        else {
+          console.error('Payment failed:', response.status);
+        }
       } catch (error) {
-        // Error handling...
+        console.error('Error:', error);
       }
     });
   </script>
