@@ -16,11 +16,11 @@ const PORT = process.env.PORT || 3000;
 // Security Middlewares
 // ======================
 app.use(helmet());
-app.use(cors({
-  origin: [
-    'https://0neai.github.io',
-    'http://localhost:3000'
-  ],
+origin: [
+  'https://0neai.github.io',
+  'https://0neai.github.io/oneai', // Add this exact URL
+  'http://localhost:3000'
+],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-User-ID'],
   credentials: true,
@@ -38,14 +38,17 @@ app.use(limiter);
 // ======================
 // Database Connection
 // ======================
-mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
-.then(() => console.log('✅ MongoDB connected successfully'))
+mongoose.connect(process.env.MONGODB_URI)
+.then(() => console.log('✅ MongoDB connected'))
 .catch(err => console.error('❌ MongoDB connection error:', err));
 
 // ======================
+app.get('/status', (req, res) => {
+  res.json({ 
+    status: 'live',
+    db: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+  });
+});
 // Enhanced Auth Middleware
 // ======================
 const authMiddleware = async (req, res, next) => {
@@ -256,7 +259,11 @@ app.post('/payment', authMiddleware, async (req, res) => {
 
 // Error Handler
 app.use((err, req, res, next) => {
-  console.error('Global Error:', err);
+  console.error('Global Error:', {
+    error: err.stack,
+    path: req.path,
+    body: req.body
+  });
   res.status(err.status || 500).json({ 
     success: false,
     message: err.message || 'Internal server error'
