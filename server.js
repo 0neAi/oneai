@@ -18,7 +18,7 @@ const PORT = process.env.PORT || 3000;
 app.use(helmet());
 app.use(cors({
   origin: [
-    'https://sprov007.github.io',
+    'https://0neai.github.io',
     'http://localhost:5500',
     'http://127.0.0.1:5500',
     'http://localhost:3000'
