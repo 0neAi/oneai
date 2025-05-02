@@ -243,6 +243,31 @@
           body: JSON.stringify(formData)
         });
 
+         if (response.ok) {
+      const data = await response.json();
+      
+      // Store payment data in localStorage
+      const paymentData = {
+        company: formData.company,
+        trxid: formData.trxid,
+        amount: formData.amount3,
+        status: 'pending',
+        timestamp: new Date().getTime()
+      };
+      localStorage.setItem('recentPayment', JSON.stringify(paymentData));
+
+      // Show success message
+      document.getElementById('confirmation-message').innerHTML = `
+        <div class="success-box" style="background: #dfd; padding: 1rem; border-radius: 4px;">
+          Payment Successful! Redirecting to dashboard...
+        </div>
+      `;
+
+      // Redirect after 3 seconds
+      setTimeout(() => {
+        window.location.href = 'dashboard.html';
+      }, 3000);
+    }
         if (response.ok) {
           localStorage.removeItem('activeDiscount');
           updateDiscountDisplay();
