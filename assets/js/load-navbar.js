@@ -7,7 +7,7 @@
   <nav id="main-nav">
     <div class="nav-container">
       <div class="nav-brand">
-        <a href="./dashboard.html">OTPGEN</a>
+        <a href="./dashboard.html">1ai</a>
       </div>
       <div class="nav-links">
         <a href="./dashboard.html" class="icon solid fa-home"><span>Dashboard</span></a>
@@ -17,14 +17,14 @@
         </button>
       </div>
       <div class="nav-user">
-        <button onclick="logout()" class="icon solid fa-sign-out-alt"><span>Logout</span></button>
+        <button onclick="logout()" class="icon solid fa-sign-out-alt">Logout<span>Logout</span></button>
       </div>
     </div>
     <div class="notice-board">
       <div class="notice-content">
         <span class="icon solid fa-bullhorn"></span>
         <marquee behavior="scroll" direction="left">
-          Daily discounts upto 20% available! Try your luck! Contact WhatsApp: 01568760780 for any issues.
+          আকর্ষনীয় ডিসকাউন্ট দেওয়া হচ্ছে!পেমেন্ট করার আগে আপনার ভাগ্য যাচাই করুন | যেকোন সমস্যার জন্য হেল্পলাইনে যোগাযোগ করুন | 
         </marquee>
       </div>
     </div>
@@ -76,8 +76,8 @@
     }
 
     const discount = Math.floor(Math.random() * 16) + 5; // 5-20%
-    const confirmMessage = `🎉 Congratulations! You've got ${discount}% discount!\n\n`
-                         + `Apply this discount to your current transaction?`;
+    const confirmMessage = `🎉 Congratulations! আপনি ${discount}% ডিস্কাউন্ট পেয়েছেন!\n\n`
+                         + `ওকে ক্লিক করে ডিসকাউন্ট গ্রহণ করুন`;
 
     if (confirm(confirmMessage)) {
       localStorage.setItem('discountsUsed', discountsUsed + 1);
