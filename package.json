@@ -1,7 +1,7 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "SayeemX Backend Server",
+  "description": "oneai Backend Server",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
