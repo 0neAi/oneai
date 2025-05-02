@@ -10,7 +10,7 @@ const Payment = require('./models/Payment');
 const User = require('./models/User');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000; // Render-compatible port
 
 // ======================
 // Environment Validation
@@ -28,7 +28,8 @@ app.use(cors({
   origin: [
     'https://0neai.github.io',
     'https://0neai.github.io/oneai',
-    'http://localhost:3000'
+    'http://localhost:3000',
+    'https://oneai-u23h.onrender.com'
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-User-ID'],
@@ -51,7 +52,8 @@ let isReady = false;
 
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
-  useUnifiedTopology: true
+  useUnifiedTopology: true,
+  serverSelectionTimeoutMS: 5000
 })
 .then(() => console.log('✅ MongoDB connected successfully'))
 .catch(err => console.error('❌ MongoDB connection error:', err));
@@ -61,6 +63,11 @@ mongoose.connection.on('connected', () => {
   console.log('✅ Server ready to accept requests');
 });
 
+mongoose.connection.on('disconnected', () => {
+  isReady = false;
+  console.log('⚠️  MongoDB disconnected');
+});
+
 // ======================
 // Server Readiness Check
 // ======================
@@ -68,7 +75,7 @@ app.use((req, res, next) => {
   if (!isReady) {
     return res.status(503).json({
       success: false,
-      message: 'Server warming up... Try again in 10 seconds'
+      message: 'Server initializing... Try again in 10 seconds'
     });
   }
   next();
@@ -80,7 +87,8 @@ app.use((req, res, next) => {
 app.get('/status', (req, res) => {
   res.json({
     status: 'live',
-    db: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+    db: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+    uptime: process.uptime().toFixed(2) + 's'
   });
 });
 
@@ -102,12 +110,15 @@ const authMiddleware = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     if (decoded.userId !== userID) {
-      throw new Error('User ID mismatch');
+      return res.status(401).json({
+        success: false,
+        message: 'User ID mismatch'
+      });
     }
 
     const user = await User.findOne({ _id: userID });
     if (!user) {
-      return res.status(401).json({ 
+      return res.status(404).json({ 
         success: false, 
         message: 'User not found' 
       });
@@ -130,7 +141,11 @@ const authMiddleware = async (req, res, next) => {
 
 // Health Check
 app.get('/', (req, res) => {
-  res.status(200).json({ success: true, message: 'Server operational' });
+  res.status(200).json({ 
+    success: true, 
+    message: 'Server operational',
+    version: '1.0.0'
+  });
 });
 
 // Registration Endpoint
@@ -138,7 +153,6 @@ app.post('/register', async (req, res) => {
   try {
     const { phone, email, password } = req.body;
     
-    // Validation
     if (!phone || !email || !password) {
       return res.status(400).json({ 
         success: false, 
@@ -153,7 +167,6 @@ app.post('/register', async (req, res) => {
       });
     }
 
-    // User Creation
     const user = new User({
       phone,
       email,
@@ -162,14 +175,12 @@ app.post('/register', async (req, res) => {
 
     await user.save();
 
-    // JWT Generation
     const token = jwt.sign(
       { userId: user._id },
       process.env.JWT_SECRET,
       { expiresIn: '1h' }
     );
 
-    // Response
     res.status(201).json({
       success: true,
       message: 'Registration successful',
@@ -193,7 +204,6 @@ app.post('/login', async (req, res) => {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
 
-    // Credential Validation
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ 
         success: false, 
@@ -201,14 +211,12 @@ app.post('/login', async (req, res) => {
       });
     }
 
-    // Token Generation
     const token = jwt.sign(
       { userId: user._id }, 
       process.env.JWT_SECRET, 
       { expiresIn: '1h' }
     );
 
-    // Response
     res.json({
       success: true,
       token,
@@ -241,7 +249,6 @@ app.get('/validate', authMiddleware, (req, res) => {
 // Payment Processing
 app.post('/payment', authMiddleware, async (req, res) => {
   try {
-    // Discount Validation
     const discount = req.body.discount || 0;
     if (discount < 0 || discount > 20) {
       return res.status(400).json({
@@ -250,35 +257,31 @@ app.post('/payment', authMiddleware, async (req, res) => {
       });
     }
 
-    // Amount Calculation
     const originalAmount = req.body.consignments.reduce((acc, curr) => {
       return acc + (curr.amount1 - curr.amount2) / 2;
     }, 0);
 
     const expectedAmount = originalAmount * (1 - (discount / 100));
 
-    // Amount Validation
     if (expectedAmount.toFixed(2) !== req.body.amount3.toFixed(2)) {
       return res.status(400).json({
         success: false,
-        message: 'Amount calculation mismatch. Please refresh and try again.'
+        message: 'Amount calculation mismatch'
       });
     }
 
-    // Payment Record Creation
     const payment = new Payment({
       user: req.user._id,
       ...req.body,
-      originalAmount: originalAmount,
-      discount: discount
+      originalAmount,
+      discount
     });
 
     await payment.save();
 
-    // Response
     res.status(201).json({
       success: true,
-      message: 'Payment processed successfully',
+      message: 'Payment processed',
       payment: {
         id: payment._id,
         trxid: payment.trxid,
@@ -305,13 +308,15 @@ app.post('/payment', authMiddleware, async (req, res) => {
 // ======================
 app.use((err, req, res, next) => {
   console.error('Global Error:', {
-    error: err.stack,
     path: req.path,
+    error: err.stack,
     body: req.body
   });
   res.status(err.status || 500).json({ 
     success: false,
-    message: err.message || 'Internal server error'
+    message: process.env.NODE_ENV === 'production' 
+      ? 'Internal server error' 
+      : err.message
   });
 });
 
@@ -320,6 +325,8 @@ app.use((err, req, res, next) => {
 // ======================
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🏭 Environment: ${process.env.NODE_ENV || 'development'}`);
+  
   process.on('unhandledRejection', err => {
     console.error('Unhandled Rejection:', err);
     process.exit(1);
