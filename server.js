@@ -88,7 +88,6 @@ const adminAuth = async (req, res, next) => {
     
     const admin = await Admin.findOne({
       _id: decoded.adminId,
-       lastLogin: { $gte: (decoded.iat * 1000) - 2000 }
     });
 
     if (!admin) throw new Error();
