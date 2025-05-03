@@ -26,7 +26,6 @@ if (!process.env.MONGODB_URI || !process.env.JWT_SECRET) {
 // ======================
 
 app.use(helmet());
-app.options('/admin/register', cors());
 app.use(cors({
   origin: [
     'https://0neai.github.io',
