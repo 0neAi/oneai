@@ -85,17 +85,40 @@ app.post('/admin/register', async (req, res) => {
       });
     }
     
-    const admin = await Admin.register(email, password);
+  // Check registration availability
+    if (!await Admin.canRegister()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin registration is closed'
+      });
+    }
+
+    // Check for existing email
+    const existingAdmin = await Admin.findOne({ email });
+    if (existingAdmin) {
+      return res.status(409).json({
+        success: false,
+        message: 'Email already registered'
+      });
+    }
+
+    // Create new admin
+    const admin = new Admin({ email, password });
+    await admin.save();
+
     res.status(201).json({
       success: true,
       message: 'Admin created successfully',
-      admin: admin
+      admin: admin.toSafeObject()
     });
+
   } catch (error) {
-    res.status(400).json({
+    console.error('Registration error:', error);
+    res.status(500).json({
       success: false,
-      message: error.message,
-      errorType: error.name
+      message: process.env.NODE_ENV === 'production' 
+        ? 'Registration failed' 
+        : error.message
     });
   }
 });
