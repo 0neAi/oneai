@@ -424,7 +424,7 @@ app.post('/payment', authMiddleware, async (req, res) => {
   try {
     console.log('Incoming payment:', req.body); // Log incoming data
     const discount = req.body.discount || 0;
-    if (discount < 0 || discount > 20) {
+    if (discount < 0 || discount > 40) {
       return res.status(400).json({
         success: false,
         message: 'Invalid discount value'
