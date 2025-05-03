@@ -417,6 +417,7 @@ app.get('/validate', authMiddleware, (req, res) => {
 // Payment Processing
 app.post('/payment', authMiddleware, async (req, res) => {
   try {
+    console.log('Incoming payment:', req.body); // Log incoming data
     const discount = req.body.discount || 0;
     if (discount < 0 || discount > 20) {
       return res.status(400).json({
@@ -470,6 +471,12 @@ app.post('/payment', authMiddleware, async (req, res) => {
         : 'Payment processing failed'
     });
   }
+  catch (error) {
+    console.error('Payment Error Details:', {
+      error: error.message,
+      body: req.body,
+      user: req.user._id
+    });
 });
 
 // ======================
