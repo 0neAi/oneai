@@ -135,21 +135,27 @@
                              class="list-group-item">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <h6 class="mb-1">{{ payment.trxid }}</h6>
+                                    <h6 class="mb-1">{{ payment._id }}</h6>
                                     <small class="text-muted">
-                                        {{ payment.user?.email || 'N/A' }}
+                                        TRX: {{ payment.trxid }} | User: {{ payment.user?.email || 'N/A' }}
                                     </small>
                                 </div>
-                                <div class="text-end">
-                                    <span class="badge" 
-                                          :class="statusClass(payment.status)">
-                                        {{ payment.status }}
-                                    </span>
-                                    <div class="mt-1">৳{{ payment.amount3 }}</div>
-                                    <small class="text-muted">
-                                        {{ formatDate(payment.createdAt) }}
-                                    </small>
-                                </div>
+
+                                
+                                      <div class="text-end">
+                <select class="form-select form-select-sm mb-2" 
+                        :class="statusClass(payment.status)"
+                        v-model="payment.status"
+                        @change="updatePaymentStatus(payment)">
+                    <option value="Pending">Pending</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Failed">Failed</option>
+                </select>
+                <div class="mt-1">৳{{ payment.amount3 }}</div>
+                <small class="text-muted">
+                    {{ formatDate(payment.createdAt) }}
+                </small>
+            </div>
                             </div>
                         </div>
                         <div v-if="!filteredPayments.length" 
@@ -334,6 +340,31 @@
                     this.admin = { email: '', password: '' };
                 }
             },
+             // Add this new method
+    async updatePaymentStatus(payment) {
+        try {
+            const { data } = await axios.put(
+                `${API_BASE}/admin/payments/${payment._id}`,
+                { status: payment.status },
+                {
+                    headers: { 
+                        Authorization: `Bearer ${localStorage.adminToken}` 
+                    }
+                }
+            );
+
+            if (data.success) {
+                // Update local state
+                const index = this.payments.findIndex(p => p._id === payment._id);
+                this.payments.splice(index, 1, data.payment);
+                this.updateStats();
+            }
+        } catch (error) {
+            console.error('Status update failed:', error);
+            alert('Failed to update status');
+        }
+    },
+    // Keep existing methods..
             async mounted() {
                 await this.checkInitialSetup();
                 const token = localStorage.adminToken;
@@ -351,7 +382,7 @@
                 }
             }
         };
-
+        
         Vue.createApp(AdminApp).mount('#admin-app');
     </script>
 </body>
