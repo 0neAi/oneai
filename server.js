@@ -76,15 +76,26 @@ app.get('/admin/check-registration', async (req, res) => {
 app.post('/admin/register', async (req, res) => {
   try {
     const { email, password } = req.body;
+    
+    // Additional validation
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and password are required'
+      });
+    }
+    
     const admin = await Admin.register(email, password);
     res.status(201).json({
       success: true,
+      message: 'Admin created successfully',
       admin: admin
     });
   } catch (error) {
     res.status(400).json({
       success: false,
-      message: error.message
+      message: error.message,
+      errorType: error.name
     });
   }
 });
