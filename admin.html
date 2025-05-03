@@ -177,6 +177,51 @@
     <script src="https://unpkg.com/vue@3"></script>
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
     <script>
+const AdminApp = {
+  methods: {
+    async registerAdmin() {
+      this.registerError = '';
+      this.registerSuccess = '';
+      
+      try {
+        // Client-side validation
+        if (!this.admin.email.match(/^\S+@\S+\.\S+$/)) {
+          throw new Error('Invalid email format');
+        }
+        if (this.admin.password.length < 12) {
+          throw new Error('Password must be at least 12 characters');
+        }
+
+        const response = await axios.post('/admin/register', {
+          email: this.admin.email.trim(),
+          password: this.admin.password
+        });
+
+        if (response.data.success) {
+          this.registerSuccess = 'Registration successful! You can now login.';
+          this.showInitialSetup = false;
+          this.admin = { email: '', password: '' };
+          setTimeout(() => {
+            window.location.reload();
+          }, 2000);
+        } else {
+          this.registerError = response.data.message || 'Registration failed';
+        }
+      } catch (error) {
+        this.registerError = error.response?.data?.message || 
+                            error.message || 
+                            'Registration failed. Check console for details.';
+        console.error('Registration error:', error);
+        
+        if (error.response) {
+          console.error('Server response:', error.response.data);
+        }
+      }
+    }
+  }
+};
+</script>
+    <script>
         const AdminApp = {
             data() {
                 return {
