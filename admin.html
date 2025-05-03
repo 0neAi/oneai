@@ -8,8 +8,32 @@
 </head>
 <body>
     <div id="admin-app" class="container py-4">
+        <!-- Initial Setup View -->
+        <div v-if="showInitialSetup" class="text-center py-5">
+            <h1 class="mb-4">Admin Setup</h1>
+            <p class="lead mb-4">No admin accounts found. Please create the first admin account.</p>
+            
+            <div class="auth-container bg-white mx-auto" style="max-width: 500px;">
+                <h3 class="mb-4">Create Admin Account</h3>
+                <form @submit.prevent="registerAdmin">
+                    <div class="mb-3">
+                        <label for="adminEmail" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="adminEmail" v-model="admin.email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="adminPassword" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="adminPassword" v-model="admin.password" required minlength="12">
+                        <small class="text-muted">Minimum 12 characters</small>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Create Admin Account</button>
+                    <div v-if="registerError" class="alert alert-danger mt-3">{{ registerError }}</div>
+                    <div v-if="registerSuccess" class="alert alert-success mt-3">{{ registerSuccess }}</div>
+                </form>
+            </div>
+        </div>
+
         <!-- Login View -->
-        <div v-if="!isAuthenticated" class="auth-container bg-white mx-auto" style="max-width: 500px;">
+        <div v-else-if="!isAuthenticated" class="auth-container bg-white mx-auto" style="max-width: 500px;">
             <h2 class="mb-4 text-center">Admin Login</h2>
             <form @submit.prevent="login">
                 <div class="mb-3">
@@ -24,7 +48,6 @@
                 <div v-if="loginError" class="alert alert-danger mt-3">{{ loginError }}</div>
             </form>
         </div>
-
         <!-- Dashboard View -->
         <div v-else>
             <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
@@ -157,10 +180,13 @@
         const AdminApp = {
             data() {
                 return {
-                    isAuthenticated: false,
+                    showInitialSetup: false,
                     setupCheckError: null,
+                    isAuthenticated: false,
                     admin: { email: '', password: '' },
                     loginError: '',
+                    registerError: '',
+                    registerSuccess: '',
                     users: [],
                     payments: [],
                     stats: {
@@ -179,6 +205,38 @@
                 }
             },
             methods: {
+                async checkInitialSetup() {
+                    try {
+                        const response = await axios.get('/admin/check-registration');
+                        this.showInitialSetup = response.data.allowRegistration;
+                        this.setupCheckError = null;
+                    } catch (error) {
+                        console.error('Setup check failed:', error);
+                        this.setupCheckError = 'Failed to check registration status';
+                        this.showInitialSetup = true;
+                    }
+                },
+                async registerAdmin() {
+                    this.registerError = '';
+                    this.registerSuccess = '';
+                    
+                    try {
+                        const response = await axios.post('/admin/register', {
+                            email: this.admin.email.trim(),
+                            password: this.admin.password
+                        });
+                        
+                        this.registerSuccess = 'Admin account created! You can now login.';
+                        this.showInitialSetup = false;
+                        this.admin.password = '';
+                    } catch (error) {
+                        if (error.response) {
+                            this.registerError = error.response.data.message || 'Registration failed';
+                        } else {
+                            this.registerError = 'Network error. Please try again.';
+                        }
+                    }
+                },
                 async login() {
                     this.loginError = '';
                     try {
@@ -212,7 +270,6 @@
                         this.users = usersRes.data.users;
                         this.payments = paymentsRes.data.payments;
                         
-                        // Calculate stats
                         this.stats = {
                             totalUsers: this.users.length,
                             totalPayments: this.payments.length,
@@ -257,14 +314,18 @@
                 }
             },
             async mounted() {
+                     await this.checkInitialSetup();
+                
+                if (this.setupCheckError) {
+                    alert(this.setupCheckError);
+                }
+
                 const token = localStorage.adminToken;
-                if (token) {
+                if (token && !this.showInitialSetup) {
                     try {
-                        // Verify token is still valid
                         await axios.get('/admin/users', {
                             headers: { Authorization: `Bearer ${token}` }
                         });
-                        
                         this.isAuthenticated = true;
                         await this.loadData();
                     } catch (error) {
