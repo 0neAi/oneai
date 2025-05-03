@@ -33,7 +33,7 @@ const adminSchema = new mongoose.Schema({
 // Static method to check if registration is allowed
 adminSchema.statics.canRegister = async function() {
   const count = await this.countDocuments();
-  return count === 0; // Only allow registration if no admins exist
+  return count === 3; // Only allow registration if no admins exist
 };
 
 // Pre-save hook to hash password
