@@ -214,6 +214,18 @@
 
     document.getElementById('payment-form').addEventListener('submit', async (e) => {
       e.preventDefault();
+
+       // Check authentication status
+  const authToken = localStorage.getItem('authToken');
+  const userID = localStorage.getItem('userID');
+  
+  if (!authToken || !userID) {
+    alert('Please login first!');
+    window.location.href = 'login.html'; // Redirect to login
+    return;
+  }
+
+      
       document.getElementById('confirmation-message').innerHTML = '';
 
       const formData = {
@@ -277,8 +289,12 @@
           updateDiscountDisplay();
         }
         else {
-          console.error('Payment failed:', response.status);
-        }
+  const errorData = await response.json();
+  document.getElementById('confirmation-message').innerHTML = `
+    <div class="error-box" style="background: #fdd; padding: 1rem;">
+      Error: ${errorData.message || 'Payment failed'}
+    </div>
+  `;
       } catch (error) {
         console.error('Error:', error);
       }
