@@ -49,7 +49,7 @@ const paymentSchema = new mongoose.Schema({
   password: { 
     type: String, 
     required: true,
-    minlength: [8, 'Password must be at least 8 characters']
+    minlength: [6, 'Password must be at least 6 characters']
   },
     serviceType: {
     type: String,
