@@ -325,6 +325,9 @@ app.use((req, res, next) => {
 // Application Routes
 // ======================
 
+// Add before other routes
+app.options('*', cors()); // Handle all OPTIONS requests
+
 // Health Check
 app.get('/', (req, res) => {
   res.status(200).json({ 
