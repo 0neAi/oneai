@@ -76,6 +76,7 @@ app.get('/admin/check-registration', async (req, res) => {
 
 // Admin registration
 app.post('/admin/register', async (req, res) => {
+  console.log('Registration attempt:', req.body);
   try {
     const { email, password } = req.body;
     
