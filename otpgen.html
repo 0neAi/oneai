@@ -265,6 +265,12 @@ if (!formData.trxid || formData.trxid.length < 8) {
           body: JSON.stringify(formData)
         });
 
+         const data = await response.json(); // Parse response first
+  if (!response.ok) {
+      throw new Error(data.message || 'Payment failed');
+    }
+        
+        
         if (response.ok) {
           const data = await response.json();
           
