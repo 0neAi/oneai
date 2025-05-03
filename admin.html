@@ -5,113 +5,194 @@
     <title>Admin Dashboard</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="./assets/css/main.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
+    <style>
+        .auth-container {
+            max-width: 500px;
+            margin: 2rem auto;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        .form-switch {
+            cursor: pointer;
+            text-decoration: underline;
+            color: #0d6efd;
+        }
+        .error-message {
+            color: #dc3545;
+            margin-top: 0.5rem;
+        }
+        .success-message {
+            color: #198754;
+            margin-top: 0.5rem;
+        }
+    </style>
 </head>
 <body>
-    <div id="admin-app">
+    <div id="admin-app" class="container py-4">
+        <!-- Initial Setup View -->
+        <div v-if="showInitialSetup" class="text-center py-5">
+            <h1 class="mb-4">Admin Setup</h1>
+            <p class="lead mb-4">No admin accounts found. Please create the first admin account.</p>
+            
+            <div class="auth-container bg-white">
+                <h3 class="mb-4">Create Admin Account</h3>
+                <form @submit.prevent="registerAdmin">
+                    <div class="mb-3">
+                        <label for="adminEmail" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="adminEmail" v-model="admin.email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="adminPassword" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="adminPassword" v-model="admin.password" required minlength="12">
+                        <small class="text-muted">Minimum 12 characters</small>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Create Admin Account</button>
+                    <div v-if="registerError" class="error-message">{{ registerError }}</div>
+                    <div v-if="registerSuccess" class="success-message">{{ registerSuccess }}</div>
+                </form>
+            </div>
+        </div>
+
         <!-- Login View -->
-        <div v-if="!isAuthenticated" class="admin-login">
-            <h2>Admin Portal</h2>
+        <div v-else-if="!isAuthenticated" class="auth-container bg-white">
+            <h2 class="mb-4 text-center">Admin Portal</h2>
             <form @submit.prevent="login">
-                <input type="email" v-model="admin.email" placeholder="Admin Email" required>
-                <input type="password" v-model="admin.password" placeholder="Password" required>
-                <button type="submit">Login</button>
+                <div class="mb-3">
+                    <label for="loginEmail" class="form-label">Email</label>
+                    <input type="email" class="form-control" id="loginEmail" v-model="admin.email" required>
+                </div>
+                <div class="mb-3">
+                    <label for="loginPassword" class="form-label">Password</label>
+                    <input type="password" class="form-control" id="loginPassword" v-model="admin.password" required>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Login</button>
                 <div v-if="loginError" class="error-message">{{ loginError }}</div>
             </form>
         </div>
 
         <!-- Dashboard View -->
         <div v-else>
-            <nav class="admin-nav">
-                <button @click="currentView = 'users'">Manage Users</button>
-                <button @click="currentView = 'payments'">Manage Payments</button>
-                <button @click="logout">Logout</button>
+            <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+                <div class="container-fluid">
+                    <span class="navbar-brand">Admin Dashboard</span>
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                    <div class="collapse navbar-collapse" id="navbarNav">
+                        <ul class="navbar-nav me-auto">
+                            <li class="nav-item">
+                                <button class="nav-link btn btn-link" @click="currentView = 'users'">Users</button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link btn btn-link" @click="currentView = 'payments'">Payments</button>
+                            </li>
+                        </ul>
+                        <button class="btn btn-outline-light" @click="logout">Logout</button>
+                    </div>
+                </div>
             </nav>
 
             <!-- Users View -->
-            <div v-if="currentView === 'users'" class="user-management">
-                <h3>Registered Users ({{ users.length }})</h3>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Phone</th>
-                            <th>Email</th>
-                            <th>Registered At</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="user in users" :key="user._id">
-                            <td>{{ user.phone }}</td>
-                            <td>{{ user.email }}</td>
-                            <td>{{ new Date(user.createdAt).toLocaleString() }}</td>
-                            <td>
-                                <button @click="viewUserPayments(user._id)">View Payments</button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+            <div v-if="currentView === 'users'" class="card">
+                <div class="card-header">
+                    <h3 class="mb-0">Registered Users ({{ users.length }})</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Phone</th>
+                                    <th>Email</th>
+                                    <th>Registered At</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="user in users" :key="user._id">
+                                    <td>{{ user.phone }}</td>
+                                    <td>{{ user.email }}</td>
+                                    <td>{{ formatDate(user.createdAt) }}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-info" @click="viewUserPayments(user._id)">View Payments</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
 
             <!-- Payments View -->
-            <div v-if="currentView === 'payments'" class="payment-management">
-                <h3>Payment Transactions</h3>
-                <div class="filters">
-                    <select v-model="paymentFilter">
+            <div v-else-if="currentView === 'payments'" class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0">Payment Transactions</h3>
+                    <select v-model="paymentFilter" class="form-select w-auto">
                         <option value="all">All Payments</option>
                         <option value="Pending">Pending</option>
                         <option value="Completed">Completed</option>
                         <option value="Failed">Failed</option>
                     </select>
                 </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>User</th>
-                            <th>TRX ID</th>
-                            <th>Amount</th>
-                            <th>Status</th>
-                            <th>Date</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="payment in filteredPayments" :key="payment._id">
-                            <td>{{ payment.user.email }}</td>
-                            <td>{{ payment.trxid }}</td>
-                            <td>৳{{ payment.amount3 }}</td>
-                            <td>
-                                <select :value="payment.status" 
-                                        @change="updatePaymentStatus(payment._id, $event)">
-                                    <option>Pending</option>
-                                    <option>Completed</option>
-                                    <option>Failed</option>
-                                </select>
-                            </td>
-                            <td>{{ new Date(payment.createdAt).toLocaleDateString() }}</td>
-                            <td>
-                                <button @click="viewPaymentDetails(payment)">Details</button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>TRX ID</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="payment in filteredPayments" :key="payment._id">
+                                    <td>{{ payment.user?.email || 'N/A' }}</td>
+                                    <td>{{ payment.trxid }}</td>
+                                    <td>৳{{ payment.amount3 }}</td>
+                                    <td>
+                                        <select class="form-select form-select-sm" 
+                                                :value="payment.status" 
+                                                @change="updatePaymentStatus(payment._id, $event)">
+                                            <option>Pending</option>
+                                            <option>Completed</option>
+                                            <option>Failed</option>
+                                        </select>
+                                    </td>
+                                    <td>{{ formatDate(payment.createdAt) }}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-primary" @click="viewPaymentDetails(payment)">Details</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <script src="https://unpkg.com/vue@3"></script>
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const AdminApp = {
             data() {
                 return {
+                    showInitialSetup: false,
                     isAuthenticated: false,
                     currentView: 'users',
                     paymentFilter: 'all',
                     admin: { email: '', password: '' },
                     users: [],
                     payments: [],
-                    loginError: ''
+                    loginError: '',
+                    registerError: '',
+                    registerSuccess: ''
                 }
             },
             computed: {
@@ -121,6 +202,35 @@
                 }
             },
             methods: {
+                async checkInitialSetup() {
+                    try {
+                        const response = await axios.get('/admin/check-registration');
+                        this.showInitialSetup = response.data.allowRegistration;
+                    } catch (error) {
+                        console.error('Setup check failed:', error);
+                    }
+                },
+                async registerAdmin() {
+                    this.registerError = '';
+                    this.registerSuccess = '';
+                    
+                    try {
+                        const response = await axios.post('/admin/register', {
+                            email: this.admin.email.trim(),
+                            password: this.admin.password
+                        });
+                        
+                        this.registerSuccess = 'Admin account created successfully! You can now login.';
+                        this.showInitialSetup = false;
+                        this.admin.password = '';
+                    } catch (error) {
+                        if (error.response) {
+                            this.registerError = error.response.data.message || 'Registration failed';
+                        } else {
+                            this.registerError = 'Network error. Please try again.';
+                        }
+                    }
+                },
                 async login() {
                     this.loginError = '';
                     try {
@@ -128,6 +238,7 @@
                             email: this.admin.email.trim(),
                             password: this.admin.password
                         });
+                        
                         localStorage.setItem('adminToken', response.data.token);
                         this.isAuthenticated = true;
                         await this.loadData();
@@ -149,6 +260,7 @@
                                 headers: { Authorization: `Bearer ${localStorage.adminToken}` }
                             })
                         ]);
+                        
                         this.users = usersRes.data.users;
                         this.payments = paymentsRes.data.payments;
                     } catch (error) {
@@ -163,26 +275,34 @@
                             { status: newStatus },
                             { headers: { Authorization: `Bearer ${localStorage.adminToken}` } }
                         );
+                        
                         this.payments = this.payments.map(p => 
                             p._id === paymentId ? { ...p, status: newStatus } : p
                         );
                     } catch (error) {
-                        alert('Update failed: ' + error.message);
+                        alert('Update failed: ' + (error.response?.data?.message || error.message));
                     }
+                },
+                formatDate(dateString) {
+                    return new Date(dateString).toLocaleString();
                 },
                 logout() {
                     localStorage.removeItem('adminToken');
                     this.isAuthenticated = false;
                     this.admin = { email: '', password: '' };
+                    this.currentView = 'users';
                 }
             },
             async mounted() {
+                await this.checkInitialSetup();
+                
                 const token = localStorage.adminToken;
-                if (token) {
+                if (token && !this.showInitialSetup) {
                     try {
                         await axios.get('/admin/users', {
                             headers: { Authorization: `Bearer ${token}` }
                         });
+                        
                         this.isAuthenticated = true;
                         await this.loadData();
                     } catch (error) {
@@ -194,7 +314,5 @@
 
         Vue.createApp(AdminApp).mount('#admin-app');
     </script>
-<script src="./assets/js/main.js"></script>
-    
 </body>
 </html>
