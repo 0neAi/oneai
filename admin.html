@@ -337,5 +337,40 @@
 
         Vue.createApp(AdminApp).mount('#admin-app');
     </script>
+    <script>
+// In the registerAdmin method, update the error handling:
+async registerAdmin() {
+    this.registerError = '';
+    this.registerSuccess = '';
+    
+    try {
+        // Add basic client-side validation
+        if (!this.admin.email.match(/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/)) {
+            throw new Error('Invalid email format');
+        }
+        if (this.admin.password.length < 12) {
+            throw new Error('Password must be at least 12 characters');
+        }
+
+        const response = await axios.post('/admin/register', {
+            email: this.admin.email.trim(),
+            password: this.admin.password
+        });
+        
+        if (response.data.success) {
+            this.registerSuccess = 'Admin account created! You can now login.';
+            this.showInitialSetup = false;
+            this.admin = { email: '', password: '' };
+        } else {
+            this.registerError = response.data.message || 'Registration failed';
+        }
+    } catch (error) {
+        this.registerError = error.response?.data?.message || 
+                            error.message || 
+                            'Network error. Please try again.';
+        console.error('Registration error:', error);
+    }
+}
+</script>
 </body>
 </html>
