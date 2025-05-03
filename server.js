@@ -207,7 +207,10 @@ mongoose.connection.on('disconnected', () => {
   isReady = false;
   console.log('⚠️  MongoDB disconnected');
 });
-
+mongoose.connection.on('error', err => {
+  console.error('❌ MongoDB connection error:', err);
+  isReady = false;
+});
 // ======================
 // Server Readiness Check
 // ======================
