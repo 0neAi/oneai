@@ -6,9 +6,9 @@ const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const Payment = require('./models/Payment');
-const User = require('./models/User');
-const Admin = require('./models/Admin');
+const Payment = require('models/Payment');
+const User = require('models/User');
+const Admin = require('models/Admin');
 
 const app = express();
 const PORT = process.env.PORT || 10000; // Render-compatible port
