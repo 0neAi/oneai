@@ -417,16 +417,12 @@ axios.interceptors.response.use(
                     this.admin = { email: '', password: '' };
                 },
              // Add this new method
-    async updatePaymentStatus(payment) {
-                    try {
+                async updatePaymentStatus(payment) { // Remove extra whitespace
+                      try {
                         const { data } = await axios.put(
-                            `${API_BASE}/admin/payments/${payment._id}`,
-                            { status: payment.status },
-                            {
-                                headers: { 
-                                    Authorization: `Bearer ${localStorage.adminToken}` 
-                                }
-                            }
+                          `${API_BASE}/admin/payments/${payment._id}`,
+                          { status: payment.status },
+                          { headers: { Authorization: `Bearer ${localStorage.adminToken}` } }
                         );
 
                         if (data.success) {
