@@ -224,6 +224,11 @@
     window.location.href = 'login.html'; // Redirect to login
     return;
   }
+      // Add before fetch()
+if (!formData.trxid || formData.trxid.length < 8) {
+  alert('TRX ID must be at least 8 characters');
+  return;
+}
 
       
       document.getElementById('confirmation-message').innerHTML = '';
