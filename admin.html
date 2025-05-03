@@ -197,6 +197,26 @@
 
     <script src="https://unpkg.com/vue@3"></script>
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+   <!-- admin.html - Update registration method -->
+<script>
+const API_BASE = 'https://oneai-u23h.onrender.com'; // e.g. 
+
+async registerAdmin() {
+  try {
+    const response = await axios.post(`${API_BASE}/admin/register`, {
+      email: this.admin.email,
+      password: this.admin.password
+    }, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    // Handle success
+  } catch (error) {
+    console.error('Full error:', error);
+  }
+}
+</script>
     <script>
         const AdminApp = {
             data() {
