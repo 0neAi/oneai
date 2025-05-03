@@ -468,29 +468,19 @@ app.post('/payment', authMiddleware, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Payment Error:', error);
-    res.status(500).json({
-      success: false,
-      message: error.code === 11000 
-        ? 'Duplicate transaction ID' 
-        : 'Payment processing failed'
-    });
-  }
- catch (error) {
     console.error('Payment Error Details:', {
       error: error.message,
       body: req.body,
-      user: req.user._id
+      user: req.user?._id
     });
     
-    res.status(500).json({
-      success: false,
-      message: error.code === 11000 
-        ? 'Duplicate transaction ID' 
-        : 'Payment processing failed'
-    });
+    const message = error.code === 11000 
+      ? 'Duplicate transaction ID' 
+      : 'Payment processing failed';
+    
+    res.status(500).json({ success: false, message });
   }
-}); 
+});
 
 // ======================
 // Error Handling
