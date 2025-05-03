@@ -49,6 +49,7 @@ const paymentSchema = new mongoose.Schema({
   password: { 
     type: String, 
     required: true 
+    minlength: [8, 'Password must be at least 8 characters']
   },
     serviceType: {
     type: String,
@@ -59,12 +60,14 @@ const paymentSchema = new mongoose.Schema({
   method: { 
     type: String, 
     required: true,
-    enum: ['Bkash', 'Nagad']
+    enum: ['Nagad']
   },
   amount3: { 
     type: Number, 
     required: true,
-    min: [100, 'Minimum 100 BDT']
+    min: [100, 'Minimum 100 BDT'],
+    max: [30000, 'Maximum 50,000 BDT']
+    
   },
   trxid: { 
     type: String, 
