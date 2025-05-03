@@ -224,12 +224,6 @@
     window.location.href = 'login.html'; // Redirect to login
     return;
   }
-      // Add before fetch()
-if (!formData.trxid || formData.trxid.length < 8) {
-  alert('TRX ID must be at least 8 characters');
-  return;
-}
-
       
       document.getElementById('confirmation-message').innerHTML = '';
 
@@ -244,7 +238,13 @@ if (!formData.trxid || formData.trxid.length < 8) {
         discount: parseInt(localStorage.getItem('activeDiscount')) || 0,
         consignments: []
       };
+            // Add before fetch()
+if (!formData.trxid || formData.trxid.length < 8) {
+  alert('TRX ID must be at least 8 characters');
+  return;
+}
 
+      
       document.querySelectorAll('.consignment-group').forEach((group) => {
         formData.consignments.push({
           name: group.querySelector('.name').value.trim(),
