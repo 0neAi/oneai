@@ -307,6 +307,13 @@ const authMiddleware = async (req, res, next) => {
     res.status(401).json({ success: false, message });
   }
 };
+// Add this middleware before routes
+app.use((req, res, next) => {
+  res.on('finish', () => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} - ${res.statusCode}`);
+  });
+  next();
+});
 
 // ======================
 // Application Routes
