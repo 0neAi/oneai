@@ -215,10 +215,23 @@ app.put('/admin/payments/:id', adminAuth, async (req, res) => {
       return res.status(404).json({ success: false, message: 'Payment not found' });
     }
     
-    res.json({ success: true, payment });
-  } catch (error) {
-    res.status(400).json({ success: false, message: error.message });
-  }
+   res.json({ 
+            success: true, 
+            payment: {
+                _id: payment._id,
+                status: payment.status,
+                amount3: payment.amount3,
+                trxid: payment.trxid,
+                user: payment.user,
+                createdAt: payment.createdAt
+            }
+        });
+    } catch (error) {
+        res.status(400).json({ 
+            success: false, 
+            message: error.message 
+        });
+    }
 });
 
 // ======================
