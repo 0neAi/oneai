@@ -30,6 +30,16 @@ const adminSchema = new mongoose.Schema({
   timestamps: true
 });
 
+adminSchema.statics.canRegister = async function() {
+  try {
+    const count = await this.estimatedDocumentCount();
+    return count === 0; // Strict check for zero existing admins
+  } catch (error) {
+    console.error('Admin count check failed:', error);
+    return false;
+  }
+};
+
         // Static method to check if registration is allowed
 adminSchema.statics.canRegister = async function() {
   const count = await this.countDocuments();
