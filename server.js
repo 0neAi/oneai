@@ -24,7 +24,7 @@ if (!process.env.MONGODB_URI || !process.env.JWT_SECRET) {
 // ======================
 // Security Middlewares
 // ======================
-
+app.set('trust proxy', 1);
 app.use(helmet());
 app.use(cors({
   origin: [
@@ -43,6 +43,11 @@ app.use(express.json({ limit: '10kb' }));
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100
+  validate: { trustProxy: true }, // Enable proxy validation
+  keyGenerator: (req) => {
+    // Use the proper IP detection
+    return req.ip || req.socket.remoteAddress;
+  }
 });
 app.use(limiter);
 
