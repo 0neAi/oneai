@@ -42,7 +42,7 @@ app.use(express.json({ limit: '10kb' }));
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100
+  max: 100,
   validate: { trustProxy: true }, // Enable proxy validation
   keyGenerator: (req) => {
     // Use the proper IP detection
@@ -476,13 +476,21 @@ app.post('/payment', authMiddleware, async (req, res) => {
         : 'Payment processing failed'
     });
   }
-  catch (error) {
+ catch (error) {
     console.error('Payment Error Details:', {
       error: error.message,
       body: req.body,
       user: req.user._id
     });
-});
+    
+    res.status(500).json({
+      success: false,
+      message: error.code === 11000 
+        ? 'Duplicate transaction ID' 
+        : 'Payment processing failed'
+    });
+  }
+}); 
 
 // ======================
 // Error Handling
