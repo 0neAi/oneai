@@ -33,11 +33,10 @@ app.use(cors({
     'https://oneai-u23h.onrender.com'
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-User-ID'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
   optionsSuccessStatus: 200
 }));
-
 app.use(express.json({ limit: '10kb' }));
 
 const limiter = rateLimit({
