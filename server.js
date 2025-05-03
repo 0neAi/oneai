@@ -362,7 +362,7 @@ app.post('/register', async (req, res) => {
     console.error('Registration Error:', error);
     res.status(500).json({ 
       success: false, 
-      message: 'Server error during registration' 
+      message: error.message  
     });
   }
 });
