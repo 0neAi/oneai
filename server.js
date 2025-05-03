@@ -31,7 +31,7 @@ app.use(cors({
     'https://0neai.github.io',
     'https://0neai.github.io/oneai',
     'http://localhost:3000',
-    'https://oneai-u23h.onrender.com'
+    'https://oneai-wjox.onrender.com'
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
