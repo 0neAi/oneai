@@ -34,9 +34,15 @@ app.use(cors({
     'https://oneai-wjox.onrender.com'
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+   allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-User-ID', // Explicitly allow custom headers
+    'X-Request-Source'
+  ],
   credentials: true,
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
+  exposedHeaders: ['Authorization']
 }));
 app.use(express.json({ limit: '10kb' }));
 
