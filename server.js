@@ -151,7 +151,7 @@ app.post('/admin/login', adminLimiter, async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: '2h' }
     );
-
+    if (!token) throw new Error("Failed to generate token");
     admin.lastLogin = Date.now();
     await admin.save();
 
@@ -169,6 +169,7 @@ app.post('/admin/login', adminLimiter, async (req, res) => {
 const adminAuth = async (req, res, next) => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
+    if (!token) throw new Error("No token provided");
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     const admin = await Admin.findOne({
@@ -209,6 +210,7 @@ app.put('/admin/payments/:id', adminAuth, async (req, res) => {
       req.params.id,
       { status: req.body.status },
       { new: true, runValidators: true }
+      }
     );
     
     if (!payment) {
