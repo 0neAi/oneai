@@ -54,22 +54,7 @@
             </div>
         </div>
 
-        <!-- Login View -->
-        <div v-else-if="!isAuthenticated" class="auth-container bg-white">
-            <h2 class="mb-4 text-center">Admin Portal</h2>
-            <form @submit.prevent="login">
-                <div class="mb-3">
-                    <label for="loginEmail" class="form-label">Email</label>
-                    <input type="email" class="form-control" id="loginEmail" v-model="admin.email" required>
-                </div>
-                <div class="mb-3">
-                    <label for="loginPassword" class="form-label">Password</label>
-                    <input type="password" class="form-control" id="loginPassword" v-model="admin.password" required>
-                </div>
-                <button type="submit" class="btn btn-primary w-100">Login</button>
-                <div v-if="loginError" class="error-message">{{ loginError }}</div>
-            </form>
-        </div>
+      
 
         <!-- Dashboard View -->
         <div v-else>
