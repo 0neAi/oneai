@@ -47,12 +47,47 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // ======================
-//admin section
+// Admin Section
+// ======================
+
 // Admin rate limiter
 const adminLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
   message: 'Too many login attempts, please try again after 15 minutes'
+});
+
+// Check if admin registration is allowed
+app.get('/admin/check-registration', async (req, res) => {
+  try {
+    const canRegister = await Admin.canRegister();
+    res.json({ 
+      success: true, 
+      allowRegistration: canRegister 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error checking registration status' 
+    });
+  }
+});
+
+// Admin registration
+app.post('/admin/register', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const admin = await Admin.register(email, password);
+    res.status(201).json({
+      success: true,
+      admin: admin
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message
+    });
+  }
 });
 
 // Admin login
@@ -74,7 +109,11 @@ app.post('/admin/login', adminLimiter, async (req, res) => {
     admin.lastLogin = Date.now();
     await admin.save();
 
-    res.json({ success: true, token });
+    res.json({ 
+      success: true, 
+      token,
+      admin: admin.toSafeObject()
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error' });
   }
@@ -101,13 +140,21 @@ const adminAuth = async (req, res, next) => {
 
 // Admin routes
 app.get('/admin/users', adminAuth, async (req, res) => {
-  const users = await User.find().select('-password');
-  res.json({ success: true, users });
+  try {
+    const users = await User.find().select('-password');
+    res.json({ success: true, users });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch users' });
+  }
 });
 
 app.get('/admin/payments', adminAuth, async (req, res) => {
-  const payments = await Payment.find().populate('user', 'phone email');
-  res.json({ success: true, payments });
+  try {
+    const payments = await Payment.find().populate('user', 'phone email');
+    res.json({ success: true, payments });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch payments' });
+  }
 });
 
 app.put('/admin/payments/:id', adminAuth, async (req, res) => {
@@ -128,7 +175,7 @@ app.put('/admin/payments/:id', adminAuth, async (req, res) => {
   }
 });
 
-//admin sec end
+// ======================
 // Database Connection
 // ======================
 let isReady = false;
