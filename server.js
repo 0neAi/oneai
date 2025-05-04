@@ -463,3 +463,5 @@ server.listen(PORT, '0.0.0.0', () => {
     process.exit(1);
   });
 });
+// Add to server.js
+module.exports.adminAuth = adminAuth;
