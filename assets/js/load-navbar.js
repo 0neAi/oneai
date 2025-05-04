@@ -47,12 +47,21 @@
       loadFallbackNavbar();
     }
   }
-
+  
+  // Add this function
+function highlightCurrentPage() {
+  const currentPath = window.location.pathname;
+  document.querySelectorAll('.nav-links a').forEach(link => {
+    if (link.getAttribute('href') === currentPath) {
+      link.classList.add('active');
+    }
+  });
+}
   // Add logout function
   window.logout = function() {
     if (confirm('Are you sure you want to logout?')) {
       // Clear user session data
-      localStorage.removeItem('userToken');
+      localStorage.removeItem('authToken');
       localStorage.removeItem('activeDiscount');
       // Redirect to login page
       window.location.href = './login.html';
@@ -75,8 +84,7 @@
       return;
     }
 
-    // Modified discount range to 8-40%
-    const discount = Math.floor(Math.random() * 33) + 8; // 8-40%
+    const discount = Math.floor(Math.random() * 36) + 5; // 5-40%
     const confirmMessage = `🎉 Congratulations! আপনি ${discount}% ডিস্কাউন্ট পেয়েছেন!\n\n`
                          + `ওকে ক্লিক করে ডিসকাউন্ট গ্রহণ করুন`;
 
@@ -88,6 +96,8 @@
         window.updateDiscountDisplay();
       }
     }
+    
+    
   };
 
   loadNavbar();
