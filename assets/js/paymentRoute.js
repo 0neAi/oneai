@@ -22,7 +22,10 @@ router.put('/:id', async (req, res) => {
         runValidators: true,
         context: 'query'
       }
-    ).populate('user', 'email phone');
+    ).populate({
+  path: 'user',
+  select: 'email phone'
+});
 
     if (!payment) {
       return res.status(404).json({
