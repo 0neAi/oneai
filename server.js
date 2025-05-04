@@ -8,9 +8,9 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const WebSocket = require('ws');
-const Payment = require('./models/Payment');
-const User = require('./models/User');
-const Admin = require('./models/Admin');
+const Payment = require('./models/Payment.js');
+const User = require('./models/User.js');
+const Admin = require('./models/Admin.js');
 
 const app = express();
 const server = require('http').createServer(app);
