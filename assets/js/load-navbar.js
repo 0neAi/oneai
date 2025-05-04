@@ -75,7 +75,8 @@
       return;
     }
 
-    const discount = Math.floor(Math.random() * 26) + 5; // 5-20%
+    // Modified discount range to 8-40%
+    const discount = Math.floor(Math.random() * 33) + 8; // 8-40%
     const confirmMessage = `🎉 Congratulations! আপনি ${discount}% ডিস্কাউন্ট পেয়েছেন!\n\n`
                          + `ওকে ক্লিক করে ডিসকাউন্ট গ্রহণ করুন`;
 
