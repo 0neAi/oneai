@@ -44,6 +44,7 @@ router.put('/:id', async (req, res) => {
                 status: payment.status,
                 trxid: payment.trxid,
                 amount3: payment.amount3,
+                user: payment.user,
                 company: payment.company,
                 createdAt: payment.createdAt
               }
