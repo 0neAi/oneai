@@ -421,6 +421,18 @@ app.get('/admin/users', adminAuth, async (req, res) => {
 app.get('/validate', authMiddleware, (req, res) => {
   res.json({ success: true });
 });
+
+// Add this in Admin Routes section
+app.get('/admin/payments', adminAuth, async (req, res) => {
+  try {
+    const payments = await Payment.find()
+      .populate('user', 'email phone')
+      .sort({ createdAt: -1 });
+    res.json({ success: true, payments });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch payments' });
+  }
+});
 // ======================
 // Error Handling
 // ======================
