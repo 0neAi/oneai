@@ -24,7 +24,19 @@ const jwtSecret = process.env.JWT_SECRET || 'default_secret_use_env_var_in_prod'
 const wss = new WebSocket.Server({ server });
 app.set('wss', wss);
 
-wss.on('connection', (ws) => {
+wss.on('connection', (ws, req) => {
+  // Verify origin in production
+  if (process.env.NODE_ENV === 'production') {
+    const origin = req.headers.origin;
+    if (![
+      'https://0neai.github.io',
+      'https://oneai-wjox.onrender.com'
+    ].includes(origin)) {
+      console.log(`Blocked WebSocket connection from unauthorized origin: ${origin}`);
+      return ws.close();
+    }
+  }
+
   ws.on('message', (message) => {
     if (typeof message !== 'string') return;
     try {
@@ -46,7 +58,6 @@ wss.on('connection', (ws) => {
     console.error('WebSocket connection error:', error);
   });
 });
-
 // ======================
 // Environment Validation
 // ======================
