@@ -4,7 +4,6 @@
     <title>AI Dashboard</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="./assets/css/main.css">
 </head>
 <body>
@@ -71,93 +70,155 @@
         </section>
     </div>
 
-    <script>
-        // Payment status and timer management
-        document.addEventListener('DOMContentLoaded', async () => {
-            const loadingOverlay = document.querySelector('.loading-overlay');
-            loadingOverlay.style.display = 'flex';
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const loadingOverlay = document.querySelector('.loading-overlay');
+    const tbody = document.getElementById('payment-status');
+    let timerInterval = null;
 
-            const paymentData = JSON.parse(localStorage.getItem('recentPayment'));
-            const tbody = document.getElementById('payment-status');
+    // WebSocket Connection
+    const ws = new WebSocket('wss://oneai-wjox.onrender.com');
 
-            if (paymentData) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td>${paymentData.company}</td>
-                        <td>${paymentData.trxid}</td>
-                        <td>৳${paymentData.amount.toFixed(2)}</td>
-                        <td><span class="status-indicator status-pending">Pending</span></td>
-                        <td class="countdown-timer"></td>
-                    </tr>
-                `;
-
-                const countdownElement = document.querySelector('.countdown-timer');
-                const targetTime = paymentData.timestamp + 86400000;
-                let timerInterval;
-
-                function updateTimer() {
-                    const now = Date.now();
-                    const remaining = targetTime - now;
-
-                    if (remaining <= 0) {
-                        countdownElement.innerHTML = 'Expired';
-                        countdownElement.classList.add('countdown-expired');
-                        clearInterval(timerInterval);
-                        return;
-                    }
-
-                    const hours = Math.floor(remaining / (1000 * 60 * 60));
-                    const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
-                    const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
-
-                    countdownElement.innerHTML = `
-                        ${hours.toString().padStart(2, '0')}h 
-                        ${minutes.toString().padStart(2, '0')}m 
-                        ${seconds.toString().padStart(2, '0')}s
-                    `;
-                }
-
-                updateTimer();
-                timerInterval = setInterval(updateTimer, 1000);
+    // WebSocket Handlers
+    ws.onopen = () => console.log('WebSocket connection established');
+    ws.onerror = (error) => console.error('WebSocket error:', error);
+    
+    ws.onmessage = (event) => {
+        try {
+            const data = JSON.parse(event.data);
+            if (data.type === 'payment-updated') {
+                updatePaymentStatus(data.payment);
             }
+        } catch (error) {
+            console.error('Error processing WebSocket message:', error);
+        }
+    };
 
-            loadingOverlay.style.display = 'none';
-        });
+    // Initial Load
+    loadPaymentData();
 
-        // Helpline payment data sharing
-        function sendHelpRequest() {
+    async function loadPaymentData() {
+        loadingOverlay.style.display = 'flex';
+        
+        try {
             const paymentData = JSON.parse(localStorage.getItem('recentPayment'));
-            const defaultMessage = "I need assistance with my service request";
             
-            let message = paymentData ? 
-                `Service Help Request:%0A%0A` +
-                `Company: ${paymentData.company}%0A` +
-                `TRX ID: ${paymentData.trxid}%0A` +
-                `Amount: ৳${paymentData.amount.toFixed(2)}%0A` +
-                `Status: ${paymentData.status}%0A` +
-                `Time Remaining: ${document.querySelector('.countdown-timer')?.innerHTML || 'N/A'}`
-                : defaultMessage;
-
-            window.open(
-                `https://wa.me/8801568760780?text=${encodeURIComponent(message)}`,
-                '_blank'
-            );
-        }
-
-        // Service card interactions
-        document.querySelectorAll('.service-card').forEach(card => {
-            if (!card.querySelector('a')) {
-                card.addEventListener('click', () => {
-                    alert('Service coming soon!');
-                });
+            if (paymentData) {
+                renderPaymentRow(paymentData);
+                startCountdown(paymentData.timestamp);
             }
-        });
-
-        function logout() {
-            localStorage.clear();
-            window.location.href = 'login.html';
+        } catch (error) {
+            console.error('Error loading payment data:', error);
+            showError('Failed to load payment data');
+        } finally {
+            loadingOverlay.style.display = 'none';
         }
-    </script>
+    }
+
+    function renderPaymentRow(payment) {
+        tbody.innerHTML = `
+            <tr data-payment-id="${payment._id}">
+                <td>${payment.company}</td>
+                <td>${payment.trxid}</td>
+                <td>৳${payment.amount.toFixed(2)}</td>
+                <td><span class="status-indicator status-${payment.status.toLowerCase()}">${payment.status}</span></td>
+                <td class="countdown-timer"></td>
+            </tr>
+        `;
+    }
+
+    function updatePaymentStatus(updatedPayment) {
+        const row = document.querySelector(`tr[data-payment-id="${updatedPayment._id}"]`);
+        if (row) {
+            // Update status
+            row.querySelector('.status-indicator').className = `status-indicator status-${updatedPayment.status.toLowerCase()}`;
+            row.querySelector('.status-indicator').textContent = updatedPayment.status;
+            
+            // Update local storage
+            const existingData = JSON.parse(localStorage.getItem('recentPayment'));
+            localStorage.setItem('recentPayment', JSON.stringify({
+                ...existingData,
+                status: updatedPayment.status
+            }));
+        }
+    }
+
+    function startCountdown(initialTimestamp) {
+        const countdownElement = document.querySelector('.countdown-timer');
+        const targetTime = initialTimestamp + 21600000; // 6 hours
+
+        function updateTimer() {
+            const remaining = targetTime - Date.now();
+
+            if (remaining <= 0) {
+                countdownElement.innerHTML = 'Expired';
+                countdownElement.classList.add('countdown-expired');
+                clearInterval(timerInterval);
+                return;
+            }
+
+            const hours = Math.floor(remaining / 3600000);
+            const minutes = Math.floor((remaining % 3600000) / 60000);
+            const seconds = Math.floor((remaining % 60000) / 1000);
+
+            countdownElement.innerHTML = `
+                ${hours.toString().padStart(2, '0')}h 
+                ${minutes.toString().padStart(2, '0')}m 
+                ${seconds.toString().padStart(2, '0')}s
+            `;
+        }
+
+        // Clear existing interval
+        if (timerInterval) clearInterval(timerInterval);
+        
+        // Initial update and start interval
+        updateTimer();
+        timerInterval = setInterval(updateTimer, 1000);
+    }
+
+    // Helpline function
+    window.sendHelpRequest = () => {
+        const paymentData = JSON.parse(localStorage.getItem('recentPayment')) || {};
+        const defaultMessage = "I need assistance with my service request";
+        
+        const message = paymentData.trxid ? 
+            `Service Help Request:%0A%0A` +
+            `Company: ${paymentData.company || 'N/A'}%0A` +
+            `TRX ID: ${paymentData.trxid}%0A` +
+            `Amount: ৳${(paymentData.amount || 0).toFixed(2)}%0A` +
+            `Status: ${paymentData.status || 'Unknown'}%0A` +
+            `Time Remaining: ${document.querySelector('.countdown-timer')?.innerHTML || 'N/A'}`
+            : defaultMessage;
+
+        window.open(
+            `https://wa.me/8801568760780?text=${encodeURIComponent(message)}`,
+            '_blank'
+        );
+    };
+
+    // Service card interactions
+    document.querySelectorAll('.service-card').forEach(card => {
+        if (!card.querySelector('a[href]')) {
+            card.addEventListener('click', () => {
+                alert('পেইড প্রিমিয়াম সার্ভিসটি ব্যাবহারের জন্য ওকে প্রেস করুন!');
+            });
+        }
+    });
+
+    window.logout = () => {
+        localStorage.clear();
+        window.location.href = 'login.html';
+    };
+});
+
+function showError(message) {
+    const errorBox = document.createElement('div');
+    errorBox.className = 'error-message';
+    errorBox.textContent = message;
+    document.body.prepend(errorBox);
+    setTimeout(() => errorBox.remove(), 5000);
+}
+</script>
 
     <script src="./assets/js/load-navbar.js"></script>
     <script src="./assets/js/main.js"></script>
