@@ -149,7 +149,9 @@ body {
     position: absolute;
     top: 0;
     visibility: hidden;
-    width: 150%; }
+    width: 150%;
+    background-position: center center;
+    background-repeat: no-repeat; }
     #bg div.visible {
       -moz-animation: bg 45s linear infinite;
       -webkit-animation: bg 45s linear infinite;
@@ -177,8 +179,10 @@ body {
       -webkit-animation-direction: alternate !important;
       -ms-animation-direction: alternate !important;
       animation-direction: alternate !important; }
+
+
   body.is-preload #bg {
-    opacity: 0; }
+    opacity: 100; }
 
 @-moz-keyframes bg {
   0% {
@@ -629,6 +633,7 @@ select {
 input[type="text"],
 input[type="password"],
 input[type="email"],
+input[type="phone"],
 select {
   height: 2.75em; }
 
@@ -810,6 +815,7 @@ button,
   position: relative; }
   #signup-form input[type="text"],
   #signup-form input[type="password"],
+   #signup-form input[type="phone"],
   #signup-form input[type="email"] {
     width: 18em; }
   #signup-form > * {
@@ -824,6 +830,7 @@ button,
       flex-direction: column; }
       #signup-form input[type="type"],
       #signup-form input[type="password"],
+       #signup-form input[type="phone"],
       #signup-form input[type="email"] {
         width: 100%; }
       #signup-form > * {
