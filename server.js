@@ -384,10 +384,13 @@ app.post('/admin/register', async (req, res) => {
 app.post('/admin/login', adminLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
-    const admin = await Admin.findOne({ email });
+    const admin = await Admin.findOne({ email }).select('+password'); // Crucial
     
-    if (!admin || !(await admin.comparePassword(password))) {
-      return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    if (!admin || !(await bcrypt.compare(password, admin.password))) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Invalid credentials' 
+      });
     }
 
     const token = jwt.sign(
