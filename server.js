@@ -340,6 +340,7 @@ const adminLimiter = rateLimit({
 });
 
 app.get('/admin/check-registration', async (req, res) => {
+  res.set('Cache-Control', 'no-store, max-age=0');
   try {
     const canRegister = await Admin.canRegister();
     res.json({ success: true, allowRegistration: canRegister });
@@ -382,6 +383,7 @@ app.post('/admin/register', async (req, res) => {
 });
 
 app.post('/admin/login', adminLimiter, async (req, res) => {
+   res.set('Cache-Control', 'no-store');
   try {
     const { email, password } = req.body;
     const admin = await Admin.findOne({ email }).select('+password'); // Crucial
