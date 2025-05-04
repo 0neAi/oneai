@@ -421,7 +421,7 @@ app.get('/admin/users', adminAuth, async (req, res) => {
 app.get('/validate', authMiddleware, (req, res) => {
   res.json({ success: true });
 });
-app.use('/admin/payments', paymentRoute);
+app.use('/admin/payments', adminAuth, paymentRoute); 
 // Add this in Admin Routes section
 app.get('/admin/payments', adminAuth, async (req, res) => {
   try {
