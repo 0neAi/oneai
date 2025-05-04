@@ -1,4 +1,5 @@
 require('dotenv').config();
+const paymentRoute = require('./assets/js/paymentRoute');
 const express = require('express');
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
@@ -6,12 +7,44 @@ const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const WebSocket = require('ws');
 const Payment = require('./models/Payment');
 const User = require('./models/User');
 const Admin = require('./models/Admin');
 
 const app = express();
-const PORT = process.env.PORT || 10000; // Render-compatible port
+const server = require('http').createServer(app);
+const PORT = process.env.PORT || 10000;
+const jwtSecret = process.env.JWT_SECRET || 'default_secret_use_env_var_in_prod';
+
+// ======================
+// WebSocket Configuration
+// ======================
+const wss = new WebSocket.Server({ server });
+app.set('wss', wss);
+
+wss.on('connection', (ws) => {
+  ws.on('message', (message) => {
+  if (typeof message !== 'string') return;
+    try {
+      const paymentData = JSON.parse(message);
+      wss.clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify({
+            type: 'payment-updated',
+            payment: paymentData
+          }));
+        }
+      });
+    } catch (error) {
+      console.error('WebSocket message error:', error);
+    }
+  });
+
+  ws.on('error', (error) => {
+    console.error('WebSocket connection error:', error);
+  });
+});
 
 // ======================
 // Environment Validation
@@ -25,216 +58,49 @@ if (!process.env.MONGODB_URI || !process.env.JWT_SECRET) {
 // Security Middlewares
 // ======================
 app.set('trust proxy', 1);
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "https://cdn.jsdelivr.net"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:"]
+    }
+  }
+}));
+
 app.use(cors({
-  origin: [
+  origin: process.env.NODE_ENV === 'production' ? [
     'https://0neai.github.io',
-    'https://0neai.github.io/oneai',
+    'https://oneai-wjox.onrender.com'
+  ] : [
     'http://localhost:3000',
     'https://oneai-wjox.onrender.com'
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-   allowedHeaders: [
+  allowedHeaders: [
     'Content-Type',
     'Authorization',
-    'X-User-ID', // Explicitly allow custom headers
+    'X-User-ID',
     'X-Request-Source'
   ],
   credentials: true,
   optionsSuccessStatus: 200,
   exposedHeaders: ['Authorization']
 }));
+
 app.use(express.json({ limit: '10kb' }));
 
+// ======================
+// Rate Limiting
+// ======================
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
-  validate: { trustProxy: true }, // Enable proxy validation
-  keyGenerator: (req) => {
-    // Use the proper IP detection
-    return req.ip || req.socket.remoteAddress;
-  }
+  validate: { trustProxy: true },
+  keyGenerator: (req) => req.ip || req.socket.remoteAddress
 });
 app.use(limiter);
-
-// ======================
-// Admin Section
-// ======================
-
-// Admin rate limiter
-const adminLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
-  message: 'Too many login attempts, please try again after 15 minutes'
-});
-
-// Check if admin registration is allowed
-app.get('/admin/check-registration', async (req, res) => {
-  try {
-    const canRegister = await Admin.canRegister();
-    res.json({ 
-      success: true, 
-      allowRegistration: canRegister 
-    });
-  } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      message: 'Error checking registration status' 
-    });
-  }
-});
-
-// Admin registration
-app.post('/admin/register', async (req, res) => {
-  console.log('Registration attempt:', req.body);
-  try {
-    const { email, password } = req.body;
-    
-    // Additional validation
-    if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email and password are required'
-      });
-    }
-    
-  // Check registration availability
-    if (!await Admin.canRegister()) {
-      return res.status(403).json({
-        success: false,
-        message: 'Admin registration is closed'
-      });
-    }
-
-    // Check for existing email
-    const existingAdmin = await Admin.findOne({ email });
-    if (existingAdmin) {
-      return res.status(409).json({
-        success: false,
-        message: 'Email already registered'
-      });
-    }
-
-    // Create new admin
-    const admin = new Admin({ email, password });
-    await admin.save();
-
-    res.status(201).json({
-      success: true,
-      message: 'Admin created successfully',
-      admin: admin.toSafeObject()
-    });
-
-  } catch (error) {
-    console.error('Registration error:', error);
-    res.status(500).json({
-      success: false,
-      message: process.env.NODE_ENV === 'production' 
-        ? 'Registration failed' 
-        : error.message
-    });
-  }
-});
-
-// Admin login
-app.post('/admin/login', adminLimiter, async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const admin = await Admin.findOne({ email });
-    
-    if (!admin || !(await admin.comparePassword(password))) {
-      return res.status(401).json({ success: false, message: 'Invalid credentials' });
-    }
-
-    const token = jwt.sign(
-      { adminId: admin._id, role: admin.role },
-      process.env.JWT_SECRET,
-      { expiresIn: '2h' }
-    );
-    if (!token) throw new Error("Failed to generate token");
-    admin.lastLogin = Date.now();
-    await admin.save();
-
-    res.json({ 
-      success: true, 
-      token,
-      admin: admin.toSafeObject()
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
-});
-
-// Admin middleware
-const adminAuth = async (req, res, next) => {
-  try {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
-    if (!token) throw new Error("No token provided");
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
-    const admin = await Admin.findOne({
-      _id: decoded.adminId,
-    });
-
-    if (!admin) throw new Error();
-    
-    req.admin = admin;
-    next();
-  } catch (error) {
-    res.status(401).json({ success: false, message: 'Admin authorization failed' });
-  }
-};
-
-// Admin routes
-app.get('/admin/users', adminAuth, async (req, res) => {
-  try {
-    const users = await User.find().select('-password');
-    res.json({ success: true, users });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to fetch users' });
-  }
-});
-
-app.get('/admin/payments', adminAuth, async (req, res) => {
-  try {
-    const payments = await Payment.find().populate('user', 'phone email');
-    res.json({ success: true, payments });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to fetch payments' });
-  }
-});
-
-app.put('/admin/payments/:id', adminAuth, async (req, res) => {
-  try {
-    const payment = await Payment.findByIdAndUpdate(
-      req.params.id,
-      { status: req.body.status },
-      { new: true, runValidators: true }
-      }
-    );
-    
-    if (!payment) {
-      return res.status(404).json({ success: false, message: 'Payment not found' });
-    }
-    
-   res.json({ 
-            success: true, 
-            payment: {
-                _id: payment._id,
-                status: payment.status,
-                amount3: payment.amount3,
-                trxid: payment.trxid,
-                user: payment.user,
-                createdAt: payment.createdAt
-            }
-        });
-    } catch (error) {
-        res.status(400).json({ 
-            success: false, 
-            message: error.message 
-        });
-    }
-});
 
 // ======================
 // Database Connection
@@ -258,10 +124,12 @@ mongoose.connection.on('disconnected', () => {
   isReady = false;
   console.log('⚠️  MongoDB disconnected');
 });
+
 mongoose.connection.on('error', err => {
   console.error('❌ MongoDB connection error:', err);
   isReady = false;
 });
+
 // ======================
 // Server Readiness Check
 // ======================
@@ -276,59 +144,8 @@ app.use((req, res, next) => {
 });
 
 // ======================
-// Status Endpoint
+// Request Logging
 // ======================
-app.get('/status', (req, res) => {
-  res.json({
-    status: 'live',
-    db: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
-    uptime: process.uptime().toFixed(2) + 's'
-  });
-});
-
-// ======================
-// Enhanced Auth Middleware
-// ======================
-const authMiddleware = async (req, res, next) => {
-  try {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
-    const userID = req.header('X-User-ID');
-
-    if (!token || !userID) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Authentication credentials missing' 
-      });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
-    if (decoded.userId !== userID) {
-      return res.status(401).json({
-        success: false,
-        message: 'User ID mismatch'
-      });
-    }
-
-    const user = await User.findOne({ _id: userID });
-    if (!user) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'User not found' 
-      });
-    }
-
-    req.user = user;
-    next();
-  } catch (error) {
-    console.error('Auth Error:', error);
-    const message = error.name === 'TokenExpiredError' 
-      ? 'Session expired' 
-      : 'Invalid authentication';
-    res.status(401).json({ success: false, message });
-  }
-};
-// Add this middleware before routes
 app.use((req, res, next) => {
   res.on('finish', () => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} - ${res.statusCode}`);
@@ -337,38 +154,79 @@ app.use((req, res, next) => {
 });
 
 // ======================
-// Application Routes
+// Authentication Middlewares
 // ======================
+const adminAuth = async (req, res, next) => {
+  try {
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+    if (!token) throw new Error("No token provided");
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded.exp * 1000 < Date.now()) {
+      throw new Error("Token expired");
+    }
+    const admin = await Admin.findById(decoded.adminId);
+    
+    if (!admin) throw new Error("Admin not found");
+    req.admin = admin;
+    next();
+  } catch (error) {
+    res.status(401).json({ success: false, message: 'Admin authorization failed' });
+  }
+};
 
-// Add before other routes
-app.options('*', cors()); // Handle all OPTIONS requests
+const authMiddleware = async (req, res, next) => {
+  try {
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+    const userID = req.header('X-User-ID');
 
-// Health Check
-app.get('/', (req, res) => {
-  res.status(200).json({ 
-    success: true, 
-    message: 'Server operational',
-    version: '1.0.0'
-  });
-});
+    if (!token || !userID) throw new Error("Missing credentials");
+    
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded.userId !== userID) throw new Error("ID mismatch");
 
-// Registration Endpoint
+    const user = await User.findById(userID);
+    if (!user) throw new Error("User not found");
+    
+    req.user = user;
+    next();
+  } catch (error) {
+    const message = error.name === 'TokenExpiredError' 
+      ? 'Session expired' 
+      : 'Invalid authentication';
+    res.status(401).json({ success: false, message });
+  }
+};
+
+// ======================
+// Core Routes
+// ======================
+app.options('*', cors());
+
+app.get('/', (req, res) => res.status(200).json({ 
+  success: true, 
+  message: 'Server operational',
+  version: '1.0.0'
+}));
+
+app.get('/status', (req, res) => res.json({
+  status: 'live',
+  db: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+  uptime: process.uptime().toFixed(2) + 's'
+}));
+
+// ======================
+// User Authentication Routes
+// ======================
 app.post('/register', async (req, res) => {
   try {
     const { phone, email, password } = req.body;
     
     if (!phone || !email || !password) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'All fields are required' 
-      });
+      return res.status(400).json({ success: false, message: 'All fields required' });
     }
 
     if (await User.findOne({ email })) {
-      return res.status(409).json({ 
-        success: false, 
-        message: 'Email already registered' 
-      });
+      return res.status(409).json({ success: false, message: 'Email already exists' });
     }
 
     const user = new User({
@@ -379,11 +237,7 @@ app.post('/register', async (req, res) => {
 
     await user.save();
 
-    const token = jwt.sign(
-      { userId: user._id },
-      process.env.JWT_SECRET,
-      { expiresIn: '1h' }
-    );
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
     res.status(201).json({
       success: true,
@@ -394,46 +248,33 @@ app.post('/register', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Registration Error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: error.message  
-    });
+    const message = process.env.NODE_ENV === 'production'
+      ? 'Registration failed'
+      : error.message;
+    res.status(500).json({ success: false, message });
   }
 });
 
-// Login Endpoint
 app.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Invalid credentials' 
-      });
+      return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
-    const token = jwt.sign(
-      { userId: user._id }, 
-      process.env.JWT_SECRET, 
-      { expiresIn: '1h' }
-    );
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
     res.json({
       success: true,
       token,
       userID: user._id,
       expiresIn: Date.now() + 3600000,
-      user: {
-        phone: user.phone,
-        email: user.email
-      }
+      user: { phone: user.phone, email: user.email }
     });
 
   } catch (error) {
-    console.error('Login Error:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Server error during login' 
@@ -441,38 +282,27 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// Validation Endpoint
-app.get('/validate', authMiddleware, (req, res) => {
-  res.json({ 
-    success: true, 
-    valid: true, 
-    user: req.user 
-  });
-});
-
+// ======================
 // Payment Processing
+// ======================
 app.post('/payment', authMiddleware, async (req, res) => {
   try {
-    console.log('Incoming payment:', req.body); // Log incoming data
-    const discount = req.body.discount || 0;
-    if (discount < 0 || discount > 40) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid discount value'
-      });
+    if (!Array.isArray(req.body.consignments) || req.body.consignments.length === 0) {
+      return res.status(400).json({ success: false, message: 'Invalid consignments data' });
     }
 
-    const originalAmount = req.body.consignments.reduce((acc, curr) => {
-      return acc + (curr.amount1 - curr.amount2) / 2;
-    }, 0);
+    const discount = req.body.discount || 0;
+    if (discount < 0 || discount > 40) {
+      return res.status(400).json({ success: false, message: 'Invalid discount value' });
+    }
+
+    const originalAmount = req.body.consignments.reduce((acc, curr) => 
+      acc + (curr.amount1 - curr.amount2) / 2, 0
+    );
 
     const expectedAmount = originalAmount * (1 - (discount / 100));
-
     if (expectedAmount.toFixed(2) !== req.body.amount3.toFixed(2)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Amount calculation mismatch'
-      });
+      return res.status(400).json({ success: false, message: 'Amount mismatch' });
     }
 
     const payment = new Payment({
@@ -492,27 +322,105 @@ app.post('/payment', authMiddleware, async (req, res) => {
         trxid: payment.trxid,
         status: payment.status,
         serviceType: payment.serviceType,
-        originalAmount: payment.originalAmount,
-        discount: payment.discount,
         finalAmount: payment.amount3
       }
     });
 
   } catch (error) {
-    console.error('Payment Error Details:', {
-      error: error.message,
-      body: req.body,
-      user: req.user?._id
-    });
-    
     const message = error.code === 11000 
       ? 'Duplicate transaction ID' 
       : 'Payment processing failed';
-    
     res.status(500).json({ success: false, message });
   }
 });
 
+// ======================
+// Admin Routes
+// ======================
+const adminLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: 'Too many login attempts, please try again after 15 minutes'
+});
+
+app.get('/admin/check-registration', async (req, res) => {
+  try {
+    const canRegister = await Admin.canRegister();
+    res.json({ success: true, allowRegistration: canRegister });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Registration check failed' });
+  }
+});
+
+app.post('/admin/register', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    if (!email || !password) {
+      return res.status(400).json({ success: false, message: 'Credentials required' });
+    }
+
+    if (!await Admin.canRegister()) {
+      return res.status(403).json({ success: false, message: 'Admin registration closed' });
+    }
+
+    if (await Admin.findOne({ email })) {
+      return res.status(409).json({ success: false, message: 'Email exists' });
+    }
+
+    const admin = new Admin({ email, password });
+    await admin.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'Admin created',
+      admin: admin.toSafeObject()
+    });
+
+  } catch (error) {
+    const message = process.env.NODE_ENV === 'production'
+      ? 'Registration failed'
+      : error.message;
+    res.status(500).json({ success: false, message });
+  }
+});
+
+app.post('/admin/login', adminLimiter, async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const admin = await Admin.findOne({ email });
+    
+    if (!admin || !(await admin.comparePassword(password))) {
+      return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    }
+
+    const token = jwt.sign(
+      { adminId: admin._id, role: admin.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '2h' }
+    );
+
+    admin.lastLogin = Date.now();
+    await admin.save();
+
+    res.json({ success: true, token, admin: admin.toSafeObject() });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+app.get('/admin/users', adminAuth, async (req, res) => {
+  try {
+    const users = await User.find().select('-password');
+    res.json({ success: true, users });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch users' });
+  }
+});
+
+app.get('/validate', authMiddleware, (req, res) => {
+  res.json({ success: true });
+});
 // ======================
 // Error Handling
 // ======================
@@ -522,6 +430,7 @@ app.use((err, req, res, next) => {
     error: err.stack,
     body: req.body
   });
+  
   res.status(err.status || 500).json({ 
     success: false,
     message: process.env.NODE_ENV === 'production' 
@@ -533,8 +442,8 @@ app.use((err, req, res, next) => {
 // ======================
 // Server Initialization
 // ======================
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server & WS running on port ${PORT}`);
   console.log(`🏭 Environment: ${process.env.NODE_ENV || 'development'}`);
   
   process.on('unhandledRejection', err => {
