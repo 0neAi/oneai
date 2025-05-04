@@ -1,8 +1,9 @@
+const { adminAuth } = require('../../server'); 
 const router = require('express').Router();
 const Payment = require('../../models/Payment');
 const WebSocket = require('ws'); // Added WebSocket import
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', adminAuth, async (req, res) => {
   try {
     // Validate status input
     const validStatuses = ['Pending', 'Completed', 'Failed'];
