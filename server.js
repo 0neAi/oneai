@@ -11,7 +11,7 @@ const WebSocket = require('ws');
 const Payment = require('./models/Payment.js');
 const User = require('./models/User.js');
 const Admin = require('./models/Admin.js');
-
+const { adminAuth } = require('./middleware/auth');
 const app = express();
 const server = require('http').createServer(app);
 const PORT = process.env.PORT || 10000;
