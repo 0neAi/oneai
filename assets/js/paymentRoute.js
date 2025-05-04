@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const Payment = require('./Payment');
+const Payment = require('../models/Payment');
 const WebSocket = require('ws'); // Added WebSocket import
 
 router.put('/:id', async (req, res) => {
