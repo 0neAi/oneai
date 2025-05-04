@@ -268,7 +268,7 @@
         </div>
     </div>
 
-    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
@@ -417,14 +417,13 @@ axios.interceptors.response.use(
                     this.admin = { email: '', password: '' };
                 },
              // Add this new method
-                async updatePaymentStatus(payment) { // Remove extra whitespace
+                async updatePaymentStatus(payment) {
                       try {
                         const { data } = await axios.put(
                           `${API_BASE}/admin/payments/${payment._id}`,
                           { status: payment.status },
-                          { headers: { Authorization: `Bearer ${localStorage.adminToken}` } }
-                        );
-
+                         { headers: { Authorization: `Bearer ${localStorage.adminToken}` } }
+                    );
                         if (data.success) {
                             const index = this.payments.findIndex(p => p._id === payment._id);
                             this.payments.splice(index, 1, data.payment);
@@ -433,8 +432,7 @@ axios.interceptors.response.use(
                             if (this.selectedPayment?._id === payment._id) {
                                 this.selectedPayment = data.payment;
                             }
-                            
-                            this.updateStats();
+                           this.updateStats();
                         }
                     } catch (error) {
                         console.error('Status update failed:', error);
