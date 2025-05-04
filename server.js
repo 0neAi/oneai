@@ -71,13 +71,15 @@ app.use(helmet({
 }));
 
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' ? [
-    'https://0neai.github.io',
-    'https://oneai-wjox.onrender.com'
-  ] : [
-    'http://localhost:3000',
-    'https://oneai-wjox.onrender.com'
-  ],
+origin: process.env.NODE_ENV === 'production' ? [
+  'https://0neai.github.io',
+  'https://oneai-wjox.onrender.com',
+  'wss://oneai-wjox.onrender.com'
+] : [
+  'http://localhost:3000',
+  'https://oneai-wjox.onrender.com',
+  'ws://localhost:3000'
+],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: [
     'Content-Type',
