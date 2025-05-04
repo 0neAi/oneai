@@ -77,4 +77,4 @@ adminSchema.statics.register = async function(email, password) {
 };
 
 const Admin = mongoose.model('Admin', adminSchema);
-module.exports = mongoose.model('Payment', paymentSchema);
+module.exports = Admin;
