@@ -1,5 +1,4 @@
 require('dotenv').config();
-const paymentRoute = require('./assets/js/paymentRoute');
 const express = require('express');
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
@@ -8,10 +7,12 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const WebSocket = require('ws');
-const Payment = require('./models/Payment.js');
-const User = require('./models/User.js');
-const Admin = require('./models/Admin.js');
 const { adminAuth } = require('./middleware/auth');
+const paymentRoute = require('./assets/js/paymentRoute');
+const Payment = require('./models/Payment');
+const User = require('./models/User');
+const Admin = require('./models/Admin');
+
 const app = express();
 const server = require('http').createServer(app);
 const PORT = process.env.PORT || 10000;
@@ -25,7 +26,7 @@ app.set('wss', wss);
 
 wss.on('connection', (ws) => {
   ws.on('message', (message) => {
-  if (typeof message !== 'string') return;
+    if (typeof message !== 'string') return;
     try {
       const paymentData = JSON.parse(message);
       wss.clients.forEach(client => {
@@ -156,24 +157,6 @@ app.use((req, res, next) => {
 // ======================
 // Authentication Middlewares
 // ======================
-const adminAuth = async (req, res, next) => {
-  try {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
-    if (!token) throw new Error("No token provided");
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    if (decoded.exp * 1000 < Date.now()) {
-      throw new Error("Token expired");
-    }
-    const admin = await Admin.findById(decoded.adminId);
-    
-    if (!admin) throw new Error("Admin not found");
-    req.admin = admin;
-    next();
-  } catch (error) {
-    res.status(401).json({ success: false, message: 'Admin authorization failed' });
-  }
-};
-
 const authMiddleware = async (req, res, next) => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
@@ -409,6 +392,9 @@ app.post('/admin/login', adminLimiter, async (req, res) => {
   }
 });
 
+// Mount payment routes under admin path
+app.use('/admin/payments', adminAuth, paymentRoute);
+
 app.get('/admin/users', adminAuth, async (req, res) => {
   try {
     const users = await User.find().select('-password');
@@ -421,18 +407,7 @@ app.get('/admin/users', adminAuth, async (req, res) => {
 app.get('/validate', authMiddleware, (req, res) => {
   res.json({ success: true });
 });
-app.use('/admin/payments', adminAuth, paymentRoute); 
-// Add this in Admin Routes section
-app.get('/admin/payments', adminAuth, async (req, res) => {
-  try {
-    const payments = await Payment.find()
-      .populate('user', 'email phone')
-      .sort({ createdAt: -1 });
-    res.json({ success: true, payments });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to fetch payments' });
-  }
-});
+
 // ======================
 // Error Handling
 // ======================
@@ -463,5 +438,5 @@ server.listen(PORT, '0.0.0.0', () => {
     process.exit(1);
   });
 });
-// Add to server.js
-module.exports.adminAuth = adminAuth;
+
+module.exports = server;
