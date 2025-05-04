@@ -66,7 +66,7 @@ const paymentSchema = new mongoose.Schema({
     type: Number, 
     required: true,
     min: [100, 'Minimum 100 BDT'],
-    max: [30000, 'Maximum 50,000 BDT']
+    max: [30000, 'Maximum 30,000 BDT']
     
   },
   trxid: { 
@@ -80,11 +80,11 @@ const paymentSchema = new mongoose.Schema({
     enum: ['Pending', 'Completed', 'Failed'],
     default: 'Pending'
   },
-  createdAt: { 
+    createdAt: { 
     type: Date, 
     default: Date.now 
   }
-});
+}, { timestamps: true });
 
 // Add index for better query performance
 paymentSchema.index({ user: 1, createdAt: -1 });
