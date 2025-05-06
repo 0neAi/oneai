@@ -12,7 +12,7 @@ const paymentRoute = require('./assets/js/paymentRoute');
 const Payment = require('./models/Payment');
 const User = require('./models/User');
 const Admin = require('./models/Admin');
-const WebSocket = require('ws');
+const wss = new WebSocket.Server({ server });
 const app = express();
 const server = require('http').createServer(app);
 const PORT = process.env.PORT || 10000;
@@ -75,8 +75,7 @@ app.use(helmet({
 app.use(cors({
 origin: process.env.NODE_ENV === 'production' ? [
   'https://0neai.github.io',
-  'https://oneai-wjox.onrender.com',
-  'wss://oneai-wjox.onrender.com'
+  'https://oneai-wjox.onrender.com'
     ] : '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: [
