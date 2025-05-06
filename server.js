@@ -86,7 +86,7 @@ origin: process.env.NODE_ENV === 'production' ? [
   'https://0neai.github.io',
   'https://oneai-wjox.onrender.com',
   'wss://oneai-wjox.onrender.com'
-]
+    ] : '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: [
     'Content-Type',
