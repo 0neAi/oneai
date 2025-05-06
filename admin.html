@@ -356,9 +356,14 @@
                             password: this.admin.password
                         });
 
-                        if (data.success) {
-                            this.registerSuccess = 'Admin created! Redirecting...';
-                            setTimeout(() => window.location.reload(), 1500);
+                       if (data.success) {
+                          // Auto-login after registration
+                          localStorage.setItem('adminToken', data.admin.token);
+                          this.isAuthenticated = true;
+                          await this.loadData();
+                          this.initWebSocket();
+                          this.registerSuccess = 'Admin created! Redirecting...';
+                          setTimeout(() => window.location.reload(), 1500);
                         }
                     } catch (error) {
                         this.registerError = error.response?.data?.message || 'Registration failed';
@@ -381,33 +386,7 @@
                         this.loginError = error.response?.data?.message || 'Login failed';
                     }
                 },
-                async loadData() {
-                    try {
-                         console.log('Loading admin data...');
-                        const [usersRes, paymentsRes] = await Promise.all([
-                            axios.get(`${API_BASE}/admin/users`, {
-                                headers: { Authorization: `Bearer ${localStorage.adminToken}` }
-                            }),
-                            axios.get(`${API_BASE}/admin/payments`, {
-                                headers: { Authorization: `Bearer ${localStorage.adminToken}` }
-                            })
-                        ]);
-
-                        this.users = usersRes.data?.users || [];
-                        this.payments = paymentsRes.data?.payments || [];
-                        this.updateStats();
-                           console.log('Data loaded:', {
-                            users: this.users.length,
-                            payments: this.payments.length
-                        });
-                    } catch (error) {
-                        console.error('Loading data failed:', error);
-                        if (error.response?.status === 401) this.logout();
-                    } finally {
-                        this.loading = false;
-                    }
-                },
-                updateStats() {
+                                updateStats() {
                     this.stats = {
                         totalUsers: this.users.length,
                         totalPayments: this.payments.length,
@@ -432,6 +411,34 @@
                         day: 'numeric'
                     });
                 },
+                        async loadData() {
+                          try {
+                            console.log('Loading admin data...');
+                            const [usersRes, paymentsRes] = await Promise.all([
+                              axios.get(`${API_BASE}/admin/users`),
+                              axios.get(`${API_BASE}/admin/payments`)
+                            ]);
+                        
+                            // Handle empty responses
+                            this.users = usersRes.data?.users || [];
+                            this.payments = paymentsRes.data?.payments || [];
+                            
+                            // Add fallback for corrupted data
+                            if (!Array.isArray(this.users)) this.users = [];
+                            if (!Array.isArray(this.payments)) this.payments = [];
+                            
+                            this.updateStats();
+                          } catch (error) {
+                            console.error('Loading data failed:', error);
+                            if (error.response?.status === 401) {
+                              this.logout();
+                              alert('Session expired. Please login again.');
+                            }
+                          } finally {
+                            this.loading = false;
+                          }
+                        }
+
 
                                              initWebSocket() {
                     console.log('Initializing WebSocket connection...');
