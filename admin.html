@@ -358,13 +358,14 @@
 
                        if (data.success) {
                           // Auto-login after registration
-                          localStorage.setItem('adminToken', data.admin.token);
                           this.isAuthenticated = true;
                           await this.loadData();
                           this.initWebSocket();
                           this.registerSuccess = 'Admin created! Redirecting...';
-                          setTimeout(() => window.location.reload(), 1500);
-                        }
+                          setTimeout(() => {
+                            this.showInitialSetup = false; // Show login form
+                              }, 1500);
+                            }
                     } catch (error) {
                         this.registerError = error.response?.data?.message || 'Registration failed';
                     }
