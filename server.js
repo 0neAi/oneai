@@ -29,6 +29,7 @@ wss.on('connection', (ws, req) => {
       'https://0neai.github.io',
       'https://oneai-wjox.onrender.com'
     ];
+    // FIXED LINE BELOW
     if (!allowedOrigins.includes(req.headers.origin)) {
       console.log(`Blocked WebSocket connection from unauthorized origin: ${req.headers.origin}`);
       return ws.close(1008, 'Unauthorized origin');
@@ -97,7 +98,7 @@ let isReady = false;
 
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
-  useUnifiedTopology: true,
+  useUniedTopology: true,
   serverSelectionTimeoutMS: 5000
 })
 .then(() => console.log('✅ MongoDB connected successfully'))
