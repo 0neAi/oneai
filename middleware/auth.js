@@ -1,3 +1,6 @@
+const jwt = require('jsonwebtoken');
+const Admin = require('../models/Admin');
+
 exports.adminAuth = async (req, res, next) => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
@@ -5,21 +8,16 @@ exports.adminAuth = async (req, res, next) => {
     
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
-    if (decoded.exp * 1000 < Date.now()) {
-      throw new Error("Token expired");
-    }
-
     const admin = await Admin.findById(decoded.adminId);
     if (!admin) throw new Error("Admin not found");
     
     req.admin = admin;
-    next(); // Add this line to continue to the next middleware/route handler
+    next();
   } catch (error) {
     console.error('Admin Auth Error:', error);
     res.status(401).json({ 
       success: false, 
-      message: 'Admin authorization failed',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: 'Admin authorization failed'
     });
   }
 };
