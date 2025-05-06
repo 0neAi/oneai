@@ -158,7 +158,17 @@
             </div>
 
             <!-- Payment Details Modal -->
-         <div class="modal-body payment-details">
+  <!-- Payment Details Modal -->
+<div class="modal fade" id="paymentModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <!-- Add the existing modal-body content here -->
+            <div class="modal-header">
+                <h5 class="modal-title">Payment Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <!-- Your existing modal-body content -->
+                   <div class="modal-body payment-details">
   <div v-if="selectedPayment">
     <div class="row">
       <div class="col-md-6">
@@ -220,6 +230,9 @@
   </div>
 </div>
 
+        </div>
+    </div>
+</div>
             <!-- Users Table -->
             <div class="card shadow-sm">
                 <div class="card-header">
@@ -498,64 +511,36 @@
                   }));
                 }
               };
-
-
-            // WebSocket event handlers
-            this.ws.onmessage = (event) => {
-                try {
-                    const data = JSON.parse(event.data);
-                    if (data.type === 'payment-updated') {
-                        const index = this.payments.findIndex(p => p._id === data.payment._id);
-                        if (index > -1) {
-                            this.payments.splice(index, 1, data.payment);
-                        } else {
-                            this.payments.push(data.payment);
-                        }
-                        this.updateStats();
-                    }
-                } catch (error) {
-                    console.error('WebSocket message error:', error);
+    // WebSocket event handlers
+    this.ws.onmessage = (event) => {
+        try {
+            const data = JSON.parse(event.data);
+            if (data.type === 'payment-updated') {
+                const updatedPayment = {
+                    ...data.payment,
+                    user: data.payment.user || { email: 'N/A', phone: 'N/A' }
+                };
+                const index = this.payments.findIndex(p => p._id === updatedPayment._id);
+                if (index > -1) {
+                    this.payments.splice(index, 1, updatedPayment);
+                } else {
+                    this.payments.unshift(updatedPayment);
                 }
-            };
-
-            this.ws.onerror = (error) => {
-                console.error('WebSocket error:', error);
-            };
-
-            this.ws.onclose = (event) => {
-                console.log('WebSocket connection closed:', event.reason);
-            };
-        },
-        beforeUnmount() {
-            // Cleanup WebSocket connection
-            if (this.ws) {
-                this.ws.close();
+                this.updateStats();
             }
+        } catch (error) {
+            console.error('WebSocket message error:', error);
         }
     };
-      // Update message handler
-  this.ws.onmessage = (event) => {
-    try {
-      const data = JSON.parse(event.data);
-      if (data.type === 'payment-updated') {
-        const updatedPayment = {
-          ...data.payment,
-          user: data.payment.user || { email: 'N/A', phone: 'N/A' }
-        };
-        const index = this.payments.findIndex(p => p._id === updatedPayment._id);
-        if (index > -1) {
-          this.payments.splice(index, 1, updatedPayment);
-        } else {
-          this.payments.unshift(updatedPayment);
-        }
-        this.updateStats();
-      }
-    } catch (error) {
-      console.error('WebSocket message error:', error);
-    }
-  };
-},
 
+    this.ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+    };
+
+    this.ws.onclose = (event) => {
+        console.log('WebSocket connection closed:', event.reason);
+    };
+},
     // Initialize Vue application
     Vue.createApp(AdminApp).mount('#admin-app');
 </script>
