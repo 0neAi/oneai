@@ -21,34 +21,32 @@ const jwtSecret = process.env.JWT_SECRET || 'default_secret_use_env_var_in_prod'
 // ======================
 // WebSocket Configuration
 // ======================
+// In server.js WebSocket handler
 wss.on('connection', (ws, req) => {
-  if (process.env.NODE_ENV === 'production') {
-    if (![
-      'https://0neai.github.io',
-      'https://oneai-wjox.onrender.com'
-    ].includes(req.headers.origin)) {
-      console.log(`Blocked WS from: ${req.headers.origin}`);
-      return ws.close(1008, 'Unauthorized origin');
-    }
-  }
+  let authenticated = false;
 
-  // Add authentication handler
   ws.on('message', (message) => {
     try {
       const data = JSON.parse(message);
       if (data.type === 'admin-auth') {
         jwt.verify(data.token, process.env.JWT_SECRET, (err, decoded) => {
-          if (err || decoded.role !== 'admin') {
+          if (!err && decoded.role === 'admin') {
+            authenticated = true;
+          } else {
             ws.close(1008, 'Authentication failed');
           }
         });
       }
+      
+      // Only process messages if authenticated
+      if (!authenticated) return;
+      
+      // Rest of message handling
     } catch (error) {
       ws.close(1008, 'Invalid message format');
     }
   });
 });
-app.set('wss', wss);
 // ======================
 // Environment Validation
 // ======================
