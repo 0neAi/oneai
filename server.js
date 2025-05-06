@@ -6,7 +6,6 @@ const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const WebSocket = require('ws');
 const { adminAuth } = require('./middleware/auth');
 const paymentRoute = require('./assets/js/paymentRoute');
 const Payment = require('./models/Payment');
