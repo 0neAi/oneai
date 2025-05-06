@@ -21,41 +21,31 @@ const jwtSecret = process.env.JWT_SECRET || 'default_secret_use_env_var_in_prod'
 // ======================
 // WebSocket Configuration
 // ======================
-const wss = new WebSocket.Server({ server });
-app.set('wss', wss);
-
 wss.on('connection', (ws, req) => {
-  // Verify origin in production
   if (process.env.NODE_ENV === 'production') {
-    const origin = req.headers.origin;
     if (![
       'https://0neai.github.io',
       'https://oneai-wjox.onrender.com'
-    ].includes(origin)) {
-      console.log(`Blocked WebSocket connection from unauthorized origin: ${origin}`);
-      return ws.close();
+    ].includes(req.headers.origin)) {
+      console.log(`Blocked WS from: ${req.headers.origin}`);
+      return ws.close(1008, 'Unauthorized origin');
     }
   }
 
+  // Add authentication handler
   ws.on('message', (message) => {
-    if (typeof message !== 'string') return;
     try {
-      const paymentData = JSON.parse(message);
-      wss.clients.forEach(client => {
-        if (client.readyState === WebSocket.OPEN) {
-          client.send(JSON.stringify({
-            type: 'payment-updated',
-            payment: paymentData
-          }));
-        }
-      });
+      const data = JSON.parse(message);
+      if (data.type === 'admin-auth') {
+        jwt.verify(data.token, process.env.JWT_SECRET, (err, decoded) => {
+          if (err || decoded.role !== 'admin') {
+            ws.close(1008, 'Authentication failed');
+          }
+        });
+      }
     } catch (error) {
-      console.error('WebSocket message error:', error);
+      ws.close(1008, 'Invalid message format');
     }
-  });
-
-  ws.on('error', (error) => {
-    console.error('WebSocket connection error:', error);
   });
 });
 // ======================
