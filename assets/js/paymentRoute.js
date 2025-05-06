@@ -81,6 +81,25 @@ router.put('/:id', adminAuth, async (req, res) => {
       errorType: error.name
     });
   }
+});router.get('/', adminAuth, async (req, res) => {
+  try {
+    const payments = await Payment.find()
+      .populate('user', 'email phone')
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      payments: payments.map(payment => ({
+        ...payment.toObject(),
+        user: payment.user || { email: 'N/A', phone: 'N/A' }
+      }))
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch payments'
+    });
+  }
 });
 
 module.exports = router;
