@@ -158,77 +158,67 @@
             </div>
 
             <!-- Payment Details Modal -->
-            <div class="modal fade" id="paymentModal" tabindex="-1">
-                <div class="modal-dialog modal-lg">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">Payment Details</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                        </div>
-                        <div class="modal-body payment-details">
-                            <div v-if="selectedPayment">
-                                <div class="detail-item">
-                                    <strong>Payment ID:</strong>
-                                    <span>{{ selectedPayment._id }}</span>
-                                </div>
-                                <div class="detail-item">
-                                    <strong>User ID:</strong>
-                                    <span>{{ selectedPayment.user }}</span>
-                                </div>
-                                <div class="detail-item">
-                                    <strong>Company:</strong>
-                                    <span>{{ selectedPayment.company }}</span>
-                                </div>
-                                <div class="detail-item">
-                                    <strong>Phone:</strong>
-                                    <span>{{ selectedPayment.phone }}</span>
-                                </div>
-                                <div class="detail-item">
-                                    <strong>Service Type:</strong>
-                                    <span>{{ selectedPayment.serviceType }}</span>
-                                </div>
-                                <div class="detail-item">
-                                    <strong>Method:</strong>
-                                    <span>{{ selectedPayment.method }}</span>
-                                </div>
-                                <div class="detail-item">
-                                    <strong>TRX ID:</strong>
-                                    <span>{{ selectedPayment.trxid }}</span>
-                                </div>
-                                <div class="detail-item">
-                                    <strong>Status:</strong>
-                                    <span :class="statusClass(selectedPayment.status)">
-                                        {{ selectedPayment.status }}
-                                    </span>
-                                </div>
-                                
-                                <h6 class="mt-4">Consignments</h6>
-                                <div v-for="(consignment, index) in selectedPayment.consignments" 
-                                     :key="index"
-                                     class="consignment-card">
-                                    <div class="detail-item">
-                                        <strong>Name:</strong>
-                                        <span>{{ consignment.name }}</span>
-                                    </div>
-                                    <div class="detail-item">
-                                        <strong>Phone:</strong>
-                                        <span>{{ consignment.phone }}</span>
-                                    </div>
-                                    <div class="detail-item">
-                                        <strong>Original Amount:</strong>
-                                        <span>৳{{ consignment.amount1 }}</span>
-                                    </div>
-                                    <div class="detail-item">
-                                        <strong>Updated Amount:</strong>
-                                        <span>৳{{ consignment.amount2 }}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+         <div class="modal-body payment-details">
+  <div v-if="selectedPayment">
+    <div class="row">
+      <div class="col-md-6">
+        <div class="detail-item">
+          <strong>Transaction ID:</strong>
+          <span>{{ selectedPayment.trxid }}</span>
+        </div>
+        <div class="detail-item">
+          <strong>User Email:</strong>
+          <span>{{ selectedPayment.user?.email || 'N/A' }}</span>
+        </div>
+        <div class="detail-item">
+          <strong>User Phone:</strong>
+          <span>{{ selectedPayment.user?.phone || 'N/A' }}</span>
+        </div>
+        <div class="detail-item">
+          <strong>Service Type:</strong>
+          <span>{{ selectedPayment.serviceType }}</span>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="detail-item">
+          <strong>Company:</strong>
+          <span>{{ selectedPayment.company }}</span>
+        </div>
+        <div class="detail-item">
+          <strong>Payment Method:</strong>
+          <span>{{ selectedPayment.method }}</span>
+        </div>
+        <div class="detail-item">
+          <strong>Final Amount:</strong>
+          <span>৳{{ selectedPayment.amount3 }}</span>
+        </div>
+        <div class="detail-item">
+          <strong>Transaction Date:</strong>
+          <span>{{ formatDate(selectedPayment.createdAt) }}</span>
+        </div>
+      </div>
+    </div>
 
+    <div class="mt-4">
+      <h5>Consignment Details</h5>
+      <div class="row">
+        <div v-for="(consignment, index) in selectedPayment.consignments" 
+             :key="index"
+             class="col-md-6 mb-3">
+          <div class="card">
+            <div class="card-body">
+              <h6 class="card-title">Consignment #{{ index + 1 }}</h6>
+              <p class="mb-1"><strong>Name:</strong> {{ consignment.name }}</p>
+              <p class="mb-1"><strong>Phone:</strong> {{ consignment.phone }}</p>
+              <p class="mb-1"><strong>Original Amount:</strong> ৳{{ consignment.amount1 }}</p>
+              <p class="mb-0"><strong>Updated Amount:</strong> ৳{{ consignment.amount2 }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
             <!-- Users Table -->
             <div class="card shadow-sm">
@@ -372,30 +362,39 @@
                         || 'Invalid credentials';
                 }
             },
-            async loadData() {
-                try {
-                    const [usersRes, paymentsRes] = await Promise.all([
-                        axios.get(`${API_BASE}/admin/users`, {
-                            headers: { 
-                                Authorization: `Bearer ${localStorage.adminToken}` 
-                            }
-                        }),
-                        axios.get(`${API_BASE}/admin/payments`, {
-                            headers: { 
-                                Authorization: `Bearer ${localStorage.adminToken}` 
-                            }
-                        })
-                    ]);
+     async loadData() {
+  try {
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+      this.logout();
+      return;
+    }
 
-                    this.users = usersRes.data.users;
-                    this.payments = paymentsRes.data.payments;
-                    this.updateStats();
-                } catch (error) {
-                    if (error.response && error.response.status === 401) {
-                        this.logout();
-                    }
-                }
-            },
+    const [usersRes, paymentsRes] = await Promise.all([
+      axios.get(`${API_BASE}/admin/users`, {
+        headers: { Authorization: `Bearer ${token}` }
+      }),
+      axios.get(`${API_BASE}/admin/payments`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+    ]);
+
+    this.users = usersRes.data.users;
+    this.payments = paymentsRes.data.payments.map(p => ({
+      ...p,
+      user: p.user || { email: 'N/A', phone: 'N/A' }
+    }));
+    this.updateStats();
+  } catch (error) {
+    console.error('Error loading data:', error);
+    if (error.response?.status === 401) {
+      this.logout();
+    } else {
+      alert('Failed to load data. Please try again.');
+    }
+  }
+},
+
             updateStats() {
                 this.stats = {
                     totalUsers: this.users.length,
@@ -468,7 +467,6 @@
             this.paymentModal = new bootstrap.Modal(
                 document.getElementById('paymentModal')
             );
-
             // Check initial setup state
             await this.checkInitialSetup();
 
@@ -490,6 +488,17 @@
 
             // Initialize WebSocket connection
             this.ws = new WebSocket('wss://oneai-wjox.onrender.com');
+              // Authenticate WebSocket connection
+              this.ws.onopen = () => {
+                const token = localStorage.getItem('adminToken');
+                if (token) {
+                  this.ws.send(JSON.stringify({
+                    type: 'admin-auth',
+                    token: token
+                  }));
+                }
+              };
+
 
             // WebSocket event handlers
             this.ws.onmessage = (event) => {
@@ -524,6 +533,28 @@
             }
         }
     };
+      // Update message handler
+  this.ws.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data);
+      if (data.type === 'payment-updated') {
+        const updatedPayment = {
+          ...data.payment,
+          user: data.payment.user || { email: 'N/A', phone: 'N/A' }
+        };
+        const index = this.payments.findIndex(p => p._id === updatedPayment._id);
+        if (index > -1) {
+          this.payments.splice(index, 1, updatedPayment);
+        } else {
+          this.payments.unshift(updatedPayment);
+        }
+        this.updateStats();
+      }
+    } catch (error) {
+      console.error('WebSocket message error:', error);
+    }
+  };
+},
 
     // Initialize Vue application
     Vue.createApp(AdminApp).mount('#admin-app');
