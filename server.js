@@ -39,8 +39,7 @@ wss.on('connection', (ws, req) => {
 // Change this in WebSocket handler
 if (err || !['superadmin', 'moderator'].includes(decoded.role)) {
   ws.close(1008, 'Authentication failed');
-}
-    } catch (error) {
+ } catch (error) {
       ws.close(1008, 'Invalid message format');
     }
   });
