@@ -6,46 +6,53 @@ const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const WebSocket = require('ws');
 const { adminAuth } = require('./middleware/auth');
 const paymentRoute = require('./assets/js/paymentRoute');
 const Payment = require('./models/Payment');
 const User = require('./models/User');
 const Admin = require('./models/Admin');
-const wss = new WebSocket.Server({ server });
+
 const app = express();
-const server = require('http').createServer(app);
 const PORT = process.env.PORT || 10000;
 const jwtSecret = process.env.JWT_SECRET || 'default_secret_use_env_var_in_prod';
-
+const server = require('http').createServer(app);
+const wss = new WebSocket.Server({ server });
 // ======================
 // WebSocket Configuration
 // ======================
 // In server.js WebSocket handler
+// Configure WebSocket
 wss.on('connection', (ws, req) => {
-  let authenticated = false;
+  if (process.env.NODE_ENV === 'production') {
+    const allowedOrigins = [
+      'https://0neai.github.io',
+      'https://oneai-wjox.onrender.com'
+    ];
+    if (!allowedOrigins.includes(req.headers.origin)) {
+      console.log(`Blocked WebSocket connection from unauthorized origin: ${req.headers.origin}`);
+      return ws.close(1008, 'Unauthorized origin');
+    }
+  }
 
+  // Authentication handler
   ws.on('message', (message) => {
     try {
       const data = JSON.parse(message);
       if (data.type === 'admin-auth') {
-        jwt.verify(data.token, process.env.JWT_SECRET, (err, decoded) => {
-          if (!err && decoded.role === 'admin') {
-            authenticated = true;
-          } else {
+        jwt.verify(data.token, jwtSecret, (err, decoded) => {
+          if (err || decoded.role !== 'admin') {
             ws.close(1008, 'Authentication failed');
           }
         });
       }
-      
-      // Only process messages if authenticated
-      if (!authenticated) return;
-      
-      // Rest of message handling
     } catch (error) {
       ws.close(1008, 'Invalid message format');
     }
   });
 });
+// Make WebSocket server available to routes
+app.set('wss', wss);
 // ======================
 // Environment Validation
 // ======================
@@ -70,22 +77,13 @@ app.use(helmet({
 }));
 
 app.use(cors({
-origin: process.env.NODE_ENV === 'production' ? [
-  'https://0neai.github.io',
-  'https://oneai-wjox.onrender.com'
-    ] : '*',
+  origin: process.env.NODE_ENV === 'production'
+    ? ['https://0neai.github.io', 'https://oneai-wjox.onrender.com']
+    : '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: [
-    'Content-Type',
-    'Authorization',
-    'X-User-ID',
-    'X-Request-Source'
-  ],
-  credentials: true,
-  optionsSuccessStatus: 200,
-  exposedHeaders: ['Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
 }));
-
 app.use(express.json({ limit: '10kb' }));
 
 // ======================
