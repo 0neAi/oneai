@@ -65,10 +65,13 @@ adminSchema.statics.register = async function(email, password) {
     throw new Error('Admin registration is closed');
   }
 
+  const normalizedEmail = email.trim().toLowerCase();
+  
   const admin = new this({
-    email,
+    email: normalizedEmail,
     password
   });
+
 
   await admin.save();
   return admin.toSafeObject();
