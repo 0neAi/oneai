@@ -439,10 +439,11 @@
 
                     this.ws.onopen = () => {
                         console.log('WebSocket connected');
-                        this.ws.send(JSON.stringify({
-                            type: 'auth',
-                            token: localStorage.adminToken
-                        }));
+                    this.ws.send(JSON.stringify({
+                        type: "admin-auth",  // Changed from 'auth' to match server expectations
+                        token: localStorage.adminToken,
+                        role: "admin"  // Explicit role declaration
+                      }));
                     };
 
                     this.ws.onmessage = (event) => {
@@ -478,8 +479,13 @@
                         console.log('Updating payment status:', payment._id, newStatus);
                         
                         const { data } = await axios.put(
-                            `${API_BASE}/admin/payments/${payment._id}`,
-                            { status: newStatus }
+                          `${API_BASE}/admin/payments/${payment._id}`,
+                          { status: newStatus },
+                          {  // Add headers explicitly
+                            headers: { 
+                              Authorization: `Bearer ${localStorage.adminToken}` 
+                            }
+                          }
                         );
 
                         const index = this.payments.findIndex(p => p._id === payment._id);
