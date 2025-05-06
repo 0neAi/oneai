@@ -36,16 +36,10 @@ wss.on('connection', (ws, req) => {
   }
 
   // Authentication handler
-  ws.on('message', (message) => {
-    try {
-      const data = JSON.parse(message);
-      if (data.type === 'admin-auth') {
-        jwt.verify(data.token, jwtSecret, (err, decoded) => {
-          if (err || decoded.role !== 'admin') {
-            ws.close(1008, 'Authentication failed');
-          }
-        });
-      }
+// Change this in WebSocket handler
+if (err || !['superadmin', 'moderator'].includes(decoded.role)) {
+  ws.close(1008, 'Authentication failed');
+}
     } catch (error) {
       ws.close(1008, 'Invalid message format');
     }
