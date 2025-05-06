@@ -11,7 +11,7 @@ const { adminAuth } = require('./middleware/auth');
 const paymentRoute = require('./assets/js/paymentRoute');
 const Payment = require('./models/Payment');
 const User = require('./models/User');
-const Admin = require('../models/Admin');
+const Admin = require('./models/Admin');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
