@@ -487,15 +487,17 @@
                         || error.message));
                 }
             },
+// Ensure modal initialization
             showPaymentDetails(payment) {
                 this.selectedPayment = payment;
                 if (!this.paymentModal) {
                     this.paymentModal = new bootstrap.Modal(
-                        document.getElementById('paymentModal')
+                        document.getElementById('paymentModal'),
+                        { keyboard: false }
                     );
                 }
-                this.paymentModal.show();
-            }
+            this.paymentModal.show();
+}
         },
         async mounted() {
             // Initialize Bootstrap modal
