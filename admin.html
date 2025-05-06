@@ -13,35 +13,14 @@
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
-        .status-badge {
-            padding: 0.25rem 0.6rem;
-            border-radius: 20px;
-            font-size: 0.85em;
-        }
-        .bg-pending { background-color: #ffc107; color: #000; }
-        .bg-completed { background-color: #198754; color: #fff; }
-        .bg-failed { background-color: #dc3545; color: #fff; }
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255,255,255,0.9);
-            z-index: 9999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+        .countdown-expired { color: #dc3545; }
+        .bg-success { background-color: #198754!important; }
+        .bg-warning { background-color: #ffc107!important; }
+        .bg-danger { background-color: #dc3545!important; }
     </style>
 </head>
 <body>
     <div id="admin-app" class="container py-4">
-        <!-- Loading Overlay -->
-        <div v-if="loading" class="loading-overlay">
-            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;"></div>
-        </div>
-
         <!-- Initial Setup -->
         <div v-if="showInitialSetup" class="text-center py-5">
             <h1 class="mb-4">Admin Setup</h1>
@@ -138,7 +117,7 @@
                 </div>
             </div>
 
-            <!-- Payments Section -->
+               <!-- Payments Section -->
             <div class="card shadow-sm mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Recent Payments</h5>
@@ -158,20 +137,19 @@
                                 <div style="cursor: pointer;" @click="showPaymentDetails(payment)">
                                     <h6 class="mb-1">{{ payment.trxid }}</h6>
                                     <small class="text-muted">
-                                        {{ (payment.user && payment.user.email) || 'N/A' }} | 
-                                        {{ formatDate(payment.createdAt) }}
+                                        {{ (payment.user && payment.user.email) || 'N/A' }} | {{ formatDate(payment.createdAt) }}
                                     </small>
                                 </div>
                                 <div class="text-end">
-                                    <select class="form-select form-select-sm"
+                                    <select class="form-select form-select-sm status-select"
                                             :class="statusClass(payment.status)"
                                             v-model="payment.status"
-                                            @change="updatePaymentStatus(payment, $event)">
+                                            @change="updatePaymentStatus(payment)">
                                         <option value="Pending">Pending</option>
                                         <option value="Completed">Completed</option>
                                         <option value="Failed">Failed</option>
                                     </select>
-                                    <div class="mt-1">৳{{ payment.amount3?.toFixed(2) || '0.00' }}</div>
+                                    <div class="mt-1">৳{{ payment.amount3 }}</div>
                                 </div>
                             </div>
                         </div>
@@ -187,48 +165,62 @@
                             <h5 class="modal-title">Payment Details</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                         </div>
-                        <div class="modal-body">
+                        <div class="modal-body payment-details">
                             <div v-if="selectedPayment">
-                                <div class="row mb-3">
-                                    <div class="col-md-4">
-                                        <strong>Payment ID:</strong>
-                                        <p>{{ selectedPayment._id }}</p>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <strong>Status:</strong>
-                                        <span class="status-badge" :class="statusClass(selectedPayment.status)">
-                                            {{ selectedPayment.status }}
-                                        </span>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <strong>Amount:</strong>
-                                        <p>৳{{ selectedPayment.amount3?.toFixed(2) || '0.00' }}</p>
-                                    </div>
+                                <div class="detail-item">
+                                    <strong>Payment ID:</strong>
+                                    <span>{{ selectedPayment._id }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <strong>User ID:</strong>
+                                    <span>{{ selectedPayment.user }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Company:</strong>
+                                    <span>{{ selectedPayment.company }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Phone:</strong>
+                                    <span>{{ selectedPayment.phone }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Service Type:</strong>
+                                    <span>{{ selectedPayment.serviceType }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Method:</strong>
+                                    <span>{{ selectedPayment.method }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <strong>TRX ID:</strong>
+                                    <span>{{ selectedPayment.trxid }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Status:</strong>
+                                    <span :class="statusClass(selectedPayment.status)">
+                                        {{ selectedPayment.status }}
+                                    </span>
                                 </div>
                                 
                                 <h6 class="mt-4">Consignments</h6>
                                 <div v-for="(consignment, index) in selectedPayment.consignments" 
                                      :key="index"
-                                     class="card mb-2">
-                                    <div class="card-body">
-                                        <div class="row">
-                                            <div class="col-md-3">
-                                                <strong>Name:</strong>
-                                                <p>{{ consignment.name }}</p>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <strong>Phone:</strong>
-                                                <p>{{ consignment.phone }}</p>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <strong>Original Amount:</strong>
-                                                <p>৳{{ consignment.amount1 }}</p>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <strong>Updated Amount:</strong>
-                                                <p>৳{{ consignment.amount2 }}</p>
-                                            </div>
-                                        </div>
+                                     class="consignment-card">
+                                    <div class="detail-item">
+                                        <strong>Name:</strong>
+                                        <span>{{ consignment.name }}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <strong>Phone:</strong>
+                                        <span>{{ consignment.phone }}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <strong>Original Amount:</strong>
+                                        <span>৳{{ consignment.amount1 }}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <strong>Updated Amount:</strong>
+                                        <span>৳{{ consignment.amount2 }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -236,6 +228,7 @@
                     </div>
                 </div>
             </div>
+
 
             <!-- Users Table -->
             <div class="card shadow-sm">
@@ -251,6 +244,7 @@
                                     <th>Phone</th>
                                     <th>Email</th>
                                     <th>Registered</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -259,6 +253,12 @@
                                     <td>{{ user.phone }}</td>
                                     <td>{{ user.email }}</td>
                                     <td>{{ formatDate(user.createdAt) }}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary"
+                                                @click="viewUserDetails(user._id)">
+                                            Details
+                                        </button>
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
@@ -267,277 +267,266 @@
             </div>
         </div>
     </div>
-
-    <script src="/assets/js/polyfill.min.js"></script>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        const API_BASE = 'https://oneai-wjox.onrender.com';
-           // Axios configuration with interceptors
-        axios.interceptors.request.use(config => {
-            const token = localStorage.getItem('adminToken');
-            if (token) {
-                config.headers.Authorization = `Bearer ${token}`;
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es2015%2Ces2016%2Ces2017%2Ces2018%2Ces2019%2Ces2020"></script>
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const API_BASE = 'https://oneai-wjox.onrender.com';
+    
+    // Configure Axios interceptors
+    axios.interceptors.response.use(
+        function(response) {
+            return response;
+        },
+        function(error) {
+            if (error.response && error.response.status === 401) {
+                localStorage.removeItem('adminToken');
+                window.location.reload();
             }
-            return config;
-        });
-        // Configure Axios
-        axios.interceptors.response.use(
-            response => response,
-            error => {
-                if (error.response?.status === 401) {
-                    localStorage.removeItem('adminToken');
-                    window.location.reload();
-                }
-                return Promise.reject(error);
+            return Promise.reject(error);
+        }
+    );
+
+    const AdminApp = {
+        data() {
+            return {
+                showInitialSetup: false,
+                isAuthenticated: false,
+                admin: { email: '', password: '' },
+                loginError: '',
+                registerError: '',
+                registerSuccess: '',
+                users: [],
+                payments: [],
+                stats: { 
+                    totalUsers: 0, 
+                    totalPayments: 0, 
+                    pendingPayments: 0, 
+                    completedPayments: 0 
+                },
+                paymentFilter: 'all',
+                selectedPayment: null,
+                paymentModal: null,
+                ws: null
+            };
+        },
+        computed: {
+            filteredPayments() {
+                return this.paymentFilter === 'all' 
+                    ? this.payments 
+                    : this.payments.filter(p => p.status === this.paymentFilter);
             }
-        );
-
-        const AdminApp = {
-            data() {
-                return {
-                    loading: true,
-                    showInitialSetup: false,
-                    isAuthenticated: false,
-                    admin: { email: '', password: '' },
-                    loginError: '',
-                    registerError: '',
-                    registerSuccess: '',
-                    users: [],
-                    payments: [],
-                    stats: { 
-                        totalUsers: 0, 
-                        totalPayments: 0, 
-                        pendingPayments: 0, 
-                        completedPayments: 0 
-                    },
-                    paymentFilter: 'all',
-                    selectedPayment: null,
-                    paymentModal: null,
-                    ws: null
-                };
-            },
-            computed: {
-                filteredPayments() {
-                    return this.paymentFilter === 'all' 
-                        ? this.payments 
-                        : this.payments.filter(p => p.status === this.paymentFilter);
-                }
-            },
-            methods: {
-                async checkInitialSetup() {
-                    try {
-                        const { data } = await axios.get(`${API_BASE}/admin/check-registration`);
-                        this.showInitialSetup = data.allowRegistration;
-                          console.log('Initial setup check:', data.allowRegistration);
-                    } catch (error) {
-                        console.error('Setup check failed:', error);
-                        this.showInitialSetup = true;
-                    }
-                },
-                async registerAdmin() {
-                    this.registerError = '';
-                    this.registerSuccess = '';
-                    
-                    if (!this.validateEmail(this.admin.email)) {
-                        this.registerError = 'Invalid email format';
-                        return;
-                    }
-                    
-                    if (this.admin.password.length < 12) {
-                        this.registerError = 'Password must be at least 12 characters';
-                        return;
-                    }
-
-                    try {
-                        const { data } = await axios.post(`${API_BASE}/admin/register`, {
-                            email: this.admin.email.trim(),
-                            password: this.admin.password
-                        });
-
-                       if (data.success) {
-                          // Auto-login after registration
-                          this.isAuthenticated = true;
-                          await this.loadData();
-                          this.initWebSocket();
-                          this.registerSuccess = 'Admin created! Redirecting...';
-                          setTimeout(() => {
-                            this.showInitialSetup = false; // Show login form
-                              }, 1500);
-                            }
-                    } catch (error) {
-                        this.registerError = error.response?.data?.message || 'Registration failed';
-                    }
-                },
-                validateEmail(email) {
-                    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-                },
-                async login() {
-                    this.loginError = '';
-                    try {
-                        const { data } = await axios.post(`${API_BASE}/admin/login`, this.admin);
-                        console.log('Login response:', data);
-                        localStorage.setItem('adminToken', data.token);
-                        this.isAuthenticated = true;
-                        await this.loadData();
-                        this.initWebSocket();
-                    } catch (error) {
-                        console.error('Login error:', error);
-                        this.loginError = error.response?.data?.message || 'Login failed';
-                    }
-                },
-                                updateStats() {
-                    this.stats = {
-                        totalUsers: this.users.length,
-                        totalPayments: this.payments.length,
-                        pendingPayments: this.payments.filter(p => p.status === 'Pending').length,
-                        completedPayments: this.payments.filter(p => p.status === 'Completed').length
-                    };
-                },
-                statusClass(status) {
-                    return {
-                        'Pending': 'bg-pending',
-                        'Completed': 'bg-completed',
-                        'Failed': 'bg-failed'
-                    }[status] || '';
-                },
-                shortId(id) {
-                    return id ? `${id.substring(0, 6)}...` : '';
-                },
-                formatDate(dateString) {
-                    return new Date(dateString).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric'
-                    });
-                },
-                        async loadData() {
-                          try {
-                            console.log('Loading admin data...');
-                            const [usersRes, paymentsRes] = await Promise.all([
-                              axios.get(`${API_BASE}/admin/users`),
-                              axios.get(`${API_BASE}/admin/payments`)
-                            ]);
-                        
-                            // Handle empty responses
-                            this.users = usersRes.data?.users || [];
-                            this.payments = paymentsRes.data?.payments || [];
-                            
-                            // Add fallback for corrupted data
-                            if (!Array.isArray(this.users)) this.users = [];
-                            if (!Array.isArray(this.payments)) this.payments = [];
-                            
-                            this.updateStats();
-                          } catch (error) {
-                            console.error('Loading data failed:', error);
-                            if (error.response?.status === 401) {
-                              this.logout();
-                              alert('Session expired. Please login again.');
-                            }
-                          } finally {
-                            this.loading = false;
-                          }
-                        }
-
-
-                                             initWebSocket() {
-                    console.log('Initializing WebSocket connection...');
-                    this.ws = new WebSocket('wss://oneai-wjox.onrender.com');
-
-                    this.ws.onopen = () => {
-                        console.log('WebSocket connected');
-                    this.ws.send(JSON.stringify({
-                        type: "admin-auth",  // Changed from 'auth' to match server expectations
-                        token: localStorage.adminToken,
-                        role: "admin"  // Explicit role declaration
-                      }));
-                    };
-
-                    this.ws.onmessage = (event) => {
-                        try {
-                            const data = JSON.parse(event.data);
-                            console.log('WebSocket message:', data);
-                            
-                            if (data.type === 'payment-updated') {
-                                const index = this.payments.findIndex(p => p._id === data.payment._id);
-                                if (index > -1) {
-                                    this.payments.splice(index, 1, data.payment);
-                                } else {
-                                    this.payments.push(data.payment);
-                                }
-                                this.updateStats();
-                            }
-                        } catch (error) {
-                            console.error('WebSocket parse error:', error);
-                        }
-                    };
-
-                    this.ws.onerror = (error) => {
-                        console.error('WebSocket error:', error);
-                    };
-
-                    this.ws.onclose = () => {
-                        console.log('WebSocket connection closed');
-                    };
-                },
-                async updatePaymentStatus(payment, event) {
-                    try {
-                        const newStatus = event.target.value;
-                        console.log('Updating payment status:', payment._id, newStatus);
-                        
-                        const { data } = await axios.put(
-                          `${API_BASE}/admin/payments/${payment._id}`,
-                          { status: newStatus },
-                          {  // Add headers explicitly
-                            headers: { 
-                              Authorization: `Bearer ${localStorage.adminToken}` 
-                            }
-                          }
-                        );
-
-                        const index = this.payments.findIndex(p => p._id === payment._id);
-                        if (index > -1) this.payments.splice(index, 1, data.payment);
-                        this.updateStats();
-                        
-                    } catch (error) {
-                        console.error('Update error:', error);
-                        alert(`Error: ${error.response?.data?.message || error.message}`);
-                    }
-                },
-
-                showPaymentDetails(payment) {
-                    this.selectedPayment = payment;
-                    this.paymentModal = new bootstrap.Modal('#paymentModal');
-                    this.paymentModal.show();
-                },
-                   logout() {
-                    localStorage.removeItem('adminToken');
-                    this.isAuthenticated = false;
-                    this.admin = { email: '', password: '' };
-                    if (this.ws) this.ws.close();
-                },
-
-            async mounted() {
+        },
+        methods: {
+            async checkInitialSetup() {
                 try {
-                    console.log('Admin app mounted');
-                    await this.checkInitialSetup();
-                    
-                    if (localStorage.adminToken) {
-                        console.log('Existing token found');
-                        await this.loadData();
-                        this.initWebSocket();
+                    const { data } = await axios.get(`${API_BASE}/admin/check-registration`);
+                    this.showInitialSetup = data.allowRegistration;
+                } catch (error) {
+                    console.error('Setup check failed:', error);
+                    this.showInitialSetup = true;
+                }
+            },
+            async registerAdmin() {
+                this.registerError = '';
+                this.registerSuccess = '';
+                
+                if (!this.validateEmail(this.admin.email)) {
+                    this.registerError = 'Invalid email format';
+                    return;
+                }
+                
+                if (this.admin.password.length < 12) {
+                    this.registerError = 'Password must be at least 12 characters';
+                    return;
+                }
+
+                try {
+                    const { data } = await axios.post(`${API_BASE}/admin/register`, {
+                        email: this.admin.email.trim(),
+                        password: this.admin.password
+                    });
+
+                    if (data.success) {
+                        this.registerSuccess = 'Admin created! Redirecting...';
+                        setTimeout(() => window.location.reload(), 1500);
                     }
                 } catch (error) {
-                    console.error('Initialization failed:', error);
+                    this.registerError = (error.response && error.response.data && error.response.data.message) 
+                        || 'Registration failed';
                 }
             },
-            beforeUnmount() {
-                if (this.ws) this.ws.close();
-            }
-        };
+            validateEmail(email) {
+                return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+            },
+            async login() {
+                this.loginError = '';
+                try {
+                    const { data } = await axios.post(`${API_BASE}/admin/login`, this.admin);
+                    localStorage.setItem('adminToken', data.token);
+                    this.isAuthenticated = true;
+                    await this.loadData();
+                } catch (error) {
+                    this.loginError = (error.response && error.response.data && error.response.data.message) 
+                        || 'Invalid credentials';
+                }
+            },
+            async loadData() {
+                try {
+                    const [usersRes, paymentsRes] = await Promise.all([
+                        axios.get(`${API_BASE}/admin/users`, {
+                            headers: { 
+                                Authorization: `Bearer ${localStorage.adminToken}` 
+                            }
+                        }),
+                        axios.get(`${API_BASE}/admin/payments`, {
+                            headers: { 
+                                Authorization: `Bearer ${localStorage.adminToken}` 
+                            }
+                        })
+                    ]);
 
-        Vue.createApp(AdminApp).mount('#admin-app');
-    </script>
+                    this.users = usersRes.data.users;
+                    this.payments = paymentsRes.data.payments;
+                    this.updateStats();
+                } catch (error) {
+                    if (error.response && error.response.status === 401) {
+                        this.logout();
+                    }
+                }
+            },
+            updateStats() {
+                this.stats = {
+                    totalUsers: this.users.length,
+                    totalPayments: this.payments.length,
+                    pendingPayments: this.payments.filter(p => p.status === 'Pending').length,
+                    completedPayments: this.payments.filter(p => p.status === 'Completed').length
+                };
+            },
+            statusClass(status) {
+                const classes = {
+                    'Pending': 'bg-warning',
+                    'Completed': 'bg-success',
+                    'Failed': 'bg-danger'
+                };
+                return classes[status] || 'bg-secondary';
+            },
+            shortId(id) {
+                return id ? `${id.substring(0, 6)}...` : '';
+            },
+            formatDate(dateString) {
+                return new Date(dateString).toLocaleDateString();
+            },
+            logout() {
+                localStorage.removeItem('adminToken');
+                this.isAuthenticated = false;
+                this.admin = { email: '', password: '' };
+            },
+            async updatePaymentStatus(payment) {
+                try {
+                    const { data } = await axios.put(
+                        `${API_BASE}/admin/payments/${payment._id}`,
+                        { status: payment.status },
+                        { 
+                            headers: { 
+                                Authorization: `Bearer ${localStorage.adminToken}` 
+                            } 
+                        }
+                    );
+
+                    if (data.success) {
+                        const index = this.payments.findIndex(p => p._id === payment._id);
+                        if (index > -1) {
+                            this.payments.splice(index, 1, data.payment);
+                        }
+                        
+                        if (this.selectedPayment && this.selectedPayment._id === payment._id) {
+                            this.selectedPayment = data.payment;
+                        }
+                        
+                        this.updateStats();
+                    }
+                } catch (error) {
+                    alert('Error updating status: ' + 
+                        ((error.response && error.response.data && error.response.data.message) 
+                        || error.message));
+                }
+            },
+            showPaymentDetails(payment) {
+                this.selectedPayment = payment;
+                if (!this.paymentModal) {
+                    this.paymentModal = new bootstrap.Modal(
+                        document.getElementById('paymentModal')
+                    );
+                }
+                this.paymentModal.show();
+            }
+        },
+        async mounted() {
+            // Initialize Bootstrap modal
+            this.paymentModal = new bootstrap.Modal(
+                document.getElementById('paymentModal')
+            );
+
+            // Check initial setup state
+            await this.checkInitialSetup();
+
+            // Check existing authentication
+            const token = localStorage.adminToken;
+            if (token && !this.showInitialSetup) {
+                try {
+                    await axios.get(`${API_BASE}/admin/users`, {
+                        headers: { 
+                            Authorization: `Bearer ${token}` 
+                        }
+                    });
+                    this.isAuthenticated = true;
+                    await this.loadData();
+                } catch (error) {
+                    this.logout();
+                }
+            }
+
+            // Initialize WebSocket connection
+            this.ws = new WebSocket('wss://oneai-wjox.onrender.com');
+
+            // WebSocket event handlers
+            this.ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'payment-updated') {
+                        const index = this.payments.findIndex(p => p._id === data.payment._id);
+                        if (index > -1) {
+                            this.payments.splice(index, 1, data.payment);
+                        } else {
+                            this.payments.push(data.payment);
+                        }
+                        this.updateStats();
+                    }
+                } catch (error) {
+                    console.error('WebSocket message error:', error);
+                }
+            };
+
+            this.ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+
+            this.ws.onclose = (event) => {
+                console.log('WebSocket connection closed:', event.reason);
+            };
+        },
+        beforeUnmount() {
+            // Cleanup WebSocket connection
+            if (this.ws) {
+                this.ws.close();
+            }
+        }
+    };
+
+    // Initialize Vue application
+    Vue.createApp(AdminApp).mount('#admin-app');
+</script>
 </body>
 </html>
