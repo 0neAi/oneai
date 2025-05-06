@@ -432,34 +432,8 @@
                         day: 'numeric'
                     });
                 },
-                logout() {
-                    localStorage.removeItem('adminToken');
-                    this.isAuthenticated = false;
-                    this.admin = { email: '', password: '' };
-                    if (this.ws) this.ws.close();
-                },
-                async updatePaymentStatus(payment, event) {
-                    try {
-                        const newStatus = event.target.value;
-                        const { data } = await axios.put(
-                            `${API_BASE}/admin/payments/${payment._id}`,
-                            { status: newStatus },
-                            { headers: { Authorization: `Bearer ${localStorage.adminToken}` } }
-                        );
 
-                        const index = this.payments.findIndex(p => p._id === payment._id);
-                        if (index > -1) this.payments.splice(index, 1, data.payment);
-                        this.updateStats();
-                    } catch (error) {
-                        alert(`Error: ${error.response?.data?.message || error.message}`);
-                    }
-                },
-                showPaymentDetails(payment) {
-                    this.selectedPayment = payment;
-                    this.paymentModal = new bootstrap.Modal('#paymentModal');
-                    this.paymentModal.show();
-                },
-                             initWebSocket() {
+                                             initWebSocket() {
                     console.log('Initializing WebSocket connection...');
                     this.ws = new WebSocket('wss://oneai-wjox.onrender.com');
 
@@ -498,11 +472,45 @@
                         console.log('WebSocket connection closed');
                     };
                 },
+                async updatePaymentStatus(payment, event) {
+                    try {
+                        const newStatus = event.target.value;
+                        console.log('Updating payment status:', payment._id, newStatus);
+                        
+                        const { data } = await axios.put(
+                            `${API_BASE}/admin/payments/${payment._id}`,
+                            { status: newStatus }
+                        );
+
+                        const index = this.payments.findIndex(p => p._id === payment._id);
+                        if (index > -1) this.payments.splice(index, 1, data.payment);
+                        this.updateStats();
+                        
+                    } catch (error) {
+                        console.error('Update error:', error);
+                        alert(`Error: ${error.response?.data?.message || error.message}`);
+                    }
+                },
+
+                showPaymentDetails(payment) {
+                    this.selectedPayment = payment;
+                    this.paymentModal = new bootstrap.Modal('#paymentModal');
+                    this.paymentModal.show();
+                },
+                   logout() {
+                    localStorage.removeItem('adminToken');
+                    this.isAuthenticated = false;
+                    this.admin = { email: '', password: '' };
+                    if (this.ws) this.ws.close();
+                },
+
             async mounted() {
                 try {
+                    console.log('Admin app mounted');
                     await this.checkInitialSetup();
                     
                     if (localStorage.adminToken) {
+                        console.log('Existing token found');
                         await this.loadData();
                         this.initWebSocket();
                     }
