@@ -1,13 +1,8 @@
-// middleware/auth.js
-const jwt = require('jsonwebtoken'); // Add this import
-const Admin = require('../models/Admin');
-
 exports.adminAuth = async (req, res, next) => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
     if (!token) throw new Error("No token provided");
     
-    // Add JWT verification
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     if (decoded.exp * 1000 < Date.now()) {
@@ -18,7 +13,7 @@ exports.adminAuth = async (req, res, next) => {
     if (!admin) throw new Error("Admin not found");
     
     req.admin = admin;
-    next();
+    next(); // Add this line to continue to the next middleware/route handler
   } catch (error) {
     console.error('Admin Auth Error:', error);
     res.status(401).json({ 
