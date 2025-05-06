@@ -12,7 +12,7 @@ const paymentRoute = require('./assets/js/paymentRoute');
 const Payment = require('./models/Payment');
 const User = require('./models/User');
 const Admin = require('./models/Admin');
-
+const WebSocket = require('ws');
 const app = express();
 const server = require('http').createServer(app);
 const PORT = process.env.PORT || 10000;
@@ -48,6 +48,7 @@ wss.on('connection', (ws, req) => {
     }
   });
 });
+app.set('wss', wss);
 // ======================
 // Environment Validation
 // ======================
