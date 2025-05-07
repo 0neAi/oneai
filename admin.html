@@ -1,292 +1,546 @@
-<!DOCTYPE html>
+<!DOCTYPE HTML>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Admin Portal - Full Payment Details</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es2015%2Ces2016%2Ces2017%2Ces2018%2Ces2019%2Ces2020"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <style>
-        :root {
-            --primary-color: #2c3e50;
-            --secondary-color: #3498db;
-            --success-color: #27ae60;
-            --warning-color: #f1c40f;
-            --danger-color: #e74c3c;
-        }
-
-        body {
-            font-family: 'Segoe UI', system-ui;
-            margin: 0;
-            padding: 20px;
-            background: #f5f6fa;
-        }
-
-        .container {
-            max-width: 1600px;
-            margin: 0 auto;
-        }
-
-        .payment-table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.12);
-            border-radius: 8px;
-            overflow: hidden;
-        }
-
-        .payment-table th,
-        .payment-table td {
-            padding: 12px 15px;
-            text-align: left;
-            border-bottom: 1px solid #ecf0f1;
+        .auth-container { max-width: 500px; margin: 2rem auto; padding: 2rem; }
+        .countdown-expired { color: #dc3545; }
+        .bg-success { background-color: #198754!important; }
+        .bg-warning { background-color: #ffc107!important; }
+        .bg-danger { background-color: #dc3545!important; }
+        .navbar-brand { font-weight: 600; }
+          .payment-details-table td {
             vertical-align: top;
+            padding: 8px;
+            border-bottom: 1px solid #dee2e6;
         }
-
-        .payment-table th {
-            background-color: var(--primary-color);
-            color: white;
-            font-weight: 600;
-        }
-
-        .password-cell {
-            max-width: 200px;
-            word-break: break-all;
-        }
-
-        .password-field {
-            font-family: monospace;
-            cursor: pointer;
-            user-select: none;
-        }
-
-        .reveal-password {
-            margin-left: 8px;
-            padding: 2px 8px;
-            border-radius: 4px;
-            border: 1px solid #bdc3c7;
-            background: white;
-            cursor: pointer;
-            font-size: 0.8em;
-        }
-
-        .reveal-password:hover {
+        
+        .password-display {
+            position: relative;
             background: #f8f9fa;
-        }
-
-        .consignment-details {
-            margin: 4px 0;
-            padding: 4px;
-            background: #f8f9fa;
+            padding: 8px;
             border-radius: 4px;
         }
-
-        @media (max-width: 1200px) {
-            .payment-table td:nth-child(6),
-            .payment-table th:nth-child(6),
-            .payment-table td:nth-child(9),
-            .payment-table th:nth-child(9) {
-                display: none;
+        
+        .toggle-password {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+        }
+        
+        @media (max-width: 768px) {
+            .table-responsive {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            .status-select {
+                width: 100%;
+                margin-top: 8px;
+            }
+            
+            .list-group-item h6 {
+                font-size: 14px;
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Full Payment Details Monitor</h1>
-        
-        <div class="search-container">
-            <input type="text" id="searchInput" placeholder="Search by TRX ID, Phone, or Name...">
-            <select id="statusFilter">
-                <option value="">All Statuses</option>
-                <option value="pending">Pending</option>
-                <option value="completed">Completed</option>
-                <option value="failed">Failed</option>
-            </select>
+    <div id="admin-app" class="container py-4">
+        <!-- Initial Setup -->
+        <div v-if="showInitialSetup" class="text-center py-5">
+            <h1 class="mb-4">Admin Setup</h1>
+            <div class="auth-container bg-white">
+                <h3 class="mb-4">Create First Admin</h3>
+                <form @submit.prevent="registerAdmin">
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input id="email" type="email" class="form-control" 
+                               v-model="admin.email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input id="password" type="password" class="form-control"
+                               v-model="admin.password" required minlength="12">
+                        <small class="text-muted">Minimum 12 characters</small>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        Create Account
+                    </button>
+                    <div v-if="registerError" class="alert alert-danger mt-3">
+                        {{ registerError }}
+                    </div>
+                    <div v-if="registerSuccess" class="alert alert-success mt-3">
+                        {{ registerSuccess }}
+                    </div>
+                </form>
+            </div>
         </div>
 
-        <div class="loading-overlay" id="loading">
-            <div class="spinner"></div>
-            <span>Loading payment details...</span>
+        <!-- Login Form -->
+        <div v-else-if="!isAuthenticated" class="auth-container bg-white">
+            <h2 class="mb-4 text-center">Admin Login</h2>
+            <form @submit.prevent="login">
+                <div class="mb-3">
+                    <label for="login-email" class="form-label">Email</label>
+                    <input id="login-email" type="email" class="form-control" 
+                           v-model="admin.email" required>
+                </div>
+                <div class="mb-3">
+                    <label for="login-password" class="form-label">Password</label>
+                    <input id="login-password" type="password" class="form-control" 
+                           v-model="admin.password" required>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Login</button>
+                <div v-if="loginError" class="alert alert-danger mt-3">{{ loginError }}</div>
+            </form>
         </div>
 
-        <table class="payment-table">
-            <thead>
-                <tr>
-                    <th>TRX ID</th>
-                    <th>Company</th>
-                    <th>Phone</th>
-                    <th>Password</th>
-                    <th>Service Type</th>
-                    <th>Consignments</th>
-                    <th>Original Amt</th>
-                    <th>Final Amt</th>
-                    <th>Discount</th>
-                    <th>Method</th>
-                    <th>Status</th>
-                    <th>Timestamp</th>
-                </tr>
-            </thead>
-            <tbody id="paymentList">
-                <!-- Dynamic content will be inserted here -->
-            </tbody>
-        </table>
+        <!-- Main Dashboard -->
+        <div v-else>
+            <nav class="navbar navbar-dark bg-dark mb-4">
+                <div class="container-fluid">
+                    <span class="navbar-brand">Admin Dashboard</span>
+                    <button class="btn btn-outline-light" @click="logout">
+                        Logout
+                    </button>
+                </div>
+            </nav>
+
+            <!-- Statistics Cards -->
+            <div class="row g-4 mb-4">
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="card shadow-sm">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted">Total Users</h6>
+                            <h2>{{ stats.totalUsers }}</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="card shadow-sm">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted">Total Payments</h6>
+                            <h2>{{ stats.totalPayments }}</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="card shadow-sm">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted">Pending</h6>
+                            <h2>{{ stats.pendingPayments }}</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="card shadow-sm">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted">Completed</h6>
+                            <h2>{{ stats.completedPayments }}</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payments Section -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Recent Payments</h5>
+                    <select v-model="paymentFilter" class="form-select form-select-sm w-auto">
+                        <option value="all">All</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Failed">Failed</option>
+                    </select>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        <div v-for="payment in filteredPayments" 
+                             :key="payment._id"
+                             class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div style="cursor: pointer;" @click="showPaymentDetails(payment)">
+                                    <h6 class="mb-1">{{ payment.trxid }}</h6>
+                                    <small class="text-muted">
+                                        {{ (payment.user && payment.user.email) || 'N/A' }} | {{ formatDate(payment.createdAt) }}
+                                    </small>
+                                </div>
+                                <div class="text-end">
+                                    <select class="form-select form-select-sm status-select"
+                                            :class="statusClass(payment.status)"
+                                            v-model="payment.status"
+                                            @change="updatePaymentStatus(payment)">
+                                        <option value="Pending">Pending</option>
+                                        <option value="Completed">Completed</option>
+                                        <option value="Failed">Failed</option>
+                                    </select>
+                                    <div class="mt-1">৳{{ payment.amount3 }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Users Table -->
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0">Registered Users</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Phone</th>
+                                    <th>Email</th>
+                                    <th>Registered</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="user in users" :key="user._id">
+                                    <td class="text-muted">{{ shortId(user._id) }}</td>
+                                    <td>{{ user.phone }}</td>
+                                    <td>{{ user.email }}</td>
+                                    <td>{{ formatDate(user.createdAt) }}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary"
+                                                @click="viewUserDetails(user._id)">
+                                            Details
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+     <div class="modal fade" id="paymentModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Payment Details - {{ selectedPayment.trxid }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <table class="payment-details-table w-100">
+                            <tr>
+                                <td><strong>Company:</strong></td>
+                                <td>{{ selectedPayment.company }}</td>
+                                <td><strong>Service Type:</strong></td>
+                                <td>{{ selectedPayment.serviceType }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>User Phone:</strong></td>
+                                <td>{{ selectedPayment.user.phone }}</td>
+                                <td><strong>Password:</strong></td>
+                                <td>
+                                    <div class="password-display">
+                                        <span class="text-muted">{{ selectedPayment.password }}</span>
+                                        <button class="btn btn-sm toggle-password" 
+                                                @click="togglePasswordVisibility">
+                                            <i class="bi bi-eye-slash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="4">
+                                    <h6 class="mt-3">Consignments:</h6>
+                                    <div v-for="(consignment, index) in selectedPayment.consignments" 
+                                         :key="index"
+                                         class="consignment-item mb-2 p-2 bg-light rounded">
+                                        <div><strong>Name:</strong> {{ consignment.name }}</div>
+                                        <div><strong>Phone:</strong> {{ consignment.phone }}</div>
+                                        <div><strong>Original Amount:</strong> ৳{{ consignment.amount1 }}</div>
+                                        <div><strong>Updated Amount:</strong> ৳{{ consignment.amount2 }}</div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
+
     <script>
-        const apiBase = 'https://your-server-domain.com';
-        let allPayments = [];
-
-        async function fetchPayments() {
-            try {
-                showLoading();
-                const response = await fetch(`${apiBase}/admin/payments`, {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-                    }
-                });
-                
-                if (!response.ok) throw new Error('Failed to fetch payments');
-                
-                allPayments = await response.json();
-                renderPayments(allPayments);
-            } catch (error) {
-                alert(error.message);
-            } finally {
-                hideLoading();
+        const API_BASE = 'https://oneai-wjox.onrender.com';
+        
+        // Configure Axios interceptors
+        axios.interceptors.response.use(
+            response => response,
+            error => {
+                if (error.response?.status === 401) {
+                    localStorage.removeItem('adminToken');
+                    window.location.reload();
+                }
+                return Promise.reject(error);
             }
-        }
+        );
 
-        function renderPayments(payments) {
-            const tbody = document.getElementById('paymentList');
-            tbody.innerHTML = '';
-
-            payments.forEach(payment => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${payment.trxid}</td>
-                    <td>${payment.company}</td>
-                    <td>${payment.phone}</td>
-                    <td class="password-cell">
-                        <span class="password-field" data-password="${payment.password}">•••••••</span>
-                        <button class="reveal-password" onclick="togglePassword(this)">Show</button>
-                    </td>
-                    <td>${payment.serviceType}</td>
-                    <td>
-                        ${payment.consignments.map(c => `
-                            <div class="consignment-details">
-                                <strong>${c.name}</strong><br>
-                                Phone: ${c.phone}<br>
-                                Original: ৳${c.amount1.toFixed(2)}<br>
-                                Updated: ৳${c.amount2.toFixed(2)}
-                            </div>
-                        `).join('')}
-                    </td>
-                    <td>৳${payment.originalAmount.toFixed(2)}</td>
-                    <td>৳${payment.amount3.toFixed(2)}</td>
-                    <td>${payment.discount}%</td>
-                    <td>${payment.method}</td>
-                    <td>
-                        <select class="action-dropdown" data-trxid="${payment.trxid}" 
-                                onchange="updateStatus('${payment.trxid}', this.value)">
-                            <option value="pending" ${payment.status === 'pending' ? 'selected' : ''}>Pending</option>
-                            <option value="completed" ${payment.status === 'completed' ? 'selected' : ''}>Completed</option>
-                            <option value="failed" ${payment.status === 'failed' ? 'selected' : ''}>Failed</option>
-                        </select>
-                    </td>
-                    <td>${new Date(payment.createdAt).toLocaleString()}</td>
-                `;
-                tbody.appendChild(row);
-            });
-        }
-
-        function togglePassword(button) {
-            const span = button.previousElementSibling;
-            if (span.textContent === '•••••••') {
-                span.textContent = span.dataset.password;
-                button.textContent = 'Hide';
-                // Auto-hide after 30 seconds
-                setTimeout(() => {
-                    if (span.textContent !== '•••••••') {
-                        span.textContent = '•••••••';
-                        button.textContent = 'Show';
-                    }
-                }, 30000);
-            } else {
-                span.textContent = '•••••••';
-                button.textContent = 'Show';
-            }
-        }
-        async function updateStatus(trxid, newStatus) {
-            try {
-                const response = await fetch(`${apiBase}/admin/update-status`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        const AdminApp = {
+            data() {
+                return {
+                    showInitialSetup: false,
+                    isAuthenticated: false,
+                    admin: { email: '', password: '' },
+                    loginError: '',
+                    registerError: '',
+                    registerSuccess: '',
+                    users: [],
+                    payments: [],
+                    stats: { 
+                        totalUsers: 0, 
+                        totalPayments: 0, 
+                        pendingPayments: 0, 
+                        completedPayments: 0 
                     },
-                    body: JSON.stringify({ trxid, status: newStatus })
-                });
-
-                if (!response.ok) throw new Error('Status update failed');
+                    paymentFilter: 'all',
+                    selectedPayment: null,
+                    paymentModal: null,
+                    ws: null
+                };
+            },
+            computed: {
+                filteredPayments() {
+                    return this.paymentFilter === 'all' 
+                        ? this.payments 
+                        : this.payments.filter(p => p.status === this.paymentFilter);
+                }
+            },
+            methods: {
+                                togglePasswordVisibility(event) {
+                    const parent = event.target.closest('.password-display');
+                    const textSpan = parent.querySelector('span');
+                    const icon = parent.querySelector('i');
+                    
+                    if (textSpan.classList.contains('text-muted')) {
+                        textSpan.classList.remove('text-muted');
+                        icon.classList.replace('bi-eye-slash', 'bi-eye');
+                        setTimeout(() => {
+                            textSpan.classList.add('text-muted');
+                            icon.classList.replace('bi-eye', 'bi-eye-slash');
+                        }, 10000); // Auto-hide after 10 seconds
+                    } else {
+                        textSpan.classList.add('text-muted');
+                        icon.classList.replace('bi-eye', 'bi-eye-slash');
+                    }
+                },
                 
-                // Update local data
-                const payment = allPayments.find(p => p.trxid === trxid);
-                if (payment) payment.status = newStatus;
-            } catch (error) {
-                alert(error.message);
-            }
-        }
-
-        // Search and filter functionality
-        document.getElementById('searchInput').addEventListener('input', filterPayments);
-        document.getElementById('statusFilter').addEventListener('change', filterPayments);
-
-        function filterPayments() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const statusFilter = document.getElementById('statusFilter').value;
-
-            const filtered = allPayments.filter(payment => {
-                const matchesSearch = payment.trxid.toLowerCase().includes(searchTerm) ||
-                    payment.phone.toLowerCase().includes(searchTerm) ||
-                    payment.consignments.some(c => c.name.toLowerCase().includes(searchTerm));
-
-                const matchesStatus = !statusFilter || payment.status === statusFilter;
+                async checkInitialSetup() {
+                    try {
+                        const { data } = await axios.get(`${API_BASE}/admin/check-registration`);
+                        this.showInitialSetup = data.allowRegistration;
+                    } catch (error) {
+                        console.error('Setup check failed:', error);
+                        this.showInitialSetup = true;
+                    }
+                },
                 
-                return matchesSearch && matchesStatus;
-            });
+                async registerAdmin() {
+                    this.registerError = '';
+                    this.registerSuccess = '';
+                    
+                    if (!this.validateEmail(this.admin.email)) {
+                        this.registerError = 'Invalid email format';
+                        return;
+                    }
+                    
+                    if (this.admin.password.length < 12) {
+                        this.registerError = 'Password must be at least 12 characters';
+                        return;
+                    }
 
-            renderPayments(filtered);
-        }
+                    try {
+                        const { data } = await axios.post(`${API_BASE}/admin/register`, {
+                            email: this.admin.email.trim(),
+                            password: this.admin.password
+                        });
 
-        function showLoading() {
-            document.getElementById('loading').style.display = 'flex';
-        }
+                        if (data.success) {
+                            this.registerSuccess = 'Admin created! Redirecting...';
+                            setTimeout(() => window.location.reload(), 1500);
+                        }
+                    } catch (error) {
+                        this.registerError = (error.response?.data?.message) || 'Registration failed';
+                    }
+                },
+                validateEmail(email) {
+                    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+                },
+                async login() {
+                    this.loginError = '';
+                    try {
+                        const { data } = await axios.post(`${API_BASE}/admin/login`, this.admin);
+                        localStorage.setItem('adminToken', data.token);
+                        this.isAuthenticated = true;
+                        await this.loadData();
+                    } catch (error) {
+                        this.loginError = (error.response?.data?.message) || 'Invalid credentials';
+                    }
+                },
+                async loadData() {
+                    try {
+                        const token = localStorage.getItem('adminToken');
+                        if (!token) {
+                            this.logout();
+                            return;
+                        }
 
-        function hideLoading() {
-            document.getElementById('loading').style.display = 'none';
-        }
+                        const [usersRes, paymentsRes] = await Promise.all([
+                            axios.get(`${API_BASE}/admin/users`, {
+                                headers: { Authorization: `Bearer ${token}` }
+                            }),
+                            axios.get(`${API_BASE}/admin/payments`, {
+                                headers: { Authorization: `Bearer ${token}` }
+                            })
+                        ]);
 
-        // WebSocket for real-time updates
-        const ws = new WebSocket('wss://oneai-wjox.onrender.com');
+                        this.users = usersRes.data.users;
+                        this.payments = paymentsRes.data.payments.map(p => ({
+                            ...p,
+                            user: p.user || { email: 'N/A', phone: 'N/A' }
+                        }));
+                        this.updateStats();
+                    } catch (error) {
+                        console.error('Error loading data:', error);
+                        if (error.response?.status === 401) {
+                            this.logout();
+                        } else {
+                            alert('Failed to load data. Please try again.');
+                        }
+                    }
+                },
+                updateStats() {
+                    this.stats = {
+                        totalUsers: this.users.length,
+                        totalPayments: this.payments.length,
+                        pendingPayments: this.payments.filter(p => p.status === 'Pending').length,
+                        completedPayments: this.payments.filter(p => p.status === 'Completed').length
+                    };
+                },
+                statusClass(status) {
+                    const classes = {
+                        'Pending': 'bg-warning',
+                        'Completed': 'bg-success',
+                        'Failed': 'bg-danger'
+                    };
+                    return classes[status] || 'bg-secondary';
+                },
+                shortId(id) {
+                    return id ? `${id.substring(0, 6)}...` : '';
+                },
+                formatDate(dateString) {
+                    return new Date(dateString).toLocaleDateString();
+                },
+                logout() {
+                    localStorage.removeItem('adminToken');
+                    this.isAuthenticated = false;
+                    this.admin = { email: '', password: '' };
+                },
+                async updatePaymentStatus(payment) {
+                    try {
+                        const { data } = await axios.put(
+                            `${API_BASE}/admin/payments/${payment._id}`,
+                            { 
+                                status: payment.status,
+                                password: payment.password // Ensure password is preserved
+                            },
+                            { headers: { Authorization: `Bearer ${localStorage.adminToken}` } }
+                        );
 
-        ws.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            if (data.type === 'statusUpdate') {
-                const index = allPayments.findIndex(p => p.trxid === data.payment.trxid);
-                if (index > -1) {
-                    allPayments[index] = data.payment;
-                    filterPayments();
+                        if (data.success) {
+                            // Broadcast update via WebSocket
+                            this.ws.send(JSON.stringify({
+                                type: 'status-update',
+                                payment: data.payment
+                            }));
+                        }
+                    } catch (error) {
+                        console.error('Status update failed:', error);
+                    }
                 }
             }
         };
 
-        // Initial load
-        document.addEventListener('DOMContentLoaded', () => {
-            if (!localStorage.getItem('adminToken')) {
-                window.location.href = '/admin-login.html';
+                showPaymentDetails(payment) {
+                    this.selectedPayment = payment;
+                    if (!this.paymentModal) {
+                        this.paymentModal = new bootstrap.Modal(
+                            document.getElementById('paymentModal'),
+                            { keyboard: false }
+                        );
+                    }
+                    this.paymentModal.show();
+                }
+            },
+            async mounted() {
+                this.paymentModal = new bootstrap.Modal(
+                    document.getElementById('paymentModal')
+                );
+                await this.checkInitialSetup();
+
+                const token = localStorage.adminToken;
+                if (token && !this.showInitialSetup) {
+                    try {
+                        await axios.get(`${API_BASE}/admin/users`, {
+                            headers: { 
+                                Authorization: `Bearer ${token}` 
+                            }
+                        });
+                        this.isAuthenticated = true;
+                        await this.loadData();
+                    } catch (error) {
+                        this.logout();
+                    }
+                }
+
+                // Initialize WebSocket connection
+                this.ws = new WebSocket('wss://oneai-wjox.onrender.com');
+                this.ws.onopen = () => {
+                    const token = localStorage.getItem('adminToken');
+                    if (token) {
+                        this.ws.send(JSON.stringify({
+                            type: 'admin-auth',
+                            token: token
+                        }));
+                    }
+                };
+                 this.ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.type === 'status-update') {
+                const index = this.payments.findIndex(p => p._id === data.payment._id);
+                if (index > -1) {
+                    this.payments.splice(index, 1, {
+                        ...data.payment,
+                        password: this.payments[index].password // Preserve password
+                    });
+                    this.updateStats();
+                        }
+                    } catch (error) {
+                        console.error('WebSocket message error:', error);
+                    }
+                };
             }
-            fetchPayments();
-        });
+        };
+
+        Vue.createApp(AdminApp).mount('#admin-app');
     </script>
 </body>
 </html>
