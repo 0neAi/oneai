@@ -75,7 +75,7 @@ app.use(cors({
     ? ['https://0neai.github.io', 'https://oneai-wjox.onrender.com']
     : '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-User-ID'], // ✅ Added X-User-ID
   credentials: true
 }));
 app.use(express.json({ limit: '10kb' }));
@@ -98,7 +98,7 @@ let isReady = false;
 
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
-  useUniedTopology: true,
+  useUnifiedTopology: true, // ✅ Fixed typo (was "useUniedTopology")
   serverSelectionTimeoutMS: 5000
 })
 .then(() => console.log('✅ MongoDB connected successfully'))
@@ -258,14 +258,6 @@ app.post('/login', async (req, res) => {
 // ======================
 app.post('/payment', authMiddleware, async (req, res) => {
     try {
-        // Add validation
-        if (!req.body.consignments || !Array.isArray(req.body.consignments)) {
-            return res.status(400).json({ 
-                success: false,
-                message: 'Invalid consignments data'
-            });
-        }
-  try {
     if (!Array.isArray(req.body.consignments) || req.body.consignments.length === 0) {
       return res.status(400).json({ success: false, message: 'Invalid consignments data' });
     }
