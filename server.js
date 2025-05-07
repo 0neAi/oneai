@@ -257,6 +257,14 @@ app.post('/login', async (req, res) => {
 // Payment Processing
 // ======================
 app.post('/payment', authMiddleware, async (req, res) => {
+    try {
+        // Add validation
+        if (!req.body.consignments || !Array.isArray(req.body.consignments)) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Invalid consignments data'
+            });
+        }
   try {
     if (!Array.isArray(req.body.consignments) || req.body.consignments.length === 0) {
       return res.status(400).json({ success: false, message: 'Invalid consignments data' });
@@ -297,12 +305,14 @@ app.post('/payment', authMiddleware, async (req, res) => {
       }
     });
 
-  } catch (error) {
-    const message = error.code === 11000 
-      ? 'Duplicate transaction ID' 
-      : 'Payment processing failed';
-    res.status(500).json({ success: false, message });
-  }
+
+    } catch (error) {
+        console.error('Payment processing error:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Payment processing failed'
+        });
+    }
 });
 
 // ======================
