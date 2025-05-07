@@ -36,14 +36,8 @@ wss.on('connection', (ws, req) => {
     }
   }
 
-  // Authentication handler
-// Change this in WebSocket handler
 if (err || !['superadmin', 'moderator'].includes(decoded.role)) {
   ws.close(1008, 'Authentication failed');
- } catch (error) {
-      ws.close(1008, 'Invalid message format');
-    }
-  });
 });
 // Make WebSocket server available to routes
 app.set('wss', wss);
