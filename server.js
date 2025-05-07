@@ -68,7 +68,7 @@ app.set('wss', wss);
 // ======================
 // Environment Validation
 // ======================
-if (!process.env.MONGODB_URI || !process.env.JWT_SECRET)) {
+if (!process.env.MONGODB_URI || !process.env.JWT_SECRET) {
   console.error('❌ Missing required environment variables');
   process.exit(1);
 }
