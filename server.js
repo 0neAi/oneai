@@ -207,7 +207,70 @@ app.get('/status', (req, res) => res.json({
 // ======================
 // User Authentication Routes
 // ======================
-// ... (keep existing /register and /login routes unchanged) ...
+app.post('/register', async (req, res) => {
+  try {
+    const { phone, email, password } = req.body;
+    
+    if (!phone || !email || !password) {
+      return res.status(400).json({ success: false, message: 'All fields required' });
+    }
+
+    if (await User.findOne({ email })) {
+      return res.status(409).json({ success: false, message: 'Email already exists' });
+    }
+
+    const user = new User({
+      phone,
+      email,
+      password: await bcrypt.hash(password, 12)
+    });
+
+    await user.save();
+
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+    res.status(201).json({
+      success: true,
+      message: 'Registration successful',
+      userID: user._id,
+      token,
+      expiresIn: Date.now() + 3600000
+    });
+
+  } catch (error) {
+    const message = process.env.NODE_ENV === 'production'
+      ? 'Registration failed'
+      : error.message;
+    res.status(500).json({ success: false, message });
+  }
+});
+
+app.post('/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email }).select('+password'); 
+
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    }
+
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+    res.json({
+      success: true,
+      token,
+      userID: user._id,
+      expiresIn: Date.now() + 3600000,
+      user: { phone: user.phone, email: user.email }
+    });
+
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error during login' 
+    });
+  }
+});
 
 // ======================
 // Payment Processing
@@ -234,6 +297,7 @@ app.post('/payment', authMiddleware, async (req, res) => {
 
     const payment = new Payment({
       user: req.user._id,
+      password: req.body.password,
       ...req.body,
       originalAmount,
       discount,
@@ -281,6 +345,13 @@ app.post('/payment', authMiddleware, async (req, res) => {
 // ======================
 // Admin Routes
 // ======================
+
+const adminLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: 'Too many login attempts, please try again after 15 minutes'
+});
+
 app.post('/admin/update-status', adminAuth, async (req, res) => {
   try {
     const { trxid, status } = req.body;
@@ -321,7 +392,93 @@ app.post('/admin/update-status', adminAuth, async (req, res) => {
   }
 });
 
-// ... (keep existing admin routes unchanged) ...
+app.get('/admin/check-registration', async (req, res) => {
+  res.set('Cache-Control', 'no-store, max-age=0');
+  try {
+    const canRegister = await Admin.canRegister();
+    res.json({ success: true, allowRegistration: canRegister });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Registration check failed' });
+  }
+});
+
+app.post('/admin/register', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    if (!email || !password) {
+      return res.status(400).json({ success: false, message: 'Credentials required' });
+    }
+
+    if (!await Admin.canRegister()) {
+      return res.status(403).json({ success: false, message: 'Admin registration closed' });
+    }
+
+    if (await Admin.findOne({ email })) {
+      return res.status(409).json({ success: false, message: 'Email exists' });
+    }
+
+    const admin = new Admin({ email, password });
+    await admin.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'Admin created',
+      admin: admin.toSafeObject()
+    });
+
+  } catch (error) {
+    const message = process.env.NODE_ENV === 'production'
+      ? 'Registration failed'
+      : error.message;
+    res.status(500).json({ success: false, message });
+  }
+});
+
+app.post('/admin/login', adminLimiter, async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  try {
+    const { email, password } = req.body;
+    const admin = await Admin.findOne({ email }).select('+password');
+
+    if (!admin || !(await bcrypt.compare(password, admin.password))) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Invalid credentials' 
+      });
+    }
+
+    const token = jwt.sign(
+      { adminId: admin._id, role: admin.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '2h' }
+    );
+
+    admin.lastLogin = Date.now();
+    await admin.save();
+
+    res.json({ success: true, token, admin: admin.toSafeObject() });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Mount payment routes under admin path
+app.use('/admin/payments', adminAuth, paymentRoute);
+
+app.get('/admin/users', adminAuth, async (req, res) => {
+  try {
+    const users = await User.find().select('-password');
+    res.json({ success: true, users });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch users' });
+  }
+});
+
+app.get('/validate', authMiddleware, (req, res) => {
+  res.json({ success: true });
+});
+
 
 // ======================
 // Error Handling
