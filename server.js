@@ -18,29 +18,47 @@ const PORT = process.env.PORT || 10000;
 const jwtSecret = process.env.JWT_SECRET || 'default_secret_use_env_var_in_prod';
 const server = require('http').createServer(app);
 const wss = new WebSocket.Server({ server });
+
 // ======================
 // WebSocket Configuration
 // ======================
-// In server.js WebSocket handler
-// Configure WebSocket
 wss.on('connection', (ws, req) => {
   if (process.env.NODE_ENV === 'production') {
     const allowedOrigins = [
       'https://0neai.github.io',
       'https://oneai-wjox.onrender.com'
     ];
-    // FIXED LINE BELOW
     if (!allowedOrigins.includes(req.headers.origin)) {
       console.log(`Blocked WebSocket connection from unauthorized origin: ${req.headers.origin}`);
       return ws.close(1008, 'Unauthorized origin');
     }
   }
 
-if (err || !['superadmin', 'moderator'].includes(decoded.role)) {
-  ws.close(1008, 'Authentication failed');
+  ws.on('message', async (message) => {
+    try {
+      const data = JSON.parse(message);
+      if (!data.token) throw new Error('Missing authentication token');
+
+      const decoded = jwt.verify(data.token, process.env.JWT_SECRET);
+      if (!['superadmin', 'moderator'].includes(decoded.role)) {
+        throw new Error('Insufficient privileges');
+      }
+
+      // Add your WebSocket message handling logic here
+      ws.send(JSON.stringify({ status: 'authenticated' }));
+
+    } catch (error) {
+      console.error('WebSocket error:', error.message);
+      ws.close(1008, error.message.includes('privileges') 
+        ? 'Insufficient privileges' 
+        : 'Authentication failed'
+      );
+    }
+  });
 });
-// Make WebSocket server available to routes
+
 app.set('wss', wss);
+
 // ======================
 // Environment Validation
 // ======================
@@ -69,9 +87,10 @@ app.use(cors({
     ? ['https://0neai.github.io', 'https://oneai-wjox.onrender.com']
     : '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-User-ID'], // ✅ Added X-User-ID
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-User-ID'],
   credentials: true
 }));
+
 app.use(express.json({ limit: '10kb' }));
 
 // ======================
@@ -92,7 +111,7 @@ let isReady = false;
 
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
-  useUnifiedTopology: true, // ✅ Fixed typo (was "useUniedTopology")
+  useUnifiedTopology: true,
   serverSelectionTimeoutMS: 5000
 })
 .then(() => console.log('✅ MongoDB connected successfully'))
@@ -251,7 +270,7 @@ app.post('/login', async (req, res) => {
 // Payment Processing
 // ======================
 app.post('/payment', authMiddleware, async (req, res) => {
-    try {
+  try {
     if (!Array.isArray(req.body.consignments) || req.body.consignments.length === 0) {
       return res.status(400).json({ success: false, message: 'Invalid consignments data' });
     }
@@ -291,14 +310,13 @@ app.post('/payment', authMiddleware, async (req, res) => {
       }
     });
 
-
-    } catch (error) {
-        console.error('Payment processing error:', error);
-        res.status(500).json({
-            success: false,
-            message: error.message || 'Payment processing failed'
-        });
-    }
+  } catch (error) {
+    console.error('Payment processing error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Payment processing failed'
+    });
+  }
 });
 
 // ======================
@@ -354,11 +372,11 @@ app.post('/admin/register', async (req, res) => {
 });
 
 app.post('/admin/login', adminLimiter, async (req, res) => {
-   res.set('Cache-Control', 'no-store');
+  res.set('Cache-Control', 'no-store');
   try {
     const { email, password } = req.body;
-    const admin = await Admin.findOne({ email }).select('+password'); // Crucial
-    
+    const admin = await Admin.findOne({ email }).select('+password');
+
     if (!admin || !(await bcrypt.compare(password, admin.password))) {
       return res.status(401).json({ 
         success: false, 
