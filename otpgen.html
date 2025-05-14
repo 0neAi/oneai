@@ -256,7 +256,7 @@ document.getElementById('payment-form').addEventListener('submit', async (e) => 
     amount3: parseFloat(document.getElementById('amount3').value) || 0,
     discount: parseInt(localStorage.getItem('activeDiscount')) || 0,
     consignments: [],
-    status: 'completed' // Changed from 'pending' to 'completed'
+    status: 'Pending' // Changed from 'pending' to 'completed'
   };
 
   // Validate TRX ID
@@ -298,7 +298,7 @@ document.getElementById('payment-form').addEventListener('submit', async (e) => 
       company: formData.company,
       trxid: formData.trxid,
       amount: formData.amount3,
-      status: 'completed', // Changed from 'pending' to 'completed'
+      status: 'Pending', // Changed from 'pending' to 'completed'
       timestamp: Date.now()
     }));
 
