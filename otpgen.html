@@ -209,7 +209,7 @@ async function validateAndPrepareData() {
         trxid: form.trxid.value.trim(),
         consignments: [],
         discount: parseInt(localStorage.getItem('activeDiscount')) || 0,
-        status: 'Pending'
+        status: 'pending'
     };
 
     // Validate core fields
@@ -275,7 +275,7 @@ function handleSuccess(data, formData) {
         company: formData.company,
         trxid: formData.trxid,
         amount: formData.amount3,
-        status: 'Pending',
+        status: 'pending',
         timestamp: Date.now()
     }));
 
