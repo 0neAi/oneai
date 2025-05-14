@@ -462,10 +462,6 @@
                 },
                 showPaymentDetails(payment) {
                     this.selectedPayment = payment;
-                    this.paymentModal = new bootstrap.Modal(
-                        document.getElementById('paymentModal'),
-                        { keyboard: false }
-                    );
                     this.paymentModal.show();
                 }
             },
@@ -528,7 +524,13 @@
             }
         };
 
-        Vue.createApp(AdminApp).mount('#admin-app');
+     try {
+    Vue.createApp(AdminApp).mount('#admin-app');
+} catch (error) {
+    console.error('Vue initialization failed:', error);
+    document.getElementById('admin-app').innerHTML = 
+        '<div class="alert alert-danger">Application failed to load. Please refresh the page.</div>';
+}
     </script>
 </body>
 </html>
