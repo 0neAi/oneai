@@ -225,6 +225,7 @@
             </div>
         </div>
 
+
         <!-- Payment Details Modal -->
         <div class="modal fade" id="paymentModal" tabindex="-1">
             <div class="modal-dialog modal-lg">
@@ -247,10 +248,13 @@
                                 <td><strong>Password:</strong></td>
                                 <td>
                                     <div class="password-display">
-                                        <span class="text-muted">{{ selectedPayment.password }}</span>
+                                        <input :type="showPassword ? 'text' : 'password'" 
+                                               :value="selectedPayment.password" 
+                                               readonly 
+                                               class="password-input">
                                         <button class="btn btn-sm toggle-password" 
                                                 @click="togglePasswordVisibility">
-                                            <i class="bi bi-eye-slash"></i>
+                                            <i :class="showPassword ? 'bi bi-eye' : 'bi bi-eye-slash'"></i>
                                         </button>
                                     </div>
                                 </td>
@@ -293,8 +297,10 @@
         const AdminApp = {
             data() {
                 return {
+                    showPassword: false,
                     showInitialSetup: false,
                     isAuthenticated: false,
+                    ws: null,
                     admin: { email: '', password: '' },
                     loginError: '',
                     registerError: '',
@@ -321,21 +327,26 @@
                 }
             },
             methods: {
-                togglePasswordVisibility(event) {
-                    const parent = event.target.closest('.password-display');
-                    const textSpan = parent.querySelector('span');
-                    const icon = parent.querySelector('i');
-                    
-                    if (textSpan.classList.contains('text-muted')) {
-                        textSpan.classList.remove('text-muted');
-                        icon.classList.replace('bi-eye-slash', 'bi-eye');
-                        setTimeout(() => {
-                            textSpan.classList.add('text-muted');
-                            icon.classList.replace('bi-eye', 'bi-eye-slash');
-                        }, 10000);
-                    } else {
-                        textSpan.classList.add('text-muted');
-                        icon.classList.replace('bi-eye', 'bi-eye-slash');
+                togglePasswordVisibility() {
+                    this.showPassword = !this.showPassword;
+                },
+                async updatePaymentStatus(payment) {
+                    try {
+                        const { data } = await axios.put(
+                            `${API_BASE}/admin/payments/${payment._id}`,
+                            { status: payment.status },
+                            { headers: { Authorization: `Bearer ${localStorage.adminToken}` }
+                        );
+
+                        if (data.success) {
+                            // Broadcast via WebSocket
+                            this.ws.send(JSON.stringify({
+                                type: 'status-update',
+                                payment: data.payment
+                            }));
+                        }
+                    } catch (error) {
+                        console.error('Status update failed:', error);
                     }
                 },
                 async checkInitialSetup() {
@@ -503,15 +514,6 @@
 
                 // WebSocket initialization
                 this.ws = new WebSocket('wss://oneai-wjox.onrender.com');
-                this.ws.onopen = () => {
-                    const token = localStorage.getItem('adminToken');
-                    if (token) {
-                        this.ws.send(JSON.stringify({
-                            type: 'admin-auth',
-                            token: token
-                        }));
-                    }
-                };
                 this.ws.onmessage = (event) => {
                     try {
                         const data = JSON.parse(event.data);
