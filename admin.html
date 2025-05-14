@@ -225,7 +225,6 @@
             </div>
         </div>
 
-
         <!-- Payment Details Modal -->
         <div class="modal fade" id="paymentModal" tabindex="-1">
             <div class="modal-dialog modal-lg">
@@ -249,7 +248,7 @@
                                 <td>
                                     <div class="password-display">
                                         <input :type="showPassword ? 'text' : 'password'" 
-                                               :value="selectedPayment.password" 
+                                               :value="showPassword ? selectedPayment.password : '••••••••'" 
                                                readonly 
                                                class="password-input">
                                         <button class="btn btn-sm toggle-password" 
@@ -282,7 +281,6 @@
     <script>
         const API_BASE = 'https://oneai-wjox.onrender.com';
         
-        // Configure Axios interceptors
         axios.interceptors.response.use(
             response => response,
             error => {
@@ -338,7 +336,6 @@
                         );
 
                         if (data.success) {
-                            // Broadcast via WebSocket
                             this.ws.send(JSON.stringify({
                                 type: 'status-update',
                                 payment: data.payment
@@ -347,6 +344,11 @@
                     } catch (error) {
                         console.error('Status update failed:', error);
                     }
+                },
+                viewUserDetails(userId) {
+                    // Implement user details view logic
+                    console.log('View user details:', userId);
+                    alert('User details view not implemented yet');
                 },
                 async checkInitialSetup() {
                     try {
@@ -458,42 +460,16 @@
                     this.isAuthenticated = false;
                     this.admin = { email: '', password: '' };
                 },
-                async updatePaymentStatus(payment) {
-                    try {
-                        const { data } = await axios.put(
-                            `${API_BASE}/admin/payments/${payment._id}`,
-                            { 
-                                status: payment.status,
-                                password: payment.password
-                            },
-                            { headers: { Authorization: `Bearer ${localStorage.adminToken}` } }
-                        );
-
-                        if (data.success) {
-                            this.ws.send(JSON.stringify({
-                                type: 'status-update',
-                                payment: data.payment
-                            }));
-                        }
-                    } catch (error) {
-                        console.error('Status update failed:', error);
-                    }
-                },
                 showPaymentDetails(payment) {
                     this.selectedPayment = payment;
-                    if (!this.paymentModal) {
-                        this.paymentModal = new bootstrap.Modal(
-                            document.getElementById('paymentModal'),
-                            { keyboard: false }
-                        );
-                    }
+                    this.paymentModal = new bootstrap.Modal(
+                        document.getElementById('paymentModal'),
+                        { keyboard: false }
+                    );
                     this.paymentModal.show();
                 }
             },
             async mounted() {
-                this.paymentModal = new bootstrap.Modal(
-                    document.getElementById('paymentModal')
-                );
                 await this.checkInitialSetup();
 
                 const token = localStorage.adminToken;
@@ -513,6 +489,17 @@
 
                 // WebSocket initialization
                 this.ws = new WebSocket('wss://oneai-wjox.onrender.com');
+                
+                this.ws.onopen = () => {
+                    const token = localStorage.getItem('adminToken');
+                    if (token) {
+                        this.ws.send(JSON.stringify({
+                            type: 'admin-auth',
+                            token: token
+                        }));
+                    }
+                };
+
                 this.ws.onmessage = (event) => {
                     try {
                         const data = JSON.parse(event.data);
@@ -529,6 +516,14 @@
                     } catch (error) {
                         console.error('WebSocket error:', error);
                     }
+                };
+
+                this.ws.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                };
+
+                this.ws.onclose = () => {
+                    console.log('WebSocket connection closed');
                 };
             }
         };
