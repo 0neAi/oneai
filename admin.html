@@ -324,6 +324,51 @@
                 }
             },
             methods: {
+                    initWebSocket() {
+        this.ws = new WebSocket('wss://oneai-wjox.onrender.com');
+
+        this.ws.onopen = () => {
+            const token = localStorage.getItem('adminToken');
+            if (token) {
+                this.ws.send(JSON.stringify({
+                    type: 'admin-auth',
+                    token: token
+                }));
+            }
+        };
+
+        this.ws.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'unauthorized') {
+                    this.logout();
+                }
+                if (data.type === 'status-update') {
+                    const index = this.payments.findIndex(p => p._id === data.payment._id);
+                    if (index > -1) {
+                        this.payments.splice(index, 1, {
+                            ...data.payment,
+                            password: this.payments[index].password
+                        });
+                        this.updateStats();
+                    }
+                }
+            } catch (error) {
+                console.error('WebSocket error:', error);
+            }
+        };
+
+        this.ws.onerror = (error) => {
+            console.error('WebSocket error:', error);
+        };
+
+        this.ws.onclose = () => {
+            console.log('WebSocket disconnected. Attempting reconnect...');
+            setTimeout(() => {
+                this.initWebSocket(); // Reinitialize WebSocket
+            }, 3000);
+        };
+    },
                 togglePasswordVisibility() {
                     this.showPassword = !this.showPassword;
                 },
@@ -469,24 +514,27 @@
                 this.paymentModal.show();
             }
             },
-            async mounted() {
-                await this.checkInitialSetup();
+async mounted() {
+    await this.checkInitialSetup();
 
-                const token = localStorage.adminToken;
-                if (token && !this.showInitialSetup) {
-                    try {
-                        await axios.get(`${API_BASE}/admin/users`, {
-                            headers: { 
-                                Authorization: `Bearer ${token}` 
-                            }
-                        });
-                        this.isAuthenticated = true;
-                        await this.loadData();
-                    } catch (error) {
-                        this.logout();
-                    }
+    const token = localStorage.adminToken;
+    if (token && !this.showInitialSetup) {
+        try {
+            await axios.get(`${API_BASE}/admin/users`, {
+                headers: { 
+                    Authorization: `Bearer ${token}` 
                 }
+            });
+            this.isAuthenticated = true;
+            await this.loadData();
+        } catch (error) {
+            this.logout();
+        }
+    }
 
+    // Initialize WebSocket
+    this.initWebSocket();
+}
                 // WebSocket initialization
                 this.ws = new WebSocket('wss://oneai-wjox.onrender.com');
                 
