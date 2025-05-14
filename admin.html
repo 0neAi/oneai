@@ -278,7 +278,7 @@
         </div>
     </div>
 
-   <script>
+<script>
     const API_BASE = 'https://oneai-wjox.onrender.com';
     
     axios.interceptors.response.use(
@@ -348,7 +348,7 @@
                             if (index > -1) {
                                 this.payments.splice(index, 1, {
                                     ...data.payment,
-                                    password: this.payments[index].password
+                                    password: this.payments[index]?.password || ''
                                 });
                                 this.updateStats();
                             }
@@ -364,9 +364,7 @@
 
                 this.ws.onclose = () => {
                     console.log('WebSocket disconnected. Attempting reconnect...');
-                    setTimeout(() => {
-                        this.initWebSocket();
-                    }, 3000);
+                    setTimeout(() => this.initWebSocket(), 3000);
                 };
             },
             togglePasswordVisibility() {
@@ -389,10 +387,6 @@
                 } catch (error) {
                     console.error('Status update failed:', error);
                 }
-            },
-            viewUserDetails(userId) {
-                console.log('View user details:', userId);
-                alert('User details view not implemented yet');
             },
             async checkInitialSetup() {
                 try {
@@ -428,7 +422,7 @@
                         setTimeout(() => window.location.reload(), 1500);
                     }
                 } catch (error) {
-                    this.registerError = (error.response?.data?.message) || 'Registration failed';
+                    this.registerError = error.response?.data?.message || 'Registration failed';
                 }
             },
             validateEmail(email) {
@@ -442,7 +436,7 @@
                     this.isAuthenticated = true;
                     await this.loadData();
                 } catch (error) {
-                    this.loginError = (error.response?.data?.message) || 'Invalid credentials';
+                    this.loginError = error.response?.data?.message || 'Invalid credentials';
                 }
             },
             async loadData() {
@@ -462,8 +456,8 @@
                         })
                     ]);
 
-                    this.users = usersRes.data.users;
-                    this.payments = paymentsRes.data.payments.map(p => ({
+                    this.users = usersRes.data.users || [];
+                    this.payments = (paymentsRes.data.payments || []).map(p => ({
                         ...p,
                         user: p.user || { email: 'N/A', phone: 'N/A' }
                     }));
@@ -486,62 +480,68 @@
                 };
             },
             statusClass(status) {
-                const classes = {
+                return {
                     'Pending': 'bg-warning',
                     'Completed': 'bg-success',
                     'Failed': 'bg-danger'
-                };
-                return classes[status] || 'bg-secondary';
+                }[status] || 'bg-secondary';
             },
             shortId(id) {
-                return id ? `${id.substring(0, 6)}...` : ''; // ✅ Correct closing }
+                return id ? `${id.substring(0, 6)}...` : '';
             },
             formatDate(dateString) {
-                return new Date(dateString).toLocaleDateString();
+                return dateString ? new Date(dateString).toLocaleDateString() : 'N/A';
             },
             logout() {
                 localStorage.removeItem('adminToken');
                 this.isAuthenticated = false;
                 this.admin = { email: '', password: '' };
+                this.payments = [];
+                this.users = [];
             },
             showPaymentDetails(payment) {
-                this.selectedPayment = payment;
-                this.paymentModal = new bootstrap.Modal(
-                    document.getElementById('paymentModal'),
-                    { keyboard: false }
-                );
+                this.selectedPayment = payment || {};
+                this.paymentModal = new bootstrap.Modal('#paymentModal', { keyboard: false });
                 this.paymentModal.show();
-            },
+            }
         },
         async mounted() {
             await this.checkInitialSetup();
-
-            const token = localStorage.adminToken;
-            if (token && !this.showInitialSetup) {
-                try {
-                    await axios.get(`${API_BASE}/admin/users`, {
-                        headers: { 
-                            Authorization: `Bearer ${token}` 
-                        }
+            
+            try {
+                const token = localStorage.adminToken;
+                if (token && !this.showInitialSetup) {
+                    await axios.get(`${API_BASE}/admin/verify-token`, {
+                        headers: { Authorization: `Bearer ${token}` }
                     });
                     this.isAuthenticated = true;
                     await this.loadData();
-                } catch (error) {
-                    this.logout();
                 }
+            } catch (error) {
+                this.logout();
             }
-
-            // Initialize WebSocket
+            
             this.initWebSocket();
         }
     };
 
+    // Initialize Vue application
     try {
-        Vue.createApp(AdminApp).mount('#admin-app');
+        const app = Vue.createApp(AdminApp);
+        app.mount('#admin-app');
     } catch (error) {
-        console.error('Vue initialization failed:', error);
-        document.getElementById('admin-app').innerHTML = 
-            '<div class="alert alert-danger">Application failed to load. Please refresh the page.</div>';
+        console.error('Vue initialization error:', error);
+        document.getElementById('admin-app').innerHTML = `
+            <div class="alert alert-danger text-center mt-5">
+                <h4>Application Error</h4>
+                <p>Failed to initialize admin interface. Please try:</p>
+                <ol class="text-start">
+                    <li>Refreshing the page</li>
+                    <li>Checking your internet connection</li>
+                    <li>Contacting support if the problem persists</li>
+                </ol>
+            </div>
+        `;
     }
 </script>
 </body>
