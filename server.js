@@ -301,7 +301,7 @@ app.post('/payment', authMiddleware, async (req, res) => {
       ...req.body,
       originalAmount,
       discount,
-      status: 'pending' // Ensure status field exists
+      status: 'Pending' // Ensure status field exists
     });
 
     await payment.save();
@@ -356,7 +356,7 @@ app.post('/admin/update-status', adminAuth, async (req, res) => {
   try {
     const { trxid, status } = req.body;
     
-    if (!['pending', 'completed', 'failed'].includes(status)) {
+    if (!['Pending', 'Completed', 'Failed'].includes(status)) {
       return res.status(400).json({ success: false, message: 'Invalid status' });
     }
 
