@@ -330,7 +330,7 @@
                 async updatePaymentStatus(payment) {
                     try {
                         const { data } = await axios.put(
-                            `${API_BASE}/admin/payments/${payment._id}`,
+                            `${API_BASE}/admin/payments/${payment.trxid}`,
                             { status: payment.status },
                             { headers: { Authorization: `Bearer ${localStorage.adminToken}` }
                         );
@@ -460,10 +460,14 @@
                     this.isAuthenticated = false;
                     this.admin = { email: '', password: '' };
                 },
-                showPaymentDetails(payment) {
-                    this.selectedPayment = payment;
-                    this.paymentModal.show();
-                }
+               showPaymentDetails(payment) {
+                this.selectedPayment = payment;
+                this.paymentModal = new bootstrap.Modal(
+                    document.getElementById('paymentModal'),
+                    { keyboard: false }
+                );
+                this.paymentModal.show();
+            }
             },
             async mounted() {
                 await this.checkInitialSetup();
@@ -499,6 +503,9 @@
                 this.ws.onmessage = (event) => {
                     try {
                         const data = JSON.parse(event.data);
+                         if(data.type === 'unauthorized') {
+                                this.logout();
+                            }
                         if (data.type === 'status-update') {
                             const index = this.payments.findIndex(p => p._id === data.payment._id);
                             if (index > -1) {
@@ -519,7 +526,10 @@
                 };
 
                 this.ws.onclose = () => {
-                    console.log('WebSocket connection closed');
+                    console.log('WebSocket disconnected. Attempting reconnect...');
+                    setTimeout(() => {
+                        this.ws = new WebSocket('wss://oneai-wjox.onrender.com');
+                    }, 3000);
                 };
             }
         };
