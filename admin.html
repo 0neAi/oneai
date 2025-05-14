@@ -494,7 +494,7 @@
                 return classes[status] || 'bg-secondary';
             },
             shortId(id) {
-                return id ? `${id.substring(0, 6)}...` : '';
+                return id ? `${id.substring(0, 6)}...` : ''; // ✅ Correct closing }
             },
             formatDate(dateString) {
                 return new Date(dateString).toLocaleDateString();
@@ -511,7 +511,7 @@
                     { keyboard: false }
                 );
                 this.paymentModal.show();
-            }
+            },
         },
         async mounted() {
             await this.checkInitialSetup();
