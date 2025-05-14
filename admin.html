@@ -529,19 +529,6 @@
     try {
         const app = Vue.createApp(AdminApp);
         app.mount('#admin-app');
-    } catch (error) {
-        console.error('Vue initialization error:', error);
-        document.getElementById('admin-app').innerHTML = `
-            <div class="alert alert-danger text-center mt-5">
-                <h4>Application Error</h4>
-                <p>Failed to initialize admin interface. Please try:</p>
-                <ol class="text-start">
-                    <li>Refreshing the page</li>
-                    <li>Checking your internet connection</li>
-                    <li>Contacting support if the problem persists</li>
-                </ol>
-            </div>
-        `;
     }
 </script>
 </body>
