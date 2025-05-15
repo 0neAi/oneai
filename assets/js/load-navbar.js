@@ -117,7 +117,7 @@
     digits.forEach(digit => digit.style.animation = '');
     
     const digitValue = parseInt(`${digits[0].textContent}${digits[1].textContent}`);
-    let discount = Math.min(Math.max(Math.round(digitValue * 0.4), 5, 40);
+let discount = Math.min(Math.max(Math.round(digitValue * 0.4, 5), 40);
 
     setTimeout(() => {
       document.getElementById('discountSpin').style.display = 'none';
