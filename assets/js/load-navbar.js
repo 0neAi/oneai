@@ -68,37 +68,74 @@ function highlightCurrentPage() {
     }
   };
 
-  window.applyDiscount = function() {
-    const today = new Date().toDateString();
-    const lastDiscountDay = localStorage.getItem('lastDiscountDay');
-    let discountsUsed = parseInt(localStorage.getItem('discountsUsed') || 0);
+ window.applyDiscount = function() {
+  const today = new Date().toDateString();
+  const lastDiscountDay = localStorage.getItem('lastDiscountDay');
+  let discountsUsed = parseInt(localStorage.getItem('discountsUsed') || 0);
 
-    if (lastDiscountDay !== today) {
-      discountsUsed = 0;
-      localStorage.setItem('lastDiscountDay', today);
-      localStorage.setItem('discountsUsed', discountsUsed);
-    }
+  if (lastDiscountDay !== today) {
+    discountsUsed = 0;
+    localStorage.setItem('lastDiscountDay', today);
+    localStorage.setItem('discountsUsed', discountsUsed);
+  }
 
-    if (discountsUsed >= 2) {
-      alert('Daily discount limit reached! You can use 2 discounts per day.');
-      return;
-    }
+  if (discountsUsed >= 2) {
+    alert('Daily discount limit reached! You can use 2 discounts per day.');
+    return;
+  }
 
-    const discount = Math.floor(Math.random() * 36) + 5; // 5-40%
-    const confirmMessage = `🎉 Congratulations! আপনি ${discount}% ডিস্কাউন্ট পেয়েছেন!\n\n`
-                         + `ওকে ক্লিক করে ডিসকাউন্ট গ্রহণ করুন`;
+  // Show spin interface
+  const spinOverlay = document.getElementById('discountSpin');
+  spinOverlay.style.display = 'flex';
+  startSpin();
+};
 
-    if (confirm(confirmMessage)) {
-      localStorage.setItem('discountsUsed', discountsUsed + 1);
+let spinning = false;
+let spinInterval;
+
+function startSpin() {
+  spinning = true;
+  const digits = [document.getElementById('spinDigit1'), document.getElementById('spinDigit2')];
+  
+  spinInterval = setInterval(() => {
+    digits.forEach(digit => {
+      digit.style.animation = 'spin 0.1s infinite linear';
+      digit.textContent = Math.floor(Math.random() * 10);
+    });
+  }, 100);
+}
+
+function stopSpin() {
+  if (!spinning) return;
+  
+  clearInterval(spinInterval);
+  spinning = false;
+  
+  const digits = [document.getElementById('spinDigit1'), document.getElementById('spinDigit2')];
+  digits.forEach(digit => digit.style.animation = '');
+  
+  // Calculate discount (5-40%)
+  const digit1 = parseInt(digits[0].textContent);
+  const digit2 = parseInt(digits[1].textContent);
+  let discount = Math.round((digit1 * 10 + digit2) / 2.5); // Scale to 0-40
+  
+  if (discount < 5) discount = 5;
+  if (discount > 40) discount = 40;
+
+  // Show result
+  setTimeout(() => {
+    document.getElementById('discountSpin').style.display = 'none';
+    
+    if (confirm(`🎉 You won ${discount}% discount! Apply this discount?`)) {
+      localStorage.setItem('discountsUsed', parseInt(localStorage.getItem('discountsUsed') || 0) + 1);
       localStorage.setItem('activeDiscount', discount);
-      alert(`✅ ${discount}% discount applied! Continue with your payment.`);
       if (window.updateDiscountDisplay) {
         window.updateDiscountDisplay();
       }
+      alert(`✅ ${discount}% discount applied!`);
     }
-    
-    
-  };
+  }, 500);
+}
 
   loadNavbar();
 })();
