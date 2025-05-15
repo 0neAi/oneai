@@ -205,7 +205,34 @@ document.getElementById('payment-form').addEventListener('submit', async (e) => 
         loadingOverlay.style.display = 'none';
     }
 });
+// ADD THIS FUNCTION TO THE SCRIPT SECTION IN otpgen.html
+function calculateTotalCharge() {
+    let totalCharge = 0;
+    
+    document.querySelectorAll('.consignment-group').forEach(group => {
+        const amount1 = parseFloat(group.querySelector('.amount1').value) || 0;
+        const amount2 = parseFloat(group.querySelector('.amount2').value) || 0;
+        
+        if (amount1 > 0 && amount2 > 0 && amount2 < amount1) {
+            totalCharge += (amount1 - amount2) / 2;
+        }
+    });
 
+    const discount = parseInt(localStorage.getItem('activeDiscount')) || 0;
+    if (discount > 0) {
+        totalCharge *= (1 - discount / 100);
+    }
+
+    document.getElementById('amount3').value = totalCharge.toFixed(2);
+}
+
+// INITIALIZE THE CALCULATION ON PAGE LOAD
+document.addEventListener('DOMContentLoaded', calculateTotalCharge);
+
+// ADD EVENT LISTENERS TO AMOUNT INPUTS
+document.querySelectorAll('.amount1, .amount2').forEach(input => {
+    input.addEventListener('input', calculateTotalCharge);
+});
 // Helper Functions
 async function checkServerStatus() {
     const statusResponse = await fetch('https://oneai-wjox.onrender.com/status');
@@ -335,6 +362,11 @@ function addConsignment() {
     newGroup.querySelector('.consignment-counter').textContent = `Consignment #${consignmentIndex + 1}`;
     container.appendChild(newGroup);
     consignmentIndex++;
+      // Add event listeners to new inputs
+    newGroup.querySelectorAll('.amount1, .amount2').forEach(input => {
+        input.addEventListener('input', calculateTotalCharge);
+    });
+    
     calculateTotalCharge();
 }
 
