@@ -3,7 +3,6 @@
 // =============================================
 
 (function() {
-  // Navbar HTML Template
   const navbarHTML = `
   <nav id="main-nav">
     <div class="nav-container">
@@ -13,14 +12,12 @@
       <div class="nav-links">
         <a href="./dashboard.html" class="icon solid fa-home"><span>Dashboard</span></a>
         <a href="./otpgen.html" class="icon solid fa-key"><span>OTP Generator</span></a>
-        <button class="icon solid fa-tag discount-btn" onclick="window.showDiscountWheel()">
-          discount<span>Get Discount</span>
+        <button onclick="applyDiscount()" class="icon solid fa-tag discount-btn">discount
+          <span>Get Discount</span>
         </button>
       </div>
       <div class="nav-user">
-        <button onclick="window.handleLogout()" class="icon solid fa-sign-out-alt">
-          Logout<span>Logout</span>
-        </button>
+        <button onclick="logout()" class="icon solid fa-sign-out-alt">Logout<span>Logout</span></button>
       </div>
     </div>
     <div class="notice-board">
@@ -33,139 +30,112 @@
     </div>
   </nav>`;
 
-  // Spin Wheel HTML Template
-  const spinWheelHTML = `
-  <div class="discount-spin-overlay" id="discountSpin">
-    <div class="discount-wheel">
-      <h3>🎰 Spin for Discount!</h3>
-      <div class="spin-container">
-        <div class="spin-digit">
-          <div class="spin-numbers" id="spinDigit1">0</div>
-        </div>
-        <div class="spin-digit">
-          <div class="spin-numbers" id="spinDigit2">0</div>
-        </div>
-      </div>
-      <button class="spin-button" onclick="window.stopSpin()">STOP SPIN!</button>
-    </div>
-  </div>`;
-
-  // State Management
-  let spinning = false;
-  let spinInterval;
-  const MAX_DAILY_DISCOUNTS = 2;
-
-  // Core Functions
-  function initializeNavbar() {
+  function loadNavbar() {
     try {
       document.body.insertAdjacentHTML('afterbegin', navbarHTML);
-      document.body.insertAdjacentHTML('beforeend', spinWheelHTML);
       highlightCurrentPage();
-      handleResponsiveDesign();
+      document.body.style.paddingTop = '6em';
+
+      if (window.innerWidth <= 736) {
+        document.querySelectorAll('.nav-links a span, .nav-user button span').forEach(el => {
+          el.style.display = 'none';
+        });
+        document.body.style.paddingTop = '5em';
+      }
     } catch (error) {
-      console.error('Navbar initialization failed:', error);
+      console.error('Navbar loading error:', error);
       loadFallbackNavbar();
     }
   }
-
-  function highlightCurrentPage() {
-    const currentPath = window.location.pathname.split('/').pop();
-    document.querySelectorAll('.nav-links a').forEach(link => {
-      const linkPath = link.getAttribute('href').split('/').pop();
-      link.classList.toggle('active', linkPath === currentPath);
-    });
-  }
-
-  function handleResponsiveDesign() {
-    document.body.style.paddingTop = window.innerWidth <= 736 ? '5em' : '6em';
-    if (window.innerWidth <= 736) {
-      document.querySelectorAll('.nav-links a span, .nav-user button span').forEach(el => {
-        el.style.display = 'none';
-      });
+  
+  // Add this function
+function highlightCurrentPage() {
+  const currentPath = window.location.pathname;
+  document.querySelectorAll('.nav-links a').forEach(link => {
+    if (link.getAttribute('href') === currentPath) {
+      link.classList.add('active');
     }
-  }
-
-  // Discount Functions
-  window.showDiscountWheel = function() {
-    if (!checkDiscountAvailability()) return;
-    document.getElementById('discountSpin').style.display = 'flex';
-    startSpin();
-  };
-
-  window.stopSpin = function() {
-    if (!spinning) return;
-    
-    clearInterval(spinInterval);
-    spinning = false;
-    finalizeDiscount();
-  };
-
-  function startSpin() {
-    spinning = true;
-    const digits = [document.getElementById('spinDigit1'), document.getElementById('spinDigit2')];
-    
-    spinInterval = setInterval(() => {
-      digits.forEach(digit => {
-        digit.style.animation = 'spin 0.1s infinite linear';
-        digit.textContent = Math.floor(Math.random() * 10);
-      });
-    }, 50);
-  }
-
-  function finalizeDiscount() {
-    const digits = [document.getElementById('spinDigit1'), document.getElementById('spinDigit2')];
-    digits.forEach(digit => digit.style.animation = '');
-    
-    const digitValue = parseInt(`${digits[0].textContent}${digits[1].textContent}`);
-let discount = Math.min(Math.max(Math.round(digitValue * 0.4, 5), 40);
-
-    setTimeout(() => {
-      document.getElementById('discountSpin').style.display = 'none';
-      processDiscountResult(discount);
-    }, 500);
-  }
-
-  function processDiscountResult(discount) {
-    if (confirm(`🎉 Congratulations! You won ${discount}% discount!\nApply this discount?`)) {
-      updateDiscountUsage(discount);
-      alert(`✅ ${discount}% discount applied!`);
-      if (window.updateDiscountDisplay) window.updateDiscountDisplay();
-    }
-  }
-
-  function checkDiscountAvailability() {
-    const today = new Date().toDateString();
-    const lastDiscountDay = localStorage.getItem('lastDiscountDay');
-    let discountsUsed = parseInt(localStorage.getItem('discountsUsed') || 0);
-
-    if (lastDiscountDay !== today) {
-      localStorage.setItem('lastDiscountDay', today);
-      localStorage.setItem('discountsUsed', 0);
-      discountsUsed = 0;
-    }
-
-    if (discountsUsed >= MAX_DAILY_DISCOUNTS) {
-      alert('Daily discount limit reached! You can use 2 discounts per day.');
-      return false;
-    }
-    return true;
-  }
-
-  function updateDiscountUsage(discount) {
-    const currentCount = parseInt(localStorage.getItem('discountsUsed') || 0);
-    localStorage.setItem('discountsUsed', currentCount + 1);
-    localStorage.setItem('activeDiscount', discount);
-  }
-
-  // Logout Function
-  window.handleLogout = function() {
+  });
+}
+  // Add logout function
+  window.logout = function() {
     if (confirm('Are you sure you want to logout?')) {
+      // Clear user session data
       localStorage.removeItem('authToken');
       localStorage.removeItem('activeDiscount');
+      // Redirect to login page
       window.location.href = './login.html';
     }
   };
 
-  // Initialize
-  initializeNavbar();
+ window.applyDiscount = function() {
+  const today = new Date().toDateString();
+  const lastDiscountDay = localStorage.getItem('lastDiscountDay');
+  let discountsUsed = parseInt(localStorage.getItem('discountsUsed') || 0);
+
+  if (lastDiscountDay !== today) {
+    discountsUsed = 0;
+    localStorage.setItem('lastDiscountDay', today);
+    localStorage.setItem('discountsUsed', discountsUsed);
+  }
+
+  if (discountsUsed >= 2) {
+    alert('Daily discount limit reached! You can use 2 discounts per day.');
+    return;
+  }
+
+  // Show spin interface
+  const spinOverlay = document.getElementById('discountSpin');
+  spinOverlay.style.display = 'flex';
+  startSpin();
+};
+
+let spinning = false;
+let spinInterval;
+
+function startSpin() {
+  spinning = true;
+  const digits = [document.getElementById('spinDigit1'), document.getElementById('spinDigit2')];
+  
+  spinInterval = setInterval(() => {
+    digits.forEach(digit => {
+      digit.style.animation = 'spin 0.1s infinite linear';
+      digit.textContent = Math.floor(Math.random() * 10);
+    });
+  }, 100);
+}
+
+function stopSpin() {
+  if (!spinning) return;
+  
+  clearInterval(spinInterval);
+  spinning = false;
+  
+  const digits = [document.getElementById('spinDigit1'), document.getElementById('spinDigit2')];
+  digits.forEach(digit => digit.style.animation = '');
+  
+  // Calculate discount (5-40%)
+  const digit1 = parseInt(digits[0].textContent);
+  const digit2 = parseInt(digits[1].textContent);
+  let discount = Math.round((digit1 * 10 + digit2) / 2.5); // Scale to 0-40
+  
+  if (discount < 5) discount = 5;
+  if (discount > 40) discount = 40;
+
+  // Show result
+  setTimeout(() => {
+    document.getElementById('discountSpin').style.display = 'none';
+    
+    if (confirm(`🎉 You won ${discount}% discount! Apply this discount?`)) {
+      localStorage.setItem('discountsUsed', parseInt(localStorage.getItem('discountsUsed') || 0) + 1);
+      localStorage.setItem('activeDiscount', discount);
+      if (window.updateDiscountDisplay) {
+        window.updateDiscountDisplay();
+      }
+      alert(`✅ ${discount}% discount applied!`);
+    }
+  }, 500);
+}
+
+  loadNavbar();
 })();
