@@ -117,7 +117,7 @@
                 </div>
             </div>
 
-   <!-- Payments Section -->
+               <!-- Payments Section -->
             <div class="card shadow-sm mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Recent Payments</h5>
@@ -156,43 +156,6 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Users Table -->
-            <div class="card shadow-sm">
-                <div class="card-header">
-                    <h5 class="mb-0">Registered Users</h5>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead class="bg-light">
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Phone</th>
-                                    <th>Email</th>
-                                    <th>Registered</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="user in users" :key="user._id">
-                                    <td class="text-muted">{{ shortId(user._id) }}</td>
-                                    <td>{{ user.phone }}</td>
-                                    <td>{{ user.email }}</td>
-                                    <td>{{ formatDate(user.createdAt) }}</td>
-                                    <td>
-                                        <button class="btn btn-sm btn-outline-primary"
-                                                @click="viewUserDetails(user._id)">
-                                            Details
-                                        </button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
 
         <!-- Payment Details Modal -->
         <div class="modal fade" id="paymentModal" tabindex="-1">
@@ -240,6 +203,45 @@
                                     </div>
                                 </td>
                             </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+            <!-- Users Table -->
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0">Registered Users</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Phone</th>
+                                    <th>Email</th>
+                                    <th>Registered</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="user in users" :key="user._id">
+                                    <td class="text-muted">{{ shortId(user._id) }}</td>
+                                    <td>{{ user.phone }}</td>
+                                    <td>{{ user.email }}</td>
+                                    <td>{{ formatDate(user.createdAt) }}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary"
+                                                @click="viewUserDetails(user._id)">
+                                            Details
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
                         </table>
                     </div>
                 </div>
