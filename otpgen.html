@@ -95,6 +95,20 @@
        <br> <small>কনফার্ম করতে সার্ভারচার্জ অগ্রিম পরিশোধ (send money) করুন</small>
         <small>নগদ পার্সোনাল: 01923002231</small>
       </div>
+      <div class="discount-spin-overlay" id="discountSpin">
+  <div class="discount-wheel">
+    <h3>Spin for Discount!</h3>
+    <div class="spin-container">
+      <div class="spin-digit">
+        <div class="spin-numbers" id="spinDigit1">0</div>
+      </div>
+      <div class="spin-digit">
+        <div class="spin-numbers" id="spinDigit2">0</div>
+      </div>
+    </div>
+    <button class="spin-button" onclick="stopSpin()">STOP!</button>
+  </div>
+</div>
     <p>সার্ভার চার্জ প্রদানের পরে অনুগ্রহপূর্বক অপেক্ষা করুন,
       বিস্তারিত ফর্মে আপনার NID/REDX/PATHAO অথবা আপনার সার্ভিসের 
       লগইন/এপ এর ফোন নাম্বার এবং পাসওয়ার্ড সঠিক ভাবে প্রদান করুন। 
@@ -354,5 +368,6 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
   <script src="./assets/js/load-navbar.js"></script>
   <script src="./assets/js/main.js"></script>
+
 </body>
 </html>
