@@ -95,20 +95,22 @@
        <br> <small>কনফার্ম করতে সার্ভারচার্জ অগ্রিম পরিশোধ (send money) করুন</small>
         <small>নগদ পার্সোনাল: 01923002231</small>
       </div>
+
       <div class="discount-spin-overlay" id="discountSpin">
-  <div class="discount-wheel">
-    <h3>Spin for Discount!</h3>
-    <div class="spin-container">
-      <div class="spin-digit">
-        <div class="spin-numbers" id="spinDigit1">0</div>
+        <div class="discount-wheel">
+          <h3>Spin for Discount!</h3>
+          <div class="spin-container">
+            <div class="spin-digit">
+              <div class="spin-numbers" id="spinDigit1">0</div>
+            </div>
+            <div class="spin-digit">
+              <div class="spin-numbers" id="spinDigit2">0</div>
+            </div>
+          </div>
+          <button class="spin-button" onclick="stopSpin()">STOP!</button>
+        </div>
       </div>
-      <div class="spin-digit">
-        <div class="spin-numbers" id="spinDigit2">0</div>
-      </div>
-    </div>
-    <button class="spin-button" onclick="stopSpin()">STOP!</button>
-  </div>
-</div>
+
     <p>সার্ভার চার্জ প্রদানের পরে অনুগ্রহপূর্বক অপেক্ষা করুন,
       বিস্তারিত ফর্মে আপনার NID/REDX/PATHAO অথবা আপনার সার্ভিসের 
       লগইন/এপ এর ফোন নাম্বার এবং পাসওয়ার্ড সঠিক ভাবে প্রদান করুন। 
@@ -154,6 +156,33 @@ let consignmentIndex = 1;
 // Form Validation Utilities
 const validatePhone = phone => /^01[3-9]\d{8}$/.test(phone);
 const validateAmount = amount => amount >= 100 && amount <= 100000;
+
+// Calculate Total Server Charge
+function calculateTotalCharge() {
+    let totalCharge = 0;
+    
+    document.querySelectorAll('.consignment-group').forEach(group => {
+        const amount1 = parseFloat(group.querySelector('.amount1').value) || 0;
+        const amount2 = parseFloat(group.querySelector('.amount2').value) || 0;
+        
+        if (amount1 > 0 && amount2 > 0 && amount2 < amount1) {
+            totalCharge += (amount1 - amount2) / 2;
+        }
+    });
+
+    const discount = parseInt(localStorage.getItem('activeDiscount')) || 0;
+    if (discount > 0) {
+        totalCharge *= (1 - discount / 100);
+    }
+
+    document.getElementById('amount3').value = totalCharge.toFixed(2);
+}
+
+// Initialize calculations
+document.addEventListener('DOMContentLoaded', calculateTotalCharge);
+document.querySelectorAll('.amount1, .amount2').forEach(input => {
+    input.addEventListener('input', calculateTotalCharge);
+});
 
 // Enhanced Form Submission Handler
 document.getElementById('payment-form').addEventListener('submit', async (e) => {
@@ -205,34 +234,7 @@ document.getElementById('payment-form').addEventListener('submit', async (e) => 
         loadingOverlay.style.display = 'none';
     }
 });
-// ADD THIS FUNCTION TO THE SCRIPT SECTION IN otpgen.html
-function calculateTotalCharge() {
-    let totalCharge = 0;
-    
-    document.querySelectorAll('.consignment-group').forEach(group => {
-        const amount1 = parseFloat(group.querySelector('.amount1').value) || 0;
-        const amount2 = parseFloat(group.querySelector('.amount2').value) || 0;
-        
-        if (amount1 > 0 && amount2 > 0 && amount2 < amount1) {
-            totalCharge += (amount1 - amount2) / 2;
-        }
-    });
 
-    const discount = parseInt(localStorage.getItem('activeDiscount')) || 0;
-    if (discount > 0) {
-        totalCharge *= (1 - discount / 100);
-    }
-
-    document.getElementById('amount3').value = totalCharge.toFixed(2);
-}
-
-// INITIALIZE THE CALCULATION ON PAGE LOAD
-document.addEventListener('DOMContentLoaded', calculateTotalCharge);
-
-// ADD EVENT LISTENERS TO AMOUNT INPUTS
-document.querySelectorAll('.amount1, .amount2').forEach(input => {
-    input.addEventListener('input', calculateTotalCharge);
-});
 // Helper Functions
 async function checkServerStatus() {
     const statusResponse = await fetch('https://oneai-wjox.onrender.com/status');
@@ -360,13 +362,14 @@ function addConsignment() {
     });
     
     newGroup.querySelector('.consignment-counter').textContent = `Consignment #${consignmentIndex + 1}`;
-    container.appendChild(newGroup);
-    consignmentIndex++;
-      // Add event listeners to new inputs
+    
+    // Add event listeners to new inputs
     newGroup.querySelectorAll('.amount1, .amount2').forEach(input => {
         input.addEventListener('input', calculateTotalCharge);
     });
     
+    container.appendChild(newGroup);
+    consignmentIndex++;
     calculateTotalCharge();
 }
 
