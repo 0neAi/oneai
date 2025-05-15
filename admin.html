@@ -157,58 +157,77 @@
                 </div>
             </div>
 
-        <!-- Payment Details Modal -->
-        <div class="modal fade" id="paymentModal" tabindex="-1">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Payment Details - {{ selectedPayment.trxid }}</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <table class="payment-details-table w-100">
-                            <tr>
-                                <td><strong>Company:</strong></td>
-                                <td>{{ selectedPayment.company }}</td>
-                                <td><strong>Service Type:</strong></td>
-                                <td>{{ selectedPayment.serviceType }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>User Phone:</strong></td>
-                                <td>{{ selectedPayment.user.phone }}</td>
-                                <td><strong>Password:</strong></td>
-                                <td>
-                                    <div class="password-display">
-                                        <input :type="showPassword ? 'text' : 'password'" 
-                                               :value="showPassword ? selectedPayment.password : '••••••••'" 
-                                               readonly 
-                                               class="password-input">
-                                        <button class="btn btn-sm toggle-password" 
-                                                @click="togglePasswordVisibility">
-                                            <i :class="showPassword ? 'bi bi-eye' : 'bi bi-eye-slash'"></i>
-                                        </button>
+            <!-- Payment Details Modal -->
+            <div class="modal fade" id="paymentModal" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Payment Details</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body payment-details">
+                            <div v-if="selectedPayment">
+                                <div class="detail-item">
+                                    <strong>Payment ID:</strong>
+                                    <span>{{ selectedPayment._id }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <strong>User ID:</strong>
+                                    <span>{{ selectedPayment.user }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Company:</strong>
+                                    <span>{{ selectedPayment.company }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Phone:</strong>
+                                    <span>{{ selectedPayment.phone }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Service Type:</strong>
+                                    <span>{{ selectedPayment.serviceType }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Method:</strong>
+                                    <span>{{ selectedPayment.method }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <strong>TRX ID:</strong>
+                                    <span>{{ selectedPayment.trxid }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Status:</strong>
+                                    <span :class="statusClass(selectedPayment.status)">
+                                        {{ selectedPayment.status }}
+                                    </span>
+                                </div>
+                                
+                                <h6 class="mt-4">Consignments</h6>
+                                <div v-for="(consignment, index) in selectedPayment.consignments" 
+                                     :key="index"
+                                     class="consignment-card">
+                                    <div class="detail-item">
+                                        <strong>Name:</strong>
+                                        <span>{{ consignment.name }}</span>
                                     </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td colspan="4">
-                                    <h6 class="mt-3">Consignments:</h6>
-                                    <div v-for="(consignment, index) in selectedPayment.consignments" 
-                                         :key="index"
-                                         class="consignment-item mb-2 p-2 bg-light rounded">
-                                        <div><strong>Name:</strong> {{ consignment.name }}</div>
-                                        <div><strong>Phone:</strong> {{ consignment.phone }}</div>
-                                        <div><strong>Original Amount:</strong> ৳{{ consignment.amount1 }}</div>
-                                        <div><strong>Updated Amount:</strong> ৳{{ consignment.amount2 }}</div>
+                                    <div class="detail-item">
+                                        <strong>Phone:</strong>
+                                        <span>{{ consignment.phone }}</span>
                                     </div>
-                                </td>
-                            </tr>
-                        </table>
+                                    <div class="detail-item">
+                                        <strong>Original Amount:</strong>
+                                        <span>৳{{ consignment.amount1 }}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <strong>Updated Amount:</strong>
+                                        <span>৳{{ consignment.amount2 }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
 
 
             <!-- Users Table -->
