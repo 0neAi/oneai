@@ -1291,3 +1291,63 @@ body {
     margin-top: 0.5rem;
     display: inline-block;
 }
+/* Discount Spin Styles */
+.discount-spin-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.8);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.discount-wheel {
+  background: #fff;
+  padding: 2rem;
+  border-radius: 10px;
+  text-align: center;
+  width: 300px;
+}
+
+.spin-container {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 2rem 0;
+}
+
+.spin-digit {
+  width: 60px;
+  height: 60px;
+  background: #2c3e50;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.spin-numbers {
+  animation: spin 0.1s infinite linear;
+}
+
+@keyframes spin {
+  from { transform: translateY(-90%); }
+  to { transform: translateY(90%); }
+}
+
+.spin-button {
+  background: #27ae60;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1.1rem;
+}
