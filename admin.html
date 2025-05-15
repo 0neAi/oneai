@@ -278,7 +278,7 @@
         </div>
     </div>
 
-<script>
+    <script>
     const API_BASE = 'https://oneai-wjox.onrender.com';
     
     axios.interceptors.response.use(
@@ -343,15 +343,14 @@
                         if (data.type === 'unauthorized') {
                             this.logout();
                         }
-                        if (data.type === 'status-update') {
+                        if (data.type === 'payment-updated') {
                             const index = this.payments.findIndex(p => p._id === data.payment._id);
                             if (index > -1) {
-                                this.payments.splice(index, 1, {
-                                    ...data.payment,
-                                    password: this.payments[index]?.password || ''
-                                });
-                                this.updateStats();
+                                this.payments.splice(index, 1, data.payment);
+                            } else {
+                                this.payments.push(data.payment);
                             }
+                            this.updateStats();
                         }
                     } catch (error) {
                         console.error('WebSocket error:', error);
@@ -373,19 +372,22 @@
             async updatePaymentStatus(payment) {
                 try {
                     const { data } = await axios.put(
-                        `${API_BASE}/admin/payments/${payment.trxid}`,
+                        `${API_BASE}/admin/payments/${payment._id}`,
                         { status: payment.status },
                         { headers: { Authorization: `Bearer ${localStorage.adminToken}` } }
                     );
 
                     if (data.success) {
-                        this.ws.send(JSON.stringify({
-                            type: 'status-update',
-                            payment: data.payment
-                        }));
+                        const index = this.payments.findIndex(p => p._id === payment._id);
+                        if (index > -1) {
+                            this.payments.splice(index, 1, data.payment);
+                        }
+                        this.updateStats();
                     }
                 } catch (error) {
                     console.error('Status update failed:', error);
+                    alert('Error updating status: ' + 
+                        (error.response?.data?.message || error.message));
                 }
             },
             async checkInitialSetup() {
@@ -457,10 +459,7 @@
                     ]);
 
                     this.users = usersRes.data.users || [];
-                    this.payments = (paymentsRes.data.payments || []).map(p => ({
-                        ...p,
-                        user: p.user || { email: 'N/A', phone: 'N/A' }
-                    }));
+                    this.payments = paymentsRes.data.payments || [];
                     this.updateStats();
                 } catch (error) {
                     console.error('Error loading data:', error);
@@ -501,11 +500,16 @@
             },
             showPaymentDetails(payment) {
                 this.selectedPayment = payment || {};
-                this.paymentModal = new bootstrap.Modal('#paymentModal', { keyboard: false });
+                if (!this.paymentModal) {
+                    this.paymentModal = new bootstrap.Modal('#paymentModal', { keyboard: false });
+                }
                 this.paymentModal.show();
             }
         },
         async mounted() {
+            // Initialize modal
+            this.paymentModal = new bootstrap.Modal('#paymentModal');
+
             await this.checkInitialSetup();
             
             try {
@@ -522,6 +526,11 @@
             }
             
             this.initWebSocket();
+        },
+        beforeUnmount() {
+            if (this.ws) {
+                this.ws.close();
+            }
         }
     };
 
@@ -529,6 +538,10 @@
     try {
         const app = Vue.createApp(AdminApp);
         app.mount('#admin-app');
+    } catch (error) {
+        console.error('Vue initialization failed:', error);
+        document.getElementById('admin-app').innerHTML = 
+            '<div class="alert alert-danger">Application failed to load. Please refresh the page.</div>';
     }
 </script>
 </body>
