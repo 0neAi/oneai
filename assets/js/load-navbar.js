@@ -14,12 +14,12 @@
         <a href="./dashboard.html" class="icon solid fa-home"><span>Dashboard</span></a>
         <a href="./otpgen.html" class="icon solid fa-key"><span>OTP Generator</span></a>
         <button class="icon solid fa-tag discount-btn" onclick="window.showDiscountWheel()">
-          discount<span>Get Discount</span>
+          <span>Get Discount</span>
         </button>
       </div>
       <div class="nav-user">
         <button onclick="window.handleLogout()" class="icon solid fa-sign-out-alt">
-          Logout<span>Logout</span>
+          Logout
         </button>
       </div>
     </div>
