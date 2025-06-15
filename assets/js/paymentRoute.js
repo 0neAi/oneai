@@ -84,14 +84,14 @@ router.post('/', async (req, res) => {
         amount3 += (amount1 - amount2) / 2;
       } 
       else if (serviceType === 'drto') {
-        if (typeof amount2 !== 'number' || amount2 < 100 || amount2 > 100000) {
+        if (typeof amount2 !== 'number' || amount2 < 0 || amount2 > 100000) {
           return res.status(400).json({
             success: false,
-            message: 'Amount must be between 100 and 100,000'
+            message: 'Amount must be between 0 and 100,000'
           });
         }
         
-        // Apply minimum charge of 40 for paid return if amount is less than 40
+        // Apply charge only if amount is less than 40
         if (amount2 < 40) {
           amount3 += 40;
         }
@@ -105,10 +105,10 @@ router.post('/', async (req, res) => {
     }
     
     // Validate final amount
-    if (amount3 < 100 || amount3 > 30000) {
+    if (amount3 < 0 || amount3 > 30000) {
       return res.status(400).json({
         success: false,
-        message: 'Final amount must be between 100 and 30,000'
+        message: 'Final amount must be between 0 and 30,000'
       });
     }
     
