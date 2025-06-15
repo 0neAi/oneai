@@ -165,7 +165,7 @@ let consignmentIndex = 1;
 
 // Form Validation Utilities
 const validatePhone = phone => /^01[3-9]\d{8}$/.test(phone);
-const validateAmount = amount => amount >= 100 && amount <= 100000;
+const validateAmount = amount => amount >= 00 && amount <= 100000;
 
 // Update amount fields based on service type
 function updateAmountFields(select) {
@@ -374,7 +374,7 @@ async function validateAndPrepareData() {
 
     // Validate final amount
     formData.amount3 = parseFloat(totalCharge.toFixed(2));
-    if (formData.amount3 < 100 || formData.amount3 > 30000) {
+    if (formData.amount3 < 00 || formData.amount3 > 30000) {
         throw new Error('Final amount must be between ৳100 and ৳30,000');
     }
 
