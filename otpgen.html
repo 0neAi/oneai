@@ -9,6 +9,9 @@
     .hidden {
       display: none !important;
     }
+    .amount-group {
+      transition: all 0.3s ease;
+    }
   </style>
 </head>
 <body class="is-preload">
@@ -81,13 +84,13 @@
             <div class="form-group original-amount-group">
               <label>Original Amount:</label>
               <input type="number" class="amount1" name="consignments[0][amount1]" 
-                     min="100" max="100000" step="1" required>
+                     min="100" max="100000" step="1">
             </div>
             
-            <div class="form-group">
+            <div class="form-group updated-amount-group">
               <label>Updated Amount:</label>
               <input type="number" class="amount2" name="consignments[0][amount2]" 
-                     min="100" max="100000" step="1" required>
+                     min="100" max="100000" step="1">
             </div>
           </div>
         </div>
@@ -168,13 +171,28 @@ const validateAmount = amount => amount >= 100 && amount <= 100000;
 function updateAmountFields(select) {
   const group = select.closest('.consignment-group');
   const originalAmountGroup = group.querySelector('.original-amount-group');
+  const updatedAmountGroup = group.querySelector('.updated-amount-group');
+  const amountGroup = group.querySelector('.amount-group');
   const serviceType = select.value;
   
-  // Hide original amount for Delivery, Return, and Paid Return
-  if (serviceType === 'delivery' || serviceType === 'return' || serviceType === 'drto') {
+  // Reset all fields first
+  originalAmountGroup.classList.remove('hidden');
+  updatedAmountGroup.classList.remove('hidden');
+  amountGroup.classList.remove('hidden');
+  
+  // Hide appropriate fields based on service type
+  if (serviceType === 'delivery' || serviceType === 'return') {
+    // Hide entire amount group for Delivery/Return
+    amountGroup.classList.add('hidden');
+  } 
+  else if (serviceType === 'drto') {
+    // Hide original amount for Paid Return
     originalAmountGroup.classList.add('hidden');
-  } else {
+  } 
+  else if (serviceType === 'pricecng' || serviceType === 'partial') {
+    // Show both fields for Price Change/Partial
     originalAmountGroup.classList.remove('hidden');
+    updatedAmountGroup.classList.remove('hidden');
   }
   
   calculateTotalCharge();
@@ -195,8 +213,10 @@ function calculateTotalCharge() {
             }
         } 
         else if (serviceType === 'drto') {
-            // Paid Return: Minimum charge 40 tk
-            totalCharge += amount2 < 40 ? 40 : amount2;
+            // Paid Return: Only apply charge if amount is less than 40
+            if (amount2 < 40) {
+                totalCharge += 40;
+            }
         }
         // Delivery and Return services have no charge
     });
@@ -210,9 +230,12 @@ function calculateTotalCharge() {
 }
 
 // Initialize calculations
-document.addEventListener('DOMContentLoaded', calculateTotalCharge);
-document.querySelectorAll('.amount1, .amount2').forEach(input => {
-    input.addEventListener('input', calculateTotalCharge);
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize all service type fields
+  document.querySelectorAll('.service-type').forEach(select => {
+    updateAmountFields(select);
+  });
+  calculateTotalCharge();
 });
 
 // Enhanced Form Submission Handler
@@ -302,8 +325,8 @@ async function validateAndPrepareData() {
             serviceType: serviceType,
             name: group.querySelector('.name').value.trim(),
             phone: group.querySelector('.phone1').value.replace(/\D/g, ''),
-            amount1: parseFloat(group.querySelector('.amount1').value),
-            amount2: parseFloat(group.querySelector('.amount2').value)
+            amount1: parseFloat(group.querySelector('.amount1').value) || 0,
+            amount2: parseFloat(group.querySelector('.amount2').value) || 0
         };
 
         // Validate consignment data
@@ -311,17 +334,17 @@ async function validateAndPrepareData() {
             throw new Error(`Consignment ${index + 1} has invalid data`);
         }
 
+        // Service-specific validation
         if (serviceType === 'pricecng' || serviceType === 'partial') {
             if (!validateAmount(consignment.amount1) || !validateAmount(consignment.amount2)) {
                 throw new Error(`Consignment ${index + 1} has invalid amounts`);
             }
-
             if (consignment.amount2 >= consignment.amount1) {
                 throw new Error(`Consignment ${index + 1}: Updated amount must be less than original`);
             }
         } 
         else if (serviceType === 'drto') {
-            if (!validateAmount(consignment.amount2)) {
+            if (consignment.amount2 > 0 && !validateAmount(consignment.amount2)) {
                 throw new Error(`Consignment ${index + 1} has invalid amount`);
             }
         }
@@ -336,7 +359,10 @@ async function validateAndPrepareData() {
             totalCharge += (consignment.amount1 - consignment.amount2) / 2;
         } 
         else if (consignment.serviceType === 'drto') {
-            totalCharge += consignment.amount2 < 40 ? 40 : consignment.amount2;
+            // Only charge if amount is less than 40
+            if (consignment.amount2 < 40) {
+                totalCharge += 40;
+            }
         }
         // Delivery and Return have no charge
     });
@@ -421,8 +447,8 @@ function addConsignment() {
     serviceTypeSelect.value = '';
     serviceTypeSelect.onchange = function() { updateAmountFields(this); };
     
-    // Hide original amount by default
-    newGroup.querySelector('.original-amount-group').classList.add('hidden');
+    // Initialize amount fields as hidden
+    newGroup.querySelector('.amount-group').classList.add('hidden');
     
     // Add event listeners to new inputs
     newGroup.querySelectorAll('.amount1, .amount2').forEach(input => {
@@ -459,6 +485,17 @@ window.updateDiscountDisplay = function() {
   
   calculateTotalCharge();
 };
+
+// Initialize form on load
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize service type fields
+  document.querySelectorAll('.service-type').forEach(select => {
+    updateAmountFields(select);
+  });
+  
+  // Initialize discount display
+  if (window.updateDiscountDisplay) window.updateDiscountDisplay();
+});
 </script>
   <script src="./assets/js/load-navbar.js"></script>
   <script src="./assets/js/main.js"></script>
