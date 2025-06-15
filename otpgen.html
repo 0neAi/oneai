@@ -84,13 +84,13 @@
             <div class="form-group original-amount-group">
               <label>Original Amount:</label>
               <input type="number" class="amount1" name="consignments[0][amount1]" 
-                     min="00" max="100000" step="1">
+                     min="00" max="100000" step="1" oninput="calculateTotalCharge()">
             </div>
             
             <div class="form-group updated-amount-group">
               <label>Updated Amount:</label>
               <input type="number" class="amount2" name="consignments[0][amount2]" 
-                     min="00" max="100000" step="1">
+                     min="00" max="100000" step="1" oninput="calculateTotalCharge()">
             </div>
           </div>
         </div>
@@ -104,27 +104,12 @@
         <label for="amount3">Total Server Charge:</label>
         <input type="number" id="amount3" name="amount3" readonly required><br>
            <br> <div>
-              <button class="icon solid fa-tag discount-btn" onclick="window.showDiscountWheel()">
+              <button type="button" class="icon solid fa-tag discount-btn" onclick="window.showDiscountWheel()">
               <span>Get Discount</span>
             </div>
        <br> <small>সার্ভিসটি গ্রহণ নিশ্চিত করতে সার্ভারচার্জ অগ্রিম পরিশোধ করুন</small><br>
         <small>নগদ পার্সোনাল(sendmoney): 01923002231</small><br> 
         <small>Crypto bep20 USDT: 0x08a30256b232aCE8acc3BEeCA73A5F036ba373D0</small>
-      </div>
-
-      <div class="discount-spin-overlay" id="discountSpin">
-        <div class="discount-wheel">
-          <h3>Spin for Discount!</h3>
-          <div class="spin-container">
-            <div class="spin-digit">
-              <div class="spin-numbers" id="spinDigit1">0</div>
-            </div>
-            <div class="spin-digit">
-              <div class="spin-numbers" id="spinDigit2">0</div>
-            </div>
-          </div>
-          <button class="spin-button" onclick="stopSpin()">STOP!</button>
-        </div>
       </div>
 
     <p>আপনার এপ/ওয়েবসাইট লগ আউট হলে কমপক্ষে ২৫ মিনিট লগইন করা থেকে বিরত থাকুন। অনুগ্রহ পূর্বক কিছুক্ষণ অপেক্ষা করুন পেমেন্ট সম্পন্ন হলে আপনার সার্ভিসটি স্বয়ংক্রিয় ভাবে প্রক্রিয়াকরণ শুরু হবে।
@@ -182,18 +167,11 @@ function updateAmountFields(select) {
   
   // Hide appropriate fields based on service type
   if (serviceType === 'delivery' || serviceType === 'return') {
-    // Hide entire amount group for Delivery/Return
     amountGroup.classList.add('hidden');
   } 
   else if (serviceType === 'drto') {
-    // Hide original amount for Paid Return
     originalAmountGroup.classList.add('hidden');
   } 
-  else if (serviceType === 'pricecng' || serviceType === 'partial') {
-    // Show both fields for Price Change/Partial
-    originalAmountGroup.classList.remove('hidden');
-    updatedAmountGroup.classList.remove('hidden');
-  }
   
   calculateTotalCharge();
 }
@@ -213,12 +191,10 @@ function calculateTotalCharge() {
             }
         } 
         else if (serviceType === 'drto') {
-            // Paid Return: Only apply charge if amount is less than 40
             if (amount2 < 40) {
-                totalCharge += 30;
+                totalCharge += 40;
             }
         }
-        // Delivery and Return services have no charge
     });
 
     const discount = parseInt(localStorage.getItem('activeDiscount')) || 0;
@@ -228,15 +204,6 @@ function calculateTotalCharge() {
 
     document.getElementById('amount3').value = totalCharge.toFixed(2);
 }
-
-// Initialize calculations
-document.addEventListener('DOMContentLoaded', function() {
-  // Initialize all service type fields
-  document.querySelectorAll('.service-type').forEach(select => {
-    updateAmountFields(select);
-  });
-  calculateTotalCharge();
-});
 
 // Enhanced Form Submission Handler
 document.getElementById('payment-form').addEventListener('submit', async (e) => {
@@ -257,9 +224,6 @@ document.getElementById('payment-form').addEventListener('submit', async (e) => 
         loadingOverlay.style.display = 'flex';
         document.getElementById('confirmation-message').innerHTML = '';
 
-        // Validate server status
-        await checkServerStatus();
-
         // Collect and validate form data
         const formData = await validateAndPrepareData();
 
@@ -274,7 +238,7 @@ document.getElementById('payment-form').addEventListener('submit', async (e) => 
             body: JSON.stringify(formData)
         });
 
-        const responseData = await parseResponse(response);
+        const responseData = await response.json();
         
         if (response.ok) {
             handleSuccess(responseData, formData);
@@ -289,12 +253,6 @@ document.getElementById('payment-form').addEventListener('submit', async (e) => 
     }
 });
 
-// Helper Functions
-async function checkServerStatus() {
-    const statusResponse = await fetch('https://oneai-wjox.onrender.com/status');
-    if (!statusResponse.ok) throw new Error('Server unavailable');
-}
-
 async function validateAndPrepareData() {
     const form = document.getElementById('payment-form');
     const formData = {
@@ -304,8 +262,7 @@ async function validateAndPrepareData() {
         method: form.method.value,
         trxid: form.trxid.value.trim(),
         consignments: [],
-        discount: parseInt(localStorage.getItem('activeDiscount')) || 0,
-        status: 'Pending'
+        discount: parseInt(localStorage.getItem('activeDiscount')) || 0
     };
 
     // Validate core fields
@@ -336,7 +293,8 @@ async function validateAndPrepareData() {
 
         // Service-specific validation
         if (serviceType === 'pricecng' || serviceType === 'partial') {
-            if (!validateAmount(consignment.amount1) || !validateAmount(consignment.amount2)) {
+            if (!validateAmount(consignment.amount1) || 
+                !validateAmount(consignment.amount2)) {
                 throw new Error(`Consignment ${index + 1} has invalid amounts`);
             }
             if (consignment.amount2 >= consignment.amount1) {
@@ -348,23 +306,20 @@ async function validateAndPrepareData() {
                 throw new Error(`Consignment ${index + 1} has invalid amount`);
             }
         }
-        // Delivery and Return services require no amount validation
 
         formData.consignments.push(consignment);
     });
 
-    // Calculate total charge
+    // Recalculate total charge to match backend validation
     formData.consignments.forEach(consignment => {
         if (consignment.serviceType === 'pricecng' || consignment.serviceType === 'partial') {
             totalCharge += (consignment.amount1 - consignment.amount2) / 2;
         } 
         else if (consignment.serviceType === 'drto') {
-            // Only charge if amount is less than 40
             if (consignment.amount2 < 40) {
-                totalCharge += 30;
+                totalCharge += 40;
             }
         }
-        // Delivery and Return have no charge
     });
 
     // Apply discount
@@ -372,21 +327,9 @@ async function validateAndPrepareData() {
         totalCharge *= (1 - formData.discount / 100);
     }
 
-    // Validate final amount
+    // Set final amount
     formData.amount3 = parseFloat(totalCharge.toFixed(2));
-    if (formData.amount3 < 00 || formData.amount3 > 30000) {
-        throw new Error('Final amount must be between ৳100 and ৳30,000');
-    }
-
     return formData;
-}
-
-async function parseResponse(response) {
-    try {
-        return await response.json();
-    } catch {
-        return { message: 'Invalid server response' };
-    }
 }
 
 function handleSuccess(data, formData) {
@@ -405,7 +348,6 @@ function handleSuccess(data, formData) {
 function handleServerError(responseData) {
     const errorMessage = responseData.message || 'Payment processing failed';
     showMessage(`Server Error: ${errorMessage}`, 'error');
-    console.error('Server Error Details:', responseData);
 }
 
 function handleNetworkError(error) {
@@ -413,7 +355,6 @@ function handleNetworkError(error) {
         ? 'Network Error: Check internet connection'
         : error.message;
     showMessage(`Error: ${message}`, 'error');
-    console.error('Network Error:', error);
 }
 
 function showMessage(text, type) {
@@ -447,12 +388,9 @@ function addConsignment() {
     serviceTypeSelect.value = '';
     serviceTypeSelect.onchange = function() { updateAmountFields(this); };
     
-    // Initialize amount fields as hidden
-    newGroup.querySelector('.amount-group').classList.add('hidden');
-    
-    // Add event listeners to new inputs
+    // Add amount field listeners
     newGroup.querySelectorAll('.amount1, .amount2').forEach(input => {
-        input.addEventListener('input', calculateTotalCharge);
+        input.oninput = calculateTotalCharge;
     });
     
     container.appendChild(newGroup);
@@ -468,33 +406,20 @@ function removeConsignment(element) {
     }
 }
 
-window.updateDiscountDisplay = function() {
-  const discount = parseInt(localStorage.getItem('activeDiscount')) || 0;
-  const discountDisplay = document.getElementById('discount-text');
-  
-  if (discount > 0) {
-    discountDisplay.innerHTML = `
-      <span class="discount-badge">${discount}% OFF!</span>
-      <small>Applied to total charge</small>
-    `;
-    discountDisplay.style.color = '#27ae60';
-  } else {
-    discountDisplay.textContent = 'No active discount';
-    discountDisplay.style.color = '';
-  }
-  
-  calculateTotalCharge();
-};
-
 // Initialize form on load
 document.addEventListener('DOMContentLoaded', function() {
-  // Initialize service type fields
+  // Initialize all service type fields
   document.querySelectorAll('.service-type').forEach(select => {
     updateAmountFields(select);
   });
   
   // Initialize discount display
   if (window.updateDiscountDisplay) window.updateDiscountDisplay();
+  
+  // Add real-time calculation listeners
+  document.querySelectorAll('.amount1, .amount2').forEach(input => {
+    input.addEventListener('input', calculateTotalCharge);
+  });
 });
 </script>
   <script src="./assets/js/load-navbar.js"></script>
