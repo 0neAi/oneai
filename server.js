@@ -15,7 +15,11 @@ const Admin = require('./models/Admin');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
-const jwtSecret = process.env.JWT_SECRET || 'default_secret_use_env_var_in_prod';
+if (!process.env.JWT_SECRET) {
+  console.error('❌ JWT_SECRET environment variable is required');
+  process.exit(1);
+}
+const jwtSecret = process.env.JWT_SECRET;
 const server = require('http').createServer(app);
 const wss = new WebSocket.Server({ server });
 
@@ -286,10 +290,16 @@ app.post('/payment', authMiddleware, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid discount value' });
     }
 
-    const originalAmount = req.body.consignments.reduce((acc, curr) => 
-      acc + (curr.amount1 - curr.amount2) / 2, 0
-    );
-
+      let originalAmount = 0;
+    for (const consignment of req.body.consignments) {
+      if (['pricecng', 'partial'].includes(consignment.serviceType)) {
+        originalAmount += (consignment.amount1 - consignment.amount2) / 2;
+      } 
+      else if (consignment.serviceType === 'drto' && consignment.amount2 < 40) {
+        originalAmount += 40;
+      }
+    }
+    
     const expectedAmount = originalAmount * (1 - (discount / 100));
     if (expectedAmount.toFixed(2) !== req.body.amount3.toFixed(2)) {
       return res.status(400).json({ success: false, message: 'Amount mismatch' });
