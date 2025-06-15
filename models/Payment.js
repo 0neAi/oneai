@@ -16,13 +16,13 @@ const consignmentSchema = new mongoose.Schema({
   amount1: { 
     type: Number, 
     required: true,
-    min: [100, 'Minimum 100 BDT'],
+    min: [00, 'Minimum 00 BDT'],
     max: [100000, 'Maximum 100,000 BDT']
   },
   amount2: { 
     type: Number, 
     required: true,
-    min: [100, 'Minimum 100 BDT'],
+    min: [00, 'Minimum 00 BDT'],
     max: [100000, 'Maximum 100,000 BDT']
   }
 });
@@ -54,7 +54,7 @@ const paymentSchema = new mongoose.Schema({
     serviceType: {
     type: String,
     required: true,
-    enum: ['pricecng', 'partial', 'nid']
+    enum: ['pricecng', 'partial', 'drto', 'delivery', 'return']
   },
   consignments: [consignmentSchema],
   method: { 
@@ -65,7 +65,7 @@ const paymentSchema = new mongoose.Schema({
   amount3: { 
     type: Number, 
     required: true,
-    min: [100, 'Minimum 100 BDT'],
+    min: [00, 'Minimum 00 BDT'],
     max: [30000, 'Maximum 30,000 BDT']
     
   },
