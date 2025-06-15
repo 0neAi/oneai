@@ -57,6 +57,7 @@
       document.body.insertAdjacentHTML('beforeend', spinWheelHTML);
       highlightCurrentPage();
       handleResponsiveDesign();
+      initializeDiscountDisplay();
     } catch (error) {
       console.error('Navbar initialization failed:', error);
       loadFallbackNavbar();
@@ -117,7 +118,7 @@
     if (confirm(`🎉 Congratulations! You won ${discount}% discount!\nApply this discount?`)) {
       updateDiscountUsage(discount);
       alert(`✅ ${discount}% discount applied!`);
-      if (window.updateDiscountDisplay) window.updateDiscountDisplay();
+      updateDiscountDisplay();
     }
   }
 
@@ -143,6 +144,37 @@
     const currentCount = parseInt(localStorage.getItem('discountsUsed') || 0);
     localStorage.setItem('discountsUsed', currentCount + 1);
     localStorage.setItem('activeDiscount', discount);
+    updateDiscountDisplay();
+  }
+
+  // Discount Display Function
+  window.updateDiscountDisplay = function() {
+    const discount = parseInt(localStorage.getItem('activeDiscount')) || 0;
+    const discountDisplay = document.getElementById('discount-text');
+    
+    if (discountDisplay) {
+      if (discount > 0) {
+        discountDisplay.innerHTML = `
+          <span class="discount-badge">${discount}% OFF!</span>
+          <small>Applied to total charge</small>
+        `;
+        discountDisplay.style.color = '#27ae60';
+      } else {
+        discountDisplay.textContent = 'No active discount';
+        discountDisplay.style.color = '';
+      }
+    }
+    
+    // Recalculate total charge if on payment page
+    if (typeof calculateTotalCharge === 'function') {
+      calculateTotalCharge();
+    }
+  };
+
+  function initializeDiscountDisplay() {
+    if (typeof window.updateDiscountDisplay === 'function') {
+      window.updateDiscountDisplay();
+    }
   }
 
   // Logout Function
@@ -153,6 +185,17 @@
       window.location.href = './login.html';
     }
   };
+
+  // Fallback Navbar
+  function loadFallbackNavbar() {
+    const fallbackHTML = `
+    <nav id="fallback-nav">
+      <a href="./dashboard.html">Dashboard</a>
+      <a href="./otpgen.html">OTP Generator</a>
+      <a href="./login.html">Logout</a>
+    </nav>`;
+    document.body.insertAdjacentHTML('afterbegin', fallbackHTML);
+  }
 
   // Initialize
   initializeNavbar();
