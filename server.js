@@ -449,6 +449,12 @@ app.get('/validate', authMiddleware, (req, res) => {
 });
 
 // ======================
+// Add this before the error handler in server.js
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.url}`);
+  next();
+});
+
 // Error Handling
 // ======================
 app.use((err, req, res, next) => {
