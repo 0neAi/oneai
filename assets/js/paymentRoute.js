@@ -66,10 +66,10 @@ router.post('/', async (req, res) => {
       // Validate amounts based on service type
       if (serviceType === 'pricecng' || serviceType === 'partial') {
         if (typeof amount1 !== 'number' || typeof amount2 !== 'number' ||
-            amount1 < 100 || amount1 > 100000 || amount2 < 100 || amount2 > 100000) {
+            amount1 < 00 || amount1 > 100000 || amount2 < 00 || amount2 > 100000) {
           return res.status(400).json({
             success: false,
-            message: 'Amounts must be between 100 and 100,000'
+            message: 'Amounts must be between 00 and 100,000'
           });
         }
         
