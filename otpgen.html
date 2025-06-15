@@ -5,6 +5,11 @@
   <title>1ai Service</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
   <link rel="stylesheet" href="./assets/css/main.css">
+  <style>
+    .hidden {
+      display: none !important;
+    }
+  </style>
 </head>
 <body class="is-preload">
   <div id="bg"></div>
@@ -46,15 +51,6 @@
         <label for="password">App/Login Password:</label>
         <input type="text" id="password" name="password" required minlength="6">
       </div>
-<!--       <div class="form-group">
-        <label for="serviceType">Service Type:</label>
-        <select id="serviceType" name="serviceType" required>
-          <option value="">Select Service</option>
-          <option value="pricecng">Price Change</option>
-          <option value="partial">Partial</option>
-          <option value="drto">Paid Return</option>
-        </select>
-      </div> -->
 
       <!-- Consignments Container -->
       <div id="consignments-container">
@@ -68,18 +64,21 @@
             <input type="tel" class="phone1" name="consignments[0][phone]" 
                    pattern="01[3-9]\d{8}" placeholder="01XXXXXXXXX" required>
           </div>
-      <div class="form-group">
-        <label for="serviceType">Service Type:</label>
-        <select id="serviceType" name="serviceType" required>
-          <option value="">Select Service</option>
-          <option value="pricecng">Price Change</option>
-          <option value="partial">Partial</option>
-          <option value="drto">Paid Return</option>
-        </select>
-      </div>
+
+          <div class="form-group">
+            <label for="serviceType">Service Type:</label>
+            <select class="service-type" name="consignments[0][serviceType]" required onchange="updateAmountFields(this)">
+              <option value="">Select Service</option>
+              <option value="pricecng">Price Change</option>
+              <option value="partial">Partial</option>
+              <option value="drto">Paid Return</option>
+              <option value="delivery">Delivery</option>
+              <option value="return">Return</option>
+            </select>
+          </div>
 
           <div class="amount-group">
-            <div class="form-group">
+            <div class="form-group original-amount-group">
               <label>Original Amount:</label>
               <input type="number" class="amount1" name="consignments[0][amount1]" 
                      min="100" max="100000" step="1" required>
@@ -165,17 +164,41 @@ let consignmentIndex = 1;
 const validatePhone = phone => /^01[3-9]\d{8}$/.test(phone);
 const validateAmount = amount => amount >= 100 && amount <= 100000;
 
+// Update amount fields based on service type
+function updateAmountFields(select) {
+  const group = select.closest('.consignment-group');
+  const originalAmountGroup = group.querySelector('.original-amount-group');
+  const serviceType = select.value;
+  
+  // Hide original amount for Delivery, Return, and Paid Return
+  if (serviceType === 'delivery' || serviceType === 'return' || serviceType === 'drto') {
+    originalAmountGroup.classList.add('hidden');
+  } else {
+    originalAmountGroup.classList.remove('hidden');
+  }
+  
+  calculateTotalCharge();
+}
+
 // Calculate Total Server Charge
 function calculateTotalCharge() {
     let totalCharge = 0;
     
     document.querySelectorAll('.consignment-group').forEach(group => {
+        const serviceType = group.querySelector('.service-type').value;
         const amount1 = parseFloat(group.querySelector('.amount1').value) || 0;
         const amount2 = parseFloat(group.querySelector('.amount2').value) || 0;
         
-        if (amount1 > 0 && amount2 > 0 && amount2 < amount1) {
-            totalCharge += (amount1 - amount2) / 2;
+        if (serviceType === 'pricecng' || serviceType === 'partial') {
+            if (amount1 > 0 && amount2 > 0 && amount2 < amount1) {
+                totalCharge += (amount1 - amount2) / 2;
+            }
+        } 
+        else if (serviceType === 'drto') {
+            // Paid Return: Minimum charge 40 tk
+            totalCharge += amount2 < 40 ? 40 : amount2;
         }
+        // Delivery and Return services have no charge
     });
 
     const discount = parseInt(localStorage.getItem('activeDiscount')) || 0;
@@ -255,7 +278,6 @@ async function validateAndPrepareData() {
         company: form.company.value,
         phone: form.phone.value.replace(/\D/g, ''),
         password: form.password.value.trim(),
-        serviceType: form.serviceType.value,
         method: form.method.value,
         trxid: form.trxid.value.trim(),
         consignments: [],
@@ -275,7 +297,9 @@ async function validateAndPrepareData() {
     // Process consignments
     let totalCharge = 0;
     document.querySelectorAll('.consignment-group').forEach((group, index) => {
+        const serviceType = group.querySelector('.service-type').value;
         const consignment = {
+            serviceType: serviceType,
             name: group.querySelector('.name').value.trim(),
             phone: group.querySelector('.phone1').value.replace(/\D/g, ''),
             amount1: parseFloat(group.querySelector('.amount1').value),
@@ -287,16 +311,34 @@ async function validateAndPrepareData() {
             throw new Error(`Consignment ${index + 1} has invalid data`);
         }
 
-        if (!validateAmount(consignment.amount1) || !validateAmount(consignment.amount2)) {
-            throw new Error(`Consignment ${index + 1} has invalid amounts`);
-        }
+        if (serviceType === 'pricecng' || serviceType === 'partial') {
+            if (!validateAmount(consignment.amount1) || !validateAmount(consignment.amount2)) {
+                throw new Error(`Consignment ${index + 1} has invalid amounts`);
+            }
 
-        if (consignment.amount2 >= consignment.amount1) {
-            throw new Error(`Consignment ${index + 1}: Updated amount must be less than original`);
+            if (consignment.amount2 >= consignment.amount1) {
+                throw new Error(`Consignment ${index + 1}: Updated amount must be less than original`);
+            }
+        } 
+        else if (serviceType === 'drto') {
+            if (!validateAmount(consignment.amount2)) {
+                throw new Error(`Consignment ${index + 1} has invalid amount`);
+            }
         }
+        // Delivery and Return services require no amount validation
 
-        totalCharge += (consignment.amount1 - consignment.amount2) / 2;
         formData.consignments.push(consignment);
+    });
+
+    // Calculate total charge
+    formData.consignments.forEach(consignment => {
+        if (consignment.serviceType === 'pricecng' || consignment.serviceType === 'partial') {
+            totalCharge += (consignment.amount1 - consignment.amount2) / 2;
+        } 
+        else if (consignment.serviceType === 'drto') {
+            totalCharge += consignment.amount2 < 40 ? 40 : consignment.amount2;
+        }
+        // Delivery and Return have no charge
     });
 
     // Apply discount
@@ -361,15 +403,26 @@ function showMessage(text, type) {
 // Consignment Management
 function addConsignment() {
     const container = document.getElementById('consignments-container');
-    const newGroup = document.querySelector('.consignment-group').cloneNode(true);
+    const firstGroup = document.querySelector('.consignment-group');
+    const newGroup = firstGroup.cloneNode(true);
     
-    newGroup.querySelectorAll('input').forEach(input => {
+    // Update all input names with new index
+    newGroup.querySelectorAll('input, select').forEach(input => {
         const name = input.name.replace('[0]', `[${consignmentIndex}]`);
         input.name = name;
         input.value = '';
     });
     
+    // Update counter display
     newGroup.querySelector('.consignment-counter').textContent = `Consignment #${consignmentIndex + 1}`;
+    
+    // Reset service type and fields
+    const serviceTypeSelect = newGroup.querySelector('.service-type');
+    serviceTypeSelect.value = '';
+    serviceTypeSelect.onchange = function() { updateAmountFields(this); };
+    
+    // Hide original amount by default
+    newGroup.querySelector('.original-amount-group').classList.add('hidden');
     
     // Add event listeners to new inputs
     newGroup.querySelectorAll('.amount1, .amount2').forEach(input => {
