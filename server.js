@@ -8,62 +8,12 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const WebSocket = require('ws');
 const { adminAuth } = require('./middleware/auth');
-const paymentRoute = require('./assets/js/paymentRoute');
 const Payment = require('./models/Payment');
 const User = require('./models/User');
 const Admin = require('./models/Admin');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
-const jwtSecret = process.env.JWT_SECRET;
-const server = require('http').createServer(app);
-const wss = new WebSocket.Server({ server });
-
-// ======================
-// WebSocket Configuration
-// ======================
-wss.on('connection', (ws, req) => {
-  if (process.env.NODE_ENV === 'production') {
-    const allowedOrigins = [
-      'https://0neai.github.io',
-      'https://oneai-wjox.onrender.com'
-    ];
-    if (!allowedOrigins.includes(req.headers.origin)) {
-      console.log(`Blocked WebSocket connection from unauthorized origin: ${req.headers.origin}`);
-      return ws.close(1008, 'Unauthorized origin');
-    }
-  }
-
-  ws.on('message', async (message) => {
-    try {
-      const data = JSON.parse(message);
-      
-      // Handle admin status updates
-      if (data.type === 'adminStatusUpdate') {
-        const decoded = jwt.verify(data.token, process.env.JWT_SECRET);
-        
-        if (!['superadmin', 'moderator'].includes(decoded.role)) {
-          throw new Error('Insufficient privileges');
-        }
-
-        // Broadcast to all connected clients
-        wss.clients.forEach(client => {
-          if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({
-              type: 'statusUpdate',
-              payment: data.payment
-            }));
-          }
-        });
-      }
-    } catch (error) {
-      console.error('WebSocket error:', error.message);
-      ws.close(1008, 'Authentication failed');
-    }
-  });
-});
-
-app.set('wss', wss);
 
 // ======================
 // Environment Validation
@@ -139,6 +89,57 @@ mongoose.connection.on('error', err => {
 });
 
 // ======================
+// WebSocket Configuration
+// ======================
+const server = require('http').createServer(app);
+const wss = new WebSocket.Server({ server });
+
+wss.on('connection', (ws, req) => {
+  if (process.env.NODE_ENV === 'production') {
+    const allowedOrigins = [
+      'https://0neai.github.io',
+      'https://oneai-wjox.onrender.com'
+    ];
+    if (!req.headers.origin || !allowedOrigins.includes(req.headers.origin)) {
+      console.log(`Blocked WebSocket connection from unauthorized origin: ${req.headers.origin}`);
+      return ws.close(1008, 'Unauthorized origin');
+    }
+  }
+
+  ws.on('error', (error) => {
+    console.error('WebSocket error:', error);
+  });
+
+  ws.on('message', async (message) => {
+    try {
+      const data = JSON.parse(message);
+      
+      if (data.type === 'adminStatusUpdate') {
+        const decoded = jwt.verify(data.token, process.env.JWT_SECRET);
+        
+        if (!['superadmin', 'moderator'].includes(decoded.role)) {
+          throw new Error('Insufficient privileges');
+        }
+
+        wss.clients.forEach(client => {
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify({
+              type: 'statusUpdate',
+              payment: data.payment
+            }));
+          }
+        });
+      }
+    } catch (error) {
+      console.error('WebSocket error:', error.message);
+      ws.close(1008, 'Authentication failed');
+    }
+  });
+});
+
+app.set('wss', wss);
+
+// ======================
 // Server Readiness Check
 // ======================
 app.use((req, res, next) => {
@@ -155,14 +156,12 @@ app.use((req, res, next) => {
 // Request Logging
 // ======================
 app.use((req, res, next) => {
-  res.on('finish', () => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} - ${res.statusCode}`);
-  });
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
   next();
 });
 
 // ======================
-// Authentication Middlewares
+// Authentication Middleware
 // ======================
 const authMiddleware = async (req, res, next) => {
   try {
@@ -277,51 +276,93 @@ app.post('/login', async (req, res) => {
 // ======================
 app.post('/payment', authMiddleware, async (req, res) => {
   try {
-    if (!Array.isArray(req.body.consignments) || req.body.consignments.length === 0) {
-      return res.status(400).json({ success: false, message: 'Invalid consignments data' });
+    const { consignments, discount = 0 } = req.body;
+
+    // Validate consignments
+    if (!Array.isArray(consignments) || consignments.length === 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'At least one consignment required' 
+      });
     }
 
-    const discount = req.body.discount || 0;
-    if (discount < 0 || discount > 40) {
-      return res.status(400).json({ success: false, message: 'Invalid discount value' });
-    }
+    // Validate each consignment
+    let amount3 = 0;
+    const validServiceTypes = ['pricecng', 'partial', 'drto', 'delivery', 'return'];
+    const phoneRegex = /^01[3-9]\d{8}$/;
+    
+    for (const consignment of consignments) {
+      // Validate service type
+      if (!validServiceTypes.includes(consignment.serviceType)) {
+        return res.status(400).json({
+          success: false,
+          message: `Invalid service type: ${consignment.serviceType}`
+        });
+      }
 
-      let originalAmount = 0;
-    for (const consignment of req.body.consignments) {
-      if (['pricecng', 'partial'].includes(consignment.serviceType)) {
-        originalAmount += (consignment.amount1 - consignment.amount2) / 2;
+      // Validate customer details
+      if (!consignment.name || !phoneRegex.test(consignment.phone)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid customer details'
+        });
+      }
+
+      // Service-specific validation
+      if (consignment.serviceType === 'pricecng' || consignment.serviceType === 'partial') {
+        if (consignment.amount2 >= consignment.amount1) {
+          return res.status(400).json({
+            success: false,
+            message: 'Updated amount must be less than original amount'
+          });
+        }
+        amount3 += (consignment.amount1 - consignment.amount2) / 2;
       } 
       else if (consignment.serviceType === 'drto' && consignment.amount2 < 40) {
-        originalAmount += 40;
+        amount3 += 40;
       }
     }
-    
-    const expectedAmount = originalAmount * (1 - (discount / 100));
-    if (expectedAmount.toFixed(2) !== req.body.amount3.toFixed(2)) {
-      return res.status(400).json({ success: false, message: 'Amount mismatch' });
+
+    // Apply discount
+    if (discount > 0) {
+      amount3 *= (1 - discount / 100);
     }
 
+    // Validate final amount
+    if (amount3 < 0 || amount3 > 30000) {
+      return res.status(400).json({
+        success: false,
+        message: 'Final amount must be between 0 and 30,000'
+      });
+    }
+
+    // Create payment
     const payment = new Payment({
       user: req.user._id,
-      password: req.body.password,
       ...req.body,
-      originalAmount,
-      discount,
-      status: 'Pending' // Ensure status field exists
+      amount3,
+      status: 'Pending'
     });
 
-    await payment.save();
+    const savedPayment = await payment.save();
 
-    // Broadcast new payment via WebSocket
+    // WebSocket notification
     wss.clients.forEach(client => {
-      if(client.readyState === WebSocket.OPEN) {
+      if (client.readyState === WebSocket.OPEN) {
         client.send(JSON.stringify({
-          type: 'newPayment',
+          type: 'new-payment',
           payment: {
-            trxid: payment.trxid,
-            amount: payment.amount3,
-            status: payment.status,
-            timestamp: payment.createdAt
+            _id: savedPayment._id,
+            status: savedPayment.status,
+            trxid: savedPayment.trxid,
+            amount3: savedPayment.amount3,
+            user: {
+              _id: req.user._id,
+              email: req.user.email,
+              phone: req.user.phone
+            },
+            company: savedPayment.company,
+            createdAt: savedPayment.createdAt
           }
         }));
       }
@@ -329,14 +370,8 @@ app.post('/payment', authMiddleware, async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Payment processed',
-      payment: {
-        id: payment._id,
-        trxid: payment.trxid,
-        status: payment.status,
-        serviceType: payment.serviceType,
-        finalAmount: payment.amount3
-      }
+      message: 'Payment processed successfully',
+      payment: savedPayment
     });
 
   } catch (error) {
@@ -351,7 +386,6 @@ app.post('/payment', authMiddleware, async (req, res) => {
 // ======================
 // Admin Routes
 // ======================
-
 const adminLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
@@ -370,7 +404,7 @@ app.post('/admin/update-status', adminAuth, async (req, res) => {
       { trxid },
       { status },
       { new: true }
-    );
+    ).populate('user', 'email phone');
 
     if (!payment) {
       return res.status(404).json({ success: false, message: 'Payment not found' });
@@ -378,7 +412,7 @@ app.post('/admin/update-status', adminAuth, async (req, res) => {
 
     // Broadcast update via WebSocket
     wss.clients.forEach(client => {
-      if(client.readyState === WebSocket.OPEN) {
+      if (client.readyState === WebSocket.OPEN) {
         client.send(JSON.stringify({
           type: 'statusUpdate',
           payment: {
@@ -398,79 +432,8 @@ app.post('/admin/update-status', adminAuth, async (req, res) => {
   }
 });
 
-app.get('/admin/check-registration', async (req, res) => {
-  res.set('Cache-Control', 'no-store, max-age=0');
-  try {
-    const canRegister = await Admin.canRegister();
-    res.json({ success: true, allowRegistration: canRegister });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Registration check failed' });
-  }
-});
-
-app.post('/admin/register', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    
-    if (!email || !password) {
-      return res.status(400).json({ success: false, message: 'Credentials required' });
-    }
-
-    if (!await Admin.canRegister()) {
-      return res.status(403).json({ success: false, message: 'Admin registration closed' });
-    }
-
-    if (await Admin.findOne({ email })) {
-      return res.status(409).json({ success: false, message: 'Email exists' });
-    }
-
-    const admin = new Admin({ email, password });
-    await admin.save();
-
-    res.status(201).json({
-      success: true,
-      message: 'Admin created',
-      admin: admin.toSafeObject()
-    });
-
-  } catch (error) {
-    const message = process.env.NODE_ENV === 'production'
-      ? 'Registration failed'
-      : error.message;
-    res.status(500).json({ success: false, message });
-  }
-});
-
-app.post('/admin/login', adminLimiter, async (req, res) => {
-  res.set('Cache-Control', 'no-store');
-  try {
-    const { email, password } = req.body;
-    const admin = await Admin.findOne({ email }).select('+password');
-
-    if (!admin || !(await bcrypt.compare(password, admin.password))) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Invalid credentials' 
-      });
-    }
-
-    const token = jwt.sign(
-      { adminId: admin._id, role: admin.role },
-      process.env.JWT_SECRET,
-      { expiresIn: '2h' }
-    );
-
-    admin.lastLogin = Date.now();
-    await admin.save();
-
-    res.json({ success: true, token, admin: admin.toSafeObject() });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
-});
-
-// Mount payment routes under admin path
-app.use('/admin/payments', adminAuth, paymentRoute);
+// Mount other admin routes
+app.use('/admin/payments', adminAuth, require('./assets/js/paymentRoute'));
 
 app.get('/admin/users', adminAuth, async (req, res) => {
   try {
@@ -484,7 +447,6 @@ app.get('/admin/users', adminAuth, async (req, res) => {
 app.get('/validate', authMiddleware, (req, res) => {
   res.json({ success: true });
 });
-
 
 // ======================
 // Error Handling
