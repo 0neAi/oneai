@@ -215,7 +215,7 @@ function calculateTotalCharge() {
         else if (serviceType === 'drto') {
             // Paid Return: Only apply charge if amount is less than 40
             if (amount2 < 40) {
-                totalCharge += 40;
+                totalCharge += 30;
             }
         }
         // Delivery and Return services have no charge
@@ -361,7 +361,7 @@ async function validateAndPrepareData() {
         else if (consignment.serviceType === 'drto') {
             // Only charge if amount is less than 40
             if (consignment.amount2 < 40) {
-                totalCharge += 40;
+                totalCharge += 30;
             }
         }
         // Delivery and Return have no charge
