@@ -51,12 +51,12 @@ const paymentSchema = new mongoose.Schema({
     required: true,
     minlength: [6, 'Password must be at least 6 characters']
   },
+  consignments: [consignmentSchema],
     serviceType: {
     type: String,
     required: true,
     enum: ['pricecng', 'partial', 'drto', 'delivery', 'return']
   },
-  consignments: [consignmentSchema],
   method: { 
     type: String, 
     required: true,
