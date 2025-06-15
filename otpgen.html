@@ -255,15 +255,21 @@ document.getElementById('payment-form').addEventListener('submit', async (e) => 
 
 async function validateAndPrepareData() {
     const form = document.getElementById('payment-form');
-    const formData = {
-        company: form.company.value,
-        phone: form.phone.value.replace(/\D/g, ''),
-        password: form.password.value.trim(),
-        method: form.method.value,
-        trxid: form.trxid.value.trim(),
-        consignments: [],
-        discount: parseInt(localStorage.getItem('activeDiscount')) || 0
-    };
+const formData = {
+    company: form.company.value,
+    phone: form.phone.value.replace(/\D/g, ''),
+    password: form.password.value.trim(),
+    method: form.method.value,
+    trxid: form.trxid.value.trim(),
+    consignments: Array.from(document.querySelectorAll('.consignment-group')).map(group => ({
+        serviceType: group.querySelector('.service-type').value,
+        name: group.querySelector('.name').value.trim(),
+        phone: group.querySelector('.phone1').value.replace(/\D/g, ''),
+        amount1: parseFloat(group.querySelector('.amount1').value) || 0,
+        amount2: parseFloat(group.querySelector('.amount2').value) || 0
+    })),
+    discount: parseInt(localStorage.getItem('activeDiscount')) || 0
+};
 
     // Validate core fields
     if (!validatePhone(formData.phone)) {
@@ -285,6 +291,12 @@ async function validateAndPrepareData() {
             amount1: parseFloat(group.querySelector('.amount1').value) || 0,
             amount2: parseFloat(group.querySelector('.amount2').value) || 0
         };
+          // Validate each consignment
+        document.querySelectorAll('.consignment-group').forEach((group, index) => {
+        const serviceType = group.querySelector('.service-type').value;
+        if (!serviceType) {
+        throw new Error(`Consignment ${index + 1}: Service type is required`);
+        }
 
         // Validate consignment data
         if (!consignment.name || !validatePhone(consignment.phone)) {
@@ -346,8 +358,19 @@ function handleSuccess(data, formData) {
 }
 
 function handleServerError(responseData) {
-    const errorMessage = responseData.message || 'Payment processing failed';
-    showMessage(`Server Error: ${errorMessage}`, 'error');
+    let errorMessage = 'Payment processing failed';
+    
+    // Handle validation errors
+    if (responseData.errors) {
+        errorMessage = Object.values(responseData.errors)
+            .map(err => err.message || err)
+            .join('\n');
+    } 
+    else if (responseData.message) {
+        errorMessage = responseData.message;
+    }
+    
+    showMessage(`Error: ${errorMessage}`, 'error');
 }
 
 function handleNetworkError(error) {
