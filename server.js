@@ -15,10 +15,6 @@ const Admin = require('./models/Admin');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
-if (!process.env.JWT_SECRET) {
-  console.error('❌ JWT_SECRET environment variable is required');
-  process.exit(1);
-}
 const jwtSecret = process.env.JWT_SECRET;
 const server = require('http').createServer(app);
 const wss = new WebSocket.Server({ server });
