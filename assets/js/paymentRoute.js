@@ -91,8 +91,10 @@ router.post('/', async (req, res) => {
           });
         }
         
-        // Apply minimum charge of 40 for paid return
-        amount3 += amount2 < 40 ? 40 : amount2;
+        // Apply minimum charge of 40 for paid return if amount is less than 40
+        if (amount2 < 40) {
+          amount3 += 40;
+        }
       }
       // Delivery and Return services have no charge
     }
