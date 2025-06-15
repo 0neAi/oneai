@@ -431,7 +431,37 @@ app.post('/admin/update-status', adminAuth, async (req, res) => {
     res.status(500).json({ success: false, message: 'Status update failed' });
   }
 });
+app.post('/admin/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const admin = await Admin.findOne({ email }).select('+password');
 
+    if (!admin || !(await admin.comparePassword(password))) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Invalid credentials' 
+      });
+    }
+
+    const token = jwt.sign(
+      { adminId: admin._id, role: admin.role }, 
+      process.env.JWT_SECRET, 
+      { expiresIn: '8h' }
+    );
+
+    res.json({
+      success: true,
+      token,
+      admin: admin.toSafeObject()
+    });
+
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error during admin login' 
+    });
+  }
+});
 // Mount other admin routes
 app.use('/admin/payments', adminAuth, require('./assets/js/paymentRoute'));
 
