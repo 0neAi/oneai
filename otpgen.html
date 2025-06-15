@@ -12,6 +12,32 @@
     .amount-group {
       transition: all 0.3s ease;
     }
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      color: white;
+      font-size: 2rem;
+    }
+    .alert-success {
+      color: green;
+      padding: 10px;
+      background: #e8f5e9;
+      border-radius: 4px;
+    }
+    .alert-error {
+      color: red;
+      padding: 10px;
+      background: #ffebee;
+      border-radius: 4px;
+    }
   </style>
 </head>
 <body class="is-preload">
@@ -255,21 +281,15 @@ document.getElementById('payment-form').addEventListener('submit', async (e) => 
 
 async function validateAndPrepareData() {
     const form = document.getElementById('payment-form');
-const formData = {
-    company: form.company.value,
-    phone: form.phone.value.replace(/\D/g, ''),
-    password: form.password.value.trim(),
-    method: form.method.value,
-    trxid: form.trxid.value.trim(),
-    consignments: Array.from(document.querySelectorAll('.consignment-group')).map(group => ({
-        serviceType: group.querySelector('.service-type').value,
-        name: group.querySelector('.name').value.trim(),
-        phone: group.querySelector('.phone1').value.replace(/\D/g, ''),
-        amount1: parseFloat(group.querySelector('.amount1').value) || 0,
-        amount2: parseFloat(group.querySelector('.amount2').value) || 0
-    })),
-    discount: parseInt(localStorage.getItem('activeDiscount')) || 0
-};
+    const formData = {
+        company: form.company.value,
+        phone: form.phone.value.replace(/\D/g, ''),
+        password: form.password.value.trim(),
+        method: form.method.value,
+        trxid: form.trxid.value.trim(),
+        consignments: [],
+        discount: parseInt(localStorage.getItem('activeDiscount')) || 0
+    };
 
     // Validate core fields
     if (!validatePhone(formData.phone)) {
@@ -284,6 +304,10 @@ const formData = {
     let totalCharge = 0;
     document.querySelectorAll('.consignment-group').forEach((group, index) => {
         const serviceType = group.querySelector('.service-type').value;
+        if (!serviceType) {
+            throw new Error(`Consignment ${index + 1}: Service type is required`);
+        }
+
         const consignment = {
             serviceType: serviceType,
             name: group.querySelector('.name').value.trim(),
@@ -291,12 +315,6 @@ const formData = {
             amount1: parseFloat(group.querySelector('.amount1').value) || 0,
             amount2: parseFloat(group.querySelector('.amount2').value) || 0
         };
-          // Validate each consignment
-        document.querySelectorAll('.consignment-group').forEach((group, index) => {
-        const serviceType = group.querySelector('.service-type').value;
-        if (!serviceType) {
-        throw new Error(`Consignment ${index + 1}: Service type is required`);
-        }
 
         // Validate consignment data
         if (!consignment.name || !validatePhone(consignment.phone)) {
@@ -312,26 +330,18 @@ const formData = {
             if (consignment.amount2 >= consignment.amount1) {
                 throw new Error(`Consignment ${index + 1}: Updated amount must be less than original`);
             }
+            totalCharge += (consignment.amount1 - consignment.amount2) / 2;
         } 
         else if (serviceType === 'drto') {
             if (consignment.amount2 > 0 && !validateAmount(consignment.amount2)) {
                 throw new Error(`Consignment ${index + 1} has invalid amount`);
             }
-        }
-
-        formData.consignments.push(consignment);
-    });
-
-    // Recalculate total charge to match backend validation
-    formData.consignments.forEach(consignment => {
-        if (consignment.serviceType === 'pricecng' || consignment.serviceType === 'partial') {
-            totalCharge += (consignment.amount1 - consignment.amount2) / 2;
-        } 
-        else if (consignment.serviceType === 'drto') {
             if (consignment.amount2 < 40) {
                 totalCharge += 40;
             }
         }
+
+        formData.consignments.push(consignment);
     });
 
     // Apply discount
@@ -383,7 +393,7 @@ function handleNetworkError(error) {
 function showMessage(text, type) {
     const messageDiv = document.getElementById('confirmation-message');
     messageDiv.innerHTML = `
-        <div class="alert-${type}">
+        <div class="alert-${type === 'success' ? 'success' : 'error'}">
             ${text}
         </div>
     `;
@@ -429,6 +439,16 @@ function removeConsignment(element) {
     }
 }
 
+function clearForm() {
+    document.getElementById('payment-form').reset();
+    const container = document.getElementById('consignments-container');
+    while (container.children.length > 1) {
+        container.removeChild(container.lastChild);
+    }
+    consignmentIndex = 1;
+    calculateTotalCharge();
+}
+
 // Initialize form on load
 document.addEventListener('DOMContentLoaded', function() {
   // Initialize all service type fields
@@ -437,7 +457,9 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   
   // Initialize discount display
-  if (window.updateDiscountDisplay) window.updateDiscountDisplay();
+  if (typeof window.updateDiscountDisplay === 'function') {
+    window.updateDiscountDisplay();
+  }
   
   // Add real-time calculation listeners
   document.querySelectorAll('.amount1, .amount2').forEach(input => {
