@@ -134,43 +134,72 @@
             color: #343a40;
         }
         
-        .action-buttons {
-            display: flex;
-            gap: 1rem;
-            margin-top: 1rem;
-        }
-        
-        .action-btn {
-            padding: 0.8rem 1.5rem;
-            border-radius: 4px;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-            transition: transform 0.2s, background-color 0.2s;
-            font-size: 1rem;
-        }
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1rem;
+        justify-content: center; /* Center buttons horizontally */
+    }
+
+    .action-btn {
+        padding: 0.8rem 1.5rem;
+        border-radius: 4px;
+        border: none;
+        cursor: pointer;
+        font-weight: bold;
+        transition: all 0.3s ease;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 150px; /* Give buttons consistent width */
+        text-align: center; /* Center text */
+    }
         
         .action-btn:hover {
             transform: translateY(-2px);
         }
         
-        .refresh-btn {
-            background-color: #17a2b8;
-            color: white;
-        }
-        
-        .refresh-btn:hover {
-            background-color: #138496;
-        }
-        
-        .help-btn {
-            background-color: #6c757d;
-            color: green;
-        }
-        
-        .help-btn:hover {
-            background-color: #5a6268;
-        }
+ .refresh-btn {
+        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+        color: white;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .refresh-btn:hover {
+        background: linear-gradient(135deg, #138496 0%, #117a8b 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .help-btn {
+        background: linear-gradient(135deg, #28a745 0%, #218838 100%);
+        color: white;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .help-btn:hover {
+        background: linear-gradient(135deg, #218838 0%, #1e7e34 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Add pulse animation for important actions */
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+
+    .action-btn:active {
+        animation: pulse 0.3s ease;
+    }
+
+    /* Make icons consistent with text */
+    .action-btn i {
+        margin-right: 8px;
+        font-size: 0.9em;
+    }
         
         .service-card {
             transition: transform 0.2s, box-shadow 0.2s;
@@ -224,9 +253,8 @@
             <button class="action-btn refresh-btn" onclick="refreshPayments()">
                 <i class="fas fa-sync-alt"></i> Refresh
             </button>
-            <!-- Changed functionality: Now opens WhatsApp support -->
             <button class="action-btn help-btn" onclick="sendHelpRequest()">
-                <i class="fas fa-life-ring"></i> HELPLINE
+                <i class="fas fa-life-ring"></i> Helpline
             </button>
         </div>
 <br><br>
