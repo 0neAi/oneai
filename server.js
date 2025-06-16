@@ -462,6 +462,23 @@ app.post('/admin/login', async (req, res) => {
     });
   }
 });
+// Add this route after the admin routes
+app.get('/payments/user', authMiddleware, async (req, res) => {
+    try {
+        const payments = await Payment.find({ user: req.user._id })
+            .sort({ createdAt: -1 });
+            
+        res.json({ 
+            success: true, 
+            payments 
+        });
+    } catch (error) {
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to fetch user payments' 
+        });
+    }
+});
 // Mount other admin routes
 app.use('/admin/payments', adminAuth, require('./assets/js/paymentRoute'));
 
