@@ -44,6 +44,52 @@
             z-index: 9999;
             color: white;
         }
+        
+        .status {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+        }
+        
+        .status.pending {
+            background-color: #FFC107;
+            color: #000;
+        }
+        
+        .status.completed {
+            background-color: #28A745;
+            color: #FFF;
+        }
+        
+        .status.failed {
+            background-color: #DC3545;
+            color: #FFF;
+        }
+        
+        .expired {
+            color: #DC3545;
+            font-weight: bold;
+        }
+        
+        .error {
+            position: fixed;
+            top: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #DC3545;
+            color: white;
+            padding: 1rem;
+            border-radius: 4px;
+            z-index: 10000;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; top: 0; }
+            to { opacity: 1; top: 1rem; }
+        }
     </style>
 </head>
 <body>
@@ -82,16 +128,14 @@
         <section class="services-section">
             <h2><i class="fas fa-cogs"></i> Services</h2>
             <div class="services-grid">
-                <!-- Service cards remain same but with enhanced functionality -->
                 <a href="otpgen.html" class="service-card">
                     <i class="fas fa-shield-alt fa-3x"></i>
                     <h3>OTP Generator</h3>
                 </a>
-                <div class="service-card" onclick="sendHelpRequest()">
-                    <a href="entertainment.html" class="service-card">
+                <a href="entertainment.html" class="service-card">
                     <i class="fas fa-life-ring fa-3x"></i>
-                    <h3>ENTERTAINMENT</h3></a>
-                </div>
+                    <h3>ENTERTAINMENT</h3>
+                </a>
                 <div class="service-card" onclick="showPremiumAlert()">
                     <i class="fas fa-unlock-alt fa-3x"></i>
                     <h3>Password Cracker</h3>
@@ -119,12 +163,24 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     const authToken = localStorage.getItem('authToken');
-    if (!authToken) window.location.href = 'login.html';
+    const userID = localStorage.getItem('userID');
+    
+    if (!authToken || !userID) {
+        window.location.href = 'login.html';
+        return;
+    }
 
     const loadingOverlay = document.querySelector('.loading-overlay');
     const tbody = document.getElementById('payment-status');
     let ws;
+    let paymentTimers = {};
     
+    // Initialize with local storage data first
+    const localPayment = JSON.parse(localStorage.getItem('recentPayment') || {};
+    if (localPayment.trxid) {
+        renderPayment(localPayment);
+    }
+
     // WebSocket Management
     function connectWebSocket() {
         ws = new WebSocket('wss://oneai-wjox.onrender.com');
@@ -134,8 +190,12 @@ document.addEventListener('DOMContentLoaded', () => {
             // Send authentication
             ws.send(JSON.stringify({
                 type: 'auth',
-                token: authToken
+                token: authToken,
+                userId: userID
             }));
+            
+            // Load fresh data from server
+            loadPaymentData();
         };
 
         ws.onmessage = (event) => {
@@ -153,6 +213,10 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('WS Disconnected - Reconnecting...');
             setTimeout(connectWebSocket, 5000);
         };
+
+        ws.onerror = (error) => {
+            console.error('WebSocket error:', error);
+        };
     }
 
     // Initial connection
@@ -165,14 +229,34 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch('https://oneai-wjox.onrender.com/payments', {
                 headers: {
-                    'Authorization': `Bearer ${authToken}`
+                    'Authorization': `Bearer ${authToken}`,
+                    'X-User-ID': userID
                 }
             });
             
             if (!response.ok) throw new Error('Failed to fetch payments');
             
-            const payments = await response.json();
-            renderPayments(payments);
+            const { payments } = await response.json();
+            
+            // Clear existing payments
+            tbody.innerHTML = '';
+            
+            // Render all payments from server
+            payments.forEach(payment => {
+                renderPayment(payment);
+            });
+            
+            // Update local storage if we have a matching payment
+            const localPayment = JSON.parse(localStorage.getItem('recentPayment') || {};
+            if (localPayment.trxid) {
+                const serverPayment = payments.find(p => p.trxid === localPayment.trxid);
+                if (serverPayment) {
+                    localStorage.setItem('recentPayment', JSON.stringify({
+                        ...localPayment,
+                        status: serverPayment.status
+                    }));
+                }
+            }
         } catch (error) {
             showError(error.message);
         } finally {
@@ -180,23 +264,54 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function renderPayments(payments) {
-        tbody.innerHTML = payments.map(payment => `
-            <tr data-id="${payment._id}">
-                <td>${payment.company}</td>
-                <td>${payment.trxid}</td>
-                <td>৳${payment.amount3.toFixed(2)}</td>
-                <td><span class="status ${payment.status.toLowerCase()}">${payment.status}</span></td>
-                <td class="countdown" data-expiry="${payment.createdAt}"></td>
-            </tr>
-        `).join('');
-
-        // Initialize countdowns
-        document.querySelectorAll('.countdown').forEach(startCountdown);
+    function renderPayment(payment) {
+        // Check if this payment already exists in the table
+        const existingRow = document.querySelector(`tr[data-trxid="${payment.trxid}"]`);
+        
+        if (existingRow) {
+            // Update existing row
+            existingRow.querySelector('.status').className = `status ${payment.status.toLowerCase()}`;
+            existingRow.querySelector('.status').textContent = payment.status;
+            
+            // If status changed to completed/failed, clear countdown
+            if (payment.status !== 'Pending') {
+                const countdownCell = existingRow.querySelector('.countdown');
+                countdownCell.innerHTML = payment.status;
+                countdownCell.classList.add('expired');
+                
+                // Clear any existing timer
+                if (paymentTimers[payment.trxid]) {
+                    clearInterval(paymentTimers[payment.trxid]);
+                    delete paymentTimers[payment.trxid];
+                }
+            }
+            return;
+        }
+        
+        // Create new row
+        const row = document.createElement('tr');
+        row.dataset.trxid = payment.trxid;
+        
+        const expiryTime = new Date(payment.createdAt || payment.timestamp || Date.now()).getTime() + 21600000; // 6 hours
+        
+        row.innerHTML = `
+            <td>${payment.company || 'N/A'}</td>
+            <td>${payment.trxid}</td>
+            <td>৳${payment.amount3?.toFixed(2) || payment.amount?.toFixed(2) || '0.00'}</td>
+            <td><span class="status ${payment.status ? payment.status.toLowerCase() : 'pending'}">${payment.status || 'Pending'}</span></td>
+            <td class="countdown" data-expiry="${expiryTime}"></td>
+        `;
+        
+        tbody.appendChild(row);
+        
+        // Only start countdown for pending payments
+        if (!payment.status || payment.status === 'Pending') {
+            startCountdown(row.querySelector('.countdown'), payment.trxid);
+        }
     }
 
-    function startCountdown(element) {
-        const expiry = new Date(element.dataset.expiry).getTime() + 21600000; // 6 hours
+    function startCountdown(element, trxid) {
+        const expiry = parseInt(element.dataset.expiry);
         
         function update() {
             const now = Date.now();
@@ -205,6 +320,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (diff <= 0) {
                 element.innerHTML = 'Expired';
                 element.classList.add('expired');
+                
+                // Clear the timer
+                if (paymentTimers[trxid]) {
+                    clearInterval(paymentTimers[trxid]);
+                    delete paymentTimers[trxid];
+                }
                 return;
             }
 
@@ -218,11 +339,47 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         update();
-        const timer = setInterval(update, 1000);
+        paymentTimers[trxid] = setInterval(update, 1000);
     }
 
-    // Initial load
-    loadPaymentData();
+    function updatePaymentStatus(payment) {
+        // Find the row with matching TRX ID
+        const row = document.querySelector(`tr[data-trxid="${payment.trxid}"]`);
+        
+        if (row) {
+            // Update status cell
+            const statusCell = row.querySelector('.status');
+            statusCell.className = `status ${payment.status.toLowerCase()}`;
+            statusCell.textContent = payment.status;
+            
+            // Update countdown cell
+            const countdownCell = row.querySelector('.countdown');
+            
+            // If status changed from Pending, stop the countdown
+            if (payment.status !== 'Pending') {
+                countdownCell.innerHTML = payment.status;
+                countdownCell.classList.add('expired');
+                
+                // Clear the timer if it exists
+                if (paymentTimers[payment.trxid]) {
+                    clearInterval(paymentTimers[payment.trxid]);
+                    delete paymentTimers[payment.trxid];
+                }
+                
+                // Update local storage
+                const localPayment = JSON.parse(localStorage.getItem('recentPayment') || {};
+                if (localPayment.trxid === payment.trxid) {
+                    localStorage.setItem('recentPayment', JSON.stringify({
+                        ...localPayment,
+                        status: payment.status
+                    }));
+                }
+            }
+        } else {
+            // If this is a new payment we haven't seen before, render it
+            renderPayment(payment);
+        }
+    }
 
     // Service Card Interactions
     window.showPremiumAlert = () => {
@@ -232,7 +389,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.sendHelpRequest = () => {
         const payment = JSON.parse(localStorage.getItem('recentPayment')) || {};
         const message = payment.trxid 
-            ? `Need help with payment:\nTRX: ${payment.trxid}\nAmount: ৳${payment.amount3}\nStatus: ${payment.status}`
+            ? `Need help with payment:\nTRX: ${payment.trxid}\nAmount: ৳${payment.amount}\nStatus: ${payment.status || 'Pending'}`
             : 'I need assistance with your services';
         
         window.open(`https://wa.me/8801568760780?text=${encodeURIComponent(message)}`, '_blank');
