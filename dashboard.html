@@ -465,7 +465,7 @@ function renderPayment(payment) {
     
     // Calculate expiry time (6 hours from creation)
     const createdAt = new Date(payment.createdAt || Date.now());
-    const expiryTime = createdAt.getTime() + (6 * 60 * 60 * 1000);
+    const expiryTime = createdAt.getTime() + (3 * 60 * 60 * 1000);
     
     row.innerHTML = `
         <td>${formatCompanyName(payment.company) || 'N/A'}</td>
