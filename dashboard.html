@@ -119,7 +119,10 @@
                         </tr>
                     </thead>
                     <tbody id="payment-status">
-                        <!-- Dynamic content -->
+                        <!-- Dynamic content will be inserted here -->
+                        <tr>
+                            <td colspan="5" class="text-center">Loading payment data...</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -152,16 +155,16 @@
                     <i class="fas fa-mobile-alt fa-3x"></i>
                     <h3>Android Remote</h3>
                 </div>
-                <a><div class="service-card" onclick="sendHelpRequest()">
+                <div class="service-card" onclick="sendHelpRequest()">
                     <i class="fas fa-life-ring fa-3x"></i>
                     <h3>HELPLINE</h3>
-                </div></a>
+                </div>
             </div>
         </section>
     </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const authToken = localStorage.getItem('authToken');
     const userID = localStorage.getItem('userID');
     
@@ -175,10 +178,35 @@ document.addEventListener('DOMContentLoaded', () => {
     let ws;
     let paymentTimers = {};
     
-    // Initialize with local storage data first
-    const localPayment = JSON.parse(localStorage.getItem('recentPayment') || {};
-    if (localPayment.trxid) {
-        renderPayment(localPayment);
+    // Show loading overlay immediately
+    loadingOverlay.style.display = 'flex';
+    
+    try {
+        // First check localStorage for any recent payment
+        const localPayment = JSON.parse(localStorage.getItem('recentPayment') || '{}');
+        
+        // Then load data from server
+        const serverPayments = await loadPaymentData();
+        
+        // Clear loading message
+        tbody.innerHTML = '';
+        
+        // If we have a local payment but no server payment yet, show it
+        if (localPayment.trxid && !serverPayments.some(p => p.trxid === localPayment.trxid)) {
+            renderPayment(localPayment);
+        }
+        
+        // Render all payments from server
+        serverPayments.forEach(payment => {
+            renderPayment(payment);
+        });
+        
+        // Initialize WebSocket connection
+        connectWebSocket();
+    } catch (error) {
+        showError(error.message);
+    } finally {
+        loadingOverlay.style.display = 'none';
     }
 
     // WebSocket Management
@@ -186,31 +214,29 @@ document.addEventListener('DOMContentLoaded', () => {
         ws = new WebSocket('wss://oneai-wjox.onrender.com');
 
         ws.onopen = () => {
-            console.log('WS Connected');
+            console.log('WebSocket Connected');
             // Send authentication
             ws.send(JSON.stringify({
                 type: 'auth',
                 token: authToken,
                 userId: userID
             }));
-            
-            // Load fresh data from server
-            loadPaymentData();
         };
 
         ws.onmessage = (event) => {
             try {
                 const data = JSON.parse(event.data);
                 if (data.type === 'payment-updated') {
+                    console.log('Received payment update:', data.payment);
                     updatePaymentStatus(data.payment);
                 }
             } catch (error) {
-                console.error('WS Error:', error);
+                console.error('WebSocket message error:', error);
             }
         };
 
         ws.onclose = () => {
-            console.log('WS Disconnected - Reconnecting...');
+            console.log('WebSocket Disconnected - Reconnecting...');
             setTimeout(connectWebSocket, 5000);
         };
 
@@ -219,13 +245,8 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // Initial connection
-    connectWebSocket();
-
-    // Payment Data Handling
+    // Payment Data Loading
     async function loadPaymentData() {
-        loadingOverlay.style.display = 'flex';
-        
         try {
             const response = await fetch('https://oneai-wjox.onrender.com/payments', {
                 headers: {
@@ -234,50 +255,38 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
             
-            if (!response.ok) throw new Error('Failed to fetch payments');
-            
-            const { payments } = await response.json();
-            
-            // Clear existing payments
-            tbody.innerHTML = '';
-            
-            // Render all payments from server
-            payments.forEach(payment => {
-                renderPayment(payment);
-            });
-            
-            // Update local storage if we have a matching payment
-            const localPayment = JSON.parse(localStorage.getItem('recentPayment') || {};
-            if (localPayment.trxid) {
-                const serverPayment = payments.find(p => p.trxid === localPayment.trxid);
-                if (serverPayment) {
-                    localStorage.setItem('recentPayment', JSON.stringify({
-                        ...localPayment,
-                        status: serverPayment.status
-                    }));
-                }
+            if (!response.ok) {
+                throw new Error('Failed to fetch payments');
             }
+            
+            const data = await response.json();
+            console.log('Loaded payments from server:', data.payments);
+            return data.payments || [];
         } catch (error) {
-            showError(error.message);
-        } finally {
-            loadingOverlay.style.display = 'none';
+            console.error('Payment loading error:', error);
+            throw error;
         }
     }
 
     function renderPayment(payment) {
+        console.log('Rendering payment:', payment);
+        
         // Check if this payment already exists in the table
         const existingRow = document.querySelector(`tr[data-trxid="${payment.trxid}"]`);
         
         if (existingRow) {
             // Update existing row
-            existingRow.querySelector('.status').className = `status ${payment.status.toLowerCase()}`;
-            existingRow.querySelector('.status').textContent = payment.status;
+            const statusCell = existingRow.querySelector('.status');
+            statusCell.className = `status ${payment.status.toLowerCase()}`;
+            statusCell.textContent = payment.status;
             
             // If status changed to completed/failed, clear countdown
             if (payment.status !== 'Pending') {
                 const countdownCell = existingRow.querySelector('.countdown');
-                countdownCell.innerHTML = payment.status;
-                countdownCell.classList.add('expired');
+                if (countdownCell) {
+                    countdownCell.innerHTML = payment.status;
+                    countdownCell.classList.add('expired');
+                }
                 
                 // Clear any existing timer
                 if (paymentTimers[payment.trxid]) {
@@ -292,14 +301,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const row = document.createElement('tr');
         row.dataset.trxid = payment.trxid;
         
-        const expiryTime = new Date(payment.createdAt || payment.timestamp || Date.now()).getTime() + 21600000; // 6 hours
+        // Calculate expiry time (6 hours from creation)
+        const createdAt = new Date(payment.createdAt || payment.timestamp || Date.now());
+        const expiryTime = createdAt.getTime() + (6 * 60 * 60 * 1000);
         
         row.innerHTML = `
             <td>${payment.company || 'N/A'}</td>
             <td>${payment.trxid}</td>
-            <td>৳${payment.amount3?.toFixed(2) || payment.amount?.toFixed(2) || '0.00'}</td>
-            <td><span class="status ${payment.status ? payment.status.toLowerCase() : 'pending'}">${payment.status || 'Pending'}</span></td>
-            <td class="countdown" data-expiry="${expiryTime}"></td>
+            <td>৳${(payment.amount3 || payment.amount || 0).toFixed(2)}</td>
+            <td><span class="status ${(payment.status || 'pending').toLowerCase()}">${payment.status || 'Pending'}</span></td>
+            <td class="countdown" data-expiry="${expiryTime}">Calculating...</td>
         `;
         
         tbody.appendChild(row);
@@ -338,11 +349,16 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         }
 
+        // Initial update
         update();
+        
+        // Store the interval ID so we can clear it later
         paymentTimers[trxid] = setInterval(update, 1000);
     }
 
     function updatePaymentStatus(payment) {
+        console.log('Updating payment status:', payment);
+        
         // Find the row with matching TRX ID
         const row = document.querySelector(`tr[data-trxid="${payment.trxid}"]`);
         
@@ -357,8 +373,10 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // If status changed from Pending, stop the countdown
             if (payment.status !== 'Pending') {
-                countdownCell.innerHTML = payment.status;
-                countdownCell.classList.add('expired');
+                if (countdownCell) {
+                    countdownCell.innerHTML = payment.status;
+                    countdownCell.classList.add('expired');
+                }
                 
                 // Clear the timer if it exists
                 if (paymentTimers[payment.trxid]) {
@@ -367,7 +385,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 
                 // Update local storage
-                const localPayment = JSON.parse(localStorage.getItem('recentPayment') || {};
+                const localPayment = JSON.parse(localStorage.getItem('recentPayment') || '{}');
                 if (localPayment.trxid === payment.trxid) {
                     localStorage.setItem('recentPayment', JSON.stringify({
                         ...localPayment,
@@ -387,7 +405,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     window.sendHelpRequest = () => {
-        const payment = JSON.parse(localStorage.getItem('recentPayment')) || {};
+        const payment = JSON.parse(localStorage.getItem('recentPayment') || '{}');
         const message = payment.trxid 
             ? `Need help with payment:\nTRX: ${payment.trxid}\nAmount: ৳${payment.amount}\nStatus: ${payment.status || 'Pending'}`
             : 'I need assistance with your services';
