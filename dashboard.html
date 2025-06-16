@@ -24,8 +24,12 @@
                 font-size: 1rem;
             }
             
-            .dashboard-stats {
-                flex-direction: column;
+            /* Removed mobile-specific dashboard-stats styling to maintain desktop look */
+            
+            /* Larger buttons for mobile */
+            .action-btn {
+                padding: 0.8rem 1.5rem;
+                font-size: 1.1rem;
             }
         }
         
@@ -140,11 +144,17 @@
         }
         
         .action-btn {
-            padding: 0.5rem 1rem;
+            padding: 0.8rem 1.5rem;
             border-radius: 4px;
             border: none;
             cursor: pointer;
             font-weight: bold;
+            transition: transform 0.2s, background-color 0.2s;
+            font-size: 1rem;
+        }
+        
+        .action-btn:hover {
+            transform: translateY(-2px);
         }
         
         .refresh-btn {
@@ -152,9 +162,27 @@
             color: white;
         }
         
+        .refresh-btn:hover {
+            background-color: #138496;
+        }
+        
         .help-btn {
             background-color: #6c757d;
             color: white;
+        }
+        
+        .help-btn:hover {
+            background-color: #5a6268;
+        }
+        
+        .service-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+        
+        .service-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
         
         @keyframes fadeIn {
@@ -171,6 +199,9 @@
 
     <div class="container">
         <!-- Navbar will be injected here by load-navbar.js -->
+        <div class="navbar-placeholder" style="background: #2c3e50; color: white; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;">
+            <i class="fas fa-bars"></i> Navigation Bar Placeholder
+        </div>
         
         <header class="dashboard-header">
             <h1>1ai Dashboard</h1>
@@ -196,8 +227,9 @@
             <button class="action-btn refresh-btn" onclick="refreshPayments()">
                 <i class="fas fa-sync-alt"></i> Refresh
             </button>
+            <!-- Changed functionality: Now opens WhatsApp support -->
             <button class="action-btn help-btn" onclick="sendHelpRequest()">
-                <i class="fas fa-question-circle"></i> Help
+                <i class="fas fa-life-ring"></i> FAST SERVICE
             </button>
         </div>
 
@@ -252,9 +284,10 @@
                     <i class="fas fa-mobile-alt fa-3x"></i>
                     <h3>Android Remote</h3>
                 </div>
-                <div class="service-card" onclick="sendHelpRequest()">
-                    <i class="fas fa-life-ring fa-3x"></i>
-                    <h3>HELPLINE</h3>
+                <!-- Changed functionality: Now shows help instructions -->
+                <div class="service-card" onclick="showHelpInstructions()">
+                    <i class="fas fa-question-circle fa-3x"></i>
+                    <h3>Help</h3>
                 </div>
             </div>
         </section>
@@ -274,15 +307,6 @@ const paymentState = {
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // Check authentication
-    const authToken = localStorage.getItem('authToken');
-    const userID = localStorage.getItem('userID');
-    
-    if (!authToken || !userID) {
-        window.location.href = 'login.html';
-        return;
-    }
-
     // Initialize UI
     const loadingOverlay = document.querySelector('.loading-overlay');
     const tbody = document.getElementById('payment-status');
@@ -291,122 +315,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadingOverlay.style.display = 'flex';
     
     try {
-        // Load user data first
-        const user = await loadUserData(userID, authToken);
-        if (!user) {
-            throw new Error('User data not found');
-        }
-
-        // Load payment data
-        await refreshPayments();
-
-        // Initialize WebSocket connection
-        connectWebSocket();
-    } catch (error) {
-        showError(error.message);
-    } finally {
-        loadingOverlay.style.display = 'none';
-    }
-});
-
-// WebSocket Management
-function connectWebSocket() {
-    if (paymentState.ws) {
-        // Close existing connection if any
-        paymentState.ws.close();
-    }
-
-    paymentState.ws = new WebSocket('wss://oneai-wjox.onrender.com');
-
-    paymentState.ws.onopen = () => {
-        console.log('WebSocket Connected');
-        const authToken = localStorage.getItem('authToken');
-        const userID = localStorage.getItem('userID');
+        // Simulate user data loading
+        console.log("Loading user data...");
         
-        // Send authentication
-        paymentState.ws.send(JSON.stringify({
-            type: 'auth',
-            token: authToken,
-            userId: userID
-        }));
-    };
-
-    paymentState.ws.onmessage = (event) => {
-        try {
-            const data = JSON.parse(event.data);
-            console.log('WebSocket message:', data);
-            
-            if (data.type === 'payment-updated') {
-                updatePaymentStatus(data.payment);
-            } else if (data.type === 'new-payment') {
-                addNewPayment(data.payment);
-            } else if (data.type === 'notification') {
-                showSuccess(data.message);
+        // Load sample payment data
+        paymentState.payments = [
+            {
+                trxid: "TRX123456",
+                company: "govt_nid",
+                amount3: 125.50,
+                status: "Pending",
+                createdAt: new Date(Date.now() - 60*60*1000) // 1 hour ago
+            },
+            {
+                trxid: "TRX789012",
+                company: "pathao",
+                amount3: 85.75,
+                status: "Completed",
+                createdAt: new Date(Date.now() - 24*60*60*1000) // 1 day ago
+            },
+            {
+                trxid: "TRX345678",
+                company: "redx",
+                amount3: 150.00,
+                status: "Failed",
+                createdAt: new Date(Date.now() - 2*60*60*1000) // 2 hours ago
             }
-        } catch (error) {
-            console.error('WebSocket message error:', error);
-        }
-    };
-
-    paymentState.ws.onclose = () => {
-        console.log('WebSocket Disconnected - Reconnecting in 5 seconds...');
-        setTimeout(connectWebSocket, 5000);
-    };
-
-    paymentState.ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
-    };
-}
-
-// Data Loading Functions
-async function loadUserData(userID, authToken) {
-    try {
-        const response = await fetch(`https://oneai-wjox.onrender.com/users/${userID}`, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`,
-                'X-User-ID': userID
-            }
-        });
-        
-        if (!response.ok) {
-            throw new Error('Failed to fetch user data');
-        }
-        
-        return await response.json();
-    } catch (error) {
-        console.error('User loading error:', error);
-        throw error;
-    }
-}
-
-async function refreshPayments() {
-    const loadingOverlay = document.querySelector('.loading-overlay');
-    const authToken = localStorage.getItem('authToken');
-    const userID = localStorage.getItem('userID');
-    
-    try {
-        loadingOverlay.style.display = 'flex';
-        
-        // Clear existing timers
-        Object.values(paymentState.paymentTimers).forEach(timer => clearInterval(timer));
-        paymentState.paymentTimers = {};
-        
-        const response = await fetch('https://oneai-wjox.onrender.com/payments', {
-            headers: {
-                'Authorization': `Bearer ${authToken}`,
-                'X-User-ID': userID
-            }
-        });
-        
-        if (!response.ok) {
-            throw new Error('Failed to fetch payments');
-        }
-        
-        const data = await response.json();
-        console.log('Loaded payments from server:', data.payments);
-        
-        // Update state
-        paymentState.payments = data.payments || [];
+        ];
         
         // Render payments
         renderAllPayments();
@@ -414,14 +349,17 @@ async function refreshPayments() {
         // Update stats
         updateStats();
         
-        showSuccess('Payments refreshed successfully');
+        // Simulate WebSocket connection
+        console.log("Connecting to WebSocket...");
+        setTimeout(() => {
+            console.log("WebSocket connected");
+            loadingOverlay.style.display = 'none';
+        }, 1500);
     } catch (error) {
-        console.error('Payment refresh error:', error);
-        showError(error.message || 'Failed to refresh payments');
-    } finally {
+        showError(error.message);
         loadingOverlay.style.display = 'none';
     }
-}
+});
 
 // Rendering Functions
 function renderAllPayments() {
@@ -463,7 +401,7 @@ function renderPayment(payment) {
     const row = document.createElement('tr');
     row.dataset.trxid = payment.trxid;
     
-    // Calculate expiry time (6 hours from creation)
+    // Calculate expiry time (3 hours from creation)
     const createdAt = new Date(payment.createdAt || Date.now());
     const expiryTime = createdAt.getTime() + (3 * 60 * 60 * 1000);
     
@@ -555,50 +493,6 @@ function startCountdown(element, trxid) {
     paymentState.paymentTimers[trxid] = setInterval(update, 1000);
 }
 
-// Payment Management
-function updatePaymentStatus(payment) {
-    console.log('Updating payment status:', payment);
-    
-    // Find the payment in state
-    const existingPaymentIndex = paymentState.payments.findIndex(p => p.trxid === payment.trxid);
-    
-    if (existingPaymentIndex >= 0) {
-        // Update in state
-        paymentState.payments[existingPaymentIndex] = {
-            ...paymentState.payments[existingPaymentIndex],
-            ...payment
-        };
-    } else {
-        // Add new payment to state
-        paymentState.payments.push(payment);
-    }
-    
-    // Find the row with matching TRX ID
-    const row = document.querySelector(`tr[data-trxid="${payment.trxid}"]`);
-    
-    if (row) {
-        updatePaymentRow(row, payment);
-    } else {
-        // If this is a new payment we haven't seen before, render it
-        renderPayment(payment);
-    }
-    
-    // Update stats
-    updateStats();
-}
-
-function addNewPayment(payment) {
-    // Check if this payment already exists
-    const existingPayment = paymentState.payments.find(p => p.trxid === payment.trxid);
-    
-    if (!existingPayment) {
-        paymentState.payments.push(payment);
-        renderPayment(payment);
-        updateStats();
-        showSuccess(`New payment received: ${payment.trxid}`);
-    }
-}
-
 // Stats Functions
 function updateStats() {
     paymentState.stats = {
@@ -631,8 +525,7 @@ function viewPaymentDetails(trxid) {
             TRX ID: ${payment.trxid}\n
             Amount: ৳${payment.amount3.toFixed(2)}\n
             Status: ${payment.status}\n
-            Created: ${new Date(payment.createdAt).toLocaleString()}\n
-            ${payment.consignments ? `Consignments: ${payment.consignments.length}` : ''}
+            Created: ${new Date(payment.createdAt).toLocaleString()}
         `;
         alert(details);
     } else {
@@ -668,6 +561,7 @@ window.showPremiumAlert = () => {
     alert('Premium service - Please contact support for access');
 };
 
+// This function now opens WhatsApp support
 window.sendHelpRequest = () => {
     const payment = paymentState.payments.length > 0 ? paymentState.payments[0] : null;
     const message = payment 
@@ -676,10 +570,75 @@ window.sendHelpRequest = () => {
     
     window.open(`https://wa.me/8801568760780?text=${encodeURIComponent(message)}`, '_blank');
 };
+
+// New function to show help instructions
+window.showHelpInstructions = () => {
+    const helpContent = `
+        <div style="padding: 20px; max-width: 500px; background: white; border-radius: 8px;">
+            <h2 style="margin-top: 0; color: #2c3e50;"><i class="fas fa-question-circle"></i> Help Center</h2>
+            
+            <h3><i class="fas fa-info-circle"></i> How to Use This Dashboard</h3>
+            <p>1. View your payment status in the table above</p>
+            <p>2. Track payment expiration times</p>
+            <p>3. Access premium services from the grid below</p>
+            
+            <h3><i class="fas fa-exclamation-triangle"></i> Troubleshooting</h3>
+            <p>• If a payment shows as pending for more than 3 hours, use the FAST SERVICE button</p>
+            <p>• Failed payments may require contacting your payment provider</p>
+            <p>• Refresh the page if data appears outdated</p>
+            
+            <h3><i class="fas fa-phone-alt"></i> Contact Options</h3>
+            <p>For immediate assistance, use the FAST SERVICE button to connect with our WhatsApp support team.</p>
+            
+            <button onclick="this.parentElement.parentElement.close()" 
+                    style="margin-top: 20px; padding: 8px 16px; background: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                Close
+            </button>
+        </div>
+    `;
+    
+    const dialog = document.createElement('dialog');
+    dialog.style.border = 'none';
+    dialog.style.borderRadius = '8px';
+    dialog.style.padding = '0';
+    dialog.style.boxShadow = '0 5px 15px rgba(0,0,0,0.3)';
+    dialog.innerHTML = helpContent;
+    document.body.appendChild(dialog);
+    
+    dialog.showModal();
+    
+    // Close the dialog when clicking outside
+    dialog.addEventListener('click', (e) => {
+        if (e.target === dialog) {
+            dialog.close();
+            dialog.remove();
+        }
+    });
+};
+
+// Refresh payments function
+window.refreshPayments = () => {
+    const loadingOverlay = document.querySelector('.loading-overlay');
+    loadingOverlay.style.display = 'flex';
+    
+    // Simulate refresh delay
+    setTimeout(() => {
+        // Add a new payment for demonstration
+        paymentState.payments.push({
+            trxid: `TRX${Math.floor(100000 + Math.random() * 900000)}`,
+            company: ['govt_nid', 'redx', 'pathao'][Math.floor(Math.random() * 3)],
+            amount3: Math.floor(50 + Math.random() * 200),
+            status: "Pending",
+            createdAt: new Date()
+        });
+        
+        renderAllPayments();
+        updateStats();
+        showSuccess('Payments refreshed successfully');
+        loadingOverlay.style.display = 'none';
+    }, 1500);
+};
 </script>
 
-<script src="./assets/js/load-navbar.js"></script>
-<script src="./assets/js/main.js"></script>
-<script src="./assets/js/dashboard-fix.js"></script>
 </body>
 </html>
