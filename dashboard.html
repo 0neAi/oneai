@@ -646,22 +646,53 @@ window.refreshPayments = () => {
     const loadingOverlay = document.querySelector('.loading-overlay');
     loadingOverlay.style.display = 'flex';
     
-    // Simulate refresh delay
-    setTimeout(() => {
-        // Add a new payment for demonstration
-        paymentState.payments.push({
-            trxid: `TRX${Math.floor(100000 + Math.random() * 900000)}`,
-            company: ['govt_nid', 'redx', 'pathao'][Math.floor(Math.random() * 3)],
-            amount3: Math.floor(50 + Math.random() * 200),
-            status: "Pending",
-            createdAt: new Date()
-        });
-        
-        renderAllPayments();
-        updateStats();
-        showSuccess('Payments refreshed successfully');
+    // Get authentication data
+    const authToken = localStorage.getItem('authToken');
+    const userID = localStorage.getItem('userID');
+    
+    if (!authToken || !userID) {
+        showError('Authentication required. Please login again.');
         loadingOverlay.style.display = 'none';
-    }, 1500);
+        window.location.href = 'login.html';
+        return;
+    }
+
+    // Clear existing timers
+    Object.values(paymentState.paymentTimers).forEach(timer => clearInterval(timer));
+    paymentState.paymentTimers = {};
+    
+    // Fetch actual payments from server
+    fetch('https://oneai-wjox.onrender.com/payments/user', {
+        headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'X-User-ID': userID
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to fetch payments');
+        }
+        return response.json();
+    })
+    .then(data => {
+        // Update state with real data only
+        paymentState.payments = data.payments || [];
+        
+        // Render payments
+        renderAllPayments();
+        
+        // Update stats
+        updateStats();
+        
+        showSuccess('Payments refreshed successfully');
+    })
+    .catch(error => {
+        console.error('Payment refresh error:', error);
+        showError(error.message || 'Failed to refresh payments');
+    })
+    .finally(() => {
+        loadingOverlay.style.display = 'none';
+    });
 };
 </script>
 <script src="./assets/js/load-navbar.js"></script>
