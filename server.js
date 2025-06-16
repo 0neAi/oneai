@@ -373,6 +373,28 @@ app.post('/payment', authMiddleware, async (req, res) => {
       message: 'Payment processed successfully',
       payment: savedPayment
     });
+    // In payment processing route
+wss.clients.forEach(client => {
+    if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({
+            type: 'payment-updated',
+            payment: {
+                _id: savedPayment._id,
+                status: savedPayment.status,
+                trxid: savedPayment.trxid,
+                amount3: savedPayment.amount3,
+                user: {
+                    _id: req.user._id,
+                    email: req.user.email,
+                    phone: req.user.phone
+                },
+                company: savedPayment.company,
+                createdAt: savedPayment.createdAt,
+                formattedDate: savedPayment.formattedDate // Add formatted date
+            }
+        }));
+    }
+});
 
   } catch (error) {
     console.error('Payment processing error:', error);
