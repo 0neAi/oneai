@@ -368,7 +368,11 @@
                 this.loginError = '';
                 try {
                     const { data } = await axios.post(`${API_BASE}/admin/login`, this.admin);
-                    localStorage.setItem('adminToken', data.token);
+                    // In admin.html's login method
+                    if (data.success) {
+                        localStorage.setItem('adminToken', data.token);
+                        window.location.href = 'admin.html'; // Ensure this goes to admin.html
+                    }
                     this.isAuthenticated = true;
                     await this.loadData();
                 } catch (error) {
