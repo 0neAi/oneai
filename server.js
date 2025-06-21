@@ -244,22 +244,29 @@ app.post('/register', async (req, res) => {
   }
 });
 
+// In your server.js login route
 app.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await User.findOne({ email }).select('+password'); 
+    const user = await User.findOne({ email }).select('+password');
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
-      return res.status(401).json({ success: false, message: 'Invalid credentials' });
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Invalid credentials' 
+      });
     }
 
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { 
+      expiresIn: '1h' 
+    });
 
     res.json({
       success: true,
       token,
       userID: user._id,
       expiresIn: Date.now() + 3600000,
+      // No redirect URLs should be sent from server
       user: { phone: user.phone, email: user.email }
     });
 
@@ -270,7 +277,6 @@ app.post('/login', async (req, res) => {
     });
   }
 });
-
 // ======================
 // Payment Processing
 // ======================
