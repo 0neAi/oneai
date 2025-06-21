@@ -906,24 +906,22 @@
         })
       });
       
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to submit premium payment');
-      }
-      
-      // Close dialog and redirect
+    const data = await response.json();
+    
+    if (data.success) {
       document.querySelector('.scope-dialog').close();
       document.querySelector('.scope-dialog').remove();
       
-      showMessage('Premium payment submitted! Redirecting...', 'success');
+      showMessage('Payment submitted! Redirecting...', 'success');
       setTimeout(() => window.location.href = 'dashboard.html', 2000);
-      
-    } catch (error) {
-      showMessage(`Error: ${error.message}`, 'error');
-    } finally {
-      loadingOverlay.style.display = 'none';
+    } else {
+      throw new Error(data.message || 'Payment failed');
     }
+  } catch (error) {
+    showMessage(`Error: ${error.message}`, 'error');
+  } finally {
+    loadingOverlay.style.display = 'none';
+  }
   };
 
     function showConfirmationDialog(phone, amount) {
