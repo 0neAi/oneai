@@ -580,39 +580,39 @@ app.get('/payments/user', authMiddleware, async (req, res) => {
 // ======================
 // Premium Payment Route
 // ======================
+// In the premium-payment route
 app.post('/premium-payment', authMiddleware, async (req, res) => {
   try {
-    const { phone, trxid, amount, service, type } = req.body;
-    
-    if (!phone || !trxid || !amount || !service || !type) {
+    // Validate required fields
+    if (!req.body.phone || !req.body.trxid || !req.body.amount || !req.body.service || !req.body.type) {
       return res.status(400).json({ 
         success: false, 
         message: 'All fields required' 
       });
     }
 
+    // Create payment record
     const payment = new Payment({
       user: req.user._id,
       company: 'premium_service',
-      phone,
+      phone: req.body.phone,
       password: 'premium_access',
       method: 'Premium',
-      trxid,
+      trxid: req.body.trxid,
       consignments: [{
         name: 'Premium Service',
-        phone,
-        amount1: amount,
+        phone: req.body.phone,
+        amount1: req.body.amount,
         amount2: 0,
-        serviceType: service
+        serviceType: req.body.service
       }],
-      amount3: amount,
+      amount3: req.body.amount,
       status: 'Pending',
-      serviceType: type
+      serviceType: req.body.type
     });
 
+    // Save and broadcast
     const savedPayment = await payment.save();
-
-    // WebSocket notification
     wss.clients.forEach(client => {
       if (client.readyState === WebSocket.OPEN) {
         client.send(JSON.stringify({
@@ -639,9 +639,7 @@ app.post('/premium-payment', authMiddleware, async (req, res) => {
       message: 'Premium payment submitted for verification',
       payment: savedPayment
     });
-
   } catch (error) {
-    console.error('Premium payment error:', error);
     res.status(500).json({
       success: false,
       message: error.message || 'Premium payment processing failed'
