@@ -332,6 +332,50 @@
     .scope-content h2 {
       font-size: 1.1rem;
     }
+        /* Add this new style for the confirmation dialog */
+    .confirmation-dialog {
+      max-width: 400px;
+      width: 90%;
+      border-radius: 8px;
+      border: none;
+      padding: 0;
+      overflow: hidden;
+      background: rgba(45, 45, 45, 0.95);
+      color: #fff;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+      text-align: center;
+    }
+
+    .confirmation-content {
+      padding: 25px;
+    }
+
+    .confirmation-content h2 {
+      color: #1cb495;
+      margin-bottom: 15px;
+    }
+
+    .confirmation-content p {
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    .confirmation-ok {
+      background: linear-gradient(135deg, #6f42c1 0%, #5a2d91 100%);
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.3s ease;
+      margin-top: 15px;
+    }
+
+    .confirmation-ok:hover {
+      background: linear-gradient(135deg, #5a2d91 0%, #4a2477 100%);
+      transform: translateY(-2px);
+    }
   }
 </style>
 </head>
@@ -831,9 +875,9 @@
         const phone = document.getElementById('scope-phone').value.trim();
         const trxid = document.getElementById('scope-trxid').value.trim();
         const amount = document.getElementById('scope-amount').value;
-        const service = document.getElementById('scope-service').value;
+        const service = "list"; // Hardcoded since we removed the service dropdown
         
-        if (!phone || !trxid || !amount || !service) {
+        if (!phone || !trxid || !amount) {
             showMessage('Please fill all required fields', 'error');
             return;
         }
@@ -875,16 +919,44 @@
                 throw new Error(data.message || 'Failed to submit premium payment');
             }
             
-            showMessage('Premium payment submitted! Admin will verify and activate your service.', 'success');
-            
+            // Close the scope dialog
             document.querySelector('.scope-dialog').close();
             document.querySelector('.scope-dialog').remove();
+            
+            // Show confirmation dialog
+            showConfirmationDialog(phone, amount);
             
         } catch (error) {
             showMessage(`Error: ${error.message}`, 'error');
         } finally {
             loadingOverlay.style.display = 'none';
         }
+    };
+
+    function showConfirmationDialog(phone, amount) {
+        const confirmationContent = `
+            <div class="confirmation-content">
+                <h2><i class="fas fa-check-circle"></i> Payment Received</h2>
+                <p>Your premium package payment of ${amount} BDT has been successfully submitted.</p>
+                <p>The package details will be sent to ${phone} via WhatsApp after verification.</p>
+                <button class="confirmation-ok" onclick="this.closest('dialog').close()">OK</button>
+            </div>
+        `;
+        
+        const dialog = document.createElement('dialog');
+        dialog.className = 'confirmation-dialog';
+        dialog.innerHTML = confirmationContent;
+        document.body.appendChild(dialog);
+        
+        dialog.showModal();
+        
+        dialog.addEventListener('click', (e) => {
+            if (e.target === dialog) {
+                dialog.close();
+                dialog.remove();
+            }
+        });
+    }
     };
   </script>
   <script src="./assets/js/load-navbar.js"></script>
