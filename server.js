@@ -11,6 +11,8 @@ import Payment from './models/Payment.js';
 import User from './models/User.js';
 import Admin from './models/Admin.js';
 import dotenv from 'dotenv';
+import http from 'http';
+
 dotenv.config();
 
 const app = express();
@@ -92,7 +94,8 @@ mongoose.connection.on('error', err => {
 // ======================
 // WebSocket Configuration
 // ======================
-const server = require('http').createServer(app);
+import http from 'http';
+const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
 wss.on('connection', (ws, req) => {
