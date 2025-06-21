@@ -451,7 +451,7 @@ app.post('/admin/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     const admin = await Admin.findOne({ email }).select('+password');
-
+    
     if (!admin || !(await admin.comparePassword(password))) {
       return res.status(401).json({ 
         success: false, 
@@ -470,7 +470,6 @@ app.post('/admin/login', async (req, res) => {
       token,
       admin: admin.toSafeObject()
     });
-
   } catch (error) {
     res.status(500).json({ 
       success: false, 
