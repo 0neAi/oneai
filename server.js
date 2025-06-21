@@ -498,6 +498,79 @@ app.post('/admin/login', async (req, res) => {
     });
   }
 });
+// Add this to Admin Routes section
+// ======================
+// Admin Registration Check
+// ======================
+app.get('/admin/check-registration', async (req, res) => {
+  try {
+    const canRegister = await Admin.canRegister();
+    res.json({
+      success: true,
+      allowRegistration: canRegister
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error checking registration status' 
+    });
+  }
+});
+
+// ======================
+// Admin Registration
+// ======================
+app.post('/admin/register', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const admin = await Admin.register(email, password);
+    
+    res.json({
+      success: true,
+      admin
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// ======================
+// Admin Validation
+// ======================
+app.get('/admin/validate', adminAuth, (req, res) => {
+  res.json({ success: true });
+});
+
+// ======================
+// Get Payments (Admin)
+// ======================
+app.get('/admin/payments', adminAuth, async (req, res) => {
+  try {
+    const payments = await Payment.find()
+      .populate('user', 'email phone')
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      payments
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch payments'
+    });
+  }
+});
+
+// ======================
+// Fix User Validation Endpoint
+// ======================
+app.get('/validate', adminAuth, async (req, res) => {
+  res.json({ success: true });
+});
 // Add this route after the admin routes
 app.get('/payments/user', authMiddleware, async (req, res) => {
     try {
