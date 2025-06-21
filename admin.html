@@ -671,6 +671,27 @@
                     this.isLoading = false;
                 }
             },
+            formatCompany(company) {
+  const companies = {
+    'govt_nid': 'Govt NID',
+    'redx': 'RedX',
+    'pathao': 'Pathao',
+    'steadfast': 'SteadFast',
+    'premium_service': 'Premium Service'
+  };
+  return companies[company] || company;
+},
+
+// Add to statusClass method
+statusClass(status) {
+  const classes = {
+    'Pending': 'bg-warning',
+    'Completed': 'bg-success',
+    'Failed': 'bg-danger',
+    'premium': 'bg-info' // New class for premium
+  };
+  return classes[status] || 'bg-secondary';
+},
             showPaymentDetails(payment) {
                 this.selectedPayment = payment;
                 if (!this.paymentModal) {
