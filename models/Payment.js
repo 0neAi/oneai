@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const consignmentSchema = new mongoose.Schema({
   name: { 
@@ -127,4 +127,7 @@ paymentSchema.virtual('formattedDate').get(function() {
   });
 });
 
-module.exports = mongoose.model('Payment', paymentSchema);
+
+const Payment = mongoose.model('Payment', paymentSchema);
+
+export default Payment; 
