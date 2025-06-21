@@ -41,12 +41,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
 
-            if (validation.ok) {
-                // Explicitly go to dashboard, not admin
-                window.location.href = 'dashboard.html';
+        if (validation.ok) {
+            const userData = await validation.json();
+            // Check if user is admin (you'll need to add this to your response)
+            if (userData.isAdmin) {
+                window.location.href = 'admin.html';
             } else {
-                throw new Error('Session expired');
+                window.location.href = 'dashboard.html';
             }
+        }
         } catch (error) {
             localStorage.removeItem('authToken');
             localStorage.removeItem('userID');
