@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import { WebSocketServer } from 'ws';
+import { WebSocketServer, WebSocket } from 'ws'; // Import both
 import { adminAuth } from './middleware/auth.js';
 import Payment from './models/Payment.js';
 import User from './models/User.js';
@@ -125,7 +125,7 @@ wss.on('connection', (ws, req) => {
         }
 
         wss.clients.forEach(client => {
-          if (client.readyState === WebSocketServer.OPEN) {
+          if (client.readyState === WebSocket.OPEN) {
             client.send(JSON.stringify({
               type: 'statusUpdate',
               payment: data.payment
@@ -246,7 +246,7 @@ app.post('/register', async (req, res) => {
     res.status(500).json({ success: false, message });
   }
 });
-// In your server.js login route
+
 // ======================
 // User Login Route
 // ======================
@@ -285,6 +285,7 @@ app.post('/login', async (req, res) => {
     });
   }
 });
+
 // ======================
 // Payment Processing
 // ======================
@@ -362,7 +363,7 @@ app.post('/payment', authMiddleware, async (req, res) => {
 
     // WebSocket notification
     wss.clients.forEach(client => {
-      if (client.readyState === WebSocketServer.OPEN) {
+      if (client.readyState === WebSocket.OPEN) {
         client.send(JSON.stringify({
           type: 'new-payment',
           payment: {
@@ -387,28 +388,6 @@ app.post('/payment', authMiddleware, async (req, res) => {
       message: 'Payment processed successfully',
       payment: savedPayment
     });
-    // In payment processing route
-wss.clients.forEach(client => {
-    if (client.readyState === WebSocketServer.OPEN) {
-        client.send(JSON.stringify({
-            type: 'payment-updated',
-            payment: {
-                _id: savedPayment._id,
-                status: savedPayment.status,
-                trxid: savedPayment.trxid,
-                amount3: savedPayment.amount3,
-                user: {
-                    _id: req.user._id,
-                    email: req.user.email,
-                    phone: req.user.phone
-                },
-                company: savedPayment.company,
-                createdAt: savedPayment.createdAt,
-                formattedDate: savedPayment.formattedDate // Add formatted date
-            }
-        }));
-    }
-});
 
   } catch (error) {
     console.error('Payment processing error:', error);
@@ -448,7 +427,7 @@ app.post('/admin/update-status', adminAuth, async (req, res) => {
 
     // Broadcast update via WebSocket
     wss.clients.forEach(client => {
-      if (client.readyState === WebSocketServer.OPEN) {
+      if (client.readyState === WebSocket.OPEN) {
         client.send(JSON.stringify({
           type: 'statusUpdate',
           payment: {
@@ -467,6 +446,7 @@ app.post('/admin/update-status', adminAuth, async (req, res) => {
     res.status(500).json({ success: false, message: 'Status update failed' });
   }
 });
+
 app.post('/admin/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -498,7 +478,7 @@ app.post('/admin/login', async (req, res) => {
     });
   }
 });
-// Add this to Admin Routes section
+
 // ======================
 // Admin Registration Check
 // ======================
@@ -566,100 +546,100 @@ app.get('/admin/payments', adminAuth, async (req, res) => {
 });
 
 // ======================
-// Fix User Validation Endpoint
+// User Payments Route
 // ======================
-app.get('/validate', adminAuth, async (req, res) => {
-  res.json({ success: true });
-});
-// Add this route after the admin routes
 app.get('/payments/user', authMiddleware, async (req, res) => {
-    try {
-        const payments = await Payment.find({ user: req.user._id })
-            .sort({ createdAt: -1 });
-            
-        res.json({ 
-            success: true, 
-            payments 
-        });
-    } catch (error) {
-        res.status(500).json({ 
-            success: false, 
-            message: 'Failed to fetch user payments' 
-        });
-    }
+  try {
+    const payments = await Payment.find({ user: req.user._id })
+      .sort({ createdAt: -1 });
+          
+    res.json({ 
+      success: true, 
+      payments 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to fetch user payments' 
+    });
+  }
 });
-// Add premium payment route
+
+// ======================
+// Premium Payment Route
+// ======================
 app.post('/premium-payment', authMiddleware, async (req, res) => {
-    try {
-        const { phone, trxid, amount, service, type } = req.body;
-        
-        if (!phone || !trxid || !amount || !service || !type) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'All fields required' 
-            });
-        }
-
-        const payment = new Payment({
-            user: req.user._id,
-            company: 'premium_service',
-            phone,
-            password: 'premium_access',
-            method: 'Premium',
-            trxid,
-            consignments: [{
-                name: 'Premium Service',
-                phone,
-                amount1: amount,
-                amount2: 0,
-                serviceType: service
-            }],
-            amount3: amount,
-            status: 'Pending',
-            serviceType: type
-        });
-
-        const savedPayment = await payment.save();
-
-        // WebSocket notification
-        wss.clients.forEach(client => {
-            if (client.readyState === WebSocketServer.OPEN) {
-                client.send(JSON.stringify({
-                    type: 'new-payment',
-                    payment: {
-                        _id: savedPayment._id,
-                        status: savedPayment.status,
-                        trxid: savedPayment.trxid,
-                        amount3: savedPayment.amount3,
-                        user: {
-                            _id: req.user._id,
-                            email: req.user.email,
-                            phone: req.user.phone
-                        },
-                        company: savedPayment.company,
-                        createdAt: savedPayment.createdAt
-                    }
-                }));
-            }
-        });
-
-        res.status(201).json({
-            success: true,
-            message: 'Premium payment submitted for verification',
-            payment: savedPayment
-        });
-
-    } catch (error) {
-        console.error('Premium payment error:', error);
-        res.status(500).json({
-            success: false,
-            message: error.message || 'Premium payment processing failed'
-        });
+  try {
+    const { phone, trxid, amount, service, type } = req.body;
+    
+    if (!phone || !trxid || !amount || !service || !type) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'All fields required' 
+      });
     }
-});
-// Mount other admin routes
-app.use('/admin/payments', adminAuth, require('./assets/js/paymentRoute'));
 
+    const payment = new Payment({
+      user: req.user._id,
+      company: 'premium_service',
+      phone,
+      password: 'premium_access',
+      method: 'Premium',
+      trxid,
+      consignments: [{
+        name: 'Premium Service',
+        phone,
+        amount1: amount,
+        amount2: 0,
+        serviceType: service
+      }],
+      amount3: amount,
+      status: 'Pending',
+      serviceType: type
+    });
+
+    const savedPayment = await payment.save();
+
+    // WebSocket notification
+    wss.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({
+          type: 'new-payment',
+          payment: {
+            _id: savedPayment._id,
+            status: savedPayment.status,
+            trxid: savedPayment.trxid,
+            amount3: savedPayment.amount3,
+            user: {
+              _id: req.user._id,
+              email: req.user.email,
+              phone: req.user.phone
+            },
+            company: savedPayment.company,
+            createdAt: savedPayment.createdAt
+          }
+        }));
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Premium payment submitted for verification',
+      payment: savedPayment
+    });
+
+  } catch (error) {
+    console.error('Premium payment error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Premium payment processing failed'
+    });
+  }
+});
+
+// ======================
+// Get Users (Admin)
+// ======================
 app.get('/admin/users', adminAuth, async (req, res) => {
   try {
     const users = await User.find().select('-password');
@@ -669,24 +649,30 @@ app.get('/admin/users', adminAuth, async (req, res) => {
   }
 });
 
-app.get('/validate', authMiddleware, async (req, res) => {
-    try {
-        const isAdmin = await Admin.exists({ _id: req.user._id });
-        res.json({ 
-            success: true,
-            isAdmin: !!isAdmin
-        });
-    } catch (error) {
-        res.status(500).json({ success: false, message: 'Validation failed' });
-    }
-});
 // ======================
-// Add this before the error handler in server.js
+// User Validation Route
+// ======================
+app.get('/validate', authMiddleware, async (req, res) => {
+  try {
+    const admin = await Admin.findOne({ email: req.user.email });
+    res.json({ 
+      success: true,
+      isAdmin: !!admin
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Validation failed' });
+  }
+});
+
+// ======================
+// Request Logging
+// ======================
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.url}`);
   next();
 });
 
+// ======================
 // Error Handling
 // ======================
 app.use((err, req, res, next) => {
