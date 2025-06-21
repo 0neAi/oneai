@@ -243,7 +243,15 @@ app.post('/register', async (req, res) => {
     res.status(500).json({ success: false, message });
   }
 });
-
+// In your login route
+const isAdmin = await Admin.exists({ email: user.email });
+res.json({
+    success: true,
+    token,
+    userID: user._id,
+    expiresIn: Date.now() + 3600000,
+    isAdmin
+});
 // In your server.js login route
 app.post('/login', async (req, res) => {
   try {
@@ -588,10 +596,17 @@ app.get('/admin/users', adminAuth, async (req, res) => {
   }
 });
 
-app.get('/validate', authMiddleware, (req, res) => {
-  res.json({ success: true });
+app.get('/validate', authMiddleware, async (req, res) => {
+    try {
+        const isAdmin = await Admin.exists({ _id: req.user._id });
+        res.json({ 
+            success: true,
+            isAdmin: !!isAdmin
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Validation failed' });
+    }
 });
-
 // ======================
 // Add this before the error handler in server.js
 app.use((req, res, next) => {
