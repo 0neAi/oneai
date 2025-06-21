@@ -498,17 +498,16 @@
                 }
             },
             methods: {
-                async checkInitialSetup() {
-                    try {
-                        this.isLoading = true;
-                        const { data } = await axios.get(`${API_BASE}/admin/check-registration`);
-                        this.showInitialSetup = data.allowRegistration;
-                    } catch (error) {
-                        console.error('Setup check failed:', error);
-                        this.showInitialSetup = true;
-                    } finally {
-                        this.isLoading = false;
-                    }
+                  async checkInitialSetup() {
+                  try {
+                    this.isLoading = true;
+                    const { data } = await axios.get(`${API_BASE}/admin/check-registration`);
+                    this.showInitialSetup = data.allowRegistration;
+                  } catch (error) {
+                    this.showInitialSetup = true;
+                  } finally {
+                    this.isLoading = false;
+                  }
                 },
                 validateEmail(email) {
                     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
