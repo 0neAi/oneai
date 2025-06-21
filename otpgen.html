@@ -6,264 +6,334 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
   <link rel="stylesheet" href="./assets/css/main.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>
-    .hidden {
-      display: none !important;
-    }
-    .loading-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.5);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-      color: white;
-      font-size: 2rem;
-    }
-    .alert-success {
-      color: green;
-      padding: 10px;
-      background: #e8f5e9;
-      border-radius: 4px;
-      margin: 10px 0;
-    }
-    .alert-error {
-      color: red;
-      padding: 10px;
-      background: #ffebee;
-      border-radius: 4px;
-      margin: 10px 0;
-    }
-    
-    /* Consignment Section Styling */
-    .consignment-group {
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 8px;
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
-      position: relative;
-      background: rgba(255, 255, 255, 0.05);
-      transition: all 0.3s ease;
-    }
-    
-    .consignment-group:hover {
-      border-color: rgba(28, 180, 149, 0.5);
-    }
-    
-    .consignment-counter {
-      font-weight: bold;
-      color: #1cb495;
-      margin-bottom: 1rem;
-      font-size: 1.1em;
-    }
-    
-    .remove-consignment {
-      position: absolute;
-      top: 1rem;
-      right: 1rem;
-      cursor: pointer;
-      color: #ff4444 !important;
-      background: rgba(255, 68, 68, 0.1);
-      width: 24px;
-      height: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 50%;
-      transition: all 0.2s ease;
-    }
-    
-    .remove-consignment:hover {
-      background: rgba(255, 68, 68, 0.2);
-    }
-    
-    /* Amount Group Styling */
+<style>
+  .hidden {
+    display: none !important;
+  }
+  .loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    color: white;
+    font-size: 2rem;
+  }
+  .alert-success {
+    color: green;
+    padding: 10px;
+    background: #e8f5e9;
+    border-radius: 4px;
+    margin: 10px 0;
+  }
+  .alert-error {
+    color: red;
+    padding: 10px;
+    background: #ffebee;
+    border-radius: 4px;
+    margin: 10px 0;
+  }
+  
+  /* Consignment Section Styling */
+  .consignment-group {
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    position: relative;
+    background: rgba(255, 255, 255, 0.05);
+    transition: all 0.3s ease;
+  }
+  
+  .consignment-group:hover {
+    border-color: rgba(28, 180, 149, 0.5);
+  }
+  
+  .consignment-counter {
+    font-weight: bold;
+    color: #1cb495;
+    margin-bottom: 1rem;
+    font-size: 1.1em;
+  }
+  
+  .remove-consignment {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    cursor: pointer;
+    color: #ff4444 !important;
+    background: rgba(255, 68, 68, 0.1);
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+  }
+  
+  .remove-consignment:hover {
+    background: rgba(255, 68, 68, 0.2);
+  }
+  
+  /* Amount Group Styling */
+  .amount-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin: 1rem 0;
+  }
+  
+  /* Form Group Spacing */
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+  
+  /* Button Styling */
+  .add-consignment {
+    margin-bottom: 2rem;
+    width: 100%;
+  }
+  
+  .form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+  }
+  
+  .form-actions button {
+    flex: 1;
+  }
+  
+  /* Discount Button */
+  .discount-btn {
+    margin-top: 0.5rem;
+    background: rgba(28, 180, 149, 0.2) !important;
+  }
+  
+  .discount-btn:hover {
+    background: rgba(28, 180, 149, 0.3) !important;
+  }
+
+  /* Scope Premium Service Button */
+  .scope-btn {
+    background: linear-gradient(135deg, #6f42c1 0%, #5a2d91 100%) !important;
+    color: white !important;
+    width: 100%;
+    margin: 1rem 0;
+    padding: 1rem;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    font-size: 1rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  }
+
+  .scope-btn:hover {
+    background: linear-gradient(135deg, #5a2d91 0%, #4a2477 100%) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+  }
+
+  .scope-btn i {
+    margin-right: 8px;
+    font-size: 1.2rem;
+  }
+
+  /* Scope Dialog Styling */
+  .scope-dialog {
+    max-width: 500px;
+    width: 90%;
+    border-radius: 8px;
+    border: none;
+    padding: 0;
+    overflow: hidden;
+    background: rgba(45, 45, 45, 0.95);
+    color: #fff;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+  }
+
+  .scope-dialog::backdrop {
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(3px);
+  }
+
+  .scope-content {
+    padding: 25px;
+  }
+
+  .scope-content h2 {
+    margin-top: 0;
+    color: #1cb495;
+    text-align: center;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+    font-size: 1.5rem;
+  }
+
+  .scope-content h2 i {
+    margin-right: 10px;
+  }
+
+  .scope-form-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .scope-form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+    color: #1cb495;
+    font-size: 1rem;
+  }
+
+  .scope-form-group input,
+  .scope-form-group select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 4px;
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+  }
+
+  .scope-form-group input:focus,
+  .scope-form-group select:focus {
+    outline: none;
+    border-color: #1cb495;
+    box-shadow: 0 0 0 2px rgba(28, 180, 149, 0.3);
+  }
+
+  .scope-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+  }
+
+  .scope-actions button {
+    flex: 1;
+    padding: 12px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+  }
+
+  .scope-submit {
+    background: linear-gradient(135deg, #6f42c1 0%, #5a2d91 100%);
+    color: white;
+  }
+
+  .scope-submit:hover {
+    background: linear-gradient(135deg, #5a2d91 0%, #4a2477 100%);
+    transform: translateY(-2px);
+  }
+
+  .scope-close {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.2) !important;
+  }
+
+  .scope-close:hover {
+    background: rgba(255,255,255,0.2);
+  }
+
+  /* Responsive Adjustments */
+  @media screen and (max-width: 736px) {
     .amount-group {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1.5rem;
-      margin: 1rem 0;
-    }
-    
-    /* Form Group Spacing */
-    .form-group {
-      margin-bottom: 1.5rem;
-    }
-    
-    /* Button Styling */
-    .add-consignment {
-      margin-bottom: 2rem;
-      width: 100%;
+      grid-template-columns: 1fr;
     }
     
     .form-actions {
-      display: flex;
-      gap: 1rem;
-      margin-top: 2rem;
-    }
-    
-    .form-actions button {
-      flex: 1;
-    }
-    
-    /* Discount Button */
-    .discount-btn {
-      margin-top: 0.5rem;
-      background: rgba(28, 180, 149, 0.2) !important;
-    }
-    
-    .discount-btn:hover {
-      background: rgba(28, 180, 149, 0.3) !important;
+      flex-direction: column;
     }
 
-    /* Scope Premium Service Button */
+    .scope-dialog {
+      width: 95%;
+      max-width: none;
+    }
+
+    .scope-actions {
+      flex-direction: column;
+    }
+
+    /* Mobile-specific scope button adjustments */
     .scope-btn {
-      background: linear-gradient(135deg, #6f42c1 0%, #5a2d91 100%) !important;
-      color: red !important;
-      width: 100%;
-      margin-top: 1rem;
-      border: 4px;
-      padding: 0rem 1.5rem;
-      border-radius: 10px;
-      cursor: pointer;
-      font-weight: bold;
-      transition: all 0.3s ease;
-      text-align: center;
-    }
-
-    .scope-btn:hover {
-      background: linear-gradient(135deg, #5a2d91 0%, #4a2477 100%) !important;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      padding: 1rem 0.5rem;
+      font-size: 0.9rem;
+      margin: 1rem 0;
+      white-space: normal;
+      line-height: 1.4;
+      min-height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .scope-btn i {
-      margin-right: 8px;
-    }
-
-    /* Scope Dialog Styling */
-    .scope-dialog {
-      max-width: 500px;
-      width: 90%;
-      border-radius: 8px;
-      border: none;
-      padding: 0;
-      overflow: hidden;
-      background: rgba(45, 45, 45, 0.95);
-      color: #fff;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-    }
-
-    .scope-dialog::backdrop {
-      background: rgba(0,0,0,0.7);
-      backdrop-filter: blur(3px);
+      font-size: 1rem;
+      margin-right: 6px;
     }
 
     .scope-content {
-      padding: 25px;
+      padding: 15px;
     }
 
     .scope-content h2 {
-      margin-top: 0;
-      color: #1cb495;
-      text-align: center;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-      padding-bottom: 15px;
-      margin-bottom: 20px;
-    }
-
-    .scope-content h2 i {
-      margin-right: 10px;
-    }
-
-    .scope-form-group {
-      margin-bottom: 1.5rem;
-    }
-
-    .scope-form-group label {
-      display: block;
-      margin-bottom: 0.5rem;
-      font-weight: bold;
-      color: #1cb495;
+      font-size: 1.3rem;
+      padding-bottom: 10px;
     }
 
     .scope-form-group input,
     .scope-form-group select {
-      width: 100%;
       padding: 10px;
-      border: 1px solid rgba(255,255,255,0.2);
-      border-radius: 4px;
-      background: rgba(255,255,255,0.1);
-      color: #fff;
-      transition: all 0.3s ease;
-    }
-
-    .scope-form-group input:focus,
-    .scope-form-group select:focus {
-      outline: none;
-      border-color: #1cb495;
-      box-shadow: 0 0 0 2px rgba(28, 180, 149, 0.3);
-    }
-
-    .scope-actions {
-      display: flex;
-      gap: 1rem;
-      margin-top: 2rem;
+      font-size: 0.9rem;
     }
 
     .scope-actions button {
-      flex: 1;
-      padding: 10px 16px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: bold;
-      transition: all 0.3s ease;
+      padding: 10px;
+      font-size: 0.9rem;
     }
 
-    .scope-submit {
-      background: linear-gradient(135deg, #6f42c1 0%, #5a2d91 100%);
-      color: white;
+    #scope-section {
+      margin: 1rem 0;
+      padding: 0 5px;
+    }
+  }
+
+  /* Very small mobile devices (e.g., iPhone 5/SE) */
+  @media screen and (max-width: 320px) {
+    .scope-btn {
+      font-size: 0.8rem;
+      padding: 0.8rem 0.5rem;
     }
 
-    .scope-submit:hover {
-      background: linear-gradient(135deg, #5a2d91 0%, #4a2477 100%);
-      transform: translateY(-2px);
+    .scope-btn i {
+      font-size: 0.9rem;
     }
 
-    .scope-close {
-      background: rgba(255,255,255,0.1);
-      color: #fff;
-      border: 1px solid rgba(255,255,255,0.2) !important;
+    .scope-content h2 {
+      font-size: 1.1rem;
     }
-
-    .scope-close:hover {
-      background: rgba(255,255,255,0.2);
-    }
-
-    /* Responsive Adjustments */
-    @media screen and (max-width: 736px) {
-      .amount-group {
-        grid-template-columns: 1fr;
-      }
-      
-      .form-actions {
-        flex-direction: column;
-      }
-
-      .scope-dialog {
-        width: 95%;
-      }
-
-      .scope-actions {
-        flex-direction: column;
-      }
-    }
-  </style>
+  }
+</style>
 </head>
 <body class="is-preload">
   <div id="bg"></div>
