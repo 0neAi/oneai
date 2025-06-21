@@ -215,6 +215,14 @@
             from { opacity: 0; top: 0; }
             to { opacity: 1; top: 1rem; }
         }
+  .premium-payment {
+    background: linear-gradient(135deg, rgba(111,66,193,0.1) 0%, rgba(90,45,145,0.1) 100%);
+  }
+  .premium-payment td:first-child {
+    font-weight: bold;
+    color: #6f42c1;
+  }
+        
     </style>
 </head>
 <body>
@@ -468,6 +476,13 @@ function updatePaymentRow(row, payment) {
     // Update countdown cell
     const countdownCell = row.querySelector('.countdown');
     
+      // Add premium payment styling
+  if (payment.company === 'premium_service') {
+    row.classList.add('premium-payment');
+    row.querySelector('td:first-child').innerHTML = `
+      <i class="fas fa-crown"></i> Premium Service
+    `;
+  }
     // If status changed from Pending, stop the countdown
     if (payment.status !== 'Pending') {
         if (countdownCell) {
