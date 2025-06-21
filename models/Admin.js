@@ -25,48 +25,66 @@ const adminSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   }
-}) {
+}, {
   timestamps: true
 });
 
-// Static method to check if registration is allowed
-adminSchema.statics.canRegister = async function() {
-  return (await this.countDocuments()) === 0;
-};
-};
-// Method to get safe version of admin (without password)
-adminSchema.methods.toSafeObject = function() {
-  const admin = this.toObject();
-  delete admin.password;
-  return admin;
-};
-// Add this to complete the Admin model
+// Pre-save hook to hash password
 adminSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
   
   try {
-    const salt = await bcrypt.genSalt(12);
-    this.password = await bcrypt.hash(this.password, salt);
+    this.password = await bcrypt.hash(this.password, 12);
     next();
   } catch (error) {
     next(error);
   }
 });
 
-adminSchema.methods.comparePassword = async function(password) {
-  return bcrypt.compare(password, this.password);
-};
-
-adminSchema.statics.register = async function(email, password) {
-  const exists = await this.exists({ email });
-  if (exists) throw new Error('Email already exists');
-  
-  const admin = new this({ email, password });
-  return admin.save();
-};
-
+// Static method to check if registration is allowed
 adminSchema.statics.canRegister = async function() {
-  return (await this.countDocuments()) === 0;
+  const count = await this.countDocuments();
+  return count === 0;
 };
 
-export default mongoose.model('Admin', adminSchema);
+// Method to compare passwords
+adminSchema.methods.comparePassword = async function(candidatePassword) {
+  return bcrypt.compare(candidatePassword, this.password);
+};
+
+// Method to get safe version of admin (without password)
+adminSchema.methods.toSafeObject = function() {
+  const admin = this.toObject();
+  delete admin.password;
+  return admin;
+};
+
+// Static method for registration
+adminSchema.statics.register = async function(email, password) {
+  // Check if registration is allowed
+  if (!await this.canRegister()) {
+    throw new Error('Admin registration is closed');
+  }
+
+  // Normalize email
+  const normalizedEmail = email.trim().toLowerCase();
+  
+  // Check if email already exists
+  const existingAdmin = await this.findOne({ email: normalizedEmail });
+  if (existingAdmin) {
+    throw new Error('Email already exists');
+  }
+
+  // Create new admin
+  const admin = new this({
+    email: normalizedEmail,
+    password
+  });
+
+  // Save admin to database
+  await admin.save();
+  return admin.toSafeObject();
+};
+
+const Admin = mongoose.model('Admin', adminSchema);
+export default Admin;
