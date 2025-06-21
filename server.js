@@ -1,16 +1,17 @@
-require('dotenv').config();
-const express = require('express');
-const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const cors = require('cors');
-const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
-const WebSocket = require('ws');
-const { adminAuth } = require('./middleware/auth');
-const Payment = require('./models/Payment');
-const User = require('./models/User');
-const Admin = require('./models/Admin');
+import express from 'express';
+import mongoose from 'mongoose';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import { WebSocketServer } from 'ws';
+import { adminAuth } from './middleware/auth.js';
+import Payment from './models/Payment.js';
+import User from './models/User.js';
+import Admin from './models/Admin.js';
+import dotenv from 'dotenv';
+dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -92,7 +93,7 @@ mongoose.connection.on('error', err => {
 // WebSocket Configuration
 // ======================
 const server = require('http').createServer(app);
-const wss = new WebSocket.Server({ server });
+const wss = new WebSocketServer({ server });
 
 wss.on('connection', (ws, req) => {
   if (process.env.NODE_ENV === 'production') {
@@ -122,7 +123,7 @@ wss.on('connection', (ws, req) => {
         }
 
         wss.clients.forEach(client => {
-          if (client.readyState === WebSocket.OPEN) {
+          if (client.readyState === WebSocketServer.OPEN) {
             client.send(JSON.stringify({
               type: 'statusUpdate',
               payment: data.payment
@@ -243,16 +244,10 @@ app.post('/register', async (req, res) => {
     res.status(500).json({ success: false, message });
   }
 });
-// In your login route
-const isAdmin = await Admin.exists({ email: user.email });
-res.json({
-    success: true,
-    token,
-    userID: user._id,
-    expiresIn: Date.now() + 3600000,
-    isAdmin
-});
 // In your server.js login route
+// ======================
+// User Login Route
+// ======================
 app.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -269,12 +264,15 @@ app.post('/login', async (req, res) => {
       expiresIn: '1h' 
     });
 
+    // Check if user is admin
+    const isAdmin = await Admin.exists({ email: user.email });
+
     res.json({
       success: true,
       token,
       userID: user._id,
       expiresIn: Date.now() + 3600000,
-      // No redirect URLs should be sent from server
+      isAdmin,
       user: { phone: user.phone, email: user.email }
     });
 
@@ -362,7 +360,7 @@ app.post('/payment', authMiddleware, async (req, res) => {
 
     // WebSocket notification
     wss.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN) {
+      if (client.readyState === WebSocketServer.OPEN) {
         client.send(JSON.stringify({
           type: 'new-payment',
           payment: {
@@ -389,7 +387,7 @@ app.post('/payment', authMiddleware, async (req, res) => {
     });
     // In payment processing route
 wss.clients.forEach(client => {
-    if (client.readyState === WebSocket.OPEN) {
+    if (client.readyState === WebSocketServer.OPEN) {
         client.send(JSON.stringify({
             type: 'payment-updated',
             payment: {
@@ -448,7 +446,7 @@ app.post('/admin/update-status', adminAuth, async (req, res) => {
 
     // Broadcast update via WebSocket
     wss.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN) {
+      if (client.readyState === WebSocketServer.OPEN) {
         client.send(JSON.stringify({
           type: 'statusUpdate',
           payment: {
@@ -623,7 +621,7 @@ app.post('/premium-payment', authMiddleware, async (req, res) => {
 
         // WebSocket notification
         wss.clients.forEach(client => {
-            if (client.readyState === WebSocket.OPEN) {
+            if (client.readyState === WebSocketServer.OPEN) {
                 client.send(JSON.stringify({
                     type: 'new-payment',
                     payment: {
