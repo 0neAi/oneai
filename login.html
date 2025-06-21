@@ -27,31 +27,33 @@
 
     <script>
         // Session validation on page load
-        document.addEventListener('DOMContentLoaded', async () => {
-            const token = localStorage.getItem('authToken');
-            const userID = localStorage.getItem('userID');
-            const expiresIn = localStorage.getItem('tokenExp');
+document.addEventListener('DOMContentLoaded', async () => {
+    const token = localStorage.getItem('authToken');
+    const userID = localStorage.getItem('userID');
+    const expiresIn = localStorage.getItem('tokenExp');
 
-            if (token && userID && expiresIn) {
-                try {
-                    // Validate session with server
-                    const validation = await fetch('https://oneai-wjox.onrender.com/validate', {
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'X-User-ID': userID
-                        }
-                    });
-
-                    if (!validation.ok) throw new Error('Session expired');
-                    window.location.href = 'dashboard.html';
-                } catch (error) {
-                    localStorage.removeItem('authToken');
-                    localStorage.removeItem('userID');
-                    localStorage.removeItem('tokenExp');
+    if (token && userID && expiresIn) {
+        try {
+            const validation = await fetch('https://oneai-wjox.onrender.com/validate', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'X-User-ID': userID
                 }
-            }
-        });
+            });
 
+            if (validation.ok) {
+                // Explicitly go to dashboard, not admin
+                window.location.href = 'dashboard.html';
+            } else {
+                throw new Error('Session expired');
+            }
+        } catch (error) {
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('userID');
+            localStorage.removeItem('tokenExp');
+        }
+    }
+});
         // Login form handler
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -82,6 +84,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     localStorage.setItem('authToken', data.token);
     localStorage.setItem('tokenExp', data.expiresIn);
     
+    // Force redirect to dashboard (not admin)
     window.location.href = 'dashboard.html';
 
   } catch (error) {
