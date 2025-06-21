@@ -440,7 +440,7 @@
     <script src="https://cdn.jsdelivr.net/npm/vue@3.2.31/dist/vue.global.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-<script>
+    <script>
     const API_BASE = 'https://oneai-wjox.onrender.com';
     
     axios.interceptors.request.use(config => {
@@ -485,7 +485,8 @@
                 paymentFilter: 'all',
                 selectedPayment: null,
                 paymentModal: null,
-                ws: null
+                ws: null,
+                wsConnectionAttempts: 0
             };
         },
         computed: {
@@ -688,17 +689,18 @@
             initWebSocket() {
                 if (this.ws) {
                     this.ws.close();
+                    this.ws = null;
                 }
 
-                // FIXED WEBSOCKET URL: Use API_BASE instead of window.location
-                const isSecure = API_BASE.startsWith('https');
-                const protocol = isSecure ? 'wss:' : 'ws:';
-                const host = API_BASE.replace(/^https?:\/\//, '');
-                this.ws = new WebSocket(`${protocol}//${host}`);
+                // FIXED: Use direct WebSocket URL with secure connection
+                this.ws = new WebSocket('wss://oneai-wjox.onrender.com');
+                this.wsConnectionAttempts++;
 
                 this.ws.onopen = () => {
                     console.log('WebSocket connected');
                     const token = localStorage.getItem('adminToken');
+                    this.wsConnectionAttempts = 0; // Reset on success
+                    
                     if (token) {
                         this.ws.send(JSON.stringify({
                             type: 'auth',
@@ -710,6 +712,7 @@
                 this.ws.onmessage = (event) => {
                     try {
                         const data = JSON.parse(event.data);
+                        console.log('WebSocket message:', data);
                         
                         if (data.type === 'statusUpdate') {
                             const index = this.payments.findIndex(p => p.trxid === data.payment.trxid);
@@ -735,38 +738,57 @@
 
                 this.ws.onclose = (event) => {
                     console.log('WebSocket disconnected:', event.reason);
-                    setTimeout(() => this.initWebSocket(), 5000);
+                    
+                    // Prevent infinite reconnection attempts
+                    if (this.wsConnectionAttempts < 5) {
+                        console.log(`Reconnecting attempt ${this.wsConnectionAttempts}/5...`);
+                        setTimeout(() => this.initWebSocket(), 3000);
+                    } else {
+                        console.error('Max WebSocket reconnection attempts reached');
+                        this.wsConnectionAttempts = 0;
+                    }
                 };
             }
         },
         async mounted() {
-            this.paymentModal = new bootstrap.Modal(
-                document.getElementById('paymentModal'), 
-                { keyboard: false }
-            );
+            try {
+                this.paymentModal = new bootstrap.Modal(
+                    document.getElementById('paymentModal'), 
+                    { keyboard: false }
+                );
 
-            await this.checkInitialSetup();
+                // Check initial setup first
+                await this.checkInitialSetup();
 
-            const token = localStorage.getItem('adminToken');
-            if (token && !this.showInitialSetup) {
-                try {
-                    await axios.get(`${API_BASE}/admin/validate`);
-                    this.isAuthenticated = true;
-                    await this.loadData();
-                    this.initWebSocket();
-                } catch (error) {
-                    console.error('Authentication check failed:', error);
-                    localStorage.removeItem('adminToken');
-                } finally {
-                    this.isLoading = false;
+                // Check authentication if setup is done
+                const token = localStorage.getItem('adminToken');
+                if (token && !this.showInitialSetup) {
+                    try {
+                        // Validate token
+                        await axios.get(`${API_BASE}/admin/validate`);
+                        this.isAuthenticated = true;
+                        
+                        // Load data without waiting for WebSocket
+                        this.loadData();
+                        
+                        // Init WebSocket separately
+                        this.initWebSocket();
+                    } catch (error) {
+                        console.error('Authentication check failed:', error);
+                        localStorage.removeItem('adminToken');
+                    }
                 }
-            } else {
+            } catch (error) {
+                console.error('Initialization error:', error);
+            } finally {
+                // Ensure loading stops regardless of success
                 this.isLoading = false;
             }
         },
         beforeUnmount() {
             if (this.ws) {
                 this.ws.close();
+                this.ws = null;
             }
         }
     };
