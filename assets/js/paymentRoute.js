@@ -42,7 +42,7 @@ router.post('/', async (req, res) => {
 
     // Process each consignment
     let amount3 = 0;
-    const validServiceTypes = ['pricecng', 'partial', 'drto', 'delivery', 'return'];
+   const validServiceTypes = ['pricecng', 'partial', 'drto', 'delivery', 'return', 'list'];
     
     for (const consignment of consignments) {
       const { serviceType, name, phone: customerPhone, amount1, amount2 } = consignment;
