@@ -1,5 +1,5 @@
-const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
+import mongoose from 'mongoose';
+import bcrypt from 'bcrypt';
 
 const adminSchema = new mongoose.Schema({
   email: {
@@ -77,4 +77,4 @@ adminSchema.statics.register = async function(email, password) {
 };
 
 const Admin = mongoose.model('Admin', adminSchema);
-module.exports = Admin;
+export default Admin; 
