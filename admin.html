@@ -647,13 +647,13 @@
                     try {
                         this.isLoading = true;
                         
-                        const newStatus = payment.status === 'Completed' ? 'Pending' : 'Completed';
-                        const { data } = await axios.put(
-                            `${API_BASE}/admin/payments/${payment._id}`,
-                            { status: newStatus }
-                        );
-
-                        if (data.success) {
+                            const newStatus = payment.status === 'Completed' ? 'Pending' : 'Completed';
+                            const { data } = await axios.post(
+                              `${API_BASE}/admin/update-status`,
+                              { trxid: payment.trxid, status: newStatus }
+                            );
+                        
+                            if (data.success) {
                             const index = this.payments.findIndex(p => p._id === payment._id);
                             if (index > -1) {
                                 this.payments.splice(index, 1, data.payment);
