@@ -1,16 +1,11 @@
 import mongoose from 'mongoose';
+
 const userSchema = new mongoose.Schema({
   phone: {
     type: String,
     required: [true, 'Phone number is required'],
     unique: true,
-    match: [/^01[3-9]\d{8}$/, 'Please use a valid Bangladeshi phone number starting with 013-019'],
-    validate: {
-      validator: function(v) {
-        return /^01[3-9]\d{8}$/.test(v);
-      },
-      message: props => `${props.value} is not a valid Bangladeshi phone number!`
-    }
+    match: [/^01[3-9]\d{8}$/, 'Please use a valid Bangladeshi phone number starting with 013-019']
   },
   email: { 
     type: String, 
@@ -18,19 +13,21 @@ const userSchema = new mongoose.Schema({
     unique: true,
     lowercase: true,
     trim: true,
-    match: [/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, 'Please use a valid email address']
+    match: [/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/, 'Invalid email format']
   },
-  password: { 
-    type: String, 
-    required: [true, 'Password is required'],
-    minlength: [8, 'Password must be at least 8 characters'],
-    maxlength: [128, 'Password cannot exceed 128 characters'],
-    select: false // Prevent accidental exposure in queries
+  password: {
+    type: String,
+    required: true
   }
 }, {
-  timestamps: true // Add createdAt and updatedAt fields
+  timestamps: true
 });
 
-const User = mongoose.model('User', userSchema);
+// Add password hashing
+userSchema.pre('save', async function(next) {
+  if (!this.isModified('password')) return next();
+  this.password = await bcrypt.hash(this.password, 12);
+  next();
+});
 
-export default User;
+export default mongoose.model('User', userSchema);
