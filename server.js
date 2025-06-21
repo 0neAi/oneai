@@ -94,7 +94,6 @@ mongoose.connection.on('error', err => {
 // ======================
 // WebSocket Configuration
 // ======================
-import http from 'http';
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
