@@ -689,14 +689,13 @@
 
                     this.ws = new WebSocket('wss://oneai-wjox.onrender.com');
 
+                    // Proper authentication
                     this.ws.onopen = () => {
-                        console.log('WebSocket connected');
-                        const token = localStorage.getItem('adminToken');
-                        if (token) {
-                            this.ws.send(JSON.stringify({
-                                type: 'auth',
-                                token: token
-                            }));
+                      this.ws.send(JSON.stringify({
+                        type: 'adminAuth',
+                        token: localStorage.getItem('adminToken')
+                      }));
+                    };
                         }
                     };
 
