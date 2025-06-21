@@ -479,15 +479,11 @@ app.post('/admin/login', async (req, res) => {
 });
 
 // ======================
-// Admin Registration Check
-// ======================
+// Admin registration check
 app.get('/admin/check-registration', async (req, res) => {
   try {
-    const canRegister = await Admin.canRegister();
-    res.json({
-      success: true,
-      allowRegistration: canRegister
-    });
+    const canRegister = await Admin.countDocuments() === 0;
+    res.json({ allowRegistration: canRegister });
   } catch (error) {
     res.status(500).json({ 
       success: false, 
@@ -517,12 +513,60 @@ app.post('/admin/register', async (req, res) => {
 });
 
 // ======================
-// Admin Validation
-// ======================
+// Admin validation
 app.get('/admin/validate', adminAuth, (req, res) => {
   res.json({ success: true });
 });
 
+// Admin get payments
+app.get('/admin/payments', adminAuth, async (req, res) => {
+  try {
+    const payments = await Payment.find()
+      .populate('user', 'email phone')
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      payments
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch payments'
+    });
+  }
+});
+// Admin login
+app.post('/admin/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const admin = await Admin.findOne({ email }).select('+password');
+
+    if (!admin || !(await admin.comparePassword(password))) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Invalid credentials' 
+      });
+    }
+
+    const token = jwt.sign(
+      { adminId: admin._id, role: admin.role }, 
+      process.env.JWT_SECRET, 
+      { expiresIn: '8h' }
+    );
+
+    res.json({
+      success: true,
+      token,
+      admin: admin.toSafeObject()
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error during admin login' 
+    });
+  }
+});
 // ======================
 // Get Payments (Admin)
 // ======================
