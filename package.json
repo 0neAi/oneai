@@ -18,6 +18,8 @@
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.0.3",
+    "axios": "^1.7.2",
+    "vue": "^3.4.27",
     "ws": "^8.16.0"
   },
   "devDependencies": {
