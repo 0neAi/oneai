@@ -690,9 +690,11 @@
                     this.ws.close();
                 }
 
-                // Use secure WebSocket (wss) for production
-                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-                this.ws = new WebSocket(`${protocol}//${window.location.host}`);
+                // FIXED WEBSOCKET URL: Use API_BASE instead of window.location
+                const isSecure = API_BASE.startsWith('https');
+                const protocol = isSecure ? 'wss:' : 'ws:';
+                const host = API_BASE.replace(/^https?:\/\//, '');
+                this.ws = new WebSocket(`${protocol}//${host}`);
 
                 this.ws.onopen = () => {
                     console.log('WebSocket connected');
