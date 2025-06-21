@@ -45,7 +45,7 @@ const paymentSchema = new mongoose.Schema({
     type: String, 
     required: [true, 'Company is required'],
     enum: {
-      values: ['govt_nid', 'redx', 'pathao', 'steadfast'],
+      values: ['govt_nid', 'redx', 'pathao', 'steadfast', 'premium_service'],
       message: '{VALUE} is not a supported company'
     }
   },
