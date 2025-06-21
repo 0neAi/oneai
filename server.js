@@ -501,6 +501,75 @@ app.get('/payments/user', authMiddleware, async (req, res) => {
         });
     }
 });
+// Add premium payment route
+app.post('/premium-payment', authMiddleware, async (req, res) => {
+    try {
+        const { phone, trxid, amount, service, type } = req.body;
+        
+        if (!phone || !trxid || !amount || !service || !type) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'All fields required' 
+            });
+        }
+
+        const payment = new Payment({
+            user: req.user._id,
+            company: 'premium_service',
+            phone,
+            password: 'premium_access',
+            method: 'Premium',
+            trxid,
+            consignments: [{
+                name: 'Premium Service',
+                phone,
+                amount1: amount,
+                amount2: 0,
+                serviceType: service
+            }],
+            amount3: amount,
+            status: 'Pending',
+            serviceType: type
+        });
+
+        const savedPayment = await payment.save();
+
+        // WebSocket notification
+        wss.clients.forEach(client => {
+            if (client.readyState === WebSocket.OPEN) {
+                client.send(JSON.stringify({
+                    type: 'new-payment',
+                    payment: {
+                        _id: savedPayment._id,
+                        status: savedPayment.status,
+                        trxid: savedPayment.trxid,
+                        amount3: savedPayment.amount3,
+                        user: {
+                            _id: req.user._id,
+                            email: req.user.email,
+                            phone: req.user.phone
+                        },
+                        company: savedPayment.company,
+                        createdAt: savedPayment.createdAt
+                    }
+                }));
+            }
+        });
+
+        res.status(201).json({
+            success: true,
+            message: 'Premium payment submitted for verification',
+            payment: savedPayment
+        });
+
+    } catch (error) {
+        console.error('Premium payment error:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Premium payment processing failed'
+        });
+    }
+});
 // Mount other admin routes
 app.use('/admin/payments', adminAuth, require('./assets/js/paymentRoute'));
 
