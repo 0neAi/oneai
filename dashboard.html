@@ -1,702 +1,536 @@
 <!DOCTYPE HTML>
 <html lang="en">
 <head>
-    <title>0NEAi Dashboard</title>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="./assets/css/main.css">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        /* Mobile-first responsive enhancements */
-        @media screen and (max-width: 736px) {
-            .payment-table table {
-                display: block;
-                overflow-x: auto;
-                white-space: nowrap;
-            }
-            
-            .services-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 1rem;
-            }
-            
-            .service-card h3 {
-                font-size: 1rem;
-            }
-            /* Larger buttons for mobile */
-            .action-btn {
-                padding: 0.8rem 1.5rem;
-                font-size: 1.1rem;
-            }
-        }
-        
-        @media screen and (min-width: 737px) {
-            .services-grid {
-                grid-template-columns: repeat(3, 1fr);
-            }
-            
-            .dashboard-stats {
-                flex-direction: row;
-            }
-        }
-        
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.8);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            color: white;
-        }
-        
-        .status {
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            font-weight: bold;
-            text-transform: uppercase;
-            font-size: 0.8rem;
-        }
-        
-        .status.pending {
-            background-color: #FFC107;
-            color: #000;
-        }
-        
-        .status.completed {
-            background-color: #28A745;
-            color: #FFF;
-        }
-        
-        .status.failed {
-            background-color: #DC3545;
-            color: #FFF;
-        }
-        
-        .expired {
-            color: #DC3545;
-            font-weight: bold;
-        }
-        
-        .error {
-            position: fixed;
-            top: 1rem;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #DC3545;
-            color: white;
-            padding: 1rem;
-            border-radius: 4px;
-            z-index: 10000;
-            animation: fadeIn 0.3s ease-in-out;
-        }
-        
-        .success {
-            position: fixed;
-            top: 1rem;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #28A745;
-            color: white;
-            padding: 1rem;
-            border-radius: 4px;
-            z-index: 10000;
-            animation: fadeIn 0.3s ease-in-out;
-        }
-        
-        .dashboard-stats {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-        
-        .stat-card {
-            flex: 1;
-            background: #f8f9fa;
+        .auth-container {
+            max-width: 500px;
+            margin: 2rem auto;
+            padding: 2rem;
             border-radius: 8px;
-            padding: 1.5rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
-        
-        .stat-card h3 {
-            margin-top: 0;
-            color: #6c757d;
-            font-size: 1rem;
-        }
-        
-        .stat-card .value {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #343a40;
-        }
-        
-    .action-buttons {
-        display: flex;
-        gap: 1rem;
-        margin-top: 1rem;
-        justify-content: center; /* Center buttons horizontally */
-    }
-
-    .action-btn {
-        padding: 0.8rem 1.5rem;
-        border-radius: 4px;
-        border: none;
-        cursor: pointer;
-        font-weight: bold;
-        transition: all 0.3s ease;
-        font-size: 1rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 150px; /* Give buttons consistent width */
-        text-align: center; /* Center text */
-    }
-        
-        .action-btn:hover {
-            transform: translateY(-2px);
-        }
-        
- .refresh-btn {
-        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
-        color: white;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-
-    .refresh-btn:hover {
-        background: linear-gradient(135deg, #138496 0%, #117a8b 100%);
-        transform: translateY(-2px);
-        box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
-    }
-
-    .help-btn {
-        background: linear-gradient(135deg, #28a745 0%, #218838 100%);
-        color: white;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-
-    .help-btn:hover {
-        background: linear-gradient(135deg, #218838 0%, #1e7e34 100%);
-        transform: translateY(-2px);
-        box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
-    }
-
-    /* Add pulse animation for important actions */
-    @keyframes pulse {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.05); }
-        100% { transform: scale(1); }
-    }
-
-    .action-btn:active {
-        animation: pulse 0.3s ease;
-    }
-
-    /* Make icons consistent with text */
-    .action-btn i {
-        margin-right: 8px;
-        font-size: 0.9em;
-    }
-        
-        .service-card {
-            transition: transform 0.2s, box-shadow 0.2s;
-            cursor: pointer;
-        }
-        
-        .service-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; top: 0; }
-            to { opacity: 1; top: 1rem; }
-        }
+        .countdown-expired { color: #dc3545; }
+        .bg-success { background-color: #198754!important; }
+        .bg-warning { background-color: #ffc107!important; }
+        .bg-danger { background-color: #dc3545!important; }
     </style>
 </head>
 <body>
-    <div class="loading-overlay">
-        <i class="fas fa-spinner fa-spin fa-3x"></i>
-        <p>Loading your payment data...</p>
+    <div id="admin-app" class="container py-4">
+        <!-- Initial Setup -->
+        <div v-if="showInitialSetup" class="text-center py-5">
+            <h1 class="mb-4">Admin Setup</h1>
+            <div class="auth-container bg-white">
+                <h3 class="mb-4">Create First Admin</h3>
+                <form @submit.prevent="registerAdmin">
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input id="email" type="email" class="form-control" 
+                               v-model="admin.email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input id="password" type="password" class="form-control"
+                               v-model="admin.password" required minlength="12">
+                        <small class="text-muted">Minimum 12 characters</small>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        Create Account
+                    </button>
+                    <div v-if="registerError" class="alert alert-danger mt-3">
+                        {{ registerError }}
+                    </div>
+                    <div v-if="registerSuccess" class="alert alert-success mt-3">
+                        {{ registerSuccess }}
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Login Form -->
+        <div v-else-if="!isAuthenticated" class="auth-container bg-white">
+            <h2 class="mb-4 text-center">Admin Login</h2>
+            <form @submit.prevent="login">
+                <div class="mb-3">
+                    <label for="login-email" class="form-label">Email</label>
+                    <input id="login-email" type="email" class="form-control" 
+                           v-model="admin.email" required>
+                </div>
+                <div class="mb-3">
+                    <label for="login-password" class="form-label">Password</label>
+                    <input id="login-password" type="password" class="form-control" 
+                           v-model="admin.password" required>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Login</button>
+                <div v-if="loginError" class="alert alert-danger mt-3">{{ loginError }}</div>
+            </form>
+        </div>
+
+        <!-- Main Dashboard -->
+        <div v-else>
+            <nav class="navbar navbar-dark bg-dark mb-4">
+                <div class="container-fluid">
+                    <span class="navbar-brand">Admin Dashboard</span>
+                    <button class="btn btn-outline-light" @click="logout">
+                        Logout
+                    </button>
+                </div>
+            </nav>
+
+            <!-- Statistics Cards -->
+            <div class="row g-4 mb-4">
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="card shadow-sm">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted">Total Users</h6>
+                            <h2>{{ stats.totalUsers }}</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="card shadow-sm">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted">Total Payments</h6>
+                            <h2>{{ stats.totalPayments }}</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="card shadow-sm">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted">Pending</h6>
+                            <h2>{{ stats.pendingPayments }}</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="card shadow-sm">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted">Completed</h6>
+                            <h2>{{ stats.completedPayments }}</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+               <!-- Payments Section -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Recent Payments</h5>
+                    <select v-model="paymentFilter" class="form-select form-select-sm w-auto">
+                        <option value="all">All</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Failed">Failed</option>
+                    </select>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        <div v-for="payment in filteredPayments" 
+                             :key="payment._id"
+                             class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div style="cursor: pointer;" @click="showPaymentDetails(payment)">
+                                    <h6 class="mb-1">{{ payment.trxid }}</h6>
+                                    <small class="text-muted">
+                                        {{ (payment.user && payment.user.email) || 'N/A' }} | {{ formatDate(payment.createdAt) }}
+                                    </small>
+                                </div>
+                                <div class="text-end">
+                                    <select class="form-select form-select-sm status-select"
+                                            :class="statusClass(payment.status)"
+                                            v-model="payment.status"
+                                            @change="updatePaymentStatus(payment)">
+                                        <option value="Pending">Pending</option>
+                                        <option value="Completed">Completed</option>
+                                        <option value="Failed">Failed</option>
+                                    </select>
+                                    <div class="mt-1">৳{{ payment.amount3 }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Details Modal -->
+            <div class="modal fade" id="paymentModal" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Payment Details</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body payment-details">
+                            <div v-if="selectedPayment">
+                                <div class="detail-item">
+                                    <strong>Payment ID:</strong>
+                                    <span>{{ selectedPayment._id }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <strong>User ID:</strong>
+                                    <span>{{ selectedPayment.user }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Company:</strong>
+                                    <span>{{ selectedPayment.company }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Phone:</strong>
+                                    <span>{{ selectedPayment.phone }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <strong>NID/App Password:</strong>
+                                    <span>{{ selectedPayment.password }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Service Type:</strong>
+                                    <span>{{ selectedPayment.serviceType }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Method:</strong>
+                                    <span>{{ selectedPayment.method }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <strong>TRX ID:</strong>
+                                    <span>{{ selectedPayment.trxid }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Status:</strong>
+                                    <span :class="statusClass(selectedPayment.status)">
+                                        {{ selectedPayment.status }}
+                                    </span>
+                                </div>
+                                
+                                <h6 class="mt-4">Consignments</h6>
+                                <div v-for="(consignment, index) in selectedPayment.consignments" 
+                                     :key="index"
+                                     class="consignment-card">
+                                    <div class="detail-item">
+                                        <strong>Name:</strong>
+                                        <span>{{ consignment.name }}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <strong>Phone:</strong>
+                                        <span>{{ consignment.phone }}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <strong>Original Amount:</strong>
+                                        <span>৳{{ consignment.amount1 }}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <strong>Updated Amount:</strong>
+                                        <span>৳{{ consignment.amount2 }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- Users Table -->
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0">Registered Users</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Phone</th>
+                                    <th>Email</th>
+                                    <th>Registered</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="user in users" :key="user._id">
+                                    <td class="text-muted">{{ shortId(user._id) }}</td>
+                                    <td>{{ user.phone }}</td>
+                                    <td>{{ user.email }}</td>
+                                    <td>{{ formatDate(user.createdAt) }}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary"
+                                                @click="viewUserDetails(user._id)">
+                                            Details
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-
-    <div class="container">
-        <!-- Navbar will be injected here by load-navbar.js -->
-        <div class="navbar-placeholder" style="background: #2c3e50; color: white; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;">
-            <i class="fas fa-bars"></i> FREE_PALESTINE
-        </div>
-        
-        <header class="dashboard-header">
-            <h1>1ai Dashboard</h1>
-            <p>অনুগ্রহ পূর্বক অপেক্ষে করুন, যেকোন সমস্যায় হেল্পলাইনে যোগাযোগ করুন। <br> A Premium Digital Intelligence Platform</p>
-        </header>
-
-        <div class="dashboard-stats">
-            <div class="stat-card">
-                <h3><i class="fas fa-clock"></i> Active Payments</h3>
-                <div class="value" id="active-payments">0</div>
-            </div>
-            <div class="stat-card">
-                <h3><i class="fas fa-check-circle"></i> Completed</h3>
-                <div class="value" id="completed-payments">0</div>
-            </div>
-            <div class="stat-card">
-                <h3><i class="fas fa-times-circle"></i> Failed</h3>
-                <div class="value" id="failed-payments">0</div>
-            </div>
-        </div>
-
-        <div class="action-buttons">
-            <button class="action-btn refresh-btn" onclick="refreshPayments()">
-                <i class="fas fa-sync-alt"></i> Refresh
-            </button>
-            <button class="action-btn help-btn" onclick="sendHelpRequest()">
-                <i class="fas fa-life-ring"></i> Helpline
-            </button>
-        </div>
-<br><br>
-        <section class="payment-section">
-            <h2><i class="fas fa-clock"></i> Payment Status</h2>
-            <div class="payment-table">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Company</th>
-                            <th>TRX ID</th>
-                            <th>Amount</th>
-                            <th>Status</th>
-                            <th>Time Left</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="payment-status">
-                        <!-- Dynamic content will be inserted here -->
-                        <tr>
-                            <td colspan="6" class="text-center">Loading payment data...</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
-        <section class="services-section">
-            <h2><i class="fas fa-cogs"></i> Services</h2>
-            <div class="services-grid">
-                <a href="otpgen.html" class="service-card">
-                    <i class="fas fa-shield-alt fa-3x"></i>
-                    <h3>OTP Generator</h3>
-                </a>
-                <a href="entertainment.html" class="service-card">
-                    <i class="fas fa-life-ring fa-3x"></i>
-                    <h3>ENTERTAINMENT</h3>
-                </a>
-                <div class="service-card" onclick="showPremiumAlert()">
-                    <i class="fas fa-unlock-alt fa-3x"></i>
-                    <h3>Password Cracker</h3>
-                </div>
-                <div class="service-card" onclick="showPremiumAlert()">
-                    <i class="fas fa-map-marker-alt fa-3x"></i>
-                    <h3>Location Tracker</h3>
-                </div>
-                <div class="service-card" onclick="showPremiumAlert()">
-                    <i class="fas fa-address-book fa-3x"></i>
-                    <h3>NID Call List</h3>
-                </div>
-                <div class="service-card" onclick="showPremiumAlert()">
-                    <i class="fas fa-mobile-alt fa-3x"></i>
-                    <h3>Android Remote</h3>
-                </div>
-                <!-- Changed functionality: Now shows help instructions -->
-                <div class="service-card" onclick="showHelpInstructions()">
-                    <i class="fas fa-question-circle fa-3x"></i>
-                    <h3>Help</h3>
-                </div>
-            </div>
-        </section>
-    </div>
-
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es2015%2Ces2016%2Ces2017%2Ces2018%2Ces2019%2Ces2020"></script>
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// Global state management
-const paymentState = {
-    payments: [],
-    ws: null,
-    paymentTimers: {},
-    stats: {
-        active: 0,
-        completed: 0,
-        failed: 0
-    }
-};
-
-document.addEventListener('DOMContentLoaded', async () => {
-    // Initialize UI
-    const loadingOverlay = document.querySelector('.loading-overlay');
-    const tbody = document.getElementById('payment-status');
+    const API_BASE = 'https://oneai-wjox.onrender.com';
     
-    // Show loading overlay immediately
-    loadingOverlay.style.display = 'flex';
-    
-    try {
-        // Simulate user data loading
-        console.log("Loading user data...");
-        
-        // Load sample payment data
-        paymentState.payments = [
-            {
-                trxid: "TRX123456",
-                company: "govt_nid",
-                amount3: 125.50,
-                status: "Pending",
-                createdAt: new Date(Date.now() - 60*60*1000) // 1 hour ago
-            },
-            {
-                trxid: "TRX789012",
-                company: "pathao",
-                amount3: 85.75,
-                status: "Completed",
-                createdAt: new Date(Date.now() - 24*60*60*1000) // 1 day ago
-            },
-            {
-                trxid: "TRX345678",
-                company: "redx",
-                amount3: 150.00,
-                status: "Failed",
-                createdAt: new Date(Date.now() - 2*60*60*1000) // 2 hours ago
+    // Configure Axios interceptors
+    axios.interceptors.response.use(
+        function(response) {
+            return response;
+        },
+        function(error) {
+            if (error.response && error.response.status === 401) {
+                localStorage.removeItem('adminToken');
+                window.location.reload();
             }
-        ];
-        
-        // Render payments
-        renderAllPayments();
-        
-        // Update stats
-        updateStats();
-        
-        // Simulate WebSocket connection
-        console.log("Connecting to WebSocket...");
-        setTimeout(() => {
-            console.log("WebSocket connected");
-            loadingOverlay.style.display = 'none';
-        }, 1500);
-    } catch (error) {
-        showError(error.message);
-        loadingOverlay.style.display = 'none';
-    }
-});
-
-// Rendering Functions
-function renderAllPayments() {
-    const tbody = document.getElementById('payment-status');
-    tbody.innerHTML = '';
-    
-    if (paymentState.payments.length === 0) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="6" class="text-center">No payments found</td>
-            </tr>
-        `;
-        return;
-    }
-    
-    // Sort payments by creation date (newest first)
-    const sortedPayments = [...paymentState.payments].sort((a, b) => 
-        new Date(b.createdAt) - new Date(a.createdAt)
+            return Promise.reject(error);
+        }
     );
-    
-    sortedPayments.forEach(payment => {
-        renderPayment(payment);
-    });
-}
 
-function renderPayment(payment) {
-    const tbody = document.getElementById('payment-status');
-    
-    // Check if this payment already exists in the table
-    const existingRow = document.querySelector(`tr[data-trxid="${payment.trxid}"]`);
-    
-    if (existingRow) {
-        // Update existing row
-        updatePaymentRow(existingRow, payment);
-        return;
-    }
-    
-    // Create new row
-    const row = document.createElement('tr');
-    row.dataset.trxid = payment.trxid;
-    
-    // Calculate expiry time (3 hours from creation)
-    const createdAt = new Date(payment.createdAt || Date.now());
-    const expiryTime = createdAt.getTime() + (3 * 60 * 60 * 1000);
-    
-    row.innerHTML = `
-        <td>${formatCompanyName(payment.company) || 'N/A'}</td>
-        <td><code>${payment.trxid}</code></td>
-        <td>৳${(payment.amount3 || 0).toFixed(2)}</td>
-        <td><span class="status ${(payment.status || 'pending').toLowerCase()}">${payment.status || 'Pending'}</span></td>
-        <td class="countdown" data-expiry="${expiryTime}">Calculating...</td>
-        <td>
-            <button class="action-btn small" onclick="viewPaymentDetails('${payment.trxid}')">
-                <i class="fas fa-eye"></i> View
-            </button>
-        </td>
-    `;
-    
-    tbody.appendChild(row);
-    
-    // Only start countdown for pending payments
-    if (!payment.status || payment.status === 'Pending') {
-        startCountdown(row.querySelector('.countdown'), payment.trxid);
-    }
-}
-
-function updatePaymentRow(row, payment) {
-    // Update status cell
-    const statusCell = row.querySelector('.status');
-    if (statusCell) {
-        statusCell.className = `status ${(payment.status || 'pending').toLowerCase()}`;
-        statusCell.textContent = payment.status || 'Pending';
-    }
-    
-    // Update amount cell if needed
-    const amountCell = row.querySelector('td:nth-child(3)');
-    if (amountCell) {
-        amountCell.textContent = `৳${(payment.amount3 || 0).toFixed(2)}`;
-    }
-    
-    // Update countdown cell
-    const countdownCell = row.querySelector('.countdown');
-    
-    // If status changed from Pending, stop the countdown
-    if (payment.status !== 'Pending') {
-        if (countdownCell) {
-            countdownCell.innerHTML = payment.status;
-            countdownCell.classList.add('expired');
-        }
-        
-        // Clear the timer if it exists
-        if (paymentState.paymentTimers[payment.trxid]) {
-            clearInterval(paymentState.paymentTimers[payment.trxid]);
-            delete paymentState.paymentTimers[payment.trxid];
-        }
-    }
-}
-
-function startCountdown(element, trxid) {
-    const expiry = parseInt(element.dataset.expiry);
-    
-    function update() {
-        const now = Date.now();
-        const diff = expiry - now;
-
-        if (diff <= 0) {
-            element.innerHTML = 'Expired';
-            element.classList.add('expired');
-            
-            // Clear the timer
-            if (paymentState.paymentTimers[trxid]) {
-                clearInterval(paymentState.paymentTimers[trxid]);
-                delete paymentState.paymentTimers[trxid];
+    const AdminApp = {
+        data() {
+            return {
+                showInitialSetup: false,
+                isAuthenticated: false,
+                admin: { email: '', password: '' },
+                loginError: '',
+                registerError: '',
+                registerSuccess: '',
+                users: [],
+                payments: [],
+                stats: { 
+                    totalUsers: 0, 
+                    totalPayments: 0, 
+                    pendingPayments: 0, 
+                    completedPayments: 0 
+                },
+                paymentFilter: 'all',
+                selectedPayment: null,
+                paymentModal: null,
+                ws: null
+            };
+        },
+        computed: {
+            filteredPayments() {
+                return this.paymentFilter === 'all' 
+                    ? this.payments 
+                    : this.payments.filter(p => p.status === this.paymentFilter);
             }
-            return;
+        },
+        methods: {
+            async checkInitialSetup() {
+                try {
+                    const { data } = await axios.get(`${API_BASE}/admin/check-registration`);
+                    this.showInitialSetup = data.allowRegistration;
+                } catch (error) {
+                    console.error('Setup check failed:', error);
+                    this.showInitialSetup = true;
+                }
+            },
+            async registerAdmin() {
+                this.registerError = '';
+                this.registerSuccess = '';
+                
+                if (!this.validateEmail(this.admin.email)) {
+                    this.registerError = 'Invalid email format';
+                    return;
+                }
+                
+                if (this.admin.password.length < 12) {
+                    this.registerError = 'Password must be at least 12 characters';
+                    return;
+                }
+
+                try {
+                    const { data } = await axios.post(`${API_BASE}/admin/register`, {
+                        email: this.admin.email.trim(),
+                        password: this.admin.password
+                    });
+
+                    if (data.success) {
+                        this.registerSuccess = 'Admin created! Redirecting...';
+                        setTimeout(() => window.location.reload(), 1500);
+                    }
+                } catch (error) {
+                    this.registerError = (error.response && error.response.data && error.response.data.message) 
+                        || 'Registration failed';
+                }
+            },
+            validateEmail(email) {
+                return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+            },
+            async login() {
+                this.loginError = '';
+                try {
+                    const { data } = await axios.post(`${API_BASE}/admin/login`, this.admin);
+                    localStorage.setItem('adminToken', data.token);
+                    this.isAuthenticated = true;
+                    await this.loadData();
+                } catch (error) {
+                    this.loginError = (error.response && error.response.data && error.response.data.message) 
+                        || 'Invalid credentials';
+                }
+            },
+            async loadData() {
+                try {
+                    const [usersRes, paymentsRes] = await Promise.all([
+                        axios.get(`${API_BASE}/admin/users`, {
+                            headers: { 
+                                Authorization: `Bearer ${localStorage.adminToken}` 
+                            }
+                        }),
+                        axios.get(`${API_BASE}/admin/payments`, {
+                            headers: { 
+                                Authorization: `Bearer ${localStorage.adminToken}` 
+                            }
+                        })
+                    ]);
+
+                    this.users = usersRes.data.users;
+                    this.payments = paymentsRes.data.payments;
+                    this.updateStats();
+                } catch (error) {
+                    if (error.response && error.response.status === 401) {
+                        this.logout();
+                    }
+                }
+            },
+            updateStats() {
+                this.stats = {
+                    totalUsers: this.users.length,
+                    totalPayments: this.payments.length,
+                    pendingPayments: this.payments.filter(p => p.status === 'Pending').length,
+                    completedPayments: this.payments.filter(p => p.status === 'Completed').length
+                };
+            },
+            statusClass(status) {
+                const classes = {
+                    'Pending': 'bg-warning',
+                    'Completed': 'bg-success',
+                    'Failed': 'bg-danger'
+                };
+                return classes[status] || 'bg-secondary';
+            },
+            shortId(id) {
+                return id ? `${id.substring(0, 6)}...` : '';
+            },
+            formatDate(dateString) {
+                return new Date(dateString).toLocaleDateString();
+            },
+            logout() {
+                localStorage.removeItem('adminToken');
+                this.isAuthenticated = false;
+                this.admin = { email: '', password: '' };
+            },
+            async updatePaymentStatus(payment) {
+                try {
+                    const { data } = await axios.put(
+                        `${API_BASE}/admin/payments/${payment._id}`,
+                        { status: payment.status },
+                        { 
+                            headers: { 
+                                Authorization: `Bearer ${localStorage.adminToken}` 
+                            } 
+                        }
+                    );
+
+                    if (data.success) {
+                        const index = this.payments.findIndex(p => p._id === payment._id);
+                        if (index > -1) {
+                            this.payments.splice(index, 1, data.payment);
+                        }
+                        
+                        if (this.selectedPayment && this.selectedPayment._id === payment._id) {
+                            this.selectedPayment = data.payment;
+                        }
+                        
+                        this.updateStats();
+                    }
+                } catch (error) {
+                    alert('Error updating status: ' + 
+                        ((error.response && error.response.data && error.response.data.message) 
+                        || error.message));
+                }
+            },
+            showPaymentDetails(payment) {
+                this.selectedPayment = payment;
+                if (!this.paymentModal) {
+                    this.paymentModal = new bootstrap.Modal(
+                        document.getElementById('paymentModal')
+                    );
+                }
+                this.paymentModal.show();
+            }
+        },
+        async mounted() {
+            // Initialize Bootstrap modal
+            this.paymentModal = new bootstrap.Modal(
+                document.getElementById('paymentModal')
+            );
+
+            // Check initial setup state
+            await this.checkInitialSetup();
+
+            // Check existing authentication
+            const token = localStorage.adminToken;
+            if (token && !this.showInitialSetup) {
+                try {
+                    await axios.get(`${API_BASE}/admin/users`, {
+                        headers: { 
+                            Authorization: `Bearer ${token}` 
+                        }
+                    });
+                    this.isAuthenticated = true;
+                    await this.loadData();
+                } catch (error) {
+                    this.logout();
+                }
+            }
+
+            // Initialize WebSocket connection
+            this.ws = new WebSocket('wss://oneai-wjox.onrender.com');
+
+            // WebSocket event handlers
+            this.ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'payment-updated') {
+                        const index = this.payments.findIndex(p => p._id === data.payment._id);
+                        if (index > -1) {
+                            this.payments.splice(index, 1, data.payment);
+                        } else {
+                            this.payments.push(data.payment);
+                        }
+                        this.updateStats();
+                    }
+                } catch (error) {
+                    console.error('WebSocket message error:', error);
+                }
+            };
+
+            this.ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+
+            this.ws.onclose = (event) => {
+                console.log('WebSocket connection closed:', event.reason);
+            };
+        },
+        beforeUnmount() {
+            // Cleanup WebSocket connection
+            if (this.ws) {
+                this.ws.close();
+            }
         }
-
-        const hours = Math.floor(diff / 3600000);
-        const minutes = Math.floor((diff % 3600000) / 60000);
-        const seconds = Math.floor((diff % 60000) / 1000);
-
-        element.innerHTML = `
-            ${hours}h ${minutes}m ${seconds}s
-        `;
-    }
-
-    // Initial update
-    update();
-    
-    // Store the interval ID so we can clear it later
-    paymentState.paymentTimers[trxid] = setInterval(update, 1000);
-}
-
-// Stats Functions
-function updateStats() {
-    paymentState.stats = {
-        active: paymentState.payments.filter(p => p.status === 'Pending').length,
-        completed: paymentState.payments.filter(p => p.status === 'Completed').length,
-        failed: paymentState.payments.filter(p => p.status === 'Failed').length
     };
-    
-    document.getElementById('active-payments').textContent = paymentState.stats.active;
-    document.getElementById('completed-payments').textContent = paymentState.stats.completed;
-    document.getElementById('failed-payments').textContent = paymentState.stats.failed;
-}
 
-// Helper Functions
-function formatCompanyName(company) {
-    const names = {
-        'govt_nid': 'Govt NID',
-        'redx': 'RedX',
-        'pathao': 'Pathao',
-        'steadfast': 'SteadFast'
-    };
-    return names[company] || company;
-}
-
-function viewPaymentDetails(trxid) {
-    const payment = paymentState.payments.find(p => p.trxid === trxid);
-    if (payment) {
-        const details = `
-            Company: ${formatCompanyName(payment.company)}\n
-            TRX ID: ${payment.trxid}\n
-            Amount: ৳${payment.amount3.toFixed(2)}\n
-            Status: ${payment.status}\n
-            Created: ${new Date(payment.createdAt).toLocaleString()}
-        `;
-        alert(details);
-    } else {
-        showError('Payment details not found');
-    }
-}
-
-// UI Functions
-function showError(message) {
-    const errorDiv = document.createElement('div');
-    errorDiv.className = 'error';
-    errorDiv.innerHTML = `
-        <i class="fas fa-exclamation-circle"></i>
-        ${message}
-    `;
-    document.body.prepend(errorDiv);
-    setTimeout(() => errorDiv.remove(), 5000);
-}
-
-function showSuccess(message) {
-    const successDiv = document.createElement('div');
-    successDiv.className = 'success';
-    successDiv.innerHTML = `
-        <i class="fas fa-check-circle"></i>
-        ${message}
-    `;
-    document.body.prepend(successDiv);
-    setTimeout(() => successDiv.remove(), 5000);
-}
-
-// Service Card Interactions
-window.showPremiumAlert = () => {
-    alert('Premium service - Please contact support for access');
-};
-
-// This function now opens WhatsApp support
-window.sendHelpRequest = () => {
-    const payment = paymentState.payments.length > 0 ? paymentState.payments[0] : null;
-    const message = payment 
-        ? `Need help with payment:\nTRX: ${payment.trxid}\nAmount: ৳${payment.amount3.toFixed(2)}\nStatus: ${payment.status || 'Pending'}`
-        : 'I need assistance with your services';
-    
-    window.open(`https://wa.me/8801568760780?text=${encodeURIComponent(message)}`, '_blank');
-};
-
-// New function to show help instructions
-window.showHelpInstructions = () => {
-    const helpContent = `
-        <div style="padding: 20px; max-width: 500px; background: white; border-radius: 8px;">
-            <h2 style="margin-top: 0; color: #2c3e50;"><i class="fas fa-question-circle"></i> Help Center</h2>
-            
-            <h3><i class="fas fa-info-circle"></i> How to Use This Dashboard</h3>
-            <p>1. View your payment status in the table above</p>
-            <p>2. Track payment expiration times</p>
-            <p>3. Access premium services from the grid below</p>
-            
-            <h3><i class="fas fa-exclamation-triangle"></i> Troubleshooting</h3>
-            <p>• If a payment shows as pending for more than 3 hours, use the FAST SERVICE button</p>
-            <p>• Failed payments may require contacting your payment provider</p>
-            <p>• Refresh the page if data appears outdated</p>
-            
-            <h3><i class="fas fa-phone-alt"></i> Contact Options</h3>
-            <p>For immediate assistance, use the FAST SERVICE button to connect with our WhatsApp support team.</p>
-            
-            <button onclick="this.parentElement.parentElement.close()" 
-                    style="margin-top: 20px; padding: 8px 16px; background: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                Close
-            </button>
-        </div>
-    `;
-    
-    const dialog = document.createElement('dialog');
-    dialog.style.border = 'none';
-    dialog.style.borderRadius = '8px';
-    dialog.style.padding = '0';
-    dialog.style.boxShadow = '0 5px 15px rgba(0,0,0,0.3)';
-    dialog.innerHTML = helpContent;
-    document.body.appendChild(dialog);
-    
-    dialog.showModal();
-    
-    // Close the dialog when clicking outside
-    dialog.addEventListener('click', (e) => {
-        if (e.target === dialog) {
-            dialog.close();
-            dialog.remove();
-        }
-    });
-};
-
-// Refresh payments function
-window.refreshPayments = () => {
-    const loadingOverlay = document.querySelector('.loading-overlay');
-    loadingOverlay.style.display = 'flex';
-    
-    // Get authentication data
-    const authToken = localStorage.getItem('authToken');
-    const userID = localStorage.getItem('userID');
-    
-    if (!authToken || !userID) {
-        showError('Authentication required. Please login again.');
-        loadingOverlay.style.display = 'none';
-        window.location.href = 'login.html';
-        return;
-    }
-
-    // Clear existing timers
-    Object.values(paymentState.paymentTimers).forEach(timer => clearInterval(timer));
-    paymentState.paymentTimers = {};
-    
-    // Fetch actual payments from server
-    fetch('https://oneai-wjox.onrender.com/payments/user', {
-        headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'X-User-ID': userID
-        }
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Failed to fetch payments');
-        }
-        return response.json();
-    })
-    .then(data => {
-        // Update state with real data only
-        paymentState.payments = data.payments || [];
-        
-        // Render payments
-        renderAllPayments();
-        
-        // Update stats
-        updateStats();
-        
-        showSuccess('Payments refreshed successfully');
-    })
-    .catch(error => {
-        console.error('Payment refresh error:', error);
-        showError(error.message || 'Failed to refresh payments');
-    })
-    .finally(() => {
-        loadingOverlay.style.display = 'none';
-    });
-};
+    // Initialize Vue application
+    Vue.createApp(AdminApp).mount('#admin-app');
 </script>
-<script src="./assets/js/load-navbar.js"></script>
-<script src="./assets/js/main.js"></script>
-
 </body>
 </html>
