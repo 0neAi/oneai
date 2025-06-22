@@ -10,6 +10,7 @@ import { adminAuth } from './middleware/auth.js';
 import Payment from './models/Payment.js';
 import User from './models/User.js';
 import Admin from './models/Admin.js';
+import PremiumService from './models/PremiumService.js';
 import dotenv from 'dotenv';
 import http from 'http';
 
@@ -398,6 +399,41 @@ app.post('/payment', authMiddleware, async (req, res) => {
   }
 });
 
+app.post('/premium-payment', authMiddleware, async (req, res) => {
+  try {
+    const { phone, trxid, amount, service } = req.body;
+    
+    const premiumService = new PremiumService({
+      user: req.user._id,
+      phone,
+      trxid,
+      amount,
+      serviceType: service,
+      status: 'Pending'
+    });
+
+    const savedService = await premiumService.save();
+    
+    // WebSocket notification
+    wss.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({
+          type: 'new-premium-service',
+          service: savedService
+        }));
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Premium service submitted',
+      service: savedService
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
 // ======================
 // Admin Routes
 // ======================
