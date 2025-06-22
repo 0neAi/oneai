@@ -627,7 +627,7 @@ app.post('/premium-payment', authMiddleware, async (req, res) => {
               email: req.user.email,
               phone: req.user.phone
             },
-            company: 'premium_service,
+            company: 'premium_service',
             createdAt: savedPayment.createdAt
           }
         }));
