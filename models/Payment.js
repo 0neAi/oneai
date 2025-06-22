@@ -74,7 +74,7 @@ const paymentSchema = new mongoose.Schema({
     type: String, 
     required: [true, 'Payment method is required'],
     enum: {
-      values: ['Bkash', 'Nagad'],
+      values: ['Bkash', 'Nagad', 'Premium'],
       message: '{VALUE} is not a supported payment method'
     }
   },
