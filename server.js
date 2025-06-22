@@ -607,8 +607,7 @@ app.post('/premium-payment', authMiddleware, async (req, res) => {
         serviceType: req.body.service
       }],
       amount3: req.body.amount,
-      status: 'Pending',
-      serviceType: req.body.type
+      status: 'Pending'
     });
 
     // Save and broadcast
