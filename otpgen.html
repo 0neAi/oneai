@@ -654,8 +654,9 @@
         let totalCharge = 0;
         document.querySelectorAll('.consignment-group').forEach((group, index) => {
             const serviceType = group.querySelector('.service-type').value;
-            if (!serviceType) {
-                throw new Error(`Consignment ${index + 1}: Service type is required`);
+            const validServiceTypes = ['pricecng', 'partial', 'drto', 'delivery', 'return', 'list'];
+            if (!validServiceTypes.includes(serviceType)) {
+              throw new Error(`Consignment ${index + 1}: Invalid service type`);
             }
 
             const consignment = {
