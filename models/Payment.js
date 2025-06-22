@@ -29,7 +29,7 @@ const consignmentSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Service type is required'],
     enum: {
-      values: ['pricecng', 'partial', 'drto', 'delivery', 'return'],
+      values: ['pricecng', 'partial', 'drto', 'delivery', 'return', 'list'],
       message: '{VALUE} is not a valid service type'
     }
   }
