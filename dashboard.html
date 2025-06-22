@@ -338,62 +338,32 @@ const paymentState = {
         failed: 0
     }
 };
-
 document.addEventListener('DOMContentLoaded', async () => {
-    // Initialize UI
-    const loadingOverlay = document.querySelector('.loading-overlay');
-    const tbody = document.getElementById('payment-status');
+  const loadingOverlay = document.querySelector('.loading-overlay');
+  loadingOverlay.style.display = 'flex';
+  
+  try {
+    // Get authentication data
+    const authToken = localStorage.getItem('authToken');
+    const userID = localStorage.getItem('userID');
     
-    // Show loading overlay immediately
-    loadingOverlay.style.display = 'flex';
-    
-    try {
-        // Simulate user data loading
-        console.log("Loading user data...");
-        
-        // Load sample payment data
-        paymentState.payments = [
-            {
-                trxid: "TRX123456",
-                company: "govt_nid",
-                amount3: 125.50,
-                status: "Pending",
-                createdAt: new Date(Date.now() - 60*60*1000) // 1 hour ago
-            },
-            {
-                trxid: "TRX789012",
-                company: "pathao",
-                amount3: 85.75,
-                status: "Completed",
-                createdAt: new Date(Date.now() - 24*60*60*1000) // 1 day ago
-            },
-            {
-                trxid: "TRX345678",
-                company: "redx",
-                amount3: 150.00,
-                status: "Failed",
-                createdAt: new Date(Date.now() - 2*60*60*1000) // 2 hours ago
-            }
-        ];
-        
-        // Render payments
-        renderAllPayments();
-        
-        // Update stats
-        updateStats();
-        
-        // Simulate WebSocket connection
-        console.log("Connecting to WebSocket...");
-        setTimeout(() => {
-            console.log("WebSocket connected");
-            loadingOverlay.style.display = 'none';
-        }, 1500);
-    } catch (error) {
-        showError(error.message);
-        loadingOverlay.style.display = 'none';
+    if (!authToken || !userID) {
+      showError('Authentication required. Please login again.');
+      window.location.href = 'login.html';
+      return;
     }
-});
 
+    // Load actual payments from server
+    await refreshPayments();
+    
+    // Set up WebSocket connection
+    connectWebSocket();
+  } catch (error) {
+    showError(error.message || 'Failed to initialize dashboard');
+  } finally {
+    loadingOverlay.style.display = 'none';
+  }
+});
 // Rendering Functions
 function renderAllPayments() {
     const tbody = document.getElementById('payment-status');
