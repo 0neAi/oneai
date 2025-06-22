@@ -390,6 +390,28 @@ function renderAllPayments() {
 
 function renderPayment(payment) {
     const tbody = document.getElementById('payment-status');
+       // Premium payment styling
+    let companyCell;
+    if (payment.company === 'premium_service') {
+        row.classList.add('premium-payment');
+        companyCell = `<td><i class="fas fa-crown"></i> Premium Service</td>`;
+    } else {
+        companyCell = `<td>${formatCompanyName(payment.company) || 'N/A'}</td>`;
+    }
+
+    row.innerHTML = `
+        ${companyCell}
+        <td><code>${payment.trxid}</code></td>
+        <td>৳${(payment.amount3 || 0).toFixed(2)}</td>
+        <td><span class="status ${(payment.status || 'pending').toLowerCase()}">${payment.status || 'Pending'}</span></td>
+        <td class="countdown" data-expiry="${expiryTime}">Calculating...</td>
+        <td>
+            <button class="action-btn small" onclick="viewPaymentDetails('${payment.trxid}')">
+                <i class="fas fa-eye"></i> View
+            </button>
+        </td>
+    `;
+    
     
     // Check if this payment already exists in the table
     const existingRow = document.querySelector(`tr[data-trxid="${payment.trxid}"]`);
