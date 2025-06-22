@@ -517,6 +517,22 @@ function updateStats() {
 }
 
 // Helper Functions
+function updatePaymentStatus(updatedPayment) {
+  // Find and update existing payment
+  const index = paymentState.payments.findIndex(p => p.trxid === updatedPayment.trxid);
+  if (index !== -1) {
+    paymentState.payments[index] = updatedPayment;
+    renderPayment(updatedPayment);
+    updateStats();
+  }
+}
+
+function addNewPayment(newPayment) {
+  // Add new payment to state
+  paymentState.payments.push(newPayment);
+  renderPayment(newPayment);
+  updateStats();
+}
 function formatCompanyName(company) {
     const names = {
         'govt_nid': 'Govt NID',
@@ -627,58 +643,83 @@ window.showHelpInstructions = () => {
 };
 
 // Refresh payments function
-window.refreshPayments = () => {
-    const loadingOverlay = document.querySelector('.loading-overlay');
+window.refreshPayments = async () => {
+  const loadingOverlay = document.querySelector('.loading-overlay');
+  const authToken = localStorage.getItem('authToken');
+  const userID = localStorage.getItem('userID');
+  
+  try {
     loadingOverlay.style.display = 'flex';
     
-    // Get authentication data
-    const authToken = localStorage.getItem('authToken');
-    const userID = localStorage.getItem('userID');
-    
-    if (!authToken || !userID) {
-        showError('Authentication required. Please login again.');
-        loadingOverlay.style.display = 'none';
-        window.location.href = 'login.html';
-        return;
-    }
-
     // Clear existing timers
     Object.values(paymentState.paymentTimers).forEach(timer => clearInterval(timer));
     paymentState.paymentTimers = {};
     
-    // Fetch actual payments from server
-    fetch('https://oneai-wjox.onrender.com/payments/user', {
-        headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'X-User-ID': userID
-        }
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Failed to fetch payments');
-        }
-        return response.json();
-    })
-    .then(data => {
-        // Update state with real data only
-        paymentState.payments = data.payments || [];
-        
-        // Render payments
-        renderAllPayments();
-        
-        // Update stats
-        updateStats();
-        
-        showSuccess('Payments refreshed successfully');
-    })
-    .catch(error => {
-        console.error('Payment refresh error:', error);
-        showError(error.message || 'Failed to refresh payments');
-    })
-    .finally(() => {
-        loadingOverlay.style.display = 'none';
+    const response = await fetch('https://oneai-wjox.onrender.com/payments/user', {
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+        'X-User-ID': userID
+      }
     });
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch payments');
+    }
+    
+    const data = await response.json();
+    paymentState.payments = data.payments || [];
+    renderAllPayments();
+    updateStats();
+    showSuccess('Payments refreshed successfully');
+  } catch (error) {
+    showError(error.message || 'Failed to refresh payments');
+  } finally {
+    loadingOverlay.style.display = 'none';
+  }
 };
+
+function connectWebSocket() {
+  if (paymentState.ws) paymentState.ws.close();
+  
+  paymentState.ws = new WebSocket('wss://oneai-wjox.onrender.com');
+
+  paymentState.ws.onopen = () => {
+    console.log('WebSocket Connected');
+    const authToken = localStorage.getItem('authToken');
+    const userID = localStorage.getItem('userID');
+    
+    paymentState.ws.send(JSON.stringify({
+      type: 'auth',
+      token: authToken,
+      userId: userID
+    }));
+  };
+
+  paymentState.ws.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data);
+      console.log('WebSocket message:', data);
+      
+      if (data.type === 'payment-updated') {
+        updatePaymentStatus(data.payment);
+      } else if (data.type === 'new-payment') {
+        addNewPayment(data.payment);
+      }
+    } catch (error) {
+      console.error('WebSocket message error:', error);
+    }
+  };
+
+  paymentState.ws.onerror = (error) => {
+    console.error('WebSocket Error:', error);
+  };
+
+  paymentState.ws.onclose = () => {
+    console.log('WebSocket Disconnected');
+    // Attempt to reconnect after 5 seconds
+    setTimeout(connectWebSocket, 5000);
+  };
+}
 </script>
 <script src="./assets/js/load-navbar.js"></script>
 <script src="./assets/js/main.js"></script>
