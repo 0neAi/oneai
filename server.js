@@ -467,7 +467,7 @@ app.post('/admin/update-status', adminAuth, async (req, res) => {
     wss.clients.forEach(client => {
       if (client.readyState === WebSocket.OPEN) {
         client.send(JSON.stringify({
-          type: 'statusUpdate',
+          type: 'payment-updated',
           payment: {
             trxid: payment.trxid,
             status: payment.status,
