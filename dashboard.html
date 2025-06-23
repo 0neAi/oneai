@@ -450,6 +450,7 @@
     </div>
 
 <script>
+const notificationSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-alert-quick-chime-766.mp3');
 // Global state management
 const paymentState = {
     payments: [],
@@ -503,6 +504,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     } finally {
         loadingOverlay.style.display = 'none';
     }
+      // Add auto-refresh every 30 seconds
+  setInterval(() => {
+    refreshPayments();
+  }, 30000);
 });
 
 // WebSocket connection
@@ -531,7 +536,11 @@ function connectWebSocket() {
             
             if (data.type === 'payment-updated') {
                 updatePaymentStatus(data.payment);
-                
+
+        // Show notification for completed payments
+      if (data.payment.status === 'Completed') {
+        showPaymentNotification(data.payment);
+      }
                 // Handle completed payments
                 if (data.payment.status === 'Completed') {
                     handlePaymentCompletion(data.payment);
@@ -567,6 +576,24 @@ function connectWebSocket() {
     };
 }
 
+// Add this notification function
+function showPaymentNotification(payment) {
+  // Play notification sound
+  notificationSound.play().catch(e => console.error('Sound playback failed:', e));
+  
+  // Create browser notification
+  if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification('Payment Completed', {
+      body: `TRX ID: ${payment.trxid} - Amount: ৳${payment.amount}`,
+      icon: 'https://oneai-wjox.onrender.com/images/logo.png'
+    });
+  }
+  
+  // Update notification badge
+  paymentState.unreadNotifications++;
+  document.getElementById('notification-badge').textContent = paymentState.unreadNotifications;
+  document.getElementById('notification-badge').classList.remove('hidden');
+}
 // Handle payment completions
 function handlePaymentCompletion(payment) {
     // Update notification badge
