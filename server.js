@@ -434,6 +434,8 @@ app.post('/premium-payment', authMiddleware, async (req, res) => {
       success: false,
       message: error.message
     });
+  }
+});
 // ======================
 // Admin Routes
 // ======================
