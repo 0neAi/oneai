@@ -451,7 +451,6 @@
     </div>
 
 <script>
-const notificationSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-alert-quick-chime-766.mp3');
 // Global state management
 const paymentState = {
     payments: [],
@@ -465,53 +464,10 @@ const paymentState = {
     unreadNotifications: 0
 };
 
-// Request permissions on page load
-document.addEventListener('DOMContentLoaded', async () => {
-    // Request notification permission
-    if ('Notification' in window) {
-        try {
-            const permission = await Notification.requestPermission();
-            console.log('Notification permission:', permission);
-        } catch (error) {
-            console.error('Notification permission error:', error);
-        }
-    }
-    
-    // Initialize UI
-    const loadingOverlay = document.querySelector('.loading-overlay');
-    const tbody = document.getElementById('payment-status');
-    
-    // Show loading overlay immediately
-    loadingOverlay.style.display = 'flex';
-    
-    try {
-        // Get authentication data
-        const authToken = localStorage.getItem('authToken');
-        const userID = localStorage.getItem('userID');
-        
-        if (!authToken || !userID) {
-            showError('Authentication required. Please login again.');
-            window.location.href = 'login.html';
-            return;
-        }
+// Notification sound - moved to top level
+const notificationSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-alert-quick-chime-766.mp3');
 
-        // Load actual payments from server
-        await refreshPayments();
-        
-        // Set up WebSocket connection
-        connectWebSocket();
-    } catch (error) {
-        showError(error.message || 'Failed to initialize dashboard');
-    } finally {
-        loadingOverlay.style.display = 'none';
-    }
-      // Add auto-refresh every 30 seconds
-  setInterval(() => {
-    refreshPayments();
-  }, 30000);
-});
-
-// WebSocket connection
+// Functions moved to top level scope
 function connectWebSocket() {
     if (paymentState.ws) paymentState.ws.close();
     
@@ -522,7 +478,6 @@ function connectWebSocket() {
         const authToken = localStorage.getItem('authToken');
         const userID = localStorage.getItem('userID');
         
-        // Send authentication
         paymentState.ws.send(JSON.stringify({
             type: 'auth',
             token: authToken,
@@ -533,24 +488,16 @@ function connectWebSocket() {
     paymentState.ws.onmessage = (event) => {
         try {
             const data = JSON.parse(event.data);
-            console.log('WebSocket message:', data);
             
             if (data.type === 'payment-updated') {
                 updatePaymentStatus(data.payment);
 
-        // Show notification for completed payments
-      if (data.payment.status === 'Completed') {
-        showPaymentNotification(data.payment);
-      }
-                // Handle completed payments
                 if (data.payment.status === 'Completed') {
                     handlePaymentCompletion(data.payment);
                 }
             } 
             else if (data.type === 'new-payment') {
-                // Handle new premium payments
                 if (data.payment.company === 'premium_service') {
-                    // Check if payment already exists
                     const existing = paymentState.payments.find(p => p.trxid === data.payment.trxid);
                     
                     if (!existing) {
@@ -571,117 +518,70 @@ function connectWebSocket() {
     };
 
     paymentState.ws.onclose = () => {
-        console.log('WebSocket Disconnected');
-        // Attempt to reconnect after 5 seconds
         setTimeout(connectWebSocket, 5000);
     };
 }
 
-// Add this notification function
-function showPaymentNotification(payment) {
-  // Play notification sound
-  notificationSound.play().catch(e => console.error('Sound playback failed:', e));
-  
-  // Create browser notification
-  if ('Notification' in window && Notification.permission === 'granted') {
-    new Notification('Payment Completed', {
-      body: `TRX ID: ${payment.trxid} - Amount: ৳${payment.amount}`,
-      icon: 'https://oneai-wjox.onrender.com/images/logo.png'
-    });
-  }
-  
-  // Update notification badge
-  paymentState.unreadNotifications++;
-  document.getElementById('notification-badge').textContent = paymentState.unreadNotifications;
-  document.getElementById('notification-badge').classList.remove('hidden');
-}
-// Handle payment completions
-function handlePaymentCompletion(payment) {
-    // Update notification badge
-    paymentState.unreadNotifications++;
-    document.getElementById('notification-badge').textContent = paymentState.unreadNotifications;
-    document.getElementById('notification-badge').classList.remove('hidden');
-    
-    // Send notification
-    if ('Notification' in window && Notification.permission === 'granted') {
-        try {
-            new Notification('Payment Completed', {
-                body: `TRX ID: ${payment.trxid} - Amount: ৳${payment.amount3.toFixed(2)}`,
-                icon: 'https://oneai-wjox.onrender.com/images/logo.png',
-                vibrate: [200, 100, 200]
-            });
-
-            // Play notification sound
-            playNotificationSound();
-        } catch (error) {
-            console.error('Notification error:', error);
-        }
-    }
-    // Add this new function for sound notifications
 function playNotificationSound() {
-    const audio = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-alert-quick-chime-766.mp3');
-    audio.play().catch(e => console.error('Sound playback failed:', e));
-}
-    // Trigger vibration
-    if ('vibrate' in navigator) {
-        try {
-            navigator.vibrate([300, 100, 300]); // Vibrate pattern
-        } catch (error) {
-            console.error('Vibration error:', error);
-        }
-    }
-    
-    // Auto-refresh payments after a delay
-    setTimeout(() => {
-        refreshPayments();
-    }, 2000);
+    notificationSound.play().catch(e => console.error('Sound playback failed:', e));
 }
 
-// Rendering Functions
+function showPaymentNotification(payment) {
+    playNotificationSound();
+    
+    if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('Payment Completed', {
+            body: `TRX ID: ${payment.trxid} - Amount: ৳${payment.amount}`,
+            icon: 'https://oneai-wjox.onrender.com/images/logo.png'
+        });
+    }
+  
+    paymentState.unreadNotifications++;
+    const badge = document.getElementById('notification-badge');
+    badge.textContent = paymentState.unreadNotifications;
+    badge.classList.remove('hidden');
+}
+
+function handlePaymentCompletion(payment) {
+    showPaymentNotification(payment);
+    
+    if ('vibrate' in navigator) {
+        navigator.vibrate([300, 100, 300]);
+    }
+    
+    setTimeout(refreshPayments, 2000);
+}
+
 function renderAllPayments() {
     const tbody = document.getElementById('payment-status');
     tbody.innerHTML = '';
     
     if (paymentState.payments.length === 0) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="6" class="text-center">No payments found</td>
-            </tr>
-        `;
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center">No payments found</td></tr>`;
         return;
     }
     
-    // Sort payments by creation date (newest first)
     const sortedPayments = [...paymentState.payments].sort((a, b) => 
         new Date(b.createdAt) - new Date(a.createdAt)
     );
     
-    sortedPayments.forEach(payment => {
-        renderPayment(payment);
-    });
+    sortedPayments.forEach(renderPayment);
 }
 
 function renderPayment(payment) {
     const tbody = document.getElementById('payment-status');
-    
-    // Check if this payment already exists in the table
     const existingRow = document.querySelector(`tr[data-trxid="${payment.trxid}"]`);
     
     if (existingRow) {
-        // Update existing row
         updatePaymentRow(existingRow, payment);
         return;
     }
     
-    // Create new row
     const row = document.createElement('tr');
     row.dataset.trxid = payment.trxid;
-    
-    // Calculate expiry time (3 hours from creation)
     const createdAt = new Date(payment.createdAt || Date.now());
     const expiryTime = createdAt.getTime() + (3 * 60 * 60 * 1000);
     
-    // Handle premium payments differently
     let companyCell;
     if (payment.company === 'premium_service') {
         companyCell = `<td><i class="fas fa-crown premium-icon"></i> Premium Service</td>`;
@@ -705,37 +605,31 @@ function renderPayment(payment) {
     
     tbody.appendChild(row);
     
-    // Only start countdown for pending payments
     if (!payment.status || payment.status === 'Pending') {
         startCountdown(row.querySelector('.countdown'), payment.trxid);
     }
 }
 
 function updatePaymentRow(row, payment) {
-    // Update status cell
     const statusCell = row.querySelector('.status');
     if (statusCell) {
         statusCell.className = `status ${(payment.status || 'pending').toLowerCase()}`;
         statusCell.textContent = payment.status || 'Pending';
     }
     
-    // Update amount cell if needed
     const amountCell = row.querySelector('td:nth-child(3)');
     if (amountCell) {
         amountCell.textContent = `৳${(payment.amount3 || 0).toFixed(2)}`;
     }
     
-    // Update countdown cell
     const countdownCell = row.querySelector('.countdown');
     
-    // If status changed from Pending, stop the countdown
     if (payment.status !== 'Pending') {
         if (countdownCell) {
             countdownCell.innerHTML = payment.status;
             countdownCell.classList.add('expired');
         }
         
-        // Clear the timer if it exists
         if (paymentState.paymentTimers[payment.trxid]) {
             clearInterval(paymentState.paymentTimers[payment.trxid]);
             delete paymentState.paymentTimers[payment.trxid];
@@ -754,7 +648,6 @@ function startCountdown(element, trxid) {
             element.innerHTML = 'Expired';
             element.classList.add('expired');
             
-            // Clear the timer
             if (paymentState.paymentTimers[trxid]) {
                 clearInterval(paymentState.paymentTimers[trxid]);
                 delete paymentState.paymentTimers[trxid];
@@ -766,19 +659,13 @@ function startCountdown(element, trxid) {
         const minutes = Math.floor((diff % 3600000) / 60000);
         const seconds = Math.floor((diff % 60000) / 1000);
 
-        element.innerHTML = `
-            ${hours}h ${minutes}m ${seconds}s
-        `;
+        element.innerHTML = `${hours}h ${minutes}m ${seconds}s`;
     }
 
-    // Initial update
     update();
-    
-    // Store the interval ID so we can clear it later
     paymentState.paymentTimers[trxid] = setInterval(update, 1000);
 }
 
-// Stats Functions
 function updateStats() {
     paymentState.stats = {
         active: paymentState.payments.filter(p => p.status === 'Pending').length,
@@ -791,7 +678,6 @@ function updateStats() {
     document.getElementById('failed-payments').textContent = paymentState.stats.failed;
 }
 
-// Helper Functions
 function formatCompanyName(company) {
     const names = {
         'govt_nid': 'Govt NID',
@@ -803,30 +689,11 @@ function formatCompanyName(company) {
     return names[company] || company;
 }
 
-function viewPaymentDetails(trxid) {
-    const payment = paymentState.payments.find(p => p.trxid === trxid);
-    if (payment) {
-        const details = `
-            Company: ${formatCompanyName(payment.company)}\n
-            TRX ID: ${payment.trxid}\n
-            Amount: ৳${payment.amount3.toFixed(2)}\n
-            Status: ${payment.status}\n
-            Created: ${new Date(payment.createdAt).toLocaleString()}
-        `;
-        alert(details);
-    } else {
-        showError('Payment details not found');
-    }
-}
-
 // UI Functions
 function showError(message) {
     const errorDiv = document.createElement('div');
     errorDiv.className = 'error';
-    errorDiv.innerHTML = `
-        <i class="fas fa-exclamation-circle"></i>
-        ${message}
-    `;
+    errorDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
     document.body.prepend(errorDiv);
     setTimeout(() => errorDiv.remove(), 5000);
 }
@@ -834,21 +701,65 @@ function showError(message) {
 function showSuccess(message) {
     const successDiv = document.createElement('div');
     successDiv.className = 'success';
-    successDiv.innerHTML = `
-        <i class="fas fa-check-circle"></i>
-        ${message}
-    `;
+    successDiv.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
     document.body.prepend(successDiv);
     setTimeout(() => successDiv.remove(), 5000);
 }
 
-// Service Card Interactions
-window.showPremiumPaymentForm = () => {
+// Initialize dashboard
+document.addEventListener('DOMContentLoaded', async () => {
+    if ('Notification' in window) {
+        try {
+            await Notification.requestPermission();
+        } catch (error) {
+            console.error('Notification permission error:', error);
+        }
+    }
+    
+    const loadingOverlay = document.querySelector('.loading-overlay');
+    loadingOverlay.style.display = 'flex';
+    
+    try {
+        const authToken = localStorage.getItem('authToken');
+        const userID = localStorage.getItem('userID');
+        
+        if (!authToken || !userID) {
+            window.location.href = 'login.html';
+            return;
+        }
+
+        await refreshPayments();
+        connectWebSocket();
+    } catch (error) {
+        showError(error.message || 'Failed to initialize dashboard');
+    } finally {
+        loadingOverlay.style.display = 'none';
+    }
+    
+    setInterval(refreshPayments, 30000);
+});
+
+// Global functions
+window.viewPaymentDetails = function(trxid) {
+    const payment = paymentState.payments.find(p => p.trxid === trxid);
+    if (payment) {
+        alert(`
+            Company: ${formatCompanyName(payment.company)}\n
+            TRX ID: ${payment.trxid}\n
+            Amount: ৳${payment.amount3.toFixed(2)}\n
+            Status: ${payment.status}\n
+            Created: ${new Date(payment.createdAt).toLocaleString()}
+        `);
+    } else {
+        showError('Payment details not found');
+    }
+};
+
+window.showPremiumPaymentForm = function() {
     document.getElementById('premium-modal').style.display = 'flex';
 };
 
-// Premium payment submission
-window.submitPremiumPayment = async () => {
+window.submitPremiumPayment = async function() {
     const loadingOverlay = document.querySelector('.loading-overlay');
     loadingOverlay.style.display = 'flex';
     
@@ -873,33 +784,21 @@ window.submitPremiumPayment = async () => {
                 'Authorization': `Bearer ${authToken}`,
                 'X-User-ID': userID
             },
-            body: JSON.stringify({
-                phone,
-                trxid,
-                amount: parseFloat(amount),
-                service,
-                type: 'premium'
-            })
+            body: JSON.stringify({ phone, trxid, amount, service, type: 'premium' })
         });
         
         const data = await response.json();
-        
-        if (!response.ok) {
-            throw new Error(data.message || 'Premium payment submission failed');
-        }
-        
-        // Close modal and reset form
+        if (!response.ok) throw new Error(data.message || 'Submission failed');
+
         document.getElementById('premium-modal').style.display = 'none';
         document.getElementById('premium-phone').value = '';
         document.getElementById('premium-trxid').value = '';
         document.getElementById('premium-amount').value = '';
         
-        // Add to local state
         paymentState.payments.push(data.payment);
         renderPayment(data.payment);
         updateStats();
-        
-        showSuccess('Premium payment submitted successfully!');
+        showSuccess('Premium payment submitted!');
     } catch (error) {
         showError(error.message);
     } finally {
@@ -907,112 +806,53 @@ window.submitPremiumPayment = async () => {
     }
 };
 
-// This function now opens WhatsApp support
-window.sendHelpRequest = () => {
-    const payment = paymentState.payments.length > 0 ? paymentState.payments[0] : null;
+window.sendHelpRequest = function() {
+    const payment = paymentState.payments[0];
     const message = payment 
-        ? `Need help with payment:\nTRX: ${payment.trxid}\nAmount: ৳${payment.amount3.toFixed(2)}\nStatus: ${payment.status || 'Pending'}`
+        ? `Need help with payment:\nTRX: ${payment.trxid}\nAmount: ৳${payment.amount3.toFixed(2)}\nStatus: ${payment.status}`
         : 'I need assistance with your services';
-    
     window.open(`https://wa.me/8801568760780?text=${encodeURIComponent(message)}`, '_blank');
 };
 
-// New function to show help instructions
-window.showHelpInstructions = () => {
-    const helpContent = `
-        <div style="padding: 20px; max-width: 500px; background: white; border-radius: 8px;">
-            <h2 style="margin-top: 0; color: #2c3e50;"><i class="fas fa-question-circle"></i> Help Center</h2>
-            
-            <h3><i class="fas fa-info-circle"></i> How to Use This Dashboard</h3>
-            <p>1. View your payment status in the table above</p>
-            <p>2. Track payment expiration times</p>
-            <p>3. Access premium services from the grid below</p>
-            
-            <h3><i class="fas fa-exclamation-triangle"></i> Troubleshooting</h3>
-            <p>• If a payment shows as pending for more than 3 hours, use the FAST SERVICE button</p>
-            <p>• Failed payments may require contacting your payment provider</p>
-            <p>• Refresh the page if data appears outdated</p>
-            
-            <h3><i class="fas fa-phone-alt"></i> Contact Options</h3>
-            <p>For immediate assistance, use the FAST SERVICE button to connect with our WhatsApp support team.</p>
-            
-            <button onclick="this.parentElement.parentElement.close()" 
-                    style="margin-top: 20px; padding: 8px 16px; background: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                Close
-            </button>
-        </div>
-    `;
-    
-    const dialog = document.createElement('dialog');
-    dialog.style.border = 'none';
-    dialog.style.borderRadius = '8px';
-    dialog.style.padding = '0';
-    dialog.style.boxShadow = '0 5px 15px rgba(0,0,0,0.3)';
-    dialog.innerHTML = helpContent;
-    document.body.appendChild(dialog);
-    
-    dialog.showModal();
-    
-    // Close the dialog when clicking outside
-    dialog.addEventListener('click', (e) => {
-        if (e.target === dialog) {
-            dialog.close();
-            dialog.remove();
-        }
-    });
+window.showHelpInstructions = function() {
+    alert("Help instructions:\n1. Check payment status in the table\n2. Use FAST SERVICE button for urgent help\n3. Refresh payments every 30 minutes");
 };
 
-// Refresh payments function
-window.refreshPayments = async () => {
+window.refreshPayments = async function() {
     const loadingOverlay = document.querySelector('.loading-overlay');
     const authToken = localStorage.getItem('authToken');
     const userID = localStorage.getItem('userID');
     
     try {
         loadingOverlay.style.display = 'flex';
-        
-        // Clear existing timers
-        Object.values(paymentState.paymentTimers).forEach(timer => clearInterval(timer));
+        Object.values(paymentState.paymentTimers).forEach(clearInterval);
         paymentState.paymentTimers = {};
         
-        // Fetch actual payments from server
         const response = await fetch('https://oneai-wjox.onrender.com/payments/user', {
-            headers: {
-                'Authorization': `Bearer ${authToken}`,
-                'X-User-ID': userID
-            }
+            headers: { 'Authorization': `Bearer ${authToken}`, 'X-User-ID': userID }
         });
         
-        if (!response.ok) {
-            throw new Error('Failed to fetch payments');
-        }
+        if (!response.ok) throw new Error('Failed to fetch payments');
         
         const data = await response.json();
         paymentState.payments = data.payments || [];
-        
-        // Render payments
         renderAllPayments();
-        
-        // Update stats
         updateStats();
-        
-        showSuccess('Payments refreshed successfully');
+        showSuccess('Payments refreshed');
     } catch (error) {
-        console.error('Payment refresh error:', error);
-        showError(error.message || 'Failed to refresh payments');
+        showError(error.message || 'Refresh failed');
     } finally {
         loadingOverlay.style.display = 'none';
     }
 };
 
-// Notification badge click handler
-document.getElementById('notification-badge').addEventListener('click', function() {
-    // Reset notification count
-    paymentState.unreadNotifications = 0;
-    this.classList.add('hidden');
-    
-    // Show notification history
-    alert('All notifications cleared');
+// Initialize notification badge handler
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('notification-badge').addEventListener('click', function() {
+        paymentState.unreadNotifications = 0;
+        this.classList.add('hidden');
+        alert('All notifications cleared');
+    });
 });
 </script>
 <script src="./assets/js/load-navbar.js"></script>
