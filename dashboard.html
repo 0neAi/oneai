@@ -582,11 +582,18 @@ function handlePaymentCompletion(payment) {
                 icon: 'https://oneai-wjox.onrender.com/images/logo.png',
                 vibrate: [200, 100, 200]
             });
+
+            // Play notification sound
+            playNotificationSound();
         } catch (error) {
             console.error('Notification error:', error);
         }
     }
-    
+    // Add this new function for sound notifications
+function playNotificationSound() {
+    const audio = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-alert-quick-chime-766.mp3');
+    audio.play().catch(e => console.error('Sound playback failed:', e));
+}
     // Trigger vibration
     if ('vibrate' in navigator) {
         try {
