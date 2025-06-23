@@ -305,6 +305,54 @@
             z-index: 10000;
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
         }
+                /* Add this new style for the payment popup */
+        .payment-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            z-index: 10001;
+            display: none;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            animation: slideIn 0.5s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translate(-50%, -60%); opacity: 0; }
+            to { transform: translate(-50%, -50%); opacity: 1; }
+        }
+        
+        .payment-popup.active {
+            display: block;
+        }
+        
+        .payment-popup h3 {
+            margin-top: 0;
+            color: #28A745;
+        }
+        
+        .payment-popup .success-icon {
+            color: #28A745;
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        
+        .payment-popup .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #6c757d;
+        }
         
     </style>
 </head>
@@ -449,6 +497,17 @@
             </div>
         </section>
     </div>
+    <!-- Add this new payment popup element -->
+    <div id="payment-popup" class="payment-popup">
+        <button class="close-btn" onclick="closePaymentPopup()">&times;</button>
+        <i class="fas fa-check-circle success-icon"></i>
+        <h3>Payment Completed!</h3>
+        <p>TRX ID: <span id="popup-trxid"></span></p>
+        <p>Amount: ৳<span id="popup-amount"></span></p>
+        <button class="action-btn refresh-btn" onclick="closePaymentPopup()">
+            OK
+        </button>
+    </div>
 
 <script>
 // Global state management
@@ -542,8 +601,28 @@ function showPaymentNotification(payment) {
     badge.classList.remove('hidden');
 }
 
+
+function showPaymentPopup(payment) {
+    const popup = document.getElementById('payment-popup');
+    document.getElementById('popup-trxid').textContent = payment.trxid;
+    document.getElementById('popup-amount').textContent = payment.amount3.toFixed(2);
+    
+    popup.classList.add('active');
+    
+    // Auto-close after 10 seconds
+    setTimeout(() => {
+        popup.classList.remove('active');
+    }, 10000);
+}
+
+function closePaymentPopup() {
+    document.getElementById('payment-popup').classList.remove('active');
+}
+
 function handlePaymentCompletion(payment) {
-    showPaymentNotification(payment);
+    showPaymentPopup(payment); // Show the popup
+    showPaymentNotification(payment); // Show the system notification
+    playNotificationSound(); // Play the sound
     
     if ('vibrate' in navigator) {
         navigator.vibrate([300, 100, 300]);
