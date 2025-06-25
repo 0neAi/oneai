@@ -361,6 +361,47 @@
         <i class="fas fa-spinner fa-spin fa-3x"></i>
         <p>Loading your payment data...</p>
     </div>
+        <!-- Premium Payment Modal -->
+    <div id="premium-modal" class="premium-modal">
+        <div class="premium-modal-content">
+            <h2 class="premium-modal-title"><i class="fas fa-crown premium-icon"></i> Premium Service Payment</h2>
+            
+            <div class="premium-form-group">
+                <label>Phone Number</label>
+                <input type="text" id="premium-phone" placeholder="01XXXXXXXXX">
+            </div>
+            
+            <div class="premium-form-group">
+                <label>Transaction ID</label>
+                <input type="text" id="premium-trxid" placeholder="Your payment TRX ID">
+            </div>
+            
+            <div class="premium-form-group">
+                <label>Amount</label>
+                <input type="number" id="premium-amount" placeholder="Amount paid">
+            </div>
+            
+            <div class="premium-form-group">
+                <label>Service Type</label>
+                <select id="premium-service">
+                    <option value="password_cracker">Password Cracker</option>
+                    <option value="location_tracker">Location Tracker</option>
+                    <option value="nid_call_list">NID Call List</option>
+                    <option value="android_remote">Android Remote</option>
+                </select>
+            </div>
+            
+            <div class="action-buttons">
+                <button class="action-btn help-btn" onclick="document.getElementById('premium-modal').style.display='none'">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button class="action-btn refresh-btn" onclick="submitPremiumPayment()">
+                    <i class="fas fa-check"></i> Submit Payment
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
         <!-- Navbar will be injected here by load-navbar.js -->
         <div class="navbar-placeholder" style="background: #2c3e50; color: white; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;">
