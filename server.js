@@ -240,7 +240,7 @@ app.post('/register', async (req, res) => {
     const user = new User({
       phone,
       email,
-      password: await bcrypt.hash(password, 12)
+      password
     });
 
     await user.save();
