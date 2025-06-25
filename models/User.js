@@ -24,21 +24,23 @@ const userSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
-userSchema.methods.comparePassword = async function (candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
-};
-// Add password hashing
+
+// Add password hashing middleware
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
   
   try {
-    // Hash the password with salt
     this.password = await bcrypt.hash(this.password, 12);
     next();
   } catch (error) {
     next(error);
   }
 });
+
+// Add password comparison method
+userSchema.methods.comparePassword = async function(candidatePassword) {
+  return bcrypt.compare(candidatePassword, this.password);
+};
 
 const User = mongoose.model('User', userSchema);
 export default User;
