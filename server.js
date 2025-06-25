@@ -280,8 +280,7 @@ app.post('/login', async (req, res) => {
       });
     }
 
-    // Fixed: Use bcrypt directly
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await user.comparePassword(password);
     
     if (!isMatch) {
       return res.status(401).json({ 
@@ -294,7 +293,6 @@ app.post('/login', async (req, res) => {
       expiresIn: '1h' 
     });
 
-    // Add response that was missing
     res.json({
       success: true,
       token,
