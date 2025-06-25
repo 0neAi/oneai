@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entertainment Services | 1ai</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="./assets/css/main.css">
+<style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding-bottom: 40px;
+        }
+        
+        header {
+            background: linear-gradient(90deg, #0f3460 0%, #1a1a2e 100%);
+            padding: 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+        }
+        
+        header::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #e94560, #0dceda, #f9b208);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .logo i {
+            font-size: 2.5rem;
+            color: #e94560;
+            background: rgba(233, 69, 96, 0.1);
+            width: 70px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #f9b208, #e94560, #0dceda);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        .tagline {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 800px;
+            margin: 0 auto 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+        
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+        
+        .service-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .service-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+            background: rgba(255, 255, 255, 0.08);
+        }
+        
+        .card-header {
+            padding: 25px 25px 15px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .card-icon {
+            font-size: 3.5rem;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #0dceda, #0f3460);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .card-title {
+            font-size: 1.6rem;
+            margin-bottom: 10px;
+            color: #f9b208;
+        }
+        
+        .card-content {
+            padding: 0 25px 25px;
+        }
+        
+        .card-description {
+            color: #ccc;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            font-size: 1rem;
+        }
+        
+        .features {
+            margin: 20px 0;
+            padding-left: 20px;
+        }
+        
+        .features li {
+            margin-bottom: 10px;
+            position: relative;
+            padding-left: 25px;
+        }
+        
+        .features li::before {
+            content: "✓";
+            color: #0dceda;
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+        }
+        
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(90deg, #e94560, #0dceda);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            text-decoration: none;
+            margin-top: 15px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 15px rgba(233, 69, 96, 0.3);
+        }
+        
+        .btn i {
+            margin-right: 8px;
+        }
+        
+        .service-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+        
+        .service-modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal-content {
+            background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);
+            width: 90%;
+            max-width: 500px;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            transform: translateY(50px);
+            transition: transform 0.5s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .service-modal.active .modal-content {
+            transform: translateY(0);
+        }
+        
+        .modal-header {
+            padding: 20px;
+            background: rgba(15, 52, 96, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .modal-title {
+            font-size: 1.5rem;
+            color: #f9b208;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .close-modal {
+            background: none;
+            border: none;
+            color: #e94560;
+            font-size: 1.5rem;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+        
+        .close-modal:hover {
+            background: rgba(233, 69, 96, 0.2);
+            transform: rotate(90deg);
+        }
+        
+        .modal-body {
+            padding: 25px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #0dceda;
+        }
+        
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 14px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            font-size: 1rem;
+        }
+        
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #0dceda;
+            box-shadow: 0 0 0 3px rgba(13, 206, 218, 0.2);
+        }
+        
+        .quality-options {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .quality-option {
+            flex: 1;
+            min-width: 80px;
+            text-align: center;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.2s ease;
+        }
+        
+        .quality-option:hover {
+            background: rgba(13, 206, 218, 0.1);
+            border-color: #0dceda;
+        }
+        
+        .quality-option.selected {
+            background: rgba(13, 206, 218, 0.2);
+            border-color: #0dceda;
+            color: #0dceda;
+            font-weight: bold;
+        }
+        
+        .modal-footer {
+            padding: 20px;
+            background: rgba(15, 52, 96, 0.3);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+        }
+        
+        .section-title {
+            text-align: center;
+            font-size: 2.2rem;
+            margin: 40px 0 30px;
+            color: #f9b208;
+            position: relative;
+            display: inline-block;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .section-title::after {
+            content: "";
+            display: block;
+            width: 80px;
+            height: 4px;
+            background: linear-gradient(90deg, #e94560, #0dceda);
+            margin: 10px auto 0;
+            border-radius: 2px;
+        }
+        
+        .testimonials {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+        
+        .testimonial {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .testimonial-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .testimonial-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #e94560, #0dceda);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.3rem;
+            margin-right: 15px;
+        }
+        
+        .testimonial-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        
+        .testimonial-text {
+            line-height: 1.6;
+            color: #ccc;
+            font-style: italic;
+        }
+        
+        .testimonial-rating {
+            color: #f9b208;
+            margin-top: 10px;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 40px 0;
+        }
+        
+        .stat-card {
+            text-align: center;
+            padding: 25px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #0dceda;
+            margin-bottom: 10px;
+            line-height: 1;
+        }
+        
+        .stat-label {
+            font-size: 1.1rem;
+            color: #f9b208;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 30px 20px 10px;
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+        
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .social-links a {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #0dceda;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .social-links a:hover {
+            background: #0dceda;
+            color: #1a1a2e;
+            transform: translateY(-5px);
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.2rem;
+            }
+            
+            .tagline {
+                font-size: 1rem;
+            }
+            
+            .section-title {
+                font-size: 1.8rem;
+            }
+            
+            .services-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <i class="fas fa-crown"></i>
+        </div>
+        <h1>Entertainment Services</h1>
+        <p class="tagline">Unlock premium digital entertainment experiences with our exclusive services. Download, stream, and enjoy content from all platforms!</p>
+    </header>
+
+    <div class="container">
+        <h2 class="section-title">Our Services</h2>
+        
+        <div class="services-grid">
+            <!-- TikTok Downloader -->
+            <div class="service-card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fab fa-tiktok"></i>
+                    </div>
+                    <h3 class="card-title">TikTok Video Downloader</h3>
+                </div>
+                <div class="card-content">
+                    <p class="card-description">Download TikTok videos without watermark in HD quality. Save your favorite videos with just one click.</p>
+                    <ul class="features">
+                        <li>No watermark</li>
+                        <li>High-quality downloads</li>
+                        <li>Fast processing</li>
+                        <li>Batch download support</li>
+                    </ul>
+                    <button class="btn" onclick="openServiceModal('tiktok')">
+                        <i class="fas fa-download"></i> Download Now
+                    </button>
+                </div>
+            </div>
+            
+            <!-- YouTube Downloader -->
+            <div class="service-card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fab fa-youtube"></i>
+                    </div>
+                    <h3 class="card-title">YouTube Video Downloader</h3>
+                </div>
+                <div class="card-content">
+                    <p class="card-description">Download YouTube videos in any format and quality. Save videos for offline viewing anytime.</p>
+                    <ul class="features">
+                        <li>MP4, MP3, and more</li>
+                        <li>4K quality support</li>
+                        <li>Playlist download</li>
+                        <li>Subtitles included</li>
+                    </ul>
+                    <button class="btn" onclick="openServiceModal('youtube')">
+                        <i class="fas fa-download"></i> Download Now
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Instagram Downloader -->
+            <div class="service-card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fab fa-instagram"></i>
+                    </div>
+                    <h3 class="card-title">Instagram Downloader</h3>
+                </div>
+                <div class="card-content">
+                    <p class="card-description">Download Instagram photos, videos, reels, and stories in high quality. Save content from any public profile.</p>
+                    <ul class="features">
+                        <li>Photos and videos</li>
+                        <li>Reels and stories</li>
+                        <li>IGTV support</li>
+                        <li>Private account access</li>
+                    </ul>
+                    <button class="btn" onclick="openServiceModal('instagram')">
+                        <i class="fas fa-download"></i> Download Now
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Facebook Downloader -->
+            <div class="service-card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fab fa-facebook"></i>
+                    </div>
+                    <h3 class="card-title">Facebook Video Downloader</h3>
+                </div>
+                <div class="card-content">
+                    <p class="card-description">Download videos from Facebook with ease. Save videos from pages, groups, and personal profiles.</p>
+                    <ul class="features">
+                        <li>HD video quality</li>
+                        <li>No login required</li>
+                        <li>Private group access</li>
+                        <li>Fast downloads</li>
+                    </ul>
+                    <button class="btn" onclick="openServiceModal('facebook')">
+                        <i class="fas fa-download"></i> Download Now
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Music Downloader -->
+            <div class="service-card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-music"></i>
+                    </div>
+                    <h3 class="card-title">Premium Music Downloader</h3>
+                </div>
+                <div class="card-content">
+                    <p class="card-description">Download songs from Spotify, Apple Music, SoundCloud, and more. Get high-quality MP3 files.</p>
+                    <ul class="features">
+                        <li>320kbps MP3 quality</li>
+                        <li>Album downloads</li>
+                        <li>Metadata included</li>
+                        <li>Playlist conversion</li>
+                    </ul>
+                    <button class="btn" onclick="openServiceModal('music')">
+                        <i class="fas fa-download"></i> Download Now
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Video Converter -->
+            <div class="service-card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-file-video"></i>
+                    </div>
+                    <h3 class="card-title">Video Converter Pro</h3>
+                </div>
+                <div class="card-content">
+                    <p class="card-description">Convert videos between formats with our powerful converter. Supports all popular formats.</p>
+                    <ul class="features">
+                        <li>MP4, AVI, MOV, MKV</li>
+                        <li>4K conversion</li>
+                        <li>Batch processing</li>
+                        <li>No quality loss</li>
+                    </ul>
+                    <button class="btn" onclick="openServiceModal('converter')">
+                        <i class="fas fa-exchange-alt"></i> Convert Now
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <h2 class="section-title">Our Stats</h2>
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number">500K+</div>
+                <div class="stat-label">Downloads</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">99.8%</div>
+                <div class="stat-label">Success Rate</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">24/7</div>
+                <div class="stat-label">Support</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">50+</div>
+                <div class="stat-label">Platforms</div>
+            </div>
+        </div>
+        
+        <h2 class="section-title">What Our Users Say</h2>
+        <div class="testimonials">
+            <div class="testimonial">
+                <div class="testimonial-header">
+                    <div class="testimonial-avatar">S</div>
+                    <div class="testimonial-name">Sarah Johnson</div>
+                </div>
+                <p class="testimonial-text">"The TikTok downloader is amazing! I can finally save my favorite videos without watermark. Service is super fast too!"</p>
+                <div class="testimonial-rating">
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                </div>
+            </div>
+            
+            <div class="testimonial">
+                <div class="testimonial-header">
+                    <div class="testimonial-avatar">M</div>
+                    <div class="testimonial-name">Michael Chen</div>
+                </div>
+                <p class="testimonial-text">"I've tried many YouTube downloaders, but this one is by far the best. The 4K quality option is perfect for my needs."</p>
+                <div class="testimonial-rating">
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                </div>
+            </div>
+            
+            <div class="testimonial">
+                <div class="testimonial-header">
+                    <div class="testimonial-avatar">A</div>
+                    <div class="testimonial-name">Alex Rodriguez</div>
+                </div>
+                <p class="testimonial-text">"The music downloader saved me so much time! I can now download entire playlists from Spotify with perfect metadata."</p>
+                <div class="testimonial-rating">
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star-half-alt"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- TikTok Modal -->
+    <div class="service-modal" id="tiktok-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title"><i class="fab fa-tiktok"></i> TikTok Video Downloader</h3>
+                <button class="close-modal" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="tiktok-url">TikTok Video URL</label>
+                    <input type="text" id="tiktok-url" placeholder="https://www.tiktok.com/@username/video/123456789">
+                </div>
+                <div class="form-group">
+                    <label>Quality Options</label>
+                    <div class="quality-options">
+                        <div class="quality-option selected">HD</div>
+                        <div class="quality-option">SD</div>
+                        <div class="quality-option">Audio Only</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn">
+                    <i class="fas fa-download"></i> Download Video
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- YouTube Modal -->
+    <div class="service-modal" id="youtube-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title"><i class="fab fa-youtube"></i> YouTube Video Downloader</h3>
+                <button class="close-modal" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="youtube-url">YouTube Video URL</label>
+                    <input type="text" id="youtube-url" placeholder="https://www.youtube.com/watch?v=abc123">
+                </div>
+                <div class="form-group">
+                    <label for="format">Download Format</label>
+                    <select id="format">
+                        <option value="mp4">MP4 Video</option>
+                        <option value="mp3">MP3 Audio</option>
+                        <option value="webm">WebM</option>
+                        <option value="m4a">M4A Audio</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Quality Options</label>
+                    <div class="quality-options">
+                        <div class="quality-option">1080p</div>
+                        <div class="quality-option selected">720p</div>
+                        <div class="quality-option">480p</div>
+                        <div class="quality-option">360p</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn">
+                    <i class="fas fa-download"></i> Download Now
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Instagram Modal -->
+    <div class="service-modal" id="instagram-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title"><i class="fab fa-instagram"></i> Instagram Downloader</h3>
+                <button class="close-modal" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="instagram-url">Instagram Post URL</label>
+                    <input type="text" id="instagram-url" placeholder="https://www.instagram.com/p/Abc123/">
+                </div>
+                <div class="form-group">
+                    <label>Content Type</label>
+                    <div class="quality-options">
+                        <div class="quality-option selected">Photo</div>
+                        <div class="quality-option">Video</div>
+                        <div class="quality-option">Reel</div>
+                        <div class="quality-option">Story</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn">
+                    <i class="fas fa-download"></i> Download Content
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <div class="social-links">
+            <a href="#"><i class="fab fa-facebook-f"></i></a>
+            <a href="#"><i class="fab fa-twitter"></i></a>
+            <a href="#"><i class="fab fa-instagram"></i></a>
+            <a href="#"><i class="fab fa-youtube"></i></a>
+        </div>
+        <p>&copy; 2023 1ai Entertainment Services. All rights reserved.</p>
+        <p>Premium digital entertainment solutions</p>
+    </footer>
+
+    <script>
+        // Function to open service modal
+        function openServiceModal(service) {
+            closeModal(); // Close any open modals
+            document.getElementById(`${service}-modal`).classList.add('active');
+        }
+        
+        // Function to close modal
+        function closeModal() {
+            document.querySelectorAll('.service-modal').forEach(modal => {
+                modal.classList.remove('active');
+            });
+        }
+        
+        // Close modal when clicking outside content
+        document.querySelectorAll('.service-modal').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
+        });
+        
+        // Quality option selection
+        document.querySelectorAll('.quality-option').forEach(option => {
+            option.addEventListener('click', function() {
+                // Remove selected class from siblings
+                this.parentElement.querySelectorAll('.quality-option').forEach(el => {
+                    el.classList.remove('selected');
+                });
+                // Add selected class to clicked element
+                this.classList.add('selected');
+            });
+        });
+        
+        // Simulate download button functionality
+        document.querySelectorAll('.btn').forEach(btn => {
+            if (btn.textContent.includes('Download')) {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    alert('Thank you for your request! Your download will begin shortly.\n\nNote: This is a demo interface. In a real application, this would initiate the download process.');
+                    closeModal();
+                });
+            }
+        });
+    </script>
+<script src="./assets/js/main.js"></script>
+</body>
+</html>
