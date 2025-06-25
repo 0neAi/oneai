@@ -213,11 +213,17 @@ app.get('/status', (req, res) => res.json({
 // ======================
 app.post('/register', async (req, res) => {
   try {
-    const { phone, email, password } = req.body;
-    email = email.toLowerCase().trim();
+    // Fix: Use new variable for normalized email
+    const { phone, email: rawEmail, password } = req.body;
+    const email = rawEmail.toLowerCase().trim();
     
     if (!phone || !email || !password) {
       return res.status(400).json({ success: false, message: 'All fields required' });
+    }
+
+    // Add phone duplicate check
+    if (await User.findOne({ phone })) {
+      return res.status(409).json({ success: false, message: 'Phone number already exists' });
     }
 
     if (await User.findOne({ email })) {
