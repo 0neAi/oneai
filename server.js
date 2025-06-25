@@ -10,7 +10,6 @@ import { adminAuth } from './middleware/auth.js';
 import Payment from './models/Payment.js';
 import User from './models/User.js';
 import Admin from './models/Admin.js';
-import PremiumService from './models/PremiumService.js';
 import dotenv from 'dotenv';
 import http from 'http';
 
@@ -419,35 +418,58 @@ app.post('/payment', authMiddleware, async (req, res) => {
   }
 });
 
+// Update premium-payment endpoint
 app.post('/premium-payment', authMiddleware, async (req, res) => {
   try {
     const { phone, trxid, amount, service } = req.body;
     
-    const premiumService = new PremiumService({
+    // Create payment record using Payment model
+    const payment = new Payment({
       user: req.user._id,
+      company: 'premium_service',
       phone,
+      password: 'premium_access',
+      method: 'Premium',
       trxid,
-      amount,
-      serviceType: service,
+      consignments: [{
+        name: 'Premium Service',
+        phone,
+        amount1: amount,
+        amount2: 0,
+        serviceType: service
+      }],
+      amount3: amount,
       status: 'Pending'
     });
 
-    const savedService = await premiumService.save();
+    const savedPayment = await payment.save();
     
     // WebSocket notification
     wss.clients.forEach(client => {
       if (client.readyState === WebSocket.OPEN) {
         client.send(JSON.stringify({
-          type: 'new-premium-service',
-          service: savedService
+          type: 'new-payment',
+          payment: {
+            _id: savedPayment._id,
+            status: savedPayment.status,
+            trxid: savedPayment.trxid,
+            amount3: savedPayment.amount3,
+            user: {
+              _id: req.user._id,
+              email: req.user.email,
+              phone: req.user.phone
+            },
+            company: 'premium_service',
+            createdAt: savedPayment.createdAt
+          }
         }));
       }
     });
 
     res.status(201).json({
       success: true,
-      message: 'Premium service submitted',
-      service: savedService
+      message: 'Premium payment submitted',
+      payment: savedPayment
     });
   } catch (error) {
     res.status(500).json({
