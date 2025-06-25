@@ -213,6 +213,7 @@ app.get('/status', (req, res) => res.json({
 app.post('/register', async (req, res) => {
   try {
     const { phone, email, password } = req.body;
+    email = email.toLowerCase().trim();
     
     if (!phone || !email || !password) {
       return res.status(400).json({ success: false, message: 'All fields required' });
@@ -258,6 +259,19 @@ app.post('/login', async (req, res) => {
     // Normalize email to lowercase
     const normalizedEmail = email.toLowerCase().trim();
     const user = await User.findOne({ email: normalizedEmail }).select('+password');
+        // Fallback to case-insensitive search
+    if (!user) {
+      user = await User.findOne({ 
+        email: { $regex: new RegExp('^' + normalizedEmail + '$', 'i') } 
+      }).select('+password');
+      
+      // Update to normalized email if found
+      if (user) {
+        user.email = normalizedEmail;
+        await user.save();
+      }
+    }
+  
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ 
