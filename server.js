@@ -251,10 +251,13 @@ app.post('/register', async (req, res) => {
 // ======================
 // User Login Route
 // ======================
+// server.js - Updated Login Route
 app.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await User.findOne({ email }).select('+password');
+    // Normalize email to lowercase
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await User.findOne({ email: normalizedEmail }).select('+password');
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ 
@@ -280,6 +283,7 @@ app.post('/login', async (req, res) => {
     });
 
   } catch (error) {
+    console.error('Login error:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Server error during login' 
