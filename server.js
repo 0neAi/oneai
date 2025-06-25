@@ -716,11 +716,6 @@ app.get('/admin/users', adminAuth, async (req, res) => {
 app.get('/validate', authMiddleware, async (req, res) => {
   res.json({ success: true });
 });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Validation failed' });
-  }
-});
-
 // ======================
 // Request Logging
 // ======================
