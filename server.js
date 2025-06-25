@@ -43,9 +43,9 @@ app.use(helmet({
 }));
 
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production'
-    ? ['https://0neai.github.io', 'https://oneai-wjox.onrender.com']
-    : '*',
+origin: process.env.NODE_ENV === 'production'
+  ? ['https://0neai.github.io', 'https://oneai-wjox.onrender.com', 'https://0neai.github.io/oneai']
+  : '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-User-ID'],
   credentials: true
@@ -84,7 +84,8 @@ mongoose.connection.on('connected', () => {
 
 mongoose.connection.on('disconnected', () => {
   isReady = false;
-  console.log('⚠️  MongoDB disconnected');
+  console.log('⚠️  MongoDB disconnected - attempting to reconnect...');
+  setTimeout(() => mongoose.connect(process.env.MONGODB_URI), 5000);
 });
 
 mongoose.connection.on('error', err => {
@@ -265,11 +266,6 @@ app.post('/login', async (req, res) => {
       user = await User.findOne({ 
         email: { $regex: new RegExp('^' + normalizedEmail + '$', 'i') } 
       }).select('+password');
-      
-      if (user) {
-        user.email = normalizedEmail;
-        await user.save();
-      }
     }
   
 
@@ -718,12 +714,8 @@ app.get('/admin/users', adminAuth, async (req, res) => {
 // User Validation Route
 // ======================
 app.get('/validate', authMiddleware, async (req, res) => {
-  try {
-    const admin = await Admin.findOne({ email: req.user.email });
-    res.json({ 
-      success: true,
-      isAdmin: !!admin
-    });
+  res.json({ success: true });
+});
   } catch (error) {
     res.status(500).json({ success: false, message: 'Validation failed' });
   }
