@@ -273,7 +273,6 @@ app.post('/login', async (req, res) => {
         email: { $regex: new RegExp('^' + normalizedEmail + '$', 'i') } 
       }).select('+password');
     }
-  
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ 
