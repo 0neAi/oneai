@@ -216,6 +216,13 @@ app.post('/register', async (req, res) => {
     // Fix: Use new variable for normalized email
     const { phone, email: rawEmail, password } = req.body;
     const email = rawEmail.toLowerCase().trim();
+        // Add password validation
+    if (password.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 8 characters'
+      });
+    }
     
     if (!phone || !email || !password) {
       return res.status(400).json({ success: false, message: 'All fields required' });
@@ -264,17 +271,19 @@ app.post('/login', async (req, res) => {
     const { email, password } = req.body;
     const normalizedEmail = email.toLowerCase().trim();
     
-    // Change from const to let
-    let user = await User.findOne({ email: normalizedEmail }).select('+password');
+    const user = await User.findOne({ email: normalizedEmail }).select('+password');
     
-    // Fallback search now works
     if (!user) {
-      user = await User.findOne({ 
-        email: { $regex: new RegExp('^' + normalizedEmail + '$', 'i') } 
-      }).select('+password');
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Invalid credentials' 
+      });
     }
 
-    if (!user || !(await bcrypt.compare(password, user.password))) {
+    // Use the comparePassword method
+    const isMatch = await user.comparePassword(password);
+    
+    if (!isMatch) {
       return res.status(401).json({ 
         success: false, 
         message: 'Invalid credentials' 
