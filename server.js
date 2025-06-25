@@ -250,22 +250,22 @@ app.post('/register', async (req, res) => {
 });
 
 // ======================
-// User Login Route
+// User Login Route (Fixed)
 // ======================
-// server.js - Updated Login Route
 app.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    // Normalize email to lowercase
     const normalizedEmail = email.toLowerCase().trim();
-    const user = await User.findOne({ email: normalizedEmail }).select('+password');
-        // Fallback to case-insensitive search
+    
+    // Change from const to let
+    let user = await User.findOne({ email: normalizedEmail }).select('+password');
+    
+    // Fallback search now works
     if (!user) {
       user = await User.findOne({ 
         email: { $regex: new RegExp('^' + normalizedEmail + '$', 'i') } 
       }).select('+password');
       
-      // Update to normalized email if found
       if (user) {
         user.email = normalizedEmail;
         await user.save();
