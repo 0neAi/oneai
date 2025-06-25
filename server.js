@@ -293,28 +293,6 @@ app.post('/login', async (req, res) => {
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { 
       expiresIn: '1h' 
     });
-
-    // Check if user is admin
-    const isAdmin = await Admin.exists({ email: user.email });
-
-    res.json({
-      success: true,
-      token,
-      userID: user._id,
-      expiresIn: Date.now() + 3600000,
-      isAdmin,
-      user: { phone: user.phone, email: user.email }
-    });
-
-  } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Server error during login' 
-    });
-  }
-});
-
 // ======================
 // Payment Processing
 // ======================
