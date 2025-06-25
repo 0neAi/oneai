@@ -479,10 +479,10 @@ const paymentState = {
     unreadNotifications: 0
 };
 
-// Notification sound - moved to top level
+// Notification sound
 const notificationSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-alert-quick-chime-766.mp3');
 
-// Functions moved to top level scope
+// Functions
 function connectWebSocket() {
     if (paymentState.ws) paymentState.ws.close();
     
@@ -557,7 +557,6 @@ function showPaymentNotification(payment) {
     badge.classList.remove('hidden');
 }
 
-
 function showPaymentPopup(payment) {
     const popup = document.getElementById('payment-popup');
     document.getElementById('popup-trxid').textContent = payment.trxid;
@@ -619,28 +618,47 @@ function renderPayment(payment) {
     
     let companyCell;
     if (payment.company === 'premium_service') {
+        // Premium service with crown icon
         companyCell = `<td><i class="fas fa-crown premium-icon"></i> Premium Service</td>`;
         row.classList.add('premium-payment');
     } else {
         companyCell = `<td>${formatCompanyName(payment.company) || 'N/A'}</td>`;
     }
     
-    row.innerHTML = `
-        ${companyCell}
-        <td><code>${payment.trxid}</code></td>
-        <td>৳${(payment.amount3 || 0).toFixed(2)}</td>
-        <td><span class="status ${(payment.status || 'pending').toLowerCase()}">${payment.status || 'Pending'}</span></td>
-        <td class="countdown" data-expiry="${expiryTime}">Calculating...</td>
-        <td>
-            <button class="action-btn small" onclick="viewPaymentDetails('${payment.trxid}')">
-                <i class="fas fa-eye"></i> View
-            </button>
-        </td>
-    `;
+    // Special handling for premium services
+    if (payment.company === 'premium_service') {
+        row.innerHTML = `
+            ${companyCell}
+            <td><code>${payment.trxid}</code></td>
+            <td>৳${(payment.amount3 || 0).toFixed(2)}</td>
+            <td><span class="status ${(payment.status || 'pending').toLowerCase()}">${payment.status || 'Pending'}</span></td>
+            <td>Premium service</td>
+            <td>
+                <button class="action-btn small" onclick="viewPaymentDetails('${payment.trxid}')">
+                    <i class="fas fa-eye"></i> View
+                </button>
+            </td>
+        `;
+    } else {
+        // Regular payment row
+        row.innerHTML = `
+            ${companyCell}
+            <td><code>${payment.trxid}</code></td>
+            <td>৳${(payment.amount3 || 0).toFixed(2)}</td>
+            <td><span class="status ${(payment.status || 'pending').toLowerCase()}">${payment.status || 'Pending'}</span></td>
+            <td class="countdown" data-expiry="${expiryTime}">Calculating...</td>
+            <td>
+                <button class="action-btn small" onclick="viewPaymentDetails('${payment.trxid}')">
+                    <i class="fas fa-eye"></i> View
+                </button>
+            </td>
+        `;
+    }
     
     tbody.appendChild(row);
     
-    if (!payment.status || payment.status === 'Pending') {
+    // Only start countdown for non-premium pending payments
+    if (payment.company !== 'premium_service' && (!payment.status || payment.status === 'Pending')) {
         startCountdown(row.querySelector('.countdown'), payment.trxid);
     }
 }
@@ -659,15 +677,18 @@ function updatePaymentRow(row, payment) {
     
     const countdownCell = row.querySelector('.countdown');
     
-    if (payment.status !== 'Pending') {
-        if (countdownCell) {
-            countdownCell.innerHTML = payment.status;
-            countdownCell.classList.add('expired');
-        }
-        
-        if (paymentState.paymentTimers[payment.trxid]) {
-            clearInterval(paymentState.paymentTimers[payment.trxid]);
-            delete paymentState.paymentTimers[payment.trxid];
+    // Only update countdown for non-premium payments
+    if (payment.company !== 'premium_service') {
+        if (payment.status !== 'Pending') {
+            if (countdownCell) {
+                countdownCell.innerHTML = payment.status;
+                countdownCell.classList.add('expired');
+            }
+            
+            if (paymentState.paymentTimers[payment.trxid]) {
+                clearInterval(paymentState.paymentTimers[payment.trxid]);
+                delete paymentState.paymentTimers[payment.trxid];
+            }
         }
     }
 }
