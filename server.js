@@ -280,8 +280,8 @@ app.post('/login', async (req, res) => {
       });
     }
 
-    // Use the comparePassword method
-    const isMatch = await user.comparePassword(password);
+    // Fixed: Use bcrypt directly
+    const isMatch = await bcrypt.compare(password, user.password);
     
     if (!isMatch) {
       return res.status(401).json({ 
@@ -293,6 +293,22 @@ app.post('/login', async (req, res) => {
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { 
       expiresIn: '1h' 
     });
+
+    // Add response that was missing
+    res.json({
+      success: true,
+      token,
+      userID: user._id,
+      expiresIn: Date.now() + 3600000
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during login'
+    });
+  }
+});
 // ======================
 // Payment Processing
 // ======================
