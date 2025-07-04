@@ -21,18 +21,6 @@
             position: relative;
         }
         
-        /* Matrix background */
-        #matrix-bg {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            opacity: 0.15;
-            pointer-events: none;
-        }
-        
         /* Header styling */
         header {
             text-align: center;
@@ -256,30 +244,6 @@
             border: 1px solid rgba(255, 65, 65, 0.3);
         }
         
-        /* Status bar */
-        #status-bar {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background: rgba(0, 20, 0, 0.95);
-            border-top: 1px solid rgba(0, 255, 80, 0.4);
-            color: #00FF41;
-            padding: 10px 15px;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            z-index: 100;
-            display: flex;
-            align-items: center;
-            overflow: hidden;
-        }
-        
-        #status-bar::before {
-            content: ">";
-            margin-right: 8px;
-            color: #00FF41;
-        }
-        
         /* Footer */
         footer {
             text-align: center;
@@ -319,9 +283,6 @@
     </style>
 </head>
 <body>
-    <!-- Matrix Background Canvas -->
-    <canvas id="matrix-bg"></canvas>
-    
     <!-- Header -->
     <header>
         <h1>Welcome To <span style="color: #00FF41">1AI</span></h1>
@@ -407,75 +368,13 @@
         </div>
     </div>
     
-    <!-- Status Bar -->
-    <div id="status-bar">System initialized and ready for secure connections...</div>
-    
     <!-- Footer -->
     <footer>
         <p>&copy; 2023 1AI Technologies. All rights reserved. | Secured with Advanced AI Encryption</p>
     </footer>
 
     <script>
-        // Matrix background animation
-        function initMatrix() {
-            const canvas = document.getElementById('matrix-bg');
-            const ctx = canvas.getContext('2d');
-            
-            // Set canvas dimensions
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            
-            // Characters for the matrix effect
-            const chars = "01";
-            const fontSize = 16;
-            const columns = canvas.width / fontSize;
-            
-            // Drops for each column
-            const drops = [];
-            for (let i = 0; i < columns; i++) {
-                drops[i] = Math.floor(Math.random() * -100);
-            }
-            
-            // Draw function
-            function draw() {
-                // Semi-transparent black to create fading effect
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.04)';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                
-                ctx.fillStyle = '#00FF41';
-                ctx.font = `${fontSize}px monospace`;
-                
-                for (let i = 0; i < drops.length; i++) {
-                    const text = chars.charAt(Math.floor(Math.random() * chars.length));
-                    
-                    // Draw character
-                    ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-                    
-                    // Reset drop if it reaches the bottom
-                    if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
-                        drops[i] = 0;
-                    }
-                    
-                    // Move drop down
-                    drops[i]++;
-                }
-            }
-            
-            // Animation loop
-            setInterval(draw, 35);
-            
-            // Handle window resize
-            window.addEventListener('resize', () => {
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight;
-            });
-        }
-        
-        // Form validation and submission
         document.addEventListener('DOMContentLoaded', function() {
-            // Initialize matrix background
-            initMatrix();
-            
             // Check for existing session
             const token = localStorage.getItem('authToken');
             const userID = localStorage.getItem('userID');
@@ -567,5 +466,7 @@
             messageElement.className = `auth-message ${type}`;
         }
     </script>
+    
+    <script src="hackeranimation.js"></script>
 </body>
 </html>
