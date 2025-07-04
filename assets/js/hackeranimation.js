@@ -1,9 +1,8 @@
 // hacker-animation.js
 (function() {
-    // Check if we're on a GitHub Pages domain
     if (window.location.hostname.includes('github.io')) {
         document.addEventListener('DOMContentLoaded', function() {
-            // Create the main container for all hacker effects
+            // Create main container with professional dark theme
             const hackerContainer = document.createElement('div');
             hackerContainer.id = 'hacker-animation';
             hackerContainer.style.position = 'fixed';
@@ -14,215 +13,222 @@
             hackerContainer.style.pointerEvents = 'none';
             hackerContainer.style.zIndex = '9999';
             hackerContainer.style.overflow = 'hidden';
+            hackerContainer.style.background = 'radial-gradient(ellipse at center, #0a0a0a 0%, #000000 100%)';
             document.body.appendChild(hackerContainer);
 
-            // Add hacker background (dark with subtle grid)
-            const bgPattern = document.createElement('div');
-            bgPattern.style.position = 'absolute';
-            bgPattern.style.width = '100%';
-            bgPattern.style.height = '100%';
-            bgPattern.style.background = 'radial-gradient(circle, rgba(0,30,0,0.2) 1px, rgba(0,10,0,0.8) 1px)';
-            bgPattern.style.backgroundSize = '20px 20px';
-            bgPattern.style.opacity = '0.6';
-            hackerContainer.appendChild(bgPattern);
+            // Add subtle grid pattern (removed dots)
+            const gridPattern = document.createElement('div');
+            gridPattern.style.position = 'absolute';
+            gridPattern.style.width = '100%';
+            gridPattern.style.height = '100%';
+            gridPattern.style.background = 'linear-gradient(rgba(0, 255, 65, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 255, 65, 0.03) 1px, transparent 1px)';
+            gridPattern.style.backgroundSize = '20px 20px';
+            hackerContainer.appendChild(gridPattern);
 
-            // Create the matrix rain effect (enhanced)
+            // Create Parrot OS-style matrix rain
             function createMatrixRain() {
-                const chars = "01アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズブヅプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッンABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-                const fontSize = 16;
+                const chars = "01アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズブヅプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッン";
+                const fontSize = 14;
+                const lineHeight = fontSize * 1.2;
                 const columns = Math.floor(window.innerWidth / fontSize);
+                const rows = Math.floor(window.innerHeight / lineHeight);
                 const drops = [];
                 
-                // Create multiple layers for depth effect
-                for (let layer = 0; layer < 3; layer++) {
-                    const layerDrops = [];
-                    for (let i = 0; i < columns; i++) {
-                        layerDrops[i] = Math.floor(Math.random() * -100);
-                    }
-                    drops.push(layerDrops);
+                // Initialize drops
+                for (let i = 0; i < columns; i++) {
+                    drops[i] = {
+                        position: Math.floor(Math.random() * -rows),
+                        speed: 0.5 + Math.random() * 2,
+                        length: 5 + Math.floor(Math.random() * 10)
+                    };
                 }
 
+                // Create canvas
+                const matrixCanvas = document.createElement('canvas');
+                matrixCanvas.width = window.innerWidth;
+                matrixCanvas.height = window.innerHeight;
+                matrixCanvas.style.position = 'absolute';
+                matrixCanvas.style.top = '0';
+                matrixCanvas.style.left = '0';
+                hackerContainer.appendChild(matrixCanvas);
+                
+                const ctx = matrixCanvas.getContext('2d');
+                ctx.font = `bold ${fontSize}px 'Courier New', monospace`;
+
                 function draw() {
-                    const matrixCanvas = document.createElement('canvas');
-                    matrixCanvas.width = window.innerWidth;
-                    matrixCanvas.height = window.innerHeight;
-                    matrixCanvas.style.position = 'absolute';
-                    matrixCanvas.style.top = '0';
-                    matrixCanvas.style.left = '0';
-                    matrixCanvas.style.opacity = '0.8';
-                    hackerContainer.appendChild(matrixCanvas);
+                    // Clear with slight fade for trail effect
+                    ctx.fillStyle = 'rgba(0, 10, 0, 0.05)';
+                    ctx.fillRect(0, 0, matrixCanvas.width, matrixCanvas.height);
                     
-                    const ctx = matrixCanvas.getContext('2d');
-                    ctx.font = `bold ${fontSize}px monospace`;
-                    
-                    // Draw each layer with different speeds and opacities
-                    for (let layer = 0; layer < drops.length; layer++) {
-                        const layerOpacity = 0.3 + (layer * 0.3);
-                        const layerSpeed = 1 + layer;
-                        const layerColor = `rgba(0, ${255 - (layer * 80)}, ${50 + (layer * 50)}, ${layerOpacity})`;
+                    // Draw each column
+                    for (let i = 0; i < drops.length; i++) {
+                        const x = i * fontSize;
                         
-                        ctx.fillStyle = layerColor;
+                        // Draw head character (bright)
+                        const headY = drops[i].position * lineHeight;
+                        if (headY >= 0 && headY < matrixCanvas.height) {
+                            ctx.fillStyle = '#00FF41';
+                            ctx.fillText(chars.charAt(Math.floor(Math.random() * chars.length)), x, headY);
+                        }
                         
-                        for (let i = 0; i < drops[layer].length; i++) {
-                            const text = chars.charAt(Math.floor(Math.random() * chars.length));
-                            const x = i * fontSize;
-                            const y = drops[layer][i] * fontSize;
-                            
-                            // Draw character with subtle glow
-                            ctx.shadowBlur = 5;
-                            ctx.shadowColor = layerColor;
-                            ctx.fillText(text, x, y);
-                            ctx.shadowBlur = 0;
-                            
-                            if (y > window.innerHeight && Math.random() > 0.975) {
-                                drops[layer][i] = 0;
+                        // Draw tail characters (fading)
+                        for (let j = 1; j < drops[i].length; j++) {
+                            const tailY = (drops[i].position - j) * lineHeight;
+                            if (tailY >= 0 && tailY < matrixCanvas.height) {
+                                const opacity = 1 - (j / drops[i].length);
+                                ctx.fillStyle = `rgba(0, 255, 65, ${opacity})`;
+                                ctx.fillText(chars.charAt(Math.floor(Math.random() * chars.length)), x, tailY);
                             }
-                            drops[layer][i] += layerSpeed;
+                        }
+                        
+                        // Move drop down
+                        drops[i].position += drops[i].speed;
+                        
+                        // Reset drop if it goes off screen
+                        if (drops[i].position > rows + drops[i].length) {
+                            drops[i].position = -drops[i].length;
+                            drops[i].speed = 0.5 + Math.random() * 2;
+                            drops[i].length = 5 + Math.floor(Math.random() * 10);
                         }
                     }
                     
-                    setTimeout(() => {
-                        matrixCanvas.remove();
-                        requestAnimationFrame(draw);
-                    }, 50);
+                    requestAnimationFrame(draw);
                 }
                 
                 draw();
             }
 
-            // Create terminal-like command execution effect (improved)
+            // Create Parrot OS-style boot terminal
             function createTerminalEffect() {
                 const terminal = document.createElement('div');
                 terminal.style.position = 'fixed';
                 terminal.style.bottom = '0';
                 terminal.style.left = '0';
                 terminal.style.width = '100%';
-                terminal.style.height = '100px';
-                terminal.style.backgroundColor = 'rgba(0, 10, 0, 0.7)';
-                terminal.style.borderTop = '1px solid rgba(0, 255, 65, 0.5)';
+                terminal.style.backgroundColor = 'rgba(0, 10, 0, 0.85)';
+                terminal.style.borderTop = '1px solid rgba(0, 255, 65, 0.3)';
                 terminal.style.fontFamily = "'Courier New', monospace";
                 terminal.style.fontSize = '14px';
                 terminal.style.color = '#00FF41';
                 terminal.style.overflow = 'hidden';
-                terminal.style.padding = '10px';
+                terminal.style.padding = '10px 15px';
                 terminal.style.boxSizing = 'border-box';
-                terminal.style.display = 'flex';
-                terminal.style.flexDirection = 'column';
-                terminal.style.justifyContent = 'flex-end';
+                terminal.style.lineHeight = '1.5';
                 hackerContainer.appendChild(terminal);
                 
-                // Add scanlines overlay for CRT effect
+                // Add subtle scanlines
                 const scanlines = document.createElement('div');
                 scanlines.style.position = 'absolute';
                 scanlines.style.top = '0';
                 scanlines.style.left = '0';
                 scanlines.style.width = '100%';
                 scanlines.style.height = '100%';
-                scanlines.style.background = 'linear-gradient(rgba(0, 255, 65, 0.06) 1px, transparent 1px)';
+                scanlines.style.background = 'linear-gradient(rgba(0, 255, 65, 0.05) 1px, transparent 1px)';
                 scanlines.style.backgroundSize = '100% 2px';
                 scanlines.style.pointerEvents = 'none';
                 terminal.appendChild(scanlines);
                 
                 const commands = [
-                    "> Initializing systems...",
-                    "> Establishing secure connection...",
-                    "> Bypassing security protocols...",
-                    "> Accessing mainframe...",
-                    "> Decrypting data streams...",
-                    "> Injecting payload...",
-                    "> Overriding firewalls...",
-                    "> Compromising target...",
-                    "> Operation successful!"
+                    "[✓] Initializing core systems",
+                    "[✓] Loading security protocols",
+                    "[✓] Establishing encrypted connection",
+                    "[✓] Verifying system integrity",
+                    "[✓] Bypassing firewalls",
+                    "[✓] Accessing secure channels",
+                    "[✓] Authenticating credentials",
+                    "[✓] Connection established"
                 ];
                 
+                const delays = [800, 600, 700, 500, 900, 800, 600, 1200];
                 let currentCommand = 0;
-                let terminalText = "";
-                const commandElement = document.createElement('div');
-                commandElement.style.marginBottom = '5px';
-                terminal.appendChild(commandElement);
                 
                 function showNextCommand() {
                     if (currentCommand < commands.length) {
-                        commandElement.textContent = commands[currentCommand];
-                        commandElement.className = 'terminal-line';
+                        const line = document.createElement('div');
+                        line.style.display = 'flex';
+                        line.style.alignItems = 'center';
                         
-                        // Add typing effect
-                        let i = 0;
-                        const typing = setInterval(() => {
-                            commandElement.textContent = commands[currentCommand].substring(0, i);
-                            i++;
-                            if (i > commands[currentCommand].length) {
-                                clearInterval(typing);
-                                setTimeout(showNextCommand, 1000 + Math.random() * 2000);
-                            }
-                        }, 50 + Math.random() * 50);
+                        // Create status indicator
+                        const status = document.createElement('span');
+                        status.textContent = commands[currentCommand].substring(0, 4);
+                        status.style.marginRight = '8px';
+                        status.style.color = commands[currentCommand].includes('✓') ? '#00FF41' : '#FF5555';
+                        
+                        // Create command text
+                        const text = document.createElement('span');
+                        text.textContent = commands[currentCommand].substring(5);
+                        
+                        line.appendChild(status);
+                        line.appendChild(text);
+                        terminal.appendChild(line);
+                        
+                        // Auto-scroll to bottom
+                        terminal.scrollTop = terminal.scrollHeight;
                         
                         currentCommand++;
+                        setTimeout(showNextCommand, delays[currentCommand - 1]);
                     } else {
-                        currentCommand = 0;
-                        setTimeout(showNextCommand, 1000);
+                        // After all commands, show blinking prompt
+                        const prompt = document.createElement('div');
+                        prompt.style.display = 'flex';
+                        prompt.style.alignItems = 'center';
+                        prompt.style.marginTop = '10px';
+                        
+                        const promptText = document.createElement('span');
+                        promptText.textContent = 'root@parrot:~# _';
+                        promptText.className = 'terminal-prompt';
+                        
+                        prompt.appendChild(promptText);
+                        terminal.appendChild(prompt);
+                        
+                        // Blinking cursor effect
+                        setInterval(() => {
+                            promptText.textContent = promptText.textContent.endsWith('_') 
+                                ? promptText.textContent.slice(0, -1) 
+                                : promptText.textContent + '_';
+                        }, 500);
                     }
                 }
                 
-                // Start showing commands
-                setTimeout(showNextCommand, 1000);
-                
-                // Add blinking cursor
-                const cursor = document.createElement('span');
-                cursor.textContent = '_';
-                cursor.className = 'terminal-cursor';
-                commandElement.appendChild(cursor);
-                
-                setInterval(() => {
-                    cursor.style.visibility = cursor.style.visibility === 'hidden' ? 'visible' : 'hidden';
-                }, 500);
+                // Start showing commands after a brief delay
+                setTimeout(showNextCommand, 800);
             }
 
-            // Add occasional glitch effects (enhanced)
+            // Add subtle glitch effects
             function addGlitchEffects() {
-                // Add glitch animation style
                 const style = document.createElement('style');
                 style.textContent = `
                     @keyframes glitch {
-                        0% { transform: translate(0); clip-path: inset(0 0 0 0); }
-                        20% { transform: translate(-2px, 2px); clip-path: inset(10% 0 30% 0); }
-                        40% { transform: translate(2px, -2px); clip-path: inset(20% 0 10% 0); }
-                        60% { transform: translate(-2px, 2px); clip-path: inset(40% 0 20% 0); }
-                        80% { transform: translate(2px, -2px); clip-path: inset(10% 0 30% 0); }
-                        100% { transform: translate(0); clip-path: inset(0 0 0 0); }
+                        0% { transform: translate(0); }
+                        20% { transform: translate(-1px, 1px); }
+                        40% { transform: translate(1px, -1px); }
+                        60% { transform: translate(-1px, 1px); }
+                        80% { transform: translate(1px, -1px); }
+                        100% { transform: translate(0); }
                     }
-                    @keyframes flicker {
-                        0%, 19.999%, 22%, 62.999%, 64%, 64.999%, 70%, 100% { opacity: 1; }
-                        20%, 21.999%, 63%, 63.999%, 65%, 69.999% { opacity: 0.4; }
+                    .terminal-prompt {
+                        animation: glitch 0.1s linear infinite;
+                        animation-play-state: paused;
+                    }
+                    .terminal-prompt:hover {
+                        animation-play-state: running;
                     }
                 `;
                 document.head.appendChild(style);
-                
-                setInterval(() => {
-                    if (Math.random() > 0.9) {
-                        const glitch = document.createElement('div');
-                        glitch.style.position = 'fixed';
-                        glitch.style.top = '0';
-                        glitch.style.left = '0';
-                        glitch.style.width = '100%';
-                        glitch.style.height = '100%';
-                        glitch.style.background = 'rgba(0,255,65,0.05)';
-                        glitch.style.zIndex = '10000';
-                        glitch.style.pointerEvents = 'none';
-                        glitch.style.animation = 'glitch 0.3s linear';
-                        document.body.appendChild(glitch);
-                        
-                        setTimeout(() => {
-                            glitch.remove();
-                        }, 300);
-                    }
-                }, 3000);
             }
 
             // Initialize all effects
             createMatrixRain();
             createTerminalEffect();
             addGlitchEffects();
+            
+            // Adjust terminal height based on content
+            setTimeout(() => {
+                const terminal = document.querySelector('#hacker-animation > div:last-child');
+                if (terminal) {
+                    terminal.style.height = `${terminal.scrollHeight + 20}px`;
+                }
+            }, 500);
         });
     }
 })();
