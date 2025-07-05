@@ -1,1 +1,489 @@
-adb shell am start -n com.pathao.agent/.MainActivity\nfrida -U -F --codeshare ivan-sincek/android-ssl-pinning-bypass-2
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>1AI - Secure Registration</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="./assets/js/hackeranimation.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: #000;
+            color: #00FF41;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+        
+        /* Header styling */
+        header {
+            text-align: center;
+            padding: 30px 20px;
+            position: relative;
+            z-index: 10;
+        }
+        
+        header h1 {
+            font-size: 3.2rem;
+            margin-bottom: 15px;
+            text-shadow: 0 0 10px rgba(0, 255, 65, 0.7);
+            letter-spacing: 2px;
+        }
+        
+        header p {
+            font-size: 1.4rem;
+            max-width: 700px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        
+        header a {
+            color: #00FF41;
+            text-decoration: none;
+            border-bottom: 1px solid #00FF41;
+            transition: all 0.3s;
+        }
+        
+        header a:hover {
+            text-shadow: 0 0 10px rgba(0, 255, 65, 0.9);
+            border-bottom-color: transparent;
+        }
+        
+        /* Main content container */
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 40px;
+            padding: 20px;
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+        
+        /* Form styling */
+        .form-container {
+            background: rgba(5, 15, 5, 0.85);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 65, 0.3);
+            border-radius: 12px;
+            padding: 30px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 0 30px rgba(0, 255, 65, 0.1);
+            position: relative;
+            z-index: 10;
+        }
+        
+        .form-container h2 {
+            font-size: 2.2rem;
+            margin-bottom: 15px;
+            text-align: center;
+            color: #00FF41;
+            text-shadow: 0 0 5px rgba(0, 255, 65, 0.5);
+        }
+        
+        .form-container p {
+            font-size: 1.1rem;
+            margin-bottom: 25px;
+            text-align: center;
+            line-height: 1.5;
+            color: #aaffaa;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #aaffaa;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid rgba(0, 255, 65, 0.3);
+            background: rgba(0, 10, 0, 0.5);
+            border-radius: 6px;
+            color: #00FF41;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #00FF41;
+            box-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
+        }
+        
+        .form-group input::placeholder {
+            color: #66aa66;
+        }
+        
+        button[type="submit"] {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(to right, #006600, #00AA00);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        
+        button[type="submit"]:hover {
+            background: linear-gradient(to right, #00AA00, #00FF00);
+            box-shadow: 0 0 15px rgba(0, 255, 65, 0.4);
+        }
+        
+        .login-btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            background: rgba(0, 40, 0, 0.7);
+            border: 1px solid rgba(0, 255, 65, 0.3);
+            border-radius: 6px;
+            color: #00FF41;
+            font-size: 1.1rem;
+            font-weight: 600;
+            text-align: center;
+            text-decoration: none;
+            transition: all 0.3s;
+            margin-top: 20px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        
+        .login-btn:hover {
+            background: rgba(0, 60, 0, 0.7);
+            border-color: #00FF41;
+            box-shadow: 0 0 15px rgba(0, 255, 65, 0.3);
+        }
+        
+        /* Features section */
+        .features {
+            background: rgba(5, 15, 5, 0.85);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 65, 0.3);
+            border-radius: 12px;
+            padding: 30px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 0 30px rgba(0, 255, 65, 0.1);
+            position: relative;
+            z-index: 10;
+        }
+        
+        .features h3 {
+            font-size: 1.8rem;
+            margin-bottom: 25px;
+            text-align: center;
+            color: #00FF41;
+            text-shadow: 0 0 5px rgba(0, 255, 65, 0.5);
+        }
+        
+        .feature {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 25px;
+        }
+        
+        .feature-icon {
+            font-size: 1.8rem;
+            color: #00FF41;
+            margin-right: 15px;
+            min-width: 40px;
+            text-align: center;
+        }
+        
+        .feature-content h4 {
+            font-size: 1.3rem;
+            margin-bottom: 8px;
+            color: #aaffaa;
+        }
+        
+        .feature-content p {
+            color: #88cc88;
+            line-height: 1.6;
+        }
+        
+        /* Auth message styling */
+        .auth-message {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 6px;
+            display: none;
+            font-weight: 500;
+            text-align: center;
+        }
+        
+        .auth-message.success {
+            background-color: rgba(0, 80, 0, 0.5);
+            color: #aaffaa;
+            display: block;
+            border: 1px solid rgba(0, 255, 65, 0.3);
+        }
+        
+        .auth-message.error {
+            background-color: rgba(80, 0, 0, 0.5);
+            color: #ffaaaa;
+            display: block;
+            border: 1px solid rgba(255, 65, 65, 0.3);
+        }
+        
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 20px;
+            margin-top: 40px;
+            color: #66aa66;
+            font-size: 0.9rem;
+            position: relative;
+            z-index: 10;
+        }
+        
+        /* Responsive design */
+        @media (max-width: 900px) {
+            .container {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .form-container, .features {
+                max-width: 100%;
+            }
+        }
+        
+        @media (max-width: 600px) {
+            header h1 {
+                font-size: 2.5rem;
+            }
+            
+            header p {
+                font-size: 1.1rem;
+            }
+            
+            .form-container h2 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <h1>Welcome To <span style="color: #00FF41">1AI</span></h1>
+        <p>We Provide <strong>Secured AI Services</strong> With Premium Quality<br>
+        by <a href="">One1AI Technologies</a></p>
+    </header>
+    
+    <!-- Main Content -->
+    <div class="container">
+        <div class="form-container">
+            <h2>Secure Registration</h2>
+            <p>রেজিস্ট্রেশন করতে আপনার সঠিক তথ্য দিন (অপরিবর্তনযোগ্য)</p>
+            
+            <form id="registerForm">
+                <div class="form-group">
+                    <label for="phone"><i class="fas fa-phone"></i> Phone Number</label>
+                    <input type="tel" id="phone" placeholder="01XXXXXXXXX" required 
+                           pattern="01[3-9]\d{8}" title="11-digit Bangladeshi phone number starting with 013-019">
+                </div>
+                
+                <div class="form-group">
+                    <label for="email"><i class="fas fa-envelope"></i> Email Address</label>
+                    <input type="email" id="email" placeholder="your.email@example.com" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password"><i class="fas fa-lock"></i> Password</label>
+                    <input type="password" id="password" placeholder="Minimum 8 characters" required minlength="8">
+                </div>
+                
+                <button type="submit">Register Securely</button>
+                
+                <a href="#" class="login-btn">
+                    <i class="fas fa-sign-in-alt"></i> Already Have an Account? Login Now
+                </a>
+            </form>
+            
+            <div id="message" class="auth-message"></div>
+        </div>
+        
+        <div class="features">
+            <h3>Why Choose 1AI?</h3>
+            
+            <div class="feature">
+                <div class="feature-icon">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <div class="feature-content">
+                    <h4>Military-Grade Security</h4>
+                    <p>End-to-end encryption and advanced security protocols protect your data at all times.</p>
+                </div>
+            </div>
+                            <div class="feature">
+                <div class="feature-icon">
+                    <i class="fas fa-headset"></i>
+                </div>
+                <div class="feature-content">
+                    <h4>Our Services</h4>
+                    <p>Android Remote Control, Location Tracking, Otp Bypass, Price Manipulation etc...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+            
+            <div class="feature">
+                <div class="feature-icon">
+                    <i class="fas fa-bolt"></i>
+                </div>
+                <div class="feature-content">
+                    <h4>Lightning Fast Processing</h4>
+                    <p>Our AI algorithms process requests in milliseconds for real-time performance.</p>
+                </div>
+            </div>
+            
+            <div class="feature">
+                <div class="feature-icon">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="feature-content">
+                    <h4>Advanced AI Technology</h4>
+                    <p>Powered by cutting-edge machine learning models trained on massive datasets.</p>
+                </div>
+            </div>
+            
+            <div class="feature">
+                <div class="feature-icon">
+                    <i class="fas fa-headset"></i>
+                </div>
+                <div class="feature-content">
+                    <h4>24/7 Premium Support</h4>
+                    <p>Our expert team is available around the clock to assist you with any issues.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2023 1AI Technologies. All rights reserved. | Secured with Advanced AI Encryption</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check for existing session
+            const token = localStorage.getItem('authToken');
+            const userID = localStorage.getItem('userID');
+            
+            if (token && userID) {
+                validateSession(token, userID);
+            }
+        });
+
+        async function validateSession(token, userID) {
+            try {
+                const response = await fetch('https://oneai-wjox.onrender.com/validate', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'X-User-ID': userID
+                    }
+                });
+                
+                if (response.ok) {
+                    window.location.href = 'dashboard.html';
+                } else {
+                    localStorage.clear();
+                }
+            } catch (error) {
+                console.error('Session validation error:', error);
+            }
+        }
+
+        document.getElementById('registerForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const phone = document.getElementById('phone').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const messageElement = document.getElementById('message');
+            
+            // Clear previous messages
+            messageElement.className = 'auth-message';
+            messageElement.textContent = '';
+            
+            // Basic client-side validation
+            if (!/^01[3-9]\d{8}$/.test(phone)) {
+                showMessage('Please enter a valid Bangladeshi phone number starting with 013-019', 'error');
+                return;
+            }
+            
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                showMessage('Please enter a valid email address', 'error');
+                return;
+            }
+            
+            if (password.length < 8) {
+                showMessage('Password must be at least 8 characters', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('https://oneai-wjox.onrender.com/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        phone,
+                        email,
+                        password
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Store authentication data
+                    localStorage.setItem('userID', data.userID);
+                    localStorage.setItem('authToken', data.token);
+                    localStorage.setItem('tokenExp', data.expiresIn);
+                    
+                    showMessage('Registration successful! Redirecting...', 'success');
+                    setTimeout(() => {
+                        window.location.href = 'dashboard.html';
+                    }, 1500);
+                } else {
+                    showMessage(data.message || 'Registration failed. Please try again.', 'error');
+                }
+            } catch (error) {
+                console.error('Registration error:', error);
+                showMessage('Network error. Please try again.', 'error');
+            }
+        });
+        
+        function showMessage(text, type) {
+            const messageElement = document.getElementById('message');
+            messageElement.textContent = text;
+            messageElement.className = `auth-message ${type}`;
+        }
+    </script>
+  <script src="hacker-animation.js"></script>
+</body>
+</html>
