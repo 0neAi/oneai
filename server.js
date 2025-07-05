@@ -1,785 +1,922 @@
-import express from 'express';
-import mongoose from 'mongoose';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
-import cors from 'cors';
-import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
-import { WebSocketServer, WebSocket } from 'ws'; // Import both
-import { adminAuth } from './middleware/auth.js';
-import Payment from './models/Payment.js';
-import User from './models/User.js';
-import Admin from './models/Admin.js';
-import dotenv from 'dotenv';
-import http from 'http';
-
-dotenv.config();
-
-const app = express();
-const PORT = process.env.PORT || 10000;
-
-// ======================
-// Environment Validation
-// ======================
-if (!process.env.MONGODB_URI || !process.env.JWT_SECRET) {
-  console.error('❌ Missing required environment variables');
-  process.exit(1);
-}
-
-// ======================
-// Security Middlewares
-// ======================
-app.set('trust proxy', 1);
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "https://cdn.jsdelivr.net"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", "data:"]
-    }
-  }
-}));
-
-app.use(cors({
-origin: process.env.NODE_ENV === 'production'
-  ? ['https://0neai.github.io', 'https://oneai-wjox.onrender.com', 'https://0neai.github.io/oneai']
-  : '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-User-ID'],
-  credentials: true
-}));
-
-app.use(express.json({ limit: '10kb' }));
-
-// ======================
-// Rate Limiting
-// ======================
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  validate: { trustProxy: true },
-  keyGenerator: (req) => req.ip || req.socket.remoteAddress
-});
-app.use(limiter);
-
-// ======================
-// Database Connection
-// ======================
-let isReady = false;
-
-mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-  serverSelectionTimeoutMS: 5000
-})
-.then(() => console.log('✅ MongoDB connected successfully'))
-.catch(err => console.error('❌ MongoDB connection error:', err));
-
-mongoose.connection.on('connected', () => {
-  isReady = true;
-  console.log('✅ Server ready to accept requests');
-});
-
-mongoose.connection.on('disconnected', () => {
-  isReady = false;
-  console.log('⚠️  MongoDB disconnected - attempting to reconnect...');
-  setTimeout(() => mongoose.connect(process.env.MONGODB_URI), 5000);
-});
-
-mongoose.connection.on('error', err => {
-  console.error('❌ MongoDB connection error:', err);
-  isReady = false;
-});
-
-// ======================
-// WebSocket Configuration
-// ======================
-const server = http.createServer(app);
-const wss = new WebSocketServer({ server });
-
-wss.on('connection', (ws, req) => {
-  if (process.env.NODE_ENV === 'production') {
-    const allowedOrigins = [
-      'https://0neai.github.io',
-      'https://oneai-wjox.onrender.com'
-    ];
-    if (!req.headers.origin || !allowedOrigins.includes(req.headers.origin)) {
-      console.log(`Blocked WebSocket connection from unauthorized origin: ${req.headers.origin}`);
-      return ws.close(1008, 'Unauthorized origin');
-    }
-  }
-
-  ws.on('error', (error) => {
-    console.error('WebSocket error:', error);
-  });
-
-  ws.on('message', async (message) => {
-    try {
-      const data = JSON.parse(message);
-      
-      if (data.type === 'adminStatusUpdate') {
-        const decoded = jwt.verify(data.token, process.env.JWT_SECRET);
-        
-        if (!['superadmin', 'moderator'].includes(decoded.role)) {
-          throw new Error('Insufficient privileges');
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+    <title>0NEAi Dashboard</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="./assets/css/main.css">
+    <link rel="manifest" href="/manifest.json">
+    <style>
+        /* Mobile-first responsive enhancements */
+        @media screen and (max-width: 736px) {
+            .payment-table table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+            
+            .services-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1rem;
+            }
+            
+            .service-card h3 {
+                font-size: 1rem;
+            }
+            /* Larger buttons for mobile */
+            .action-btn {
+                padding: 0.8rem 1.5rem;
+                font-size: 1.1rem;
+            }
         }
-
-        wss.clients.forEach(client => {
-          if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({
-              type: 'payment-updated',
-              payment: data.payment
-            }));
-          }
-        });
-      }
-    } catch (error) {
-      console.error('WebSocket error:', error.message);
-      ws.close(1008, 'Authentication failed');
+        
+        @media screen and (min-width: 737px) {
+            .services-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .dashboard-stats {
+                flex-direction: row;
+            }
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            color: white;
+        }
+        
+        .status {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+        }
+        
+        .status.pending {
+            background-color: #FFC107;
+            color: #000;
+        }
+        
+        .status.completed {
+            background-color: #28A745;
+            color: #FFF;
+        }
+        
+        .status.failed {
+            background-color: #DC3545;
+            color: #FFF;
+        }
+        
+        .expired {
+            color: #DC3545;
+            font-weight: bold;
+        }
+        
+        .error {
+            position: fixed;
+            top: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #DC3545;
+            color: white;
+            padding: 1rem;
+            border-radius: 4px;
+            z-index: 10000;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        .success {
+            position: fixed;
+            top: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #28A745;
+            color: white;
+            padding: 1rem;
+            border-radius: 4px;
+            z-index: 10000;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        .dashboard-stats {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            flex: 1;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .stat-card h3 {
+            margin-top: 0;
+            color: #6c757d;
+            font-size: 1rem;
+        }
+        
+        .stat-card .value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #343a40;
+        }
+        
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1rem;
+        justify-content: center; /* Center buttons horizontally */
     }
-  });
-});
 
-app.set('wss', wss);
+    .action-btn {
+        padding: 0.8rem 1.5rem;
+        border-radius: 4px;
+        border: none;
+        cursor: pointer;
+        font-weight: bold;
+        transition: all 0.3s ease;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 150px; /* Give buttons consistent width */
+        text-align: center; /* Center text */
+    }
+        
+        .action-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+ .refresh-btn {
+        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+        color: white;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
 
-// ======================
-// Server Readiness Check
-// ======================
-app.use((req, res, next) => {
-  if (!isReady) {
-    return res.status(503).json({
-      success: false,
-      message: 'Server initializing... Try again in 10 seconds'
-    });
-  }
-  next();
-});
+    .refresh-btn:hover {
+        background: linear-gradient(135deg, #138496 0%, #117a8b 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+    }
 
-// ======================
-// Request Logging
-// ======================
-app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-  next();
-});
+    .help-btn {
+        background: linear-gradient(135deg, #28a745 0%, #218838 100%);
+        color: white;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
 
-// ======================
-// Authentication Middleware
-// ======================
-const authMiddleware = async (req, res, next) => {
-  try {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
-    const userID = req.header('X-User-ID');
+    .help-btn:hover {
+        background: linear-gradient(135deg, #218838 0%, #1e7e34 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+    }
 
-    if (!token || !userID) throw new Error("Missing credentials");
-    
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    if (decoded.userId !== userID) throw new Error("ID mismatch");
+    /* Add pulse animation for important actions */
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
 
-    const user = await User.findById(userID);
-    if (!user) throw new Error("User not found");
-    
-    req.user = user;
-    next();
-  } catch (error) {
-    const message = error.name === 'TokenExpiredError' 
-      ? 'Session expired' 
-      : 'Invalid authentication';
-    res.status(401).json({ success: false, message });
-  }
+    .action-btn:active {
+        animation: pulse 0.3s ease;
+    }
+
+    /* Make icons consistent with text */
+    .action-btn i {
+        margin-right: 8px;
+        font-size: 0.9em;
+    }
+        
+        .service-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+        
+        .service-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; top: 0; }
+            to { opacity: 1; top: 1rem; }
+        }
+        
+        .premium-payment {
+            background: linear-gradient(135deg, rgba(111,66,193,0.1) 0%, rgba(90,45,145,0.1) 100%);
+        }
+        .premium-payment td:first-child {
+            font-weight: bold;
+            color: #6f42c1;
+        }
+        
+        /* Premium Payment Modal */
+        .premium-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+        
+        .premium-modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        .premium-form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .premium-form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+            color: #444;
+        }
+        
+        .premium-form-group input, 
+        .premium-form-group select {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        
+        .premium-form-group input:focus, 
+        .premium-form-group select:focus {
+            outline: none;
+            border-color: #6f42c1;
+            box-shadow: 0 0 0 3px rgba(111, 66, 193, 0.1);
+        }
+        
+        .premium-modal-title {
+            color: #6f42c1;
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        /* Premium crown styling */
+        .premium-icon {
+            color: gold;
+            text-shadow: 0 0 3px rgba(0,0,0,0.3);
+        }
+                /* New notification badge */
+        .notification-badge {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #4CAF50;
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            z-index: 10000;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+                /* Add this new style for the payment popup */
+        .payment-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            z-index: 10001;
+            display: none;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            animation: slideIn 0.5s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translate(-50%, -60%); opacity: 0; }
+            to { transform: translate(-50%, -50%); opacity: 1; }
+        }
+        
+        .payment-popup.active {
+            display: block;
+        }
+        
+        .payment-popup h3 {
+            margin-top: 0;
+            color: #28A745;
+        }
+        
+        .payment-popup .success-icon {
+            color: #28A745;
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        
+        .payment-popup .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #6c757d;
+        }
+        
+    </style>
+</head>
+<body>
+    <div class="loading-overlay">
+        <i class="fas fa-spinner fa-spin fa-3x"></i>
+        <p>Loading your payment data...</p>
+    </div>
+    <div class="container">
+        <!-- Navbar will be injected here by load-navbar.js -->
+        <div class="navbar-placeholder" style="background: #2c3e50; color: white; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;">
+            <i class="fas fa-bars"></i> FREE_PALESTINE
+        </div>
+    <!-- Add this new payment popup element -->
+    <div id="payment-popup" class="payment-popup">
+        <button class="close-btn" onclick="closePaymentPopup()">&times;</button>
+        <i class="fas fa-check-circle success-icon"></i>
+        <h3>Payment Completed!</h3>
+        <p>TRX ID: <span id="popup-trxid"></span></p>
+        <p>Amount: ৳<span id="popup-amount"></span></p>
+        <button class="action-btn refresh-btn" onclick="closePaymentPopup()">
+            OK
+        </button>
+    </div>
+        <header class="dashboard-header">
+            <h1>1ai Dashboard</h1>
+            <p>অনুগ্রহ পূর্বক অপেক্ষে করুন, যেকোন সমস্যায় হেল্পলাইনে যোগাযোগ করুন। <br> A Premium Digital Intelligence Platform</p>
+        </header>
+
+        <div class="dashboard-stats">
+            <div class="stat-card">
+                <h3><i class="fas fa-clock"></i> Active Payments</h3>
+                <div class="value" id="active-payments">0</div>
+            </div>
+            <div class="stat-card">
+                <h3><i class="fas fa-check-circle"></i> Completed</h3>
+                <div class="value" id="completed-payments">0</div>
+            </div>
+            <div class="stat-card">
+                <h3><i class="fas fa-times-circle"></i> Failed</h3>
+                <div class="value" id="failed-payments">0</div>
+            </div>
+        </div>
+<div id="notification-badge" class="notification-badge hidden">0</div>
+        <div class="action-buttons">
+            <button class="action-btn refresh-btn" onclick="refreshPayments()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+            <button class="action-btn help-btn" onclick="sendHelpRequest()">
+                <i class="fas fa-life-ring"></i> Helpline
+            </button>
+        </div>
+<br><br>
+        <section class="payment-section">
+            <h2><i class="fas fa-clock"></i> Payment Status</h2>
+            <div class="payment-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Company</th>
+                            <th>TRX ID</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Time Left</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="payment-status">
+                        <!-- Dynamic content will be inserted here -->
+                        <tr>
+                            <td colspan="6" class="text-center">Loading payment data...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="services-section">
+            <h2><i class="fas fa-cogs"></i> Services</h2>
+            <div class="services-grid">
+                <a href="otpgen.html" class="service-card">
+                    <i class="fas fa-shield-alt fa-3x"></i>
+                    <h3>OTP Generator</h3>
+                </a>
+                <a href="entertainment.html" class="service-card">
+                    <i class="fas fa-life-ring fa-3x"></i>
+                    <h3>ENTERTAINMENT</h3>
+                </a>
+                <div class="service-card" onclick="showPremiumPaymentForm()">
+                    <i class="fas fa-unlock-alt fa-3x"></i>
+                    <h3>Password Cracker</h3>
+                </div>
+                <div class="service-card" onclick="showPremiumPaymentForm()">
+                    <i class="fas fa-map-marker-alt fa-3x"></i>
+                    <h3>Location Tracker</h3>
+                </div>
+                <div class="service-card" onclick="showPremiumPaymentForm()">
+                    <i class="fas fa-address-book fa-3x"></i>
+                    <h3>NID Call List</h3>
+                </div>
+                <div class="service-card" onclick="showPremiumPaymentForm()">
+                    <i class="fas fa-mobile-alt fa-3x"></i>
+                    <h3>Android Remote</h3>
+                </div>
+                <!-- Changed functionality: Now shows help instructions -->
+                <div class="service-card" onclick="showHelpInstructions()">
+                    <i class="fas fa-question-circle fa-3x"></i>
+                    <h3>Help</h3>
+                </div>
+            </div>
+        </section>
+    </div>
+<script>
+// Global state management
+const paymentState = {
+    payments: [],
+    ws: null,
+    paymentTimers: {},
+    stats: {
+        active: 0,
+        completed: 0,
+        failed: 0
+    },
+    unreadNotifications: 0
 };
 
-// ======================
-// Core Routes
-// ======================
-app.options('*', cors());
+// Notification sound
+const notificationSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-alert-quick-chime-766.mp3');
 
-app.get('/', (req, res) => res.status(200).json({ 
-  success: true, 
-  message: 'Server operational',
-  version: '1.0.0'
-}));
-
-app.get('/status', (req, res) => res.json({
-  status: 'live',
-  db: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
-  uptime: process.uptime().toFixed(2) + 's'
-}));
-
-// ======================
-// User Authentication Routes
-// ======================
-app.post('/register', async (req, res) => {
-  try {
-    // Fix: Use new variable for normalized email
-    const { phone, email: rawEmail, password } = req.body;
-    const email = rawEmail.toLowerCase().trim();
-        // Add password validation
-    if (password.length < 8) {
-      return res.status(400).json({
-        success: false,
-        message: 'Password must be at least 8 characters'
-      });
-    }
+// Functions
+function connectWebSocket() {
+    if (paymentState.ws) paymentState.ws.close();
     
-    if (!phone || !email || !password) {
-      return res.status(400).json({ success: false, message: 'All fields required' });
-    }
+    paymentState.ws = new WebSocket('wss://oneai-wjox.onrender.com');
 
-    // Add phone duplicate check
-    if (await User.findOne({ phone })) {
-      return res.status(409).json({ success: false, message: 'Phone number already exists' });
-    }
+    paymentState.ws.onopen = () => {
+        console.log('WebSocket Connected');
+        const authToken = localStorage.getItem('authToken');
+        const userID = localStorage.getItem('userID');
+        
+        paymentState.ws.send(JSON.stringify({
+            type: 'auth',
+            token: authToken,
+            userId: userID
+        }));
+    };
 
-    if (await User.findOne({ email })) {
-      return res.status(409).json({ success: false, message: 'Email already exists' });
-    }
+    paymentState.ws.onmessage = (event) => {
+        try {
+            const data = JSON.parse(event.data);
+            
+            if (data.type === 'payment-updated') {
+                updatePaymentStatus(data.payment);
 
-    const user = new User({
-      phone,
-      email,
-      password
-    });
-
-    await user.save();
-
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-
-    res.status(201).json({
-      success: true,
-      message: 'Registration successful',
-      userID: user._id,
-      token,
-      expiresIn: Date.now() + 3600000
-    });
-
-  } catch (error) {
-    const message = process.env.NODE_ENV === 'production'
-      ? 'Registration failed'
-      : error.message;
-    res.status(500).json({ success: false, message });
-  }
-});
-
-// ======================
-// User Login Route (Fixed)
-// ======================
-app.post('/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const normalizedEmail = email.toLowerCase().trim();
-    
-    const user = await User.findOne({ email: normalizedEmail }).select('+password');
-    
-    if (!user) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Invalid Email' 
-      });
-    }
-
-    const isMatch = await user.comparePassword(password);
-    
-    if (!isMatch) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Invalid Password' 
-      });
-    }
-
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { 
-      expiresIn: '1h' 
-    });
-
-    res.json({
-      success: true,
-      token,
-      userID: user._id,
-      expiresIn: Date.now() + 3600000
-    });
-  } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error during login'
-    });
-  }
-});
-// ======================
-// Payment Processing
-// ======================
-app.post('/payment', authMiddleware, async (req, res) => {
-  try {
-    const { consignments, discount = 0 } = req.body;
-
-    // Validate consignments
-    if (!Array.isArray(consignments) || consignments.length === 0) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'At least one consignment required' 
-      });
-    }
-
-    // Validate each consignment
-    let amount3 = 0;
-    const validServiceTypes = ['pricecng', 'partial', 'drto', 'delivery', 'return'];
-    const phoneRegex = /^01[3-9]\d{8}$/;
-    
-    for (const consignment of consignments) {
-      // Validate service type
-      if (!validServiceTypes.includes(consignment.serviceType)) {
-        return res.status(400).json({
-          success: false,
-          message: `Invalid service type: ${consignment.serviceType}`
-        });
-      }
-
-      // Validate customer details
-      if (!consignment.name || !phoneRegex.test(consignment.phone)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid customer details'
-        });
-      }
-
-      // Service-specific validation
-      if (consignment.serviceType === 'pricecng' || consignment.serviceType === 'partial') {
-        if (consignment.amount2 >= consignment.amount1) {
-          return res.status(400).json({
-            success: false,
-            message: 'Updated amount must be less than original amount'
-          });
+                if (data.payment.status === 'Completed') {
+                    handlePaymentCompletion(data.payment);
+                }
+            } 
+            else if (data.type === 'new-payment') {
+                if (data.payment.company === 'premium_service') {
+                    const existing = paymentState.payments.find(p => p.trxid === data.payment.trxid);
+                    
+                    if (!existing) {
+                        paymentState.payments.push(data.payment);
+                        renderPayment(data.payment);
+                        updateStats();
+                        showSuccess('New premium payment received!');
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('WebSocket message error:', error);
         }
-        amount3 += (consignment.amount1 - consignment.amount2) / 2;
-      } 
-      else if (consignment.serviceType === 'drto' && consignment.amount2 < 40) {
-        amount3 += 40;
-      }
-    }
+    };
 
-    // Apply discount
-    if (discount > 0) {
-      amount3 *= (1 - discount / 100);
-    }
+    paymentState.ws.onerror = (error) => {
+        console.error('WebSocket Error:', error);
+    };
 
-    // Validate final amount
-    if (amount3 < 0 || amount3 > 30000) {
-      return res.status(400).json({
-        success: false,
-        message: 'Final amount must be between 0 and 30,000'
-      });
-    }
+    paymentState.ws.onclose = () => {
+        setTimeout(connectWebSocket, 5000);
+    };
+}
 
-    // Create payment
-    const payment = new Payment({
-      user: req.user._id,
-      ...req.body,
-      amount3,
-      status: 'Pending'
-    });
+function playNotificationSound() {
+    notificationSound.play().catch(e => console.error('Sound playback failed:', e));
+}
 
-    const savedPayment = await payment.save();
-
-    // WebSocket notification
-    wss.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify({
-          type: 'new-payment',
-          payment: {
-            _id: savedPayment._id,
-            status: savedPayment.status,
-            trxid: savedPayment.trxid,
-            amount3: savedPayment.amount3,
-            user: {
-              _id: req.user._id,
-              email: req.user.email,
-              phone: req.user.phone
-            },
-            company: savedPayment.company,
-            createdAt: savedPayment.createdAt
-          }
-        }));
-      }
-    });
-
-    res.status(201).json({
-      success: true,
-      message: 'Payment processed successfully',
-      payment: savedPayment
-    });
-
-  } catch (error) {
-    console.error('Payment processing error:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message || 'Payment processing failed'
-    });
-  }
-});
-
-// Update premium-payment endpoint
-app.post('/premium-payment', authMiddleware, async (req, res) => {
-  try {
-    const { phone, trxid, amount, service } = req.body;
+function showPaymentNotification(payment) {
+    playNotificationSound();
     
-    // Create payment record using Payment model
-    const payment = new Payment({
-      user: req.user._id,
-      company: 'premium_service',
-      phone,
-      password: 'premium_access',
-      method: 'Premium',
-      trxid,
-      consignments: [{
-        name: 'Premium Service',
-        phone,
-        amount1: amount,
-        amount2: 0,
-        serviceType: service
-      }],
-      amount3: amount,
-      status: 'Pending'
-    });
-
-    const savedPayment = await payment.save();
-    
-    // WebSocket notification
-    wss.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify({
-          type: 'new-payment',
-          payment: {
-            _id: savedPayment._id,
-            status: savedPayment.status,
-            trxid: savedPayment.trxid,
-            amount3: savedPayment.amount3,
-            user: {
-              _id: req.user._id,
-              email: req.user.email,
-              phone: req.user.phone
-            },
-            company: 'premium_service',
-            createdAt: savedPayment.createdAt
-          }
-        }));
-      }
-    });
-
-    res.status(201).json({
-      success: true,
-      message: 'Premium payment submitted',
-      payment: savedPayment
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-});
-// ======================
-// Admin Routes
-// ======================
-const adminLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
-  message: 'Too many login attempts, please try again after 15 minutes'
-});
-
-app.post('/admin/update-status', adminAuth, async (req, res) => {
-  try {
-    const { trxid, status } = req.body;
-    
-    if (!['Pending', 'Completed', 'Failed'].includes(status)) {
-      return res.status(400).json({ success: false, message: 'Invalid status' });
+    if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('Payment Completed', {
+            body: `TRX ID: ${payment.trxid} - Amount: ৳${payment.amount}`,
+            icon: 'https://oneai-wjox.onrender.com/images/logo.png'
+        });
     }
+  
+    paymentState.unreadNotifications++;
+    const badge = document.getElementById('notification-badge');
+    badge.textContent = paymentState.unreadNotifications;
+    badge.classList.remove('hidden');
+}
 
-    const payment = await Payment.findOneAndUpdate(
-      { trxid },
-      { status },
-      { new: true }
-    ).populate('user', 'email phone');
-
-    if (!payment) {
-      return res.status(404).json({ success: false, message: 'Payment not found' });
-    }
-
-    // Broadcast update via WebSocket
-    wss.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify({
-          type: 'payment-updated',
-          payment: {
-            trxid: payment.trxid,
-            status: payment.status,
-            amount: payment.amount3,
-            timestamp: payment.updatedAt
-          }
-        }));
-      }
-    });
-
-    res.json({ success: true, payment });
-  } catch (error) {
-    console.error('Status update error:', error);
-    res.status(500).json({ success: false, message: 'Status update failed' });
-  }
-});
-
-app.post('/admin/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const admin = await Admin.findOne({ email }).select('+password');
+function showPaymentPopup(payment) {
+    const popup = document.getElementById('payment-popup');
+    document.getElementById('popup-trxid').textContent = payment.trxid;
+    document.getElementById('popup-amount').textContent = payment.amount3.toFixed(2);
     
-    if (!admin || !(await admin.comparePassword(password))) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Invalid credentials' 
-      });
-    }
+    popup.classList.add('active');
+    
+    // Auto-close after 10 seconds
+    setTimeout(() => {
+        popup.classList.remove('active');
+    }, 10000);
+}
 
-    const token = jwt.sign(
-      { adminId: admin._id, role: admin.role }, 
-      process.env.JWT_SECRET, 
-      { expiresIn: '8h' }
+function closePaymentPopup() {
+    document.getElementById('payment-popup').classList.remove('active');
+}
+
+function handlePaymentCompletion(payment) {
+    showPaymentPopup(payment); // Show the popup
+    showPaymentNotification(payment); // Show the system notification
+    playNotificationSound(); // Play the sound
+    
+    if ('vibrate' in navigator) {
+        navigator.vibrate([300, 100, 300]);
+    }
+    
+    setTimeout(refreshPayments, 2000);
+}
+
+function renderAllPayments() {
+    const tbody = document.getElementById('payment-status');
+    const paymentSection = document.querySelector('.payment-section');
+    tbody.innerHTML = '';
+    
+    if (paymentState.payments.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center">No payments found</td></tr>`;
+        paymentSection.style.display = 'none'; // Hide the entire section
+        return;
+    } else {
+        paymentSection.style.display = 'block'; // Ensure it's visible if there are payments
+    }
+    
+    const sortedPayments = [...paymentState.payments].sort((a, b) => 
+        new Date(b.createdAt) - new Date(a.createdAt)
     );
-
-    res.json({
-      success: true,
-      token,
-      admin: admin.toSafeObject()
-    });
-  } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      message: 'Server error during admin login' 
-    });
-  }
-});
-
-// ======================
-// Admin registration check
-app.get('/admin/check-registration', async (req, res) => {
-  try {
-    const canRegister = await Admin.countDocuments() === 0;
-    res.json({ allowRegistration: canRegister });
-  } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      message: 'Error checking registration status' 
-    });
-  }
-});
-
-// ======================
-// Admin Registration
-// ======================
-app.post('/admin/register', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const admin = await Admin.register(email, password);
     
-    res.json({
-      success: true,
-      admin
-    });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message
-    });
-  }
-});
+    sortedPayments.forEach(renderPayment);
+}
 
-// ======================
-// Admin validation
-app.get('/admin/validate', adminAuth, (req, res) => {
-  res.json({ success: true });
-});
+function renderPayment(payment) {
+    const tbody = document.getElementById('payment-status');
+    const existingRow = document.querySelector(`tr[data-trxid="${payment.trxid}"]`);
+    
+    if (existingRow) {
+        updatePaymentRow(existingRow, payment);
+        return;
+    }
+    
+    const row = document.createElement('tr');
+    row.dataset.trxid = payment.trxid;
+    const createdAt = new Date(payment.createdAt || Date.now());
+    const expiryTime = createdAt.getTime() + (3 * 60 * 60 * 1000);
+    
+    let companyCell;
+    if (payment.company === 'premium_service') {
+        // Premium service with crown icon
+        companyCell = `<td><i class="fas fa-crown premium-icon"></i> Premium Service</td>`;
+        row.classList.add('premium-payment');
+    } else {
+        companyCell = `<td>${formatCompanyName(payment.company) || 'N/A'}</td>`;
+    }
+    
+    // Special handling for premium services
+    if (payment.company === 'premium_service') {
+        row.innerHTML = `
+            ${companyCell}
+            <td><code>${payment.trxid}</code></td>
+            <td>৳${(payment.amount3 || 0).toFixed(2)}</td>
+            <td><span class="status ${(payment.status || 'pending').toLowerCase()}">${payment.status || 'Pending'}</span></td>
+            <td>Premium service</td>
+            <td>
+                <button class="action-btn small" onclick="viewPaymentDetails('${payment.trxid}')">
+                    <i class="fas fa-eye"></i> View
+                </button>
+            </td>
+        `;
+    } else {
+        // Regular payment row
+        row.innerHTML = `
+            ${companyCell}
+            <td><code>${payment.trxid}</code></td>
+            <td>৳${(payment.amount3 || 0).toFixed(2)}</td>
+            <td><span class="status ${(payment.status || 'pending').toLowerCase()}">${payment.status || 'Pending'}</span></td>
+            <td class="countdown" data-expiry="${expiryTime}">Calculating...</td>
+            <td>
+                <button class="action-btn small" onclick="viewPaymentDetails('${payment.trxid}')">
+                    <i class="fas fa-eye"></i> View
+                </button>
+            </td>
+        `;
+    }
+    
+    tbody.appendChild(row);
+    
+    // Only start countdown for non-premium pending payments
+    if (payment.company !== 'premium_service' && (!payment.status || payment.status === 'Pending')) {
+        startCountdown(row.querySelector('.countdown'), payment.trxid);
+    }
+}
 
-// Admin get payments
-app.get('/admin/payments', adminAuth, async (req, res) => {
-  try {
-    const payments = await Payment.find()
-      .populate('user', 'email phone')
-      .sort({ createdAt: -1 });
+function updatePaymentRow(row, payment) {
+    const statusCell = row.querySelector('.status');
+    if (statusCell) {
+        statusCell.className = `status ${(payment.status || 'pending').toLowerCase()}`;
+        statusCell.textContent = payment.status || 'Pending';
+    }
+    
+    const amountCell = row.querySelector('td:nth-child(3)');
+    if (amountCell) {
+        amountCell.textContent = `৳${(payment.amount3 || 0).toFixed(2)}`;
+    }
+    
+    const countdownCell = row.querySelector('.countdown');
+    
+    // Only update countdown for non-premium payments
+    if (payment.company !== 'premium_service') {
+        if (payment.status !== 'Pending') {
+            if (countdownCell) {
+                countdownCell.innerHTML = payment.status;
+                countdownCell.classList.add('expired');
+            }
+            
+            if (paymentState.paymentTimers[payment.trxid]) {
+                clearInterval(paymentState.paymentTimers[payment.trxid]);
+                delete paymentState.paymentTimers[payment.trxid];
+            }
+        }
+    }
+}
 
-    res.json({
-      success: true,
-      payments
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch payments'
-    });
-  }
-});
-// ======================
-// Get Payments (Admin)
-// ======================
-app.get('/admin/payments', adminAuth, async (req, res) => {
-  try {
-    const payments = await Payment.find()
-      .populate('user', 'email phone')
-      .sort({ createdAt: -1 });
+function startCountdown(element, trxid) {
+    const expiry = parseInt(element.dataset.expiry);
+    
+    function update() {
+        const now = Date.now();
+        const diff = expiry - now;
 
-    res.json({
-      success: true,
-      payments
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch payments'
-    });
-  }
-});
+        if (diff <= 0) {
+            element.innerHTML = 'Expired';
+            element.classList.add('expired');
+            
+            if (paymentState.paymentTimers[trxid]) {
+                clearInterval(paymentState.paymentTimers[trxid]);
+                delete paymentState.paymentTimers[trxid];
+            }
+            return;
+        }
 
-// ======================
-// User Payments Route
-// ======================
-app.get('/payments/user', authMiddleware, async (req, res) => {
-  try {
-    const payments = await Payment.find({ user: req.user._id })
-      .sort({ createdAt: -1 });
-          
-    res.json({ 
-      success: true, 
-      payments 
-    });
-  } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to fetch user payments' 
-    });
-  }
-});
+        const hours = Math.floor(diff / 3600000);
+        const minutes = Math.floor((diff % 3600000) / 60000);
+        const seconds = Math.floor((diff % 60000) / 1000);
 
-// ======================
-// Premium Payment Route
-// ======================
-// In the premium-payment route
-app.post('/premium-payment', authMiddleware, async (req, res) => {
-  try {
-    // Validate required fields
-    if (!req.body.phone || !req.body.trxid || !req.body.amount || !req.body.service || !req.body.type) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'All fields required' 
-      });
+        element.innerHTML = `${hours}h ${minutes}m ${seconds}s`;
     }
 
-    // Create payment record
-    const payment = new Payment({
-      user: req.user._id,
-      company: 'premium_service',
-      phone: req.body.phone,
-      password: 'premium_access',
-      method: 'Premium',
-      trxid: req.body.trxid,
-      consignments: [{
-        name: 'Premium Service',
-        phone: req.body.phone,
-        amount1: req.body.amount,
-        amount2: 0,
-        serviceType: req.body.service
-      }],
-      amount3: req.body.amount,
-      status: 'Pending'
-    });
+    update();
+    paymentState.paymentTimers[trxid] = setInterval(update, 1000);
+}
 
-    // Save and broadcast
-    const savedPayment = await payment.save();
-    wss.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify({
-          type: 'new-payment',
-          payment: {
-            _id: savedPayment._id,
-            status: savedPayment.status,
-            trxid: savedPayment.trxid,
-            amount3: savedPayment.amount3,
-            user: {
-              _id: req.user._id,
-              email: req.user.email,
-              phone: req.user.phone
+function updateStats() {
+    paymentState.stats = {
+        active: paymentState.payments.filter(p => p.status === 'Pending').length,
+        completed: paymentState.payments.filter(p => p.status === 'Completed').length,
+        failed: paymentState.payments.filter(p => p.status === 'Failed').length
+    };
+    
+    document.getElementById('active-payments').textContent = paymentState.stats.active;
+    document.getElementById('completed-payments').textContent = paymentState.stats.completed;
+    document.getElementById('failed-payments').textContent = paymentState.stats.failed;
+}
+
+function formatCompanyName(company) {
+    const names = {
+        'govt_nid': 'Govt NID',
+        'redx': 'RedX',
+        'pathao': 'Pathao',
+        'steadfast': 'SteadFast',
+        'premium_service': 'Premium Service'
+    };
+    return names[company] || company;
+}
+
+// UI Functions
+function showError(message) {
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'error';
+    errorDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
+    document.body.prepend(errorDiv);
+    setTimeout(() => errorDiv.remove(), 5000);
+}
+
+function showSuccess(message) {
+    const successDiv = document.createElement('div');
+    successDiv.className = 'success';
+    successDiv.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+    document.body.prepend(successDiv);
+    setTimeout(() => successDiv.remove(), 5000);
+}
+
+// Initialize dashboard
+document.addEventListener('DOMContentLoaded', async () => {
+    if ('Notification' in window) {
+        try {
+            await Notification.requestPermission();
+        } catch (error) {
+            console.error('Notification permission error:', error);
+        }
+    }
+    
+    const loadingOverlay = document.querySelector('.loading-overlay');
+    loadingOverlay.style.display = 'flex';
+    
+    try {
+        const authToken = localStorage.getItem('authToken');
+        const userID = localStorage.getItem('userID');
+        
+        if (!authToken || !userID) {
+            window.location.href = 'login.html';
+            return;
+        }
+
+        await refreshPayments();
+        connectWebSocket();
+    } catch (error) {
+        showError(error.message || 'Failed to initialize dashboard');
+    } finally {
+        loadingOverlay.style.display = 'none';
+    }
+    
+    setInterval(refreshPayments, 30000);
+});
+
+// Global functions
+window.viewPaymentDetails = function(trxid) {
+    const payment = paymentState.payments.find(p => p.trxid === trxid);
+    if (payment) {
+        alert(`
+            Company: ${formatCompanyName(payment.company)}\n
+            TRX ID: ${payment.trxid}\n
+            Amount: ৳${payment.amount3.toFixed(2)}\n
+            Status: ${payment.status}\n
+            Created: ${new Date(payment.createdAt).toLocaleString()}
+        `);
+    } else {
+        showError('Payment details not found');
+    }
+};
+
+window.showPremiumPaymentForm = function() {
+    document.getElementById('premium-modal').style.display = 'flex';
+};
+
+window.submitPremiumPayment = async function() {
+    const loadingOverlay = document.querySelector('.loading-overlay');
+    loadingOverlay.style.display = 'flex';
+    
+    const authToken = localStorage.getItem('authToken');
+    const userID = localStorage.getItem('userID');
+    const phone = document.getElementById('premium-phone').value;
+    const trxid = document.getElementById('premium-trxid').value;
+    const amount = document.getElementById('premium-amount').value;
+    const service = document.getElementById('premium-service').value;
+    
+    if (!phone || !trxid || !amount) {
+        showError('All fields are required');
+        loadingOverlay.style.display = 'none';
+        return;
+    }
+
+    try {
+        const response = await fetch('https://oneai-wjox.onrender.com/premium-payment', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`,
+                'X-User-ID': userID
             },
-            company: 'premium_service',
-            createdAt: savedPayment.createdAt
-          }
-        }));
-      }
+            body: JSON.stringify({ phone, trxid, amount, service, type: 'premium' })
+        });
+        
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Submission failed');
+
+        document.getElementById('premium-modal').style.display = 'none';
+        document.getElementById('premium-phone').value = '';
+        document.getElementById('premium-trxid').value = '';
+        document.getElementById('premium-amount').value = '';
+        
+        paymentState.payments.push(data.payment);
+        renderPayment(data.payment);
+        updateStats();
+        showSuccess('Premium payment submitted!');
+    } catch (error) {
+        showError(error.message);
+    } finally {
+        loadingOverlay.style.display = 'none';
+    }
+};
+
+window.sendHelpRequest = function() {
+    const payment = paymentState.payments[0];
+    const message = payment 
+        ? `Need help with payment:\nTRX: ${payment.trxid}\nAmount: ৳${payment.amount3.toFixed(2)}\nStatus: ${payment.status}`
+        : 'I need assistance with your services';
+    window.open(`https://wa.me/8801568760780?text=${encodeURIComponent(message)}`, '_blank');
+};
+
+window.showHelpInstructions = function() {
+    alert("Help instructions:\n1. Check payment status in the table\n2. Use FAST SERVICE button for urgent help\n3. Refresh payments every 30 minutes");
+};
+
+window.refreshPayments = async function() {
+    const loadingOverlay = document.querySelector('.loading-overlay');
+    const authToken = localStorage.getItem('authToken');
+    const userID = localStorage.getItem('userID');
+    
+    try {
+        loadingOverlay.style.display = 'flex';
+        Object.values(paymentState.paymentTimers).forEach(clearInterval);
+        paymentState.paymentTimers = {};
+        
+        const response = await fetch('https://oneai-wjox.onrender.com/payments/user', {
+            headers: { 'Authorization': `Bearer ${authToken}`, 'X-User-ID': userID }
+        });
+        
+        if (!response.ok) throw new Error('Failed to fetch payments');
+        
+        const data = await response.json();
+        paymentState.payments = data.payments || [];
+        renderAllPayments();
+        updateStats();
+        showSuccess('Payments refreshed');
+    } catch (error) {
+        showError(error.message || 'Refresh failed');
+    } finally {
+        loadingOverlay.style.display = 'none';
+    }
+};
+
+// Initialize notification badge handler
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('notification-badge').addEventListener('click', function() {
+        paymentState.unreadNotifications = 0;
+        this.classList.add('hidden');
+        alert('All notifications cleared');
     });
+});
+</script>
+<script src="./assets/js/load-navbar.js"></script>
+<script src="./assets/js/main.js"></script>
 
-    res.status(201).json({
-      success: true,
-      message: 'Premium payment submitted for verification',
-      payment: savedPayment
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message || 'Premium payment processing failed'
-    });
-  }
-});
-
-// ======================
-// Get Users (Admin)
-// ======================
-app.get('/admin/users', adminAuth, async (req, res) => {
-  try {
-    const users = await User.find().select('-password');
-    res.json({ success: true, users });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to fetch users' });
-  }
-});
-
-// ======================
-// User Validation Route
-// ======================
-app.get('/validate', authMiddleware, async (req, res) => {
-  res.json({ success: true });
-});
-// ======================
-// Request Logging
-// ======================
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.url}`);
-  next();
-});
-
-// ======================
-// Error Handling
-// ======================
-app.use((err, req, res, next) => {
-  console.error('Global Error:', {
-    path: req.path,
-    error: err.stack,
-    body: req.body
-  });
-  
-  res.status(err.status || 500).json({ 
-    success: false,
-    message: process.env.NODE_ENV === 'production' 
-      ? 'Internal server error' 
-      : err.message
-  });
-});
-
-// ======================
-// Server Initialization
-// ======================
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server & WS running on port ${PORT}`);
-  console.log(`🏭 Environment: ${process.env.NODE_ENV || 'development'}`);
-  
-  process.on('unhandledRejection', err => {
-    console.error('Unhandled Rejection:', err);
-    process.exit(1);
-  });
-});
-export default app;
+</body>
+</html>
