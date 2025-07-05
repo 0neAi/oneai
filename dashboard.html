@@ -588,11 +588,15 @@ function handlePaymentCompletion(payment) {
 
 function renderAllPayments() {
     const tbody = document.getElementById('payment-status');
+    const paymentSection = document.querySelector('.payment-section');
     tbody.innerHTML = '';
     
     if (paymentState.payments.length === 0) {
         tbody.innerHTML = `<tr><td colspan="6" class="text-center">No payments found</td></tr>`;
+        paymentSection.style.display = 'none'; // Hide the entire section
         return;
+    } else {
+        paymentSection.style.display = 'block'; // Ensure it's visible if there are payments
     }
     
     const sortedPayments = [...paymentState.payments].sort((a, b) => 
