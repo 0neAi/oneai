@@ -477,6 +477,7 @@
             </div>
         </section>
     </div>
+    <script src="./assets/js/loading-animation.js"></script>
 <script>
 // Global state management
 const paymentState = {
@@ -833,9 +834,9 @@ window.showPremiumPaymentForm = function() {
 
 // FIXED PAYMENT SUBMISSION (added auth headers)
 window.submitPremiumPayment = async function() {
-    const loadingOverlay = document.querySelector('.loading-overlay');
-    loadingOverlay.style.display = 'flex';
-    
+    LoadingAnimation.start("Processing payment...");
+    LoadingAnimation.setTerminalMessage("> Connecting to payment gateway...");
+
     const authToken = localStorage.getItem('authToken');
     const userID = localStorage.getItem('userID');
     const phone = document.getElementById('premium-phone').value;
@@ -845,7 +846,7 @@ window.submitPremiumPayment = async function() {
     
     if (!phone || !trxid || !amount) {
         showError('All fields are required');
-        loadingOverlay.style.display = 'none';
+        LoadingAnimation.stop();
         return;
     }
 
@@ -859,9 +860,15 @@ window.submitPremiumPayment = async function() {
             },
             body: JSON.stringify({ phone, trxid, amount, service, type: 'premium' })
         });
+
+        LoadingAnimation.update(50, "Validating payment details...");
+        LoadingAnimation.setTerminalMessage("> Processing transaction...");
         
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'Submission failed');
+
+        LoadingAnimation.update(100, "Payment successful!");
+        LoadingAnimation.setTerminalMessage("> Transaction completed!");
 
         document.getElementById('premium-modal').style.display = 'none';
         document.getElementById('premium-phone').value = '';
@@ -875,7 +882,9 @@ window.submitPremiumPayment = async function() {
     } catch (error) {
         showError(error.message);
     } finally {
-        loadingOverlay.style.display = 'none';
+        setTimeout(() => {
+            LoadingAnimation.stop();
+        }, 1500);
     }
 };
 
@@ -934,5 +943,40 @@ document.addEventListener('DOMContentLoaded', () => {
 <script src="./assets/js/load-navbar.js"></script>
 <script src="./assets/js/main.js"></script>
 <script src="./assets/js/hackeranimation.js"></script>
+    <script>
+        if ('serviceWorker' in navigator && 'PushManager' in window) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(swReg => {
+                        console.log('Service Worker is registered', swReg);
+                        swReg.pushManager.getSubscription()
+                            .then(subscription => {
+                                if (subscription === null) {
+                                    // Not subscribed, so ask for permission
+                                    swReg.pushManager.subscribe({
+                                        userVisibleOnly: true,
+                                        applicationServerKey: 'BC4WNXapAoWn3i2p5JW1aCwMEGPzS0fEfK5qc_3tA0-q4rNKcJWjpf92dfXQ6OmrrkHUbDSWv_w5AJ9qYGIdRv4'
+                                    })
+                                    .then(newSubscription => {
+                                        // Send the subscription to the server
+                                        fetch('https://oneai-wjox.onrender.com/subscribe', {
+                                            method: 'POST',
+                                            body: JSON.stringify(newSubscription),
+                                            headers: {
+                                                'Content-Type': 'application/json',
+                                                'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                                                'X-User-ID': localStorage.getItem('userID')
+                                            }
+                                        });
+                                    });
+                                }
+                            });
+                    })
+                    .catch(error => {
+                        console.error('Service Worker Error', error);
+                    });
+            });
+        }
+    </script>
 </body>
 </html>
