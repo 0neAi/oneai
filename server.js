@@ -415,6 +415,42 @@ app.post('/payment', authMiddleware, async (req, res) => {
 
     const savedPayment = await payment.save();
 
+    // Prepare WhatsApp message
+    const whatsappMessage = `
+New Payment Received!
+--------------------
+User ID: ${req.user._id}
+User Email: ${req.user.email}
+User Phone: ${req.user.phone}
+Company: ${savedPayment.company}
+TRX ID: ${savedPayment.trxid}
+Amount: ${savedPayment.amount3} BDT
+Payment Method: ${savedPayment.method}
+Status: ${savedPayment.status}
+Timestamp: ${new Date(savedPayment.createdAt).toLocaleString()}
+
+Consignments:
+${savedPayment.consignments.map(c => `  - Service: ${c.serviceType}, Name: ${c.name}, Phone: ${c.phone}, Amount1: ${c.amount1}, Amount2: ${c.amount2}`).join('\n')}
+`;
+
+    // Placeholder for WhatsApp API integration
+    // In a real application, you would integrate a WhatsApp API here (e.g., Twilio, WhatsApp Business API)
+    // For example:
+    // try {
+    //   const client = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+    //   await client.messages.create({
+    //     body: whatsappMessage,
+    //     from: 'whatsapp:+14155238886', // Your Twilio WhatsApp number
+    //     to: `whatsapp:${process.env.HELPLINE_WHATSAPP_NUMBER}`
+    //   });
+    //   console.log('WhatsApp message sent successfully!');
+    // } catch (whatsappError) {
+    //   console.error('Failed to send WhatsApp message:', whatsappError);
+    // }
+    console.log('Simulating WhatsApp message to helpline:');
+    console.log(whatsappMessage);
+
+
     // WebSocket notification
     wss.clients.forEach(client => {
       if (client.readyState === WebSocket.OPEN) {
