@@ -20,6 +20,53 @@
             min-height: 100vh;
             overflow-x: hidden;
             position: relative;
+            animation: color-cycle 20s infinite;
+        }
+
+        @keyframes color-cycle {
+            0% { --main-color: #00FF41; --accent-color: #aaffaa; }
+            20% { --main-color: #FF69B4; --accent-color: #ffc0cb; } /* Pink */
+            40% { --main-color: #00FFFF; --accent-color: #e0ffff; } /* Neon */
+            60% { --main-color: #FFA500; --accent-color: #ffe4b5; } /* Orange */
+            80% { --main-color: #FFD700; --accent-color: #fffacd; } /* Gold */
+            100% { --main-color: #00FF41; --accent-color: #aaffaa; }
+        }
+
+        header h1,
+        header a,
+        .form-container h2,
+        .form-group input,
+        .register-btn,
+        .security-icon {
+            color: var(--main-color);
+            transition: color 0.5s ease;
+        }
+
+        header p,
+        .form-container p,
+        .form-group label,
+        .auth-options p,
+        .security-text {
+            color: var(--accent-color);
+            transition: color 0.5s ease;
+        }
+
+        .form-container {
+            border-color: var(--main-color);
+            transition: border-color 0.5s ease;
+        }
+
+        .form-group input {
+            border-color: var(--main-color);
+        }
+
+        .register-btn {
+            border-color: var(--main-color);
+        }
+
+        button[type="submit"] {
+            background: linear-gradient(to right, var(--main-color), var(--accent-color));
+            transition: background 0.5s ease;
         }
         
         /* Header styling */
@@ -346,6 +393,7 @@
         <p>&copy; 2023 1AI Technologies. All rights reserved. | Secured with Advanced AI Encryption</p>
     </footer>
 
+    <script src="./assets/js/loading-animation.js"></script>
     <script>
         // Session validation on page load
         document.addEventListener('DOMContentLoaded', async () => {
@@ -386,6 +434,9 @@
             const email = document.getElementById('loginEmail').value.trim().toLowerCase();
             const password = document.getElementById('loginPassword').value;
 
+            LoadingAnimation.start("Authenticating...");
+            LoadingAnimation.setTerminalMessage("> Verifying credentials...");
+
             try {
                 const response = await fetch('https://oneai-wjox.onrender.com/login', {
                     method: 'POST',
@@ -395,11 +446,17 @@
                     body: JSON.stringify({ email, password })
                 });
 
+                LoadingAnimation.update(50, "Checking credentials...");
+                LoadingAnimation.setTerminalMessage("> Awaiting server response...");
+
                 const data = await response.json();
                 
                 if (!response.ok) {
                     throw new Error(data.message || 'Authentication failed');
                 }
+
+                LoadingAnimation.update(100, "Login successful!");
+                LoadingAnimation.setTerminalMessage("> Redirecting to dashboard...");
 
                 // Store authentication data
                 localStorage.setItem('userID', data.userID);
@@ -407,9 +464,13 @@
                 localStorage.setItem('tokenExp', data.expiresIn);
                 
                 // Redirect to dashboard
-                window.location.href = 'dashboard.html';
+                setTimeout(() => {
+                    LoadingAnimation.stop();
+                    window.location.href = 'dashboard.html';
+                }, 1000);
 
             } catch (error) {
+                LoadingAnimation.stop();
                 messageElement.textContent = error.message || 'Login failed. Please try again.';
                 messageElement.className = 'auth-message error';
             }
