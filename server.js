@@ -12,8 +12,21 @@ import User from './models/User.js';
 import Admin from './models/Admin.js';
 import dotenv from 'dotenv';
 import http from 'http';
+import webpush from 'web-push';
 
 dotenv.config();
+
+// VAPID keys
+const vapidKeys = {
+    publicKey: process.env.VAPID_PUBLIC_KEY,
+    privateKey: process.env.VAPID_PRIVATE_KEY
+};
+
+webpush.setVapidDetails(
+    'mailto:your-email@example.com',
+    vapidKeys.publicKey,
+    vapidKeys.privateKey
+);
 
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -508,6 +521,17 @@ const adminLimiter = rateLimit({
   message: 'Too many login attempts, please try again after 15 minutes'
 });
 
+app.post('/subscribe', authMiddleware, async (req, res) => {
+    try {
+        const subscription = req.body;
+        await User.findByIdAndUpdate(req.user._id, { pushSubscription: subscription });
+        res.status(201).json({ success: true, message: 'Subscribed successfully' });
+    } catch (error) {
+        console.error('Subscription error:', error);
+        res.status(500).json({ success: false, message: 'Subscription failed' });
+    }
+});
+
 app.post('/admin/update-status', adminAuth, async (req, res) => {
   try {
     const { trxid, status } = req.body;
@@ -524,6 +548,19 @@ app.post('/admin/update-status', adminAuth, async (req, res) => {
 
     if (!payment) {
       return res.status(404).json({ success: false, message: 'Payment not found' });
+    }
+
+    // If the status is completed, send a push notification
+    if (status === 'Completed' && payment.user.pushSubscription) {
+        const payload = JSON.stringify({
+            title: 'Payment Completed!',
+            body: `Your payment of ৳${payment.amount3} has been successfully processed.`,
+            icon: 'https://oneai-wjox.onrender.com/images/logo.png'
+        });
+
+        webpush.sendNotification(payment.user.pushSubscription, payload).catch(error => {
+            console.error('Push notification error:', error);
+        });
     }
 
     // Broadcast update via WebSocket
