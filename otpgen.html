@@ -475,9 +475,15 @@
           </button>
         </div>
         <br>
-        <small>সার্ভিসটি গ্রহণ নিশ্চিত করতে সার্ভারচার্জ অগ্রিম পরিশোধ করুন</small><br>
-        <small>নগদ পার্সোনাল(sendmoney): 01923002231</small><br> 
-        <small>Crypto bep20 USDT: 0x08a30256b232aCE8acc3BEeCA73A5F036ba373D0</small>
+        <div id="nagad-payment-info" class="payment-info">
+          <small>সার্ভিসটি গ্রহণ নিশ্চিত করতে সার্ভারচার্জ অগ্রিম পরিশোধ করুন</small><br>
+          <small>নগদ পার্সোনাল(sendmoney): <span id="nagad-number">01923002231</span> <button type="button" class="copy-btn" data-target="nagad-number"><i class="fas fa-copy"></i></button></small><br>
+        </div>
+        <div id="crypto-payment-info" class="payment-info hidden">
+          <small>সার্ভিসটি গ্রহণ নিশ্চিত করতে সার্ভারচার্জ অগ্রিম পরিশোধ করুন</small><br>
+          <small>Crypto bep20 USDT Amount: <span id="usdt-amount">0.00</span> USDT <button type="button" class="copy-btn" data-target="usdt-amount"><i class="fas fa-copy"></i></button></small><br>
+          <small>Crypto bep20 USDT Address: <span id="usdt-address">0x08a30256b232aCE8acc3BEeCA73A5F036ba373D0</span> <button type="button" class="copy-btn" data-target="usdt-address"><i class="fas fa-copy"></i></button></small><br>
+        </div>
       </div>
 
       <p>আপনার এপ/ওয়েবসাইট লগ আউট হলে কমপক্ষে ২৫ মিনিট লগইন করা থেকে বিরত থাকুন। অনুগ্রহ পূর্বক কিছুক্ষণ অপেক্ষা করুন পেমেন্ট সম্পন্ন হলে আপনার সার্ভিসটি স্বয়ংক্রিয় ভাবে প্রক্রিয়াকরণ শুরু হবে।
@@ -485,9 +491,9 @@
       
       <div class="form-group">
         <label for="method">Payment Method:</label>
-        <select id="method" name="method" required>
+        <select id="method" name="method" required onchange="updatePaymentDisplay()">
           <option value="">Select Method</option>
-          <option value="Bkash">Crypto(USDT)</option>
+          <option value="Crypto">Crypto(USDT)</option>
           <option value="Nagad">Nagad: 01923002231</option>
         </select>
       </div>
@@ -562,7 +568,7 @@
             const amount2 = parseFloat(group.querySelector('.amount2').value) || 0;
             
             if (serviceType === 'pricecng' || serviceType === 'partial') {
-                if (amount1 > 0 && amount2 > 0 && amount2 < amount1) {
+                if (amount1 > 0 && amount2 < amount1) {
                     totalCharge += (amount1 - amount2) / 2;
                 }
             } 
@@ -570,6 +576,12 @@
                 if (amount2 < 40) {
                     totalCharge += 40;
                 }
+            }
+            else if (serviceType === 'delivery') {
+                totalCharge += Math.floor(Math.random() * (10 - 7 + 1)) + 7; // Random 7-10
+            }
+            else if (serviceType === 'return') {
+                totalCharge += Math.floor(Math.random() * (10 - 5 + 1)) + 5; // Random 5-10
             }
         });
 
@@ -579,6 +591,41 @@
         }
 
         document.getElementById('amount3').value = totalCharge.toFixed(2);
+        updatePaymentDisplay();
+    }
+
+    // New function to update payment display based on method
+    function updatePaymentDisplay() {
+        const method = document.getElementById('method').value;
+        const nagadInfo = document.getElementById('nagad-payment-info');
+        const cryptoInfo = document.getElementById('crypto-payment-info');
+        const totalChargeBDT = parseFloat(document.getElementById('amount3').value) || 0;
+        const USDT_EXCHANGE_RATE = 120; // 1 USDT = 120 BDT
+
+        if (method === 'Nagad') {
+            nagadInfo.classList.remove('hidden');
+            cryptoInfo.classList.add('hidden');
+        } else if (method === 'Crypto') {
+            nagadInfo.classList.add('hidden');
+            cryptoInfo.classList.remove('hidden');
+            const usdtAmount = (totalChargeBDT / USDT_EXCHANGE_RATE).toFixed(4);
+            document.getElementById('usdt-amount').textContent = usdtAmount;
+        } else {
+            nagadInfo.classList.remove('hidden'); // Default to Nagad if nothing selected
+            cryptoInfo.classList.add('hidden');
+        }
+    }
+
+    // Function to copy text to clipboard
+    function copyToClipboard(elementId) {
+        const element = document.getElementById(elementId);
+        const textToCopy = element.textContent;
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            showMessage('Copied to clipboard!', 'success');
+        }).catch(err => {
+            console.error('Failed to copy: ', err);
+            showMessage('Failed to copy to clipboard.', 'error');
+        });
     }
 
     // Enhanced Form Submission Handler
@@ -706,6 +753,11 @@
 
         // Set final amount
         formData.amount3 = parseFloat(totalCharge.toFixed(2));
+
+        // Validate total server charge
+        if (formData.amount3 < 100) {
+            throw new Error('Total server charge is too low. Minimum 100 BDT required.');
+        }
         return formData;
     }
 
@@ -820,6 +872,19 @@
       document.querySelectorAll('.amount1, .amount2').forEach(input => {
         input.addEventListener('input', calculateTotalCharge);
       });
+
+      // Add event listener for payment method change
+      document.getElementById('method').addEventListener('change', updatePaymentDisplay);
+
+      // Add event listeners for copy buttons
+      document.querySelectorAll('.copy-btn').forEach(button => {
+          button.addEventListener('click', (event) => {
+              copyToClipboard(event.currentTarget.dataset.target);
+          });
+      });
+
+      // Initial display update
+      updatePaymentDisplay();
     });
 
  // Scope Premium Service Functionality
