@@ -1,0 +1,226 @@
+const LoadingAnimation = (function() {
+    let overlay = null;
+    let statusText = null;
+    let progressBar = null;
+    let percentage = null;
+    let terminalContent = null;
+    let matrixCanvas = null;
+    let matrixCtx = null;
+    let matrixAnimationId = null;
+
+    function init() {
+        // Create the loading overlay
+        const overlayHTML = `
+            <div class="loading-overlay" id="loadingOverlay">
+                <canvas id="matrixCanvas"></canvas>
+                <div class="loading-content">
+                    <div class="logo">1AI</div>
+                    <div class="spinner"></div>
+                    <div class="status-text" id="statusText">Initializing...</div>
+                    <div class="progress-bar">
+                        <div class="progress" id="progressBar"></div>
+                    </div>
+                    <div class="percentage" id="percentage">0%</div>
+                </div>
+                <div class="status-terminal">
+                    <div class="terminal-content" id="terminalContent">> Booting...</div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', overlayHTML);
+
+        // Inject CSS
+        const style = document.createElement('style');
+        style.innerHTML = `
+            .loading-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.95);
+                display: none;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                z-index: 10000;
+                font-family: 'Courier New', monospace;
+                color: #00FF41;
+                transition: opacity 0.5s ease;
+            }
+            .loading-content {
+                text-align: center;
+                z-index: 10;
+            }
+            .logo {
+                font-size: 3.5rem;
+                margin-bottom: 1.5rem;
+                text-shadow: 0 0 10px rgba(0, 255, 65, 0.7);
+            }
+            .spinner {
+                width: 80px;
+                height: 80px;
+                border: 8px solid rgba(0, 255, 65, 0.2);
+                border-top: 8px solid #00FF41;
+                border-radius: 50%;
+                animation: spin 1.5s linear infinite;
+                margin: 0 auto 1.5rem;
+            }
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+            .status-text {
+                font-size: 1.2rem;
+                margin-bottom: 0.5rem;
+                color: #aaffaa;
+            }
+            .progress-bar {
+                width: 300px;
+                height: 10px;
+                background: rgba(0, 40, 0, 0.5);
+                border-radius: 5px;
+                margin: 1rem auto;
+                overflow: hidden;
+            }
+            .progress {
+                height: 100%;
+                background: linear-gradient(90deg, #006600, #00FF00);
+                width: 0%;
+                transition: width 0.3s ease;
+            }
+            .percentage {
+                font-size: 1.1rem;
+                margin-top: 0.5rem;
+                color: #88cc88;
+            }
+            .status-terminal {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                background: rgba(0, 20, 0, 0.95);
+                border-top: 1px solid rgba(0, 255, 65, 0.4);
+                padding: 10px;
+                box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.5);
+            }
+            .terminal-content {
+                height: 30px;
+                display: flex;
+                align-items: center;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            #matrixCanvas {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                z-index: 1;
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Get references to elements
+        overlay = document.getElementById('loadingOverlay');
+        statusText = document.getElementById('statusText');
+        progressBar = document.getElementById('progressBar');
+        percentage = document.getElementById('percentage');
+        terminalContent = document.getElementById('terminalContent');
+        matrixCanvas = document.getElementById('matrixCanvas');
+        matrixCtx = matrixCanvas.getContext('2d');
+    }
+
+    function start(message = "Processing...") {
+        if (!overlay) init();
+        
+        statusText.textContent = message;
+        progressBar.style.width = '0%';
+        percentage.textContent = '0%';
+        overlay.style.display = 'flex';
+        setTimeout(() => overlay.style.opacity = '1', 10);
+        startMatrix();
+    }
+
+    function update(progress, message = null) {
+        if (!overlay) return;
+
+        if (progress < 0) progress = 0;
+        if (progress > 100) progress = 100;
+
+        progressBar.style.width = `${progress}%`;
+        percentage.textContent = `${Math.floor(progress)}%`;
+
+        if (message) {
+            statusText.textContent = message;
+        }
+    }
+
+    function setTerminalMessage(message) {
+        if (!terminalContent) return;
+        terminalContent.textContent = message;
+    }
+
+    function stop() {
+        if (!overlay) return;
+
+        update(100, "Complete!");
+        
+        setTimeout(() => {
+            overlay.style.opacity = '0';
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                stopMatrix();
+            }, 500);
+        }, 500);
+    }
+
+    function startMatrix() {
+        matrixCanvas.width = window.innerWidth;
+        matrixCanvas.height = window.innerHeight;
+
+        const chars = "01";
+        const fontSize = 18;
+        const columns = matrixCanvas.width / fontSize;
+        const drops = [];
+
+        for (let i = 0; i < columns; i++) {
+            drops[i] = 1;
+        }
+
+        function draw() {
+            matrixCtx.fillStyle = "rgba(0, 0, 0, 0.05)";
+            matrixCtx.fillRect(0, 0, matrixCanvas.width, matrixCanvas.height);
+
+            matrixCtx.fillStyle = "#0F0";
+            matrixCtx.font = `${fontSize}px monospace`;
+
+            for (let i = 0; i < drops.length; i++) {
+                const text = chars.charAt(Math.floor(Math.random() * chars.length));
+                matrixCtx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+                if (drops[i] * fontSize > matrixCanvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+
+                drops[i]++;
+            }
+        }
+
+        matrixAnimationId = setInterval(draw, 33);
+    }
+
+    function stopMatrix() {
+        clearInterval(matrixAnimationId);
+    }
+
+    return {
+        start,
+        update,
+        setTerminalMessage,
+        stop
+    };
+})();
