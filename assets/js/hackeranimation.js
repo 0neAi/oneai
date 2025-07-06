@@ -131,30 +131,30 @@
                 "> Establishing secure connection...",
                 "> Verifying system integrity...",
                 "> Connection established",
-                "> System ready"
-                ">>CONNECTED"
-                ">>CONNECTED"
-                ">>CONNECTED"
-                "Refreshing Connection"
-                ">"
-                ">>"
-                ">>>"
-                ">>>>>>"
-                "Location:>"
-                "Location:>>>"
-                "Location:>>>>>:"
-                "Location:Success"
-                "Location:Bangladesh"
-                "Processing"
-                "Processing.."
-                "Processing...."
-                "Processing....>"
-                "Getting Data"
-                "Getting Data."
-                "Getting Data..."
-                "Getting Data....!"
+                "> System ready",
+                ">>CONNECTED",
+                ">>CONNECTED",
+                ">>CONNECTED",
+                "Refreshing Connection",
+                ">",
+                ">>",
+                ">>>",
+                ">>>>>>",
+                "Location:>",
+                "Location:>>>",
+                "Location:>>>>>:",
+                "Location:Success",
+                "Location:Bangladesh",
+                "Processing",
+                "Processing..",
+                "Processing....",
+                "Processing....>",
+                "Getting Data",
+                "Getting Data.",
+                "Getting Data...",
+                "Getting Data....!",
                 "Connection established",
-                "Success"
+                "Success",
             
             ];
             
