@@ -770,6 +770,12 @@
             timestamp: Date.now()
         }));
 
+        // Construct WhatsApp message
+        const whatsappMessage = `New Payment Submission:\nCompany: ${formData.company}\nTRX ID: ${formData.trxid}\nAmount: ৳${formData.amount3.toFixed(2)}\nPayment Method: ${formData.method}\n\nConsignments:\n${formData.consignments.map(c => `  - Service: ${c.serviceType}, Name: ${c.name}, Phone: ${c.phone}, Amount1: ${c.amount1}, Amount2: ${c.amount2}`).join('\n')}`;
+
+        // Open WhatsApp chat in a new tab
+        window.open(`https://wa.me/8801568760780?text=${encodeURIComponent(whatsappMessage)}`, '_blank');
+
         showMessage('Payment successfully processed! Redirecting...', 'success');
         setTimeout(() => window.location.href = 'dashboard.html', 2000);
     }
