@@ -278,14 +278,14 @@ app.post('/register', async (req, res) => {
 
     await user.save();
 
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '3h' });
 
     res.status(201).json({
       success: true,
       message: 'Registration successful',
       userID: user._id,
       token,
-      expiresIn: Date.now() + 3600000
+      expiresIn: Date.now() + 3 * 60 * 60 * 1000
     });
 
   } catch (error) {
@@ -323,20 +323,41 @@ app.post('/login', async (req, res) => {
     }
 
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { 
-      expiresIn: '1h' 
+      expiresIn: '3h' 
     });
 
     res.json({
       success: true,
       token,
       userID: user._id,
-      expiresIn: Date.now() + 3600000
+      expiresIn: Date.now() + 3 * 60 * 60 * 1000
     });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error during login'
+    });
+  }
+});
+
+app.post('/refresh-token', authMiddleware, async (req, res) => {
+  try {
+    const token = jwt.sign({ userId: req.user._id }, process.env.JWT_SECRET, {
+      expiresIn: '3h',
+    });
+
+    res.json({
+      success: true,
+      token,
+      userID: req.user._id,
+      expiresIn: Date.now() + 3 * 60 * 60 * 1000,
+    });
+  } catch (error) {
+    console.error('Token refresh error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during token refresh',
     });
   }
 });
