@@ -643,10 +643,7 @@ function showPaymentPopup(payment) {
     
     popup.classList.add('active');
     
-    // Auto-close after 10 seconds
-    setTimeout(() => {
-        popup.classList.remove('active');
-    }, 10000);
+    
 }
 
 function closePaymentPopup() {
@@ -654,7 +651,7 @@ function closePaymentPopup() {
 }
 
 function handlePaymentCompletion(payment) {
-    LoadingAnimation.success('Payment Completed!');
+    LoadingAnimation.showSuccessWithButton('Payment Completed!');
     showPaymentPopup(payment); // Show the popup
     showPaymentNotification(payment); // Show the system notification
     playNotificationSound(); // Play the sound
