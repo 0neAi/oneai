@@ -238,19 +238,59 @@ const LoadingAnimation = (function() {
         overlay.style.display = 'flex';
         overlay.style.opacity = '1';
 
-        setTimeout(() => {
-            overlay.style.opacity = '0';
-            setTimeout(() => {
-                overlay.style.display = 'none';
-                // Restore original appearance
-                overlay.style.background = 'rgba(0, 0, 0, 0.95)';
-                if(spinner) {
-                    spinner.style.border = '8px solid rgba(0, 255, 65, 0.2)';
-                    spinner.style.borderTop = '8px solid #00FF41';
-                    spinner.innerHTML = '';
-                }
-            }, 500);
-        }, 1500);
+        // Removed automatic dismissal
+    }
+
+    function showSuccessWithButton(message = "Success!", onOkClick) {
+        success(message); // Call the existing success function
+
+        // Add an OK button
+        let okButton = overlay.querySelector('#loadingOkButton');
+        if (!okButton) {
+            okButton = document.createElement('button');
+            okButton.id = 'loadingOkButton';
+            okButton.textContent = 'OK';
+            okButton.style.cssText = `
+                margin-top: 20px;
+                padding: 10px 30px;
+                background-color: #00FF41;
+                color: #000;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+                font-size: 1.2rem;
+                font-weight: bold;
+                transition: background-color 0.3s ease;
+                z-index: 10; /* Ensure button is above matrix */
+            `;
+            okButton.onmouseover = () => okButton.style.backgroundColor = '#00E03A';
+            okButton.onmouseout = () => okButton.style.backgroundColor = '#00FF41';
+            overlay.querySelector('.loading-content').appendChild(okButton);
+        }
+        okButton.onclick = () => {
+            stop(); // Hide the overlay
+            if (onOkClick) onOkClick(); // Execute callback if provided
+            // Restore original appearance
+            overlay.style.background = 'rgba(0, 0, 0, 0.95)';
+            const spinner = overlay.querySelector('.spinner');
+            if(spinner) {
+                spinner.style.border = '8px solid rgba(0, 255, 65, 0.2)';
+                spinner.style.borderTop = '8px solid #00FF41';
+                spinner.innerHTML = '';
+            }
+            okButton.remove(); // Remove the button after click
+        };
+    }
+
+    return {
+        start,
+        update,
+        setTerminalMessage,
+        stop,
+        success,
+        showSuccessWithButton // Expose the new function
+    };
+})();
     }
 
     return {
