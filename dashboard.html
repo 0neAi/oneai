@@ -15,14 +15,49 @@
                 overflow-x: auto;
                 white-space: nowrap;
             }
+            .payment-table thead, .payment-table tbody, .payment-table th, .payment-table td, .payment-table tr {
+                display: block;
+            }
+            .payment-table thead tr {
+                position: absolute;
+                top: -9999px;
+                left: -9999px;
+            }
+            .payment-table tr {
+                border: 1px solid #eee;
+                margin-bottom: 10px;
+            }
+            .payment-table td {
+                border: none;
+                border-bottom: 1px solid #eee;
+                position: relative;
+                padding-left: 50%;
+                text-align: right;
+            }
+            .payment-table td:before {
+                position: absolute;
+                top: 6px;
+                left: 6px;
+                width: 45%;
+                padding-right: 10px;
+                white-space: nowrap;
+                text-align: left;
+                font-weight: bold;
+            }
+            .payment-table td:nth-of-type(1):before { content: "Status"; }
+            .payment-table td:nth-of-type(2):before { content: "Time Left"; }
+            .payment-table td:nth-of-type(3):before { content: "Company"; }
+            .payment-table td:nth-of-type(4):before { content: "TRX ID"; }
+            .payment-table td:nth-of-type(5):before { content: "Amount"; }
+            .payment-table td:nth-of-type(6):before { content: "Actions"; }
             
             .services-grid {
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: repeat(1, 1fr);
                 gap: 1rem;
             }
             
             .service-card h3 {
-                font-size: 1rem;
+                font-size: 1.2rem;
             }
             /* Larger buttons for mobile */
             .action-btn {
@@ -56,21 +91,31 @@
         }
         
         .status {
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
+            padding: 0.5rem 0.8rem;
+            border-radius: 8px;
             font-weight: bold;
             text-transform: uppercase;
-            font-size: 0.8rem;
+            font-size: 0.9rem;
+            text-align: center;
+            min-width: 100px;
+            display: inline-block;
         }
         
         .status.pending {
             background-color: #FFC107;
             color: #000;
+            animation: pulse-yellow 2s infinite;
         }
         
         .status.completed {
             background-color: #28A745;
             color: #FFF;
+        }
+
+        @keyframes pulse-yellow {
+            0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 193, 7, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
         }
         
         .status.failed {
@@ -416,6 +461,14 @@
                 <i class="fas fa-life-ring"></i> Helpline
             </button>
         </div>
+
+        <section class="search-section" style="margin-top: 2rem;">
+            <div class="search-container" style="position: relative;">
+                <i class="fas fa-search" style="position: absolute; top: 50%; left: 15px; transform: translateY(-50%); color: #aaa;"></i>
+                <input type="text" id="payment-search" placeholder="Search by TRX ID, Company, or Status..." style="width: 100%; padding: 12px 12px 12px 40px; border-radius: 8px; border: 1px solid #ddd; background: #f8f9fa;">
+            </div>
+        </section>
+
 <br><br>
         <section class="payment-section">
             <h2><i class="fas fa-clock"></i> Payment Status</h2>
@@ -423,11 +476,11 @@
                 <table>
                     <thead>
                         <tr>
+                            <th>Status</th>
+                            <th>Time Left</th>
                             <th>Company</th>
                             <th>TRX ID</th>
                             <th>Amount</th>
-                            <th>Status</th>
-                            <th>Time Left</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -557,11 +610,24 @@ function playNotificationSound() {
 function showPaymentNotification(payment) {
     playNotificationSound();
     
-    if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification('Payment Completed', {
-            body: `TRX ID: ${payment.trxid} - Amount: ৳${payment.amount}`,
-            icon: 'https://oneai-wjox.onrender.com/images/logo.png'
-        });
+    if ('Notification' in window) {
+        if (Notification.permission === 'granted') {
+            new Notification('Payment Completed', {
+                body: `TRX ID: ${payment.trxid} - Amount: ৳${payment.amount}`,
+                icon: 'https://oneai-wjox.onrender.com/images/logo.png',
+                sound: 'https://assets.mixkit.co/sfx/preview/mixkit-alert-quick-chime-766.mp3'
+            });
+        } else {
+            Notification.requestPermission().then(permission => {
+                if (permission === 'granted') {
+                    new Notification('Payment Completed', {
+                        body: `TRX ID: ${payment.trxid} - Amount: ৳${payment.amount}`,
+                        icon: 'https://oneai-wjox.onrender.com/images/logo.png',
+                        sound: 'https://assets.mixkit.co/sfx/preview/mixkit-alert-quick-chime-766.mp3'
+                    });
+                }
+            });
+        }
     }
   
     paymentState.unreadNotifications++;
@@ -588,6 +654,7 @@ function closePaymentPopup() {
 }
 
 function handlePaymentCompletion(payment) {
+    LoadingAnimation.success('Payment Completed!');
     showPaymentPopup(payment); // Show the popup
     showPaymentNotification(payment); // Show the system notification
     playNotificationSound(); // Play the sound
@@ -597,6 +664,17 @@ function handlePaymentCompletion(payment) {
     }
     
     setTimeout(refreshPayments, 2000);
+}
+
+function updatePaymentStatus(payment) {
+    const existingPayment = paymentState.payments.find(p => p.trxid === payment.trxid);
+    if (existingPayment) {
+        existingPayment.status = payment.status;
+        const row = document.querySelector(`tr[data-trxid="${payment.trxid}"]`);
+        if (row) {
+            updatePaymentRow(row, existingPayment);
+        }
+    }
 }
 
 function renderAllPayments() {
@@ -645,11 +723,11 @@ function renderPayment(payment) {
     // Special handling for premium services
     if (payment.company === 'premium_service') {
         row.innerHTML = `
+            <td><span class="status ${(payment.status || 'pending').toLowerCase()}">${payment.status || 'Pending'}</span></td>
+            <td>Premium service</td>
             ${companyCell}
             <td><code>${payment.trxid}</code></td>
             <td>৳${(payment.amount3 || 0).toFixed(2)}</td>
-            <td><span class="status ${(payment.status || 'pending').toLowerCase()}">${payment.status || 'Pending'}</span></td>
-            <td>Premium service</td>
             <td>
                 <button class="action-btn small" onclick="viewPaymentDetails('${payment.trxid}')">
                     <i class="fas fa-eye"></i> View
@@ -659,11 +737,11 @@ function renderPayment(payment) {
     } else {
         // Regular payment row
         row.innerHTML = `
+            <td><span class="status ${(payment.status || 'pending').toLowerCase()}">${payment.status || 'Pending'}</span></td>
+            <td class="countdown" data-expiry="${expiryTime}">Calculating...</td>
             ${companyCell}
             <td><code>${payment.trxid}</code></td>
             <td>৳${(payment.amount3 || 0).toFixed(2)}</td>
-            <td><span class="status ${(payment.status || 'pending').toLowerCase()}">${payment.status || 'Pending'}</span></td>
-            <td class="countdown" data-expiry="${expiryTime}">Calculating...</td>
             <td>
                 <button class="action-btn small" onclick="viewPaymentDetails('${payment.trxid}')">
                     <i class="fas fa-eye"></i> View
