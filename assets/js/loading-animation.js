@@ -238,7 +238,7 @@ const LoadingAnimation = (function() {
         overlay.style.display = 'flex';
         overlay.style.opacity = '1';
 
-        // Removed automatic dismissal
+        // The animation will remain until the user clicks the OK button.
     }
 
     function showSuccessWithButton(message = "Success!", onOkClick) {
