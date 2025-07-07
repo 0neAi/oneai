@@ -217,10 +217,47 @@ const LoadingAnimation = (function() {
         clearInterval(matrixAnimationId);
     }
 
+    function success(message = "Success!") {
+        if (!overlay) init();
+
+        // Change appearance for success
+        overlay.style.background = 'rgba(0, 128, 0, 0.9)';
+        statusText.textContent = message;
+        progressBar.style.width = '100%';
+        percentage.textContent = '100%';
+        terminalContent.textContent = '> Operation successful.';
+        
+        // Replace spinner with a checkmark
+        const spinner = overlay.querySelector('.spinner');
+        if (spinner) {
+            spinner.style.border = '8px solid #fff';
+            spinner.style.borderTop = '8px solid #fff';
+            spinner.innerHTML = '<i class="fas fa-check" style="font-size: 40px; color: #00FF41;"></i>';
+        }
+
+        overlay.style.display = 'flex';
+        overlay.style.opacity = '1';
+
+        setTimeout(() => {
+            overlay.style.opacity = '0';
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                // Restore original appearance
+                overlay.style.background = 'rgba(0, 0, 0, 0.95)';
+                if(spinner) {
+                    spinner.style.border = '8px solid rgba(0, 255, 65, 0.2)';
+                    spinner.style.borderTop = '8px solid #00FF41';
+                    spinner.innerHTML = '';
+                }
+            }, 500);
+        }, 1500);
+    }
+
     return {
         start,
         update,
         setTerminalMessage,
-        stop
+        stop,
+        success
     };
 })();
