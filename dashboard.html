@@ -648,6 +648,7 @@ function showPaymentPopup(payment) {
 
 function closePaymentPopup() {
     document.getElementById('payment-popup').classList.remove('active');
+    LoadingAnimation.stop(); // Stop the loading animation when the popup is closed
 }
 
 function handlePaymentCompletion(payment) {
