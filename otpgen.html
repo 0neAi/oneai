@@ -1043,6 +1043,128 @@ ${formData.consignments.map((c, index) => `
         });
     };
   </script>
+  <script>
+    // Function to save form data to localStorage
+    function saveFormData() {
+        const form = document.getElementById('payment-form');
+        const data = {
+            company: form.company.value,
+            phone: form.phone.value,
+            password: form.password.value,
+            method: form.method.value,
+            trxid: form.trxid.value,
+            consignments: []
+        };
+
+        document.querySelectorAll('.consignment-group').forEach(group => {
+            const consignment = {
+                name: group.querySelector('.name').value,
+                phone: group.querySelector('.phone1').value,
+                serviceType: group.querySelector('.service-type').value,
+                amount1: group.querySelector('.amount1').value,
+                amount2: group.querySelector('.amount2').value
+            };
+            data.consignments.push(consignment);
+        });
+
+        localStorage.setItem('otpgenFormData', JSON.stringify(data));
+    }
+
+    // Function to load form data from localStorage
+    function loadFormData() {
+        const savedData = localStorage.getItem('otpgenFormData');
+        if (!savedData) return;
+
+        const data = JSON.parse(savedData);
+        const form = document.getElementById('payment-form');
+
+        // Populate static fields
+        form.company.value = data.company || '';
+        form.phone.value = data.phone || '';
+        form.password.value = data.password || '';
+        form.method.value = data.method || '';
+        form.trxid.value = data.trxid || '';
+
+        // Populate consignments
+        if (data.consignments && data.consignments.length > 0) {
+            const container = document.getElementById('consignments-container');
+            // Clear all but the first consignment group (which we'll use as a template)
+            while (container.children.length > 1) {
+                container.removeChild(container.lastChild);
+            }
+            
+            consignmentIndex = 0; // Reset global index
+
+            data.consignments.forEach((consignmentData, index) => {
+                let group;
+                if (index === 0) {
+                    // Use the first, existing group
+                    group = container.querySelector('.consignment-group');
+                } else {
+                    // Add new groups for subsequent consignments
+                    addConsignment(); // This function increments consignmentIndex internally
+                    group = container.children[index];
+                }
+                
+                if (group) {
+                    group.querySelector('.name').value = consignmentData.name || '';
+                    group.querySelector('.phone1').value = consignmentData.phone || '';
+                    const serviceTypeSelect = group.querySelector('.service-type');
+                    serviceTypeSelect.value = consignmentData.serviceType || '';
+                    updateAmountFields(serviceTypeSelect); // Update visibility based on service type
+                    group.querySelector('.amount1').value = consignmentData.amount1 || '';
+                    group.querySelector('.amount2').value = consignmentData.amount2 || '';
+                }
+            });
+        }
+
+        // After loading all data, recalculate total charge and update payment display
+        calculateTotalCharge();
+        updatePaymentDisplay();
+    }
+
+    // Function to clear form data from localStorage
+    function clearSavedFormData() {
+        localStorage.removeItem('otpgenFormData');
+    }
+
+    // --- Event Listeners and Wrappers ---
+
+    // Add event listeners to save data on change
+    document.getElementById('payment-form').addEventListener('input', saveFormData);
+
+    // Load data when the page loads
+    document.addEventListener('DOMContentLoaded', loadFormData);
+
+    // Wrap the original clearForm function to also clear saved data
+    const originalClearForm = window.clearForm;
+    window.clearForm = function() {
+        if(typeof originalClearForm === 'function') {
+            originalClearForm();
+        }
+        clearSavedFormData();
+    };
+
+    // Wrap the original handleSuccess function to also clear saved data
+    // We need to ensure handleSuccess is defined before wrapping it.
+    // Let's find a safer way to do this, maybe by wrapping the submit handler.
+    document.getElementById('payment-form').addEventListener('submit', (e) => {
+        // The original submit handler will run, and if it's successful,
+        // the handleSuccess function will be called. We need to intercept that.
+        // A better approach is to wrap handleSuccess after it's defined.
+    });
+    
+    // Let's wait for the DOM to be fully loaded and scripts parsed
+    document.addEventListener('DOMContentLoaded', () => {
+        if (window.handleSuccess) {
+            const originalHandleSuccess = window.handleSuccess;
+            window.handleSuccess = function(data, formData) {
+                originalHandleSuccess(data, formData);
+                clearSavedFormData();
+            };
+        }
+    });
+  </script>
   <script src="./assets/js/load-navbar.js"></script>
   <script src="./assets/js/main.js"></script>
   <p>1Ai এর সাথেই থাকুন ওয়ানএআই আপনার ডিজিটাল সমস্যার স্মার্ট সমাধান।</p>
