@@ -82,8 +82,6 @@ app.use(limiter);
 let isReady = false;
 
 mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
   serverSelectionTimeoutMS: 5000
 })
 .then(() => console.log('✅ MongoDB connected successfully'))
@@ -127,32 +125,49 @@ wss.on('connection', (ws, req) => {
     console.error('WebSocket error:', error);
   });
 
-  ws.on('message', async (message) => {
-    try {
-      const data = JSON.parse(message);
+// Replace the WebSocket message handler
+ws.on('message', async (message) => {
+  try {
+    const data = JSON.parse(message);
+    
+    // Handle user authentication
+    if (data.type === 'auth') {
+      const decoded = jwt.verify(data.token, process.env.JWT_SECRET);
       
-   // Require auth for sensitive operations
-            if (data.type === 'adminStatusUpdate' || data.type === 'auth') {
-                const decoded = jwt.verify(data.token, process.env.JWT_SECRET);
-        
-        if (!['superadmin', 'moderator'].includes(decoded.role)) {
-          throw new Error('Insufficient privileges');
-        }
-
-        wss.clients.forEach(client => {
-          if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({
-              type: 'payment-updated',
-              payment: data.payment
-            }));
-          }
-        });
+      // Regular user authentication
+      if (decoded.userId) {
+        ws.userId = decoded.userId;
+        return;
       }
-    } catch (error) {
-      console.error('WebSocket error:', error.message);
-      ws.close(1008, 'Authentication failed');
+      
+      // Admin authentication
+      if (decoded.adminId && ['superadmin', 'moderator'].includes(decoded.role)) {
+        ws.isAdmin = true;
+        return;
+      }
+      
+      throw new Error('Invalid authentication token');
     }
-  });
+
+    // Handle admin operations
+    if (data.type === 'adminStatusUpdate') {
+      if (!ws.isAdmin) {
+        throw new Error('Insufficient privileges');
+      }
+
+      wss.clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify({
+            type: 'payment-updated',
+            payment: data.payment
+          }));
+        }
+      });
+    }
+  } catch (error) {
+    console.error('WebSocket error:', error.message);
+    ws.close(1008, 'Authentication failed');
+  }
 });
 
 app.set('wss', wss);
