@@ -394,88 +394,80 @@
     </footer>
 
     <script src="./assets/js/loading-animation.js"></script>
-    <script>
-        // Session validation on page load
-        document.addEventListener('DOMContentLoaded', async () => {
-            const token = localStorage.getItem('authToken');
-            const userID = localStorage.getItem('userID');
-            const expiresIn = localStorage.getItem('tokenExp');
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+    const token = localStorage.getItem('authToken');
+    const userID = localStorage.getItem('userID');
+    const tokenExp = localStorage.getItem('tokenExp');
 
-            if (token && userID && expiresIn) {
-                try {
-                    // Validate session with server
-                    const response = await fetch('https://oneai-wjox.onrender.com/validate', {
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'X-User-ID': userID
-                        }
-                    });
-                    
-                    if (response.ok) {
-                        window.location.href = 'dashboard.html';
-                    } else {
-                        throw new Error('Session expired');
-                    }
-                } catch (error) {
-                    localStorage.removeItem('authToken');
-                    localStorage.removeItem('userID');
-                    localStorage.removeItem('tokenExp');
+    if (token && userID && tokenExp && Date.now() < parseInt(tokenExp)) {
+        try {
+            const response = await fetch('https://oneai-wjox.onrender.com/validate', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'X-User-ID': userID
                 }
-            }
-        });
-
-        // Login form handler
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const messageElement = document.getElementById('loginMessage');
-            messageElement.textContent = '';
-            messageElement.className = 'auth-message';
+            });
             
-            const email = document.getElementById('loginEmail').value.trim().toLowerCase();
-            const password = document.getElementById('loginPassword').value;
-
-            LoadingAnimation.start("Authenticating...");
-            LoadingAnimation.setTerminalMessage("> Verifying credentials...");
-
-            try {
-                const response = await fetch('https://oneai-wjox.onrender.com/login', {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json' 
-                    },
-                    body: JSON.stringify({ email, password })
-                });
-
-                LoadingAnimation.update(50, "Checking credentials...");
-                LoadingAnimation.setTerminalMessage("> Awaiting server response...");
-
-                const data = await response.json();
-                
-                if (!response.ok) {
-                    throw new Error(data.message || 'Authentication failed');
-                }
-
-                LoadingAnimation.update(100, "Login successful!");
-                LoadingAnimation.setTerminalMessage("> Redirecting to dashboard...");
-
-                // Store authentication data
-                localStorage.setItem('userID', data.userID);
-                localStorage.setItem('authToken', data.token);
-                localStorage.setItem('tokenExp', data.expiresIn);
-                
-                // Redirect to dashboard
-                setTimeout(() => {
-                    LoadingAnimation.stop();
-                    window.location.href = 'dashboard.html';
-                }, 1000);
-
-            } catch (error) {
-                LoadingAnimation.stop();
-                messageElement.textContent = error.message || 'Login failed. Please try again.';
-                messageElement.className = 'auth-message error';
+            if (response.ok) {
+                window.location.href = 'dashboard.html';
             }
-        });
-    </script>
+        } catch (error) {
+            localStorage.clear();
+        }
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const messageElement = document.getElementById('loginMessage');
+        messageElement.textContent = '';
+        messageElement.className = 'auth-message';
+        
+        const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+        const password = document.getElementById('loginPassword').value;
+
+        // Start loading animation
+        LoadingAnimation.start("Authenticating...");
+        LoadingAnimation.setTerminalMessage("> Verifying credentials...");
+
+        try {
+            const response = await fetch('https://oneai-wjox.onrender.com/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            LoadingAnimation.update(50, "Checking credentials...");
+            LoadingAnimation.setTerminalMessage("> Awaiting server response...");
+
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.message || 'Authentication failed');
+            }
+
+            LoadingAnimation.update(100, "Login successful!");
+            LoadingAnimation.setTerminalMessage("> Redirecting to dashboard...");
+
+            // Store authentication data
+            localStorage.setItem('userID', data.userID);
+            localStorage.setItem('authToken', data.token);
+            localStorage.setItem('tokenExp', data.expiresIn);
+            
+            // Redirect to dashboard
+            setTimeout(() => {
+                LoadingAnimation.stop();
+                window.location.href = 'dashboard.html';
+            }, 1000);
+
+        } catch (error) {
+            LoadingAnimation.stop();
+            messageElement.textContent = error.message || 'Login failed. Please try again.';
+            messageElement.className = 'auth-message error';
+        }
+    });
+});
+</script>
     <script src="./assets/js/hackeranimation.js"></script>
 </body>
 </html>
