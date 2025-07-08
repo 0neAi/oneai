@@ -470,20 +470,6 @@ Consignments:
 ${savedPayment.consignments.map(c => `  - Service: ${c.serviceType}, Name: ${c.name}, Phone: ${c.phone}, Amount1: ${c.amount1}, Amount2: ${c.amount2}`).join('\n')}
 `;
 
-    // Placeholder for WhatsApp API integration
-    // In a real application, you would integrate a WhatsApp API here (e.g., Twilio, WhatsApp Business API)
-    // For example:
-    // try {
-    //   const client = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-    //   await client.messages.create({
-    //     body: whatsappMessage,
-    //     from: 'whatsapp:+14155238886', // Your Twilio WhatsApp number
-    //     to: `whatsapp:${process.env.HELPLINE_WHATSAPP_NUMBER}`
-    //   });
-    //   console.log('WhatsApp message sent successfully!');
-    // } catch (whatsappError) {
-    //   console.error('Failed to send WhatsApp message:', whatsappError);
-    // }
     console.log('Simulating WhatsApp message to helpline:');
     console.log(whatsappMessage);
 
@@ -748,27 +734,6 @@ app.get('/admin/payments', adminAuth, async (req, res) => {
   }
 });
 // ======================
-// Get Payments (Admin)
-// ======================
-app.get('/admin/payments', adminAuth, async (req, res) => {
-  try {
-    const payments = await Payment.find()
-      .populate('user', 'email phone')
-      .sort({ createdAt: -1 });
-
-    res.json({
-      success: true,
-      payments
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch payments'
-    });
-  }
-});
-
-// ======================
 // User Payments Route
 // ======================
 app.get('/payments/user', authMiddleware, async (req, res) => {
@@ -796,74 +761,7 @@ app.get('/payments/user', authMiddleware, async (req, res) => {
   }
 });
 
-// ======================
-// Premium Payment Route
-// ======================
-// In the premium-payment route
-app.post('/premium-payment', authMiddleware, async (req, res) => {
-  try {
-    // Validate required fields
-    if (!req.body.phone || !req.body.trxid || !req.body.amount || !req.body.service || !req.body.type) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'All fields required' 
-      });
-    }
 
-    // Create payment record
-    const payment = new Payment({
-      user: req.user._id,
-      company: 'premium_service',
-      phone: req.body.phone,
-      password: 'premium_access',
-      method: 'Premium',
-      trxid: req.body.trxid,
-      consignments: [{
-        name: 'Premium Service',
-        phone: req.body.phone,
-        amount1: req.body.amount,
-        amount2: 0,
-        serviceType: req.body.service
-      }],
-      amount3: req.body.amount,
-      status: 'Pending'
-    });
-
-    // Save and broadcast
-    const savedPayment = await payment.save();
-    wss.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify({
-          type: 'new-payment',
-          payment: {
-            _id: savedPayment._id,
-            status: savedPayment.status,
-            trxid: savedPayment.trxid,
-            amount3: savedPayment.amount3,
-            user: {
-              _id: req.user._id,
-              email: req.user.email,
-              phone: req.user.phone
-            },
-            company: 'premium_service',
-            createdAt: savedPayment.createdAt
-          }
-        }));
-      }
-    });
-
-    res.status(201).json({
-      success: true,
-      message: 'Premium payment submitted for verification',
-      payment: savedPayment
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message || 'Premium payment processing failed'
-    });
-  }
-});
 
 // ======================
 // Get Users (Admin)
@@ -921,4 +819,3 @@ server.listen(PORT, '0.0.0.0', () => {
     process.exit(1);
   });
 });
-export default app;
