@@ -604,12 +604,10 @@ function connectWebSocket() {
     paymentState.ws.onopen = () => {
         console.log('WebSocket Connected');
         const authToken = localStorage.getItem('authToken');
-        const userID = localStorage.getItem('userID');
         
         paymentState.ws.send(JSON.stringify({
             type: 'auth',
             token: authToken,
-            userId: userID
         }));
     };
 
