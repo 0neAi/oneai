@@ -131,8 +131,9 @@ wss.on('connection', (ws, req) => {
     try {
       const data = JSON.parse(message);
       
-      if (data.type === 'adminStatusUpdate') {
-        const decoded = jwt.verify(data.token, process.env.JWT_SECRET);
+   // Require auth for sensitive operations
+            if (data.type === 'adminStatusUpdate' || data.type === 'auth') {
+                const decoded = jwt.verify(data.token, process.env.JWT_SECRET);
         
         if (!['superadmin', 'moderator'].includes(decoded.role)) {
           throw new Error('Insufficient privileges');
