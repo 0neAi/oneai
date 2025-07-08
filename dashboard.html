@@ -422,6 +422,16 @@
         <div class="navbar-placeholder" style="background: #2c3e50; color: white; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;">
             <i class="fas fa-bars"></i> FREE_PALESTINE
         </div>
+    <div id="payment-details-modal" class="premium-modal">
+            <div class="premium-modal-content">
+                <h3 class="premium-modal-title"><i class="fas fa-info-circle"></i> Payment Details</h3>
+                <div id="payment-details-content">
+                    <!-- Details will be loaded here -->
+                </div>
+                <button class="action-btn refresh-btn" onclick="closePaymentDetailsModal()">Close</button>
+            </div>
+        </div>
+
     <!-- Add this new payment popup element -->
     <div id="payment-popup" class="payment-popup">
         <button class="close-btn" onclick="closePaymentPopup()">&times;</button>
@@ -462,12 +472,7 @@
             </button>
         </div>
 
-        <section class="search-section" style="margin-top: 2rem;">
-            <div class="search-container" style="position: relative;">
-                <i class="fas fa-search" style="position: absolute; top: 50%; left: 15px; transform: translateY(-50%); color: #aaa;"></i>
-                <input type="text" id="payment-search" placeholder="Search by TRX ID, Company, or Status..." style="width: 100%; padding: 12px 12px 12px 40px; border-radius: 8px; border: 1px solid #ddd; background: #f8f9fa;">
-            </div>
-        </section>
+        
 
 <br><br>
         <section class="payment-section">
@@ -478,8 +483,6 @@
                         <tr>
                             <th>Status</th>
                             <th>Time Left</th>
-                            <th>Company</th>
-                            <th>TRX ID</th>
                             <th>Amount</th>
                             <th>Actions</th>
                         </tr>
@@ -676,8 +679,6 @@ function renderPayment(payment) {
         row.innerHTML = `
             <td><span class="status ${payment.status.toLowerCase()}">${payment.status}</span></td>
             <td>Premium service</td>
-            <td><i class="fas fa-crown premium-icon"></i> Premium Service</td>
-            <td><code>${payment.trxid}</code></td>
             <td>৳${payment.amount3.toFixed(2)}</td>
             <td>
                 <button class="action-btn small" onclick="viewPaymentDetails('${payment.trxid}')">
@@ -689,8 +690,6 @@ function renderPayment(payment) {
         row.innerHTML = `
             <td><span class="status ${payment.status.toLowerCase()}">${payment.status}</span></td>
             <td class="countdown" data-expiry="${expiryTime}">Calculating...</td>
-            <td>${formatCompanyName(payment.company)}</td>
-            <td><code>${payment.trxid}</code></td>
             <td>৳${payment.amount3.toFixed(2)}</td>
             <td>
                 <button class="action-btn small" onclick="viewPaymentDetails('${payment.trxid}')">
@@ -767,7 +766,7 @@ function startCountdown(element, trxid) {
     }
 
     update();
-    paymentState.paymentTimers[trxid] = setInterval(update, 1000);
+    paymentState.paymentTimers[trxid] = setInterval(refreshPayments, 1 * 60 * 1000);
 }
 
 function updateStats() {
@@ -814,15 +813,17 @@ function closePaymentPopup() {
 }
 
 function handlePaymentCompletion(payment) {
-    showPaymentPopup(payment);
-    showPaymentNotification(payment);
-    playNotificationSound();
-    
-    if ('vibrate' in navigator) {
-        navigator.vibrate([300, 100, 300]);
-    }
-    
-    setTimeout(refreshPayments, 2000);
+    LoadingAnimation.showSuccessWithButton(`Payment ${payment.trxid} Completed!`, () => {
+        showPaymentPopup(payment);
+        showPaymentNotification(payment);
+        playNotificationSound();
+        
+        if ('vibrate' in navigator) {
+            navigator.vibrate([300, 100, 300]);
+        }
+        
+        setTimeout(refreshPayments, 2000);
+    });
 }
 
 function formatCompanyName(company) {
@@ -894,16 +895,23 @@ document.addEventListener('DOMContentLoaded', async () => {
 window.viewPaymentDetails = function(trxid) {
     const payment = paymentState.payments.find(p => p.trxid === trxid);
     if (payment) {
-        alert(`
-            Company: ${formatCompanyName(payment.company)}\n
-            TRX ID: ${payment.trxid}\n
-            Amount: ৳${payment.amount3.toFixed(2)}\n
-            Status: ${payment.status}\n
-            Created: ${new Date(payment.createdAt).toLocaleString()}
-        `);
+        const detailsContent = document.getElementById('payment-details-content');
+        detailsContent.innerHTML = `
+            <p><strong>Company:</strong> ${formatCompanyName(payment.company)}</p>
+            <p><strong>TRX ID:</strong> ${payment.trxid}</p>
+            <p><strong>Amount:</strong> ৳${payment.amount3.toFixed(2)}</p>
+            <p><strong>Status:</strong> <span class="status ${payment.status.toLowerCase()}">${payment.status}</span></p>
+            <p><strong>Created:</strong> ${new Date(payment.createdAt).toLocaleString()}</p>
+            ${payment.form_data ? `<p><strong>Form Data:</strong> <pre>${JSON.stringify(payment.form_data, null, 2)}</pre></p>` : ''}
+        `;
+        document.getElementById('payment-details-modal').style.display = 'flex';
     } else {
         showError('Payment details not found');
     }
+};
+
+window.closePaymentDetailsModal = function() {
+    document.getElementById('payment-details-modal').style.display = 'none';
 };
 
 window.showPremiumPaymentForm = function() {
