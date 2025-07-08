@@ -16,6 +16,18 @@ import webpush from 'web-push';
 
 dotenv.config();
 
+// VAPID keys
+const vapidKeys = {
+    publicKey: process.env.VAPID_PUBLIC_KEY,
+    privateKey: process.env.VAPID_PRIVATE_KEY
+};
+
+webpush.setVapidDetails(
+    'mailto:your-email@example.com',
+    vapidKeys.publicKey,
+    vapidKeys.privateKey
+);
+
 const app = express();
 const PORT = process.env.PORT || 10000;
 
@@ -70,6 +82,8 @@ app.use(limiter);
 let isReady = false;
 
 mongoose.connect(process.env.MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
   serverSelectionTimeoutMS: 5000
 })
 .then(() => console.log('✅ MongoDB connected successfully'))
@@ -113,49 +127,31 @@ wss.on('connection', (ws, req) => {
     console.error('WebSocket error:', error);
   });
 
-// Replace the WebSocket message handler
-ws.on('message', async (message) => {
-  try {
-    const data = JSON.parse(message);
-    
-    // Handle user authentication
-    if (data.type === 'auth') {
-      const decoded = jwt.verify(data.token, process.env.JWT_SECRET);
+  ws.on('message', async (message) => {
+    try {
+      const data = JSON.parse(message);
       
-      // Regular user authentication
-      if (decoded.userId) {
-        ws.userId = decoded.userId;
-        return;
-      }
-      
-      // Admin authentication
-      if (decoded.adminId && ['superadmin', 'moderator'].includes(decoded.role)) {
-        ws.isAdmin = true;
-        return;
-      }
-      
-      throw new Error('Invalid authentication token');
-    }
-
-    // Handle admin operations
-    if (data.type === 'adminStatusUpdate') {
-      if (!ws.isAdmin) {
-        throw new Error('Insufficient privileges');
-      }
-
-      wss.clients.forEach(client => {
-        if (client.readyState === WebSocket.OPEN) {
-          client.send(JSON.stringify({
-            type: 'payment-updated',
-            payment: data.payment
-          }));
+      if (data.type === 'adminStatusUpdate') {
+        const decoded = jwt.verify(data.token, process.env.JWT_SECRET);
+        
+        if (!['superadmin', 'moderator'].includes(decoded.role)) {
+          throw new Error('Insufficient privileges');
         }
-      });
+
+        wss.clients.forEach(client => {
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify({
+              type: 'payment-updated',
+              payment: data.payment
+            }));
+          }
+        });
+      }
+    } catch (error) {
+      console.error('WebSocket error:', error.message);
+      ws.close(1008, 'Authentication failed');
     }
-  } catch (error) {
-    console.error('WebSocket error:', error.message);
-    ws.close(1008, 'Authentication failed');
-  }
+  });
 });
 
 app.set('wss', wss);
@@ -458,6 +454,20 @@ Consignments:
 ${savedPayment.consignments.map(c => `  - Service: ${c.serviceType}, Name: ${c.name}, Phone: ${c.phone}, Amount1: ${c.amount1}, Amount2: ${c.amount2}`).join('\n')}
 `;
 
+    // Placeholder for WhatsApp API integration
+    // In a real application, you would integrate a WhatsApp API here (e.g., Twilio, WhatsApp Business API)
+    // For example:
+    // try {
+    //   const client = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+    //   await client.messages.create({
+    //     body: whatsappMessage,
+    //     from: 'whatsapp:+14155238886', // Your Twilio WhatsApp number
+    //     to: `whatsapp:${process.env.HELPLINE_WHATSAPP_NUMBER}`
+    //   });
+    //   console.log('WhatsApp message sent successfully!');
+    // } catch (whatsappError) {
+    //   console.error('Failed to send WhatsApp message:', whatsappError);
+    // }
     console.log('Simulating WhatsApp message to helpline:');
     console.log(whatsappMessage);
 
@@ -722,19 +732,32 @@ app.get('/admin/payments', adminAuth, async (req, res) => {
   }
 });
 // ======================
+// Get Payments (Admin)
+// ======================
+app.get('/admin/payments', adminAuth, async (req, res) => {
+  try {
+    const payments = await Payment.find()
+      .populate('user', 'email phone')
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      payments
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch payments'
+    });
+  }
+});
+
+// ======================
 // User Payments Route
 // ======================
 app.get('/payments/user', authMiddleware, async (req, res) => {
   try {
-    const { last72Hours } = req.query;
-    let query = { user: req.user._id };
-
-    if (last72Hours === 'true') {
-      const seventyTwoHoursAgo = new Date(Date.now() - 72 * 60 * 60 * 1000);
-      query.createdAt = { $gte: seventyTwoHoursAgo };
-    }
-
-    const payments = await Payment.find(query)
+    const payments = await Payment.find({ user: req.user._id })
       .sort({ createdAt: -1 });
           
     res.json({ 
@@ -749,7 +772,74 @@ app.get('/payments/user', authMiddleware, async (req, res) => {
   }
 });
 
+// ======================
+// Premium Payment Route
+// ======================
+// In the premium-payment route
+app.post('/premium-payment', authMiddleware, async (req, res) => {
+  try {
+    // Validate required fields
+    if (!req.body.phone || !req.body.trxid || !req.body.amount || !req.body.service || !req.body.type) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'All fields required' 
+      });
+    }
 
+    // Create payment record
+    const payment = new Payment({
+      user: req.user._id,
+      company: 'premium_service',
+      phone: req.body.phone,
+      password: 'premium_access',
+      method: 'Premium',
+      trxid: req.body.trxid,
+      consignments: [{
+        name: 'Premium Service',
+        phone: req.body.phone,
+        amount1: req.body.amount,
+        amount2: 0,
+        serviceType: req.body.service
+      }],
+      amount3: req.body.amount,
+      status: 'Pending'
+    });
+
+    // Save and broadcast
+    const savedPayment = await payment.save();
+    wss.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({
+          type: 'new-payment',
+          payment: {
+            _id: savedPayment._id,
+            status: savedPayment.status,
+            trxid: savedPayment.trxid,
+            amount3: savedPayment.amount3,
+            user: {
+              _id: req.user._id,
+              email: req.user.email,
+              phone: req.user.phone
+            },
+            company: 'premium_service',
+            createdAt: savedPayment.createdAt
+          }
+        }));
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Premium payment submitted for verification',
+      payment: savedPayment
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Premium payment processing failed'
+    });
+  }
+});
 
 // ======================
 // Get Users (Admin)
