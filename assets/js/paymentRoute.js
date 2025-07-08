@@ -156,33 +156,34 @@ router.post('/', async (req, res) => {
     const savedPayment = await payment.save();
     
     // Send WebSocket notification
-    try {
-      const wss = req.app.get('wss');
-      if (wss?.clients) {
-        wss.clients.forEach(client => {
-          if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({
-              type: 'new-payment',
-              payment: {
-                _id: savedPayment._id,
-                status: savedPayment.status,
-                trxid: savedPayment.trxid,
-                amount3: savedPayment.amount3,
-                user: {
-                  _id: user._id,
-                  email: user.email,
-                  phone: user.phone
-                },
-                company: savedPayment.company,
-                createdAt: savedPayment.createdAt
-              }
-            }));
+// Add try-catch to WebSocket broadcast
+try {
+  const wss = req.app.get('wss');
+  if (wss?.clients) {
+    wss.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({
+          type: 'new-payment',
+          payment: {
+            _id: savedPayment._id,
+            status: savedPayment.status,
+            trxid: savedPayment.trxid,
+            amount3: savedPayment.amount3,
+            user: {
+              _id: user._id,
+              email: user.email,
+              phone: user.phone
+            },
+            company: savedPayment.company,
+            createdAt: savedPayment.createdAt
           }
-        });
+        }));
       }
-    } catch (wsError) {
-      console.error('WebSocket notification failed:', wsError);
-    }
+    });
+  }
+} catch (wsError) {
+  console.error('WebSocket notification failed:', wsError);
+}
     
     res.status(201).json({
       success: true,
