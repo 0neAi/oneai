@@ -819,3 +819,4 @@ server.listen(PORT, '0.0.0.0', () => {
     process.exit(1);
   });
 });
+export default app;
