@@ -291,13 +291,3 @@ const LoadingAnimation = (function() {
         showSuccessWithButton // Expose the new function
     };
 })();
-    }
-
-    return {
-        start,
-        update,
-        setTerminalMessage,
-        stop,
-        success
-    };
-})();
