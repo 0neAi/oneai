@@ -16,18 +16,6 @@ import webpush from 'web-push';
 
 dotenv.config();
 
-// VAPID keys
-const vapidKeys = {
-    publicKey: process.env.VAPID_PUBLIC_KEY,
-    privateKey: process.env.VAPID_PRIVATE_KEY
-};
-
-webpush.setVapidDetails(
-    'mailto:your-email@example.com',
-    vapidKeys.publicKey,
-    vapidKeys.privateKey
-);
-
 const app = express();
 const PORT = process.env.PORT || 10000;
 
