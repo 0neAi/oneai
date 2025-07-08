@@ -433,119 +433,86 @@
     <footer>
         <p>&copy; 2023 1AI Intilligence All rights reserved. | Secured with Advanced AI Encryption</p>
     </footer>
-
-    <script src="./assets/js/loading-animation.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Check for existing session
-            const token = localStorage.getItem('authToken');
-            const userID = localStorage.getItem('userID');
-            
-            if (token && userID) {
-                validateSession(token, userID);
-            }
-        });
-
-        async function validateSession(token, userID) {
-            try {
-                const response = await fetch('https://oneai-wjox.onrender.com/validate', {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'X-User-ID': userID
-                    }
-                });
-                
-                if (response.ok) {
-                    window.location.href = 'dashboard.html';
-                } else {
-                    localStorage.clear();
-                }
-            } catch (error) {
-                console.error('Session validation error:', error);
-            }
-        }
-
-        document.getElementById('registerForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const phone = document.getElementById('phone').value.trim();
-            const email = document.getElementById('email').value.trim();
-            const password = document.getElementById('password').value;
-            const messageElement = document.getElementById('message');
-            
-            // Clear previous messages
-            messageElement.className = 'auth-message';
-            messageElement.textContent = '';
-            
-            // Basic client-side validation
-            if (!/^01[3-9]\d{8}$/.test(phone)) {
-                showMessage('Please enter a valid Bangladeshi phone number starting with 013-019', 'error');
-                return;
-            }
-            
-            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                showMessage('Please enter a valid email address', 'error');
-                return;
-            }
-            
-            if (password.length < 8) {
-                showMessage('Password must be at least 8 characters', 'error');
-                return;
-            }
-
-            LoadingAnimation.start("Registering...");
-            LoadingAnimation.setTerminalMessage("> Encrypting data...");
-            
-            try {
-                const response = await fetch('https://oneai-wjox.onrender.com/register', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        phone,
-                        email,
-                        password
-                    })
-                });
-
-                LoadingAnimation.update(50, "Sending to server...");
-                LoadingAnimation.setTerminalMessage("> Awaiting server response...");
-                
-                const data = await response.json();
-                
-                if (response.ok) {
-                    LoadingAnimation.update(100, "Registration successful!");
-                    LoadingAnimation.setTerminalMessage("> Redirecting to dashboard...");
-                    // Store authentication data
-                    localStorage.setItem('userID', data.userID);
-                    localStorage.setItem('authToken', data.token);
-                    localStorage.setItem('tokenExp', data.expiresIn);
-                    
-                    showMessage('Registration successful! Redirecting...', 'success');
-                    setTimeout(() => {
-                        LoadingAnimation.stop();
-                        window.location.href = 'dashboard.html';
-                    }, 1500);
-                } else {
-                    LoadingAnimation.stop();
-                    showMessage(data.message || 'Registration failed. Please try again.', 'error');
-                }
-            } catch (error) {
-                LoadingAnimation.stop();
-                console.error('Registration error:', error);
-                showMessage('Network error. Please try again.', 'error');
-            }
-        });
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('registerForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
         
-        function showMessage(text, type) {
-            const messageElement = document.getElementById('message');
-            messageElement.textContent = text;
-            messageElement.className = `auth-message ${type}`;
+        const phone = document.getElementById('phone').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+        const messageElement = document.getElementById('message');
+        
+        // Clear previous messages
+        messageElement.className = 'auth-message';
+        messageElement.textContent = '';
+        
+        // Basic client-side validation
+        if (!/^01[3-9]\d{8}$/.test(phone)) {
+            showMessage('Please enter a valid Bangladeshi phone number starting with 013-019', 'error');
+            return;
         }
-    </script>
-  <script src="hackeranimation.js"></script>
+        
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            showMessage('Please enter a valid email address', 'error');
+            return;
+        }
+        
+        if (password.length < 8) {
+            showMessage('Password must be at least 8 characters', 'error');
+            return;
+        }
+
+        // Start loading animation
+        LoadingAnimation.start("Registering...");
+        LoadingAnimation.setTerminalMessage("> Encrypting data...");
+        
+        try {
+            const response = await fetch('https://oneai-wjox.onrender.com/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone, email, password })
+            });
+
+            LoadingAnimation.update(50, "Sending to server...");
+            LoadingAnimation.setTerminalMessage("> Awaiting server response...");
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                LoadingAnimation.update(100, "Registration successful!");
+                LoadingAnimation.setTerminalMessage("> Redirecting to dashboard...");
+                
+                // Store authentication data
+                localStorage.setItem('userID', data.userID);
+                localStorage.setItem('authToken', data.token);
+                localStorage.setItem('tokenExp', data.expiresIn);
+                
+                showMessage('Registration successful! Redirecting...', 'success');
+                setTimeout(() => {
+                    LoadingAnimation.stop();
+                    window.location.href = 'dashboard.html';
+                }, 1500);
+            } else {
+                LoadingAnimation.stop();
+                showMessage(data.message || 'Registration failed. Please try again.', 'error');
+            }
+        } catch (error) {
+            LoadingAnimation.stop();
+            console.error('Registration error:', error);
+            showMessage('Network error. Please try again.', 'error');
+        }
+    });
+    
+    function showMessage(text, type) {
+        const messageElement = document.getElementById('message');
+        messageElement.textContent = text;
+        messageElement.className = `auth-message ${type}`;
+    }
+});
+</script>
+<script src="./assets/js/loading-animation.js"></script>
+<script src="hackeranimation.js"></script>
 
 </body>
 </html>
