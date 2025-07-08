@@ -149,11 +149,7 @@ ws.on('message', async (message) => {
       throw new Error('Invalid authentication token');
     }
 
-    // Handle admin operations
-    if (data.type === 'adminStatusUpdate') {
-      if (!ws.isAdmin) {
-        throw new Error('Insufficient privileges');
-      }
+////
 
       wss.clients.forEach(client => {
         if (client.readyState === WebSocket.OPEN) {
