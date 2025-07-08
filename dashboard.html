@@ -945,13 +945,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         await refreshPayments();
         connectWebSocket();
+        
     } catch (error) {
-        showError(error.message || 'Failed to initialize dashboard');
+        console.error('Initialization error:', error);
+        showError('Failed to load dashboard data');
+        setTimeout(() => {
+            window.location.href = 'login.html';
+        }, 3000);
     } finally {
         loadingOverlay.style.display = 'none';
     }
-    
-    
 });
 
 // Global functions
