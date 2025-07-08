@@ -532,6 +532,18 @@
     </div>
     <script src="./assets/js/loading-animation.js"></script>
 <script>
+// Global state management
+const paymentState = {
+    payments: [],
+    ws: null,
+    paymentTimers: {},
+    stats: {
+        active: 0,
+        completed: 0,
+        failed: 0
+    },
+    unreadNotifications: 0
+};
 // Add this at the top of the script
 function addNewPayment(payment) {
     const existing = paymentState.payments.find(p => p.trxid === payment.trxid);
@@ -598,19 +610,6 @@ async function refreshPayments() {
         loadingOverlay.style.display = 'none';
     }
 }
-// Global state management
-const paymentState = {
-    payments: [],
-    ws: null,
-    paymentTimers: {},
-    stats: {
-        active: 0,
-        completed: 0,
-        failed: 0
-    },
-    unreadNotifications: 0
-};
-
 // Notification sound
 const notificationSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-alert-quick-chime-766.mp3');
 
@@ -1003,7 +1002,19 @@ window.submitPremiumPayment = async function() {
                 'Authorization': `Bearer ${authToken}`, // ADDED AUTH HEADER
                 'X-User-ID': userID // ADDED USER ID HEADER
             },
-            body: JSON.stringify({ phone, trxid, amount, service, type: 'premium' })
+            body: JSON.stringify({ phone, trxid, amount, servi// Global state management
+const paymentState = {
+    payments: [],
+    ws: null,
+    paymentTimers: {},
+    stats: {
+        active: 0,
+        completed: 0,
+        failed: 0
+    },
+    unreadNotifications: 0
+};
+ce, type: 'premium' })
         });
 
         LoadingAnimation.update(50, "Validating payment details...");
