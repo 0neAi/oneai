@@ -758,7 +758,15 @@ app.get('/admin/payments', adminAuth, async (req, res) => {
 // ======================
 app.get('/payments/user', authMiddleware, async (req, res) => {
   try {
-    const payments = await Payment.find({ user: req.user._id })
+    const { last72Hours } = req.query;
+    let query = { user: req.user._id };
+
+    if (last72Hours === 'true') {
+      const seventyTwoHoursAgo = new Date(Date.now() - 72 * 60 * 60 * 1000);
+      query.createdAt = { $gte: seventyTwoHoursAgo };
+    }
+
+    const payments = await Payment.find(query)
       .sort({ createdAt: -1 });
           
     res.json({ 
