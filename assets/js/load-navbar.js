@@ -182,7 +182,7 @@
     if (confirm('Are you sure you want to logout?')) {
       localStorage.removeItem('authToken');
       localStorage.removeItem('activeDiscount');
-      window.location.href = './login.html';
+      window.location.href = './index.html';
     }
   };
 
@@ -192,7 +192,7 @@
     <nav id="fallback-nav">
       <a href="./dashboard.html">Dashboard</a>
       <a href="./otpgen.html">OTP Generator</a>
-      <a href="./login.html">Logout</a>
+      <a href="./index.html">Logout</a>
     </nav>`;
     document.body.insertAdjacentHTML('afterbegin', fallbackHTML);
   }
