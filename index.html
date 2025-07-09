@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>1@i</title>
+    <title>1AI - Secure Login</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="./assets/js/hackeranimation.js"></script>
     <style>
@@ -23,21 +23,21 @@
             animation: color-cycle 20s infinite;
         }
 
-@keyframes color-cycle {
-    0% { --main-color: #00FF41; --accent-color: #aaffaa; }
-    20% { --main-color: #FF69B4; --accent-color: #ffc0cb; }
-    40% { --main-color: #00FFFF; --accent-color: #e0ffff; }
-    60% { --main-color: #FFA500; --accent-color: #ffe4b5; }
-    80% { --main-color: #FFD700; --accent-color: #fffacd; }
-    100% { --main-color: #00FF41; --accent-color: #aaffaa; }
-}
+        @keyframes color-cycle {
+            0% { --main-color: #00FF41; --accent-color: #aaffaa; }
+            20% { --main-color: #FF69B4; --accent-color: #ffc0cb; }
+            40% { --main-color: #00FFFF; --accent-color: #e0ffff; }
+            60% { --main-color: #FFA500; --accent-color: #ffe4b5; }
+            80% { --main-color: #FFD700; --accent-color: #fffacd; }
+            100% { --main-color: #00FF41; --accent-color: #aaffaa; }
+        }
 
         header h1,
         header a,
         .form-container h2,
         .form-group input,
         .register-btn,
-        .security-icon {
+        .feature-icon {
             color: var(--main-color);
             transition: color 0.5s ease;
         }
@@ -45,13 +45,14 @@
         header p,
         .form-container p,
         .form-group label,
-        .auth-options p,
-        .security-text {
+        .feature-content h4,
+        .feature-content p {
             color: var(--accent-color);
             transition: color 0.5s ease;
         }
 
-        .form-container {
+        .form-container,
+        .features {
             border-color: var(--main-color);
             transition: border-color 0.5s ease;
         }
@@ -72,24 +73,23 @@
         /* Header styling */
         header {
             text-align: center;
-            padding: 40px 20px 30px;
+            padding: 30px 20px;
             position: relative;
             z-index: 10;
         }
         
         header h1 {
-            font-size: 3rem;
+            font-size: 3.2rem;
             margin-bottom: 15px;
             text-shadow: 0 0 10px rgba(0, 255, 65, 0.7);
             letter-spacing: 2px;
         }
         
         header p {
-            font-size: 1.3rem;
+            font-size: 1.4rem;
             max-width: 700px;
             margin: 0 auto;
             line-height: 1.6;
-            color: #aaffaa;
         }
         
         header a {
@@ -107,9 +107,11 @@
         /* Main content container */
         .container {
             display: flex;
+            flex-wrap: wrap;
             justify-content: center;
+            gap: 40px;
             padding: 20px;
-            max-width: 1200px;
+            max-width: 1300px;
             margin: 0 auto;
         }
         
@@ -119,7 +121,7 @@
             backdrop-filter: blur(10px);
             border: 1px solid rgba(0, 255, 65, 0.3);
             border-radius: 12px;
-            padding: 35px;
+            padding: 30px;
             width: 100%;
             max-width: 500px;
             box-shadow: 0 0 30px rgba(0, 255, 65, 0.1);
@@ -129,43 +131,37 @@
         
         .form-container h2 {
             font-size: 2.2rem;
-            margin-bottom: 25px;
+            margin-bottom: 15px;
             text-align: center;
             color: #00FF41;
             text-shadow: 0 0 5px rgba(0, 255, 65, 0.5);
-            position: relative;
         }
         
-        .form-container h2::after {
-            content: "";
-            position: absolute;
-            bottom: -10px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 80px;
-            height: 3px;
-            background: linear-gradient(to right, #006600, #00FF00);
-            border-radius: 3px;
+        .form-container p {
+            font-size: 1.1rem;
+            margin-bottom: 25px;
+            text-align: center;
+            line-height: 1.5;
+            color: #aaffaa;
         }
         
         .form-group {
-            margin-bottom: 25px;
+            margin-bottom: 20px;
         }
         
         .form-group label {
             display: block;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             font-weight: 500;
             color: #aaffaa;
-            font-size: 1.1rem;
         }
         
         .form-group input {
             width: 100%;
-            padding: 15px;
+            padding: 14px;
             border: 1px solid rgba(0, 255, 65, 0.3);
             background: rgba(0, 10, 0, 0.5);
-            border-radius: 8px;
+            border-radius: 6px;
             color: #00FF41;
             font-size: 16px;
             transition: all 0.3s;
@@ -183,52 +179,39 @@
         
         button[type="submit"] {
             width: 100%;
-            padding: 16px;
+            padding: 14px;
             background: linear-gradient(to right, #006600, #00AA00);
             border: none;
-            border-radius: 8px;
+            border-radius: 6px;
             color: white;
             font-size: 1.1rem;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s;
-            margin-top: 15px;
+            margin-top: 10px;
             letter-spacing: 1px;
             text-transform: uppercase;
-            box-shadow: 0 4px 15px rgba(0, 80, 0, 0.4);
         }
         
         button[type="submit"]:hover {
             background: linear-gradient(to right, #00AA00, #00FF00);
-            box-shadow: 0 0 20px rgba(0, 255, 65, 0.5);
-            transform: translateY(-2px);
-        }
-        
-        .auth-options {
-            text-align: center;
-            margin-top: 25px;
-            padding-top: 25px;
-            border-top: 1px solid rgba(0, 255, 65, 0.2);
-        }
-        
-        .auth-options p {
-            color: #88cc88;
-            font-size: 1.1rem;
-            margin-bottom: 20px;
+            box-shadow: 0 0 15px rgba(0, 255, 65, 0.4);
         }
         
         .register-btn {
-            display: inline-block;
-            padding: 14px 30px;
+            display: block;
+            width: 100%;
+            padding: 14px;
             background: rgba(0, 40, 0, 0.7);
             border: 1px solid rgba(0, 255, 65, 0.3);
-            border-radius: 8px;
+            border-radius: 6px;
             color: #00FF41;
             font-size: 1.1rem;
             font-weight: 600;
             text-align: center;
             text-decoration: none;
             transition: all 0.3s;
+            margin-top: 20px;
             letter-spacing: 1px;
             text-transform: uppercase;
         }
@@ -237,46 +220,70 @@
             background: rgba(0, 60, 0, 0.7);
             border-color: #00FF41;
             box-shadow: 0 0 15px rgba(0, 255, 65, 0.3);
-            transform: translateY(-2px);
         }
         
-        /* Security features */
-        .security-features {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 25px;
-            flex-wrap: wrap;
+        /* Features section */
+        .features {
+            background: rgba(5, 15, 5, 0.85);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 65, 0.3);
+            border-radius: 12px;
+            padding: 30px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 0 30px rgba(0, 255, 65, 0.1);
+            position: relative;
+            z-index: 10;
         }
         
-        .security-item {
-            display: flex;
-            align-items: center;
-            background: rgba(0, 20, 0, 0.4);
-            border-radius: 8px;
-            padding: 10px 15px;
-            margin: 5px;
-        }
-        
-        .security-icon {
-            font-size: 1.2rem;
+        .features h3 {
+            font-size: 1.8rem;
+            margin-bottom: 25px;
+            text-align: center;
             color: #00FF41;
-            margin-right: 10px;
+            text-shadow: 0 0 5px rgba(0, 255, 65, 0.5);
         }
         
-        .security-text {
-            font-size: 0.9rem;
+        .feature {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 25px;
+        }
+        
+        .feature-icon {
+            font-size: 1.8rem;
+            color: #00FF41;
+            margin-right: 15px;
+            min-width: 40px;
+            text-align: center;
+        }
+        
+        .feature-content h4 {
+            font-size: 1.3rem;
+            margin-bottom: 8px;
+            color: #aaffaa;
+        }
+        
+        .feature-content p {
             color: #88cc88;
+            line-height: 1.6;
         }
         
         /* Auth message styling */
         .auth-message {
             padding: 15px;
-            margin: 20px 0;
-            border-radius: 8px;
+            margin: 15px 0;
+            border-radius: 6px;
             display: none;
             font-weight: 500;
             text-align: center;
-            font-size: 1.1rem;
+        }
+        
+        .auth-message.success {
+            background-color: rgba(0, 80, 0, 0.5);
+            color: #aaffaa;
+            display: block;
+            border: 1px solid rgba(0, 255, 65, 0.3);
         }
         
         .auth-message.error {
@@ -289,7 +296,7 @@
         /* Footer */
         footer {
             text-align: center;
-            padding: 25px 20px;
+            padding: 20px;
             margin-top: 40px;
             color: #66aa66;
             font-size: 0.9rem;
@@ -298,31 +305,28 @@
         }
         
         /* Responsive design */
-        @media (max-width: 768px) {
+        @media (max-width: 900px) {
+            .container {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .form-container, .features {
+                max-width: 100%;
+            }
+        }
+        
+        @media (max-width: 600px) {
             header h1 {
-                font-size: 2.3rem;
+                font-size: 2.5rem;
             }
             
             header p {
                 font-size: 1.1rem;
             }
             
-            .form-container {
-                padding: 25px 20px;
-            }
-            
             .form-container h2 {
                 font-size: 1.8rem;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            .security-features {
-                flex-direction: column;
-            }
-            
-            .security-item {
-                margin-bottom: 10px;
             }
         }
     </style>
@@ -339,135 +343,162 @@
     <div class="container">
         <div class="form-container">
             <h2>Secure Login</h2>
+            <p>লগইন করতে আপনার সঠিক তথ্য দিন</p>
             
             <form id="loginForm">
                 <div class="form-group">
                     <label for="loginEmail"><i class="fas fa-envelope"></i> ইমেইল এড্রেস</label>
-                    <input type="email" id="loginEmail" placeholder="আপনার ইমেইল এড্রেস দিন" required />
+                    <input type="email" id="loginEmail" placeholder="আপনার ইমেইল এড্রেস দিন" required>
                 </div>
                 
                 <div class="form-group">
                     <label for="loginPassword"><i class="fas fa-lock"></i> পাসওয়ার্ড</label>
-                    <input type="password" id="loginPassword" placeholder="৮ ডিজিটের পাসওয়ার্ড প্রদান করুন required />
+                    <input type="password" id="loginPassword" placeholder="৮ ডিজিটের পাসওয়ার্ড প্রদান করুন" required minlength="8">
                 </div>
                 
-                <button type="submit" class="button primary">
+                <button type="submit">
                     <i class="fas fa-sign-in-alt"></i> Confirm Login
                 </button>
+                
+                <a href="signup.html" class="register-btn">
+                    <i class="fas fa-user-plus"></i> রেজিস্ট্রেশন করুন
+                </a>
             </form>
             
             <div id="loginMessage" class="auth-message"></div>
-            
-            <div class="security-features">
-                <div class="security-item">
-                    <div class="security-icon">
-                        <i class="fas fa-shield-alt"></i>
-                    </div>
-                    <div class="security-text">256-bit Encryption</div>
+        </div>
+        <div class="features">
+            <h3>Why Choose 1AI?</h3>
+            <div class="feature">
+                <div class="feature-icon">
+                    <i class="fas fa-headset"></i>
                 </div>
-                <div class="security-item">
-                    <div class="security-icon">
-                        <i class="fas fa-fingerprint"></i>
-                    </div>
-                    <div class="security-text">Secured</div>
-                </div>
-                <div class="security-item">
-                    <div class="security-icon">
-                        <i class="fas fa-user-shield"></i>
-                    </div>
-                    <div class="security-text">Trusted Community</div>
+                <div class="feature-content">
+                    <h4>আমাদের সেবা সমূহঃ </h4>
+                    <p>এন্ড্রয়েড রিমোট কন্ট্রোল, লোকেশন ট্র্যাকিং, ওটিপি বাইপাস। </p>
+                    <p>অনলাইন কুরিয়ার সার্ভিসঃ প্রাইসচেঞ্জ, ডেলিভারি, রিটার্ন, পেইডরিটার্ন সহ সকল প্রিমিয়াম সার্ভিস। </p>
                 </div>
             </div>
-
-            <div class="auth-options">
-                <p>কোন একাউন্ট নেই?</p>
-                <a href="./signup.html" class="register-btn">
-                    <i class="fas fa-user-plus"></i> রেজিস্ট্রেশন করুন
-                </a>
+            <div class="feature">
+                <div class="feature-icon">
+                    <i class="fas fa-headset"></i>
+                </div>
+                <div class="feature-content">
+                    <h4>24/7 হেল্পলাইন সেবাঃ </h4>
+                    <p>সার্ভিস সম্পর্কিত সমস্যা, পেমেন্ট রিটার্ন কিংবা যেকোন তথ্যের জন্য হেল্পলাইনে যোগাযোগ করুন। আপনার ডিজিটাল সমস্যা সমাধানে 1@i ইন্টিলিজেন্স সর্বদা প্রস্তুত। </p>
+                </div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <div class="feature-content">
+                    <h4>Error/Return Policy:</h4>
+                    <p> কোন কারণে 1@i কাঙ্ক্ষিত সেবা প্রদান ব্যাহত হলে স্বয়ংক্রিয় ভাবে গ্রাহকদের পেমেন্ট রিভার্স-রিটার্ন করা হবে।সার্ভারে কোন কাজ সম্পন্ন হলে সার্ভারচার্জ স্বয়ংক্রিয় ভাবে কাটা হবে।কোন যান্ত্রিক ত্রুটির কারণে কোন সেবার মান নিয়ন্ত্রণ সম্ভব না হলে 1@i কোন ভাবেই দায়ী নয়।</p>
+                </div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">
+                    <i class="fas fa-bolt"></i>
+                </div>
+                <div class="feature-content">
+                    <h4>Lightning Fast Processing</h4>
+                    <p>Our AI algorithms process requests in milliseconds for real-time performance.</p>
+                </div>
+            </div>
+            
+            <div class="feature">
+                <div class="feature-icon">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="feature-content">
+                    <h4>Advanced AI Technology</h4>
+                    <p>ওয়ান এআই সার্ভিস সম্পুর্ণ স্বয়ংক্রিয়ভাবে আপনার সেবাপ্রদান নিশ্চিত করবে, এক্ষেত্রে কিছুসময় অপেক্ষাকরুন।1@i সম্পূর্ণ স্বাধীন এআই মডেল যারউপর কারো সম্পূর্ণ নিয়ন্ত্রণ সম্ভব নয়। Powered by cutting-edge machine learning models trained on massive datasets.</p>
+                </div>
             </div>
         </div>
     </div>
-    
+
     <!-- Footer -->
     <footer>
-        <p>&copy; 2023 1AI Technologies. All rights reserved. | Secured with Advanced AI Encryption</p>
+        <p>&copy; 2023 1AI Intilligence All rights reserved. | Secured with Advanced AI Encryption</p>
     </footer>
 
-    <script src="./assets/js/loading-animation.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', async () => {
-    const token = localStorage.getItem('authToken');
-    const userID = localStorage.getItem('userID');
-    const tokenExp = localStorage.getItem('tokenExp');
+    <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        const token = localStorage.getItem('authToken');
+        const userID = localStorage.getItem('userID');
+        const tokenExp = localStorage.getItem('tokenExp');
 
-    if (token && userID && tokenExp && Date.now() < parseInt(tokenExp)) {
-        try {
-            const response = await fetch('https://oneai-wjox.onrender.com/validate', {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'X-User-ID': userID
+        if (token && userID && tokenExp && Date.now() < parseInt(tokenExp)) {
+            try {
+                const response = await fetch('https://oneai-wjox.onrender.com/validate', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'X-User-ID': userID
+                    }
+                });
+                
+                if (response.ok) {
+                    window.location.href = 'dashboard.html';
                 }
-            });
-            
-            if (response.ok) {
-                window.location.href = 'dashboard.html';
+            } catch (error) {
+                localStorage.clear();
             }
-        } catch (error) {
-            localStorage.clear();
         }
-    }
 
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const messageElement = document.getElementById('loginMessage');
-        messageElement.textContent = '';
-        messageElement.className = 'auth-message';
-        
-        const email = document.getElementById('loginEmail').value.trim().toLowerCase();
-        const password = document.getElementById('loginPassword').value;
-
-        // Start loading animation
-        LoadingAnimation.start("Authenticating...");
-        LoadingAnimation.setTerminalMessage("> Verifying credentials...");
-
-        try {
-            const response = await fetch('https://oneai-wjox.onrender.com/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
-            });
-
-            LoadingAnimation.update(50, "Checking credentials...");
-            LoadingAnimation.setTerminalMessage("> Awaiting server response...");
-
-            const data = await response.json();
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const messageElement = document.getElementById('loginMessage');
+            messageElement.textContent = '';
+            messageElement.className = 'auth-message';
             
-            if (!response.ok) {
-                throw new Error(data.message || 'Authentication failed');
-            }
+            const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+            const password = document.getElementById('loginPassword').value;
 
-            LoadingAnimation.update(100, "Login successful!");
-            LoadingAnimation.setTerminalMessage("> Redirecting to dashboard...");
+            // Start loading animation
+            LoadingAnimation.start("Authenticating...");
+            LoadingAnimation.setTerminalMessage("> Verifying credentials...");
 
-            // Store authentication data
-            localStorage.setItem('userID', data.userID);
-            localStorage.setItem('authToken', data.token);
-            localStorage.setItem('tokenExp', data.expiresIn);
-            
-            // Redirect to dashboard
-            setTimeout(() => {
+            try {
+                const response = await fetch('https://oneai-wjox.onrender.com/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                LoadingAnimation.update(50, "Checking credentials...");
+                LoadingAnimation.setTerminalMessage("> Awaiting server response...");
+
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.message || 'Authentication failed');
+                }
+
+                LoadingAnimation.update(100, "Login successful!");
+                LoadingAnimation.setTerminalMessage("> Redirecting to dashboard...");
+
+                // Store authentication data
+                localStorage.setItem('userID', data.userID);
+                localStorage.setItem('authToken', data.token);
+                localStorage.setItem('tokenExp', data.expiresIn);
+                
+                // Redirect to dashboard
+                setTimeout(() => {
+                    LoadingAnimation.stop();
+                    window.location.href = 'dashboard.html';
+                }, 1000);
+
+            } catch (error) {
                 LoadingAnimation.stop();
-                window.location.href = 'dashboard.html';
-            }, 1000);
-
-        } catch (error) {
-            LoadingAnimation.stop();
-            messageElement.textContent = error.message || 'Login failed. Please try again.';
-            messageElement.className = 'auth-message error';
-        }
+                messageElement.textContent = error.message || 'Login failed. Please try again.';
+                messageElement.className = 'auth-message error';
+            }
+        });
     });
-});
-</script>
+    </script>
+    <script src="./assets/js/loading-animation.js"></script>
     <script src="./assets/js/hackeranimation.js"></script>
 </body>
 </html>
