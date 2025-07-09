@@ -967,7 +967,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const userID = localStorage.getItem('userID');
         
         if (!authToken || !userID) {
-            window.location.href = 'login.html';
+            window.location.href = 'index.html';
             return;
         }
 
@@ -978,7 +978,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error('Initialization error:', error);
         showError('Failed to load dashboard data');
         setTimeout(() => {
-            window.location.href = 'login.html';
+            window.location.href = 'index.html';
         }, 3000);
     } finally {
         loadingOverlay.style.display = 'none';
