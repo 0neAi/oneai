@@ -825,44 +825,48 @@
                 validateEmail(email) {
                     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
                 },
-                validatePassword(password) {
-                    return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/.test(password);
-                },
-                async registerAdmin() {
-                    this.registerError = '';
-                    this.registerSuccess = '';
-                    this.registerLoading = true;
-                    
-                    if (!this.validateEmail(this.admin.email)) {
-                        this.registerError = 'Please enter a valid email address';
-                        this.registerLoading = false;
-                        return;
-                    }
-                    
-                    if (!this.validatePassword(this.admin.password)) {
-                        this.registerError = 'Password must be at least 12 characters with uppercase, lowercase, number and special character';
-                        this.registerLoading = false;
-                        return;
-                    }
-
-                    try {
-                        const response = await axios.post('/api/admin/register', {
-                            email: this.admin.email,
-                            password: this.admin.password
-                        });
+                    // In Vue app methods:
+                    async registerAdmin() {
+                        this.registerError = '';
+                        this.registerSuccess = '';
+                        this.registerLoading = true;
                         
-                        this.registerSuccess = 'Admin account created! Redirecting...';
-                        setTimeout(() => {
-                            this.showInitialSetup = false;
-                            this.isAuthenticated = true;
-                            this.loadData();
-                        }, 1500);
-                    } catch (error) {
-                        this.registerError = error.response?.data?.message || 'Registration failed';
-                    } finally {
-                        this.registerLoading = false;
-                    }
-                },
+                        // Validate email
+                        if (!this.validateEmail(this.admin.email)) {
+                            this.registerError = 'Please enter a valid email address';
+                            this.registerLoading = false;
+                            return;
+                        }
+                        
+                        // Validate password length only (12 characters)
+                        if (this.admin.password.length < 12) {
+                            this.registerError = 'Password must be at least 12 characters';
+                            this.registerLoading = false;
+                            return;
+                        }
+                    
+                        try {
+                            const response = await axios.post('/api/admin/register', {
+                                email: this.admin.email,
+                                password: this.admin.password
+                            });
+                            
+                            if (response.data.success) {
+                                this.registerSuccess = 'Admin account created! Redirecting...';
+                                setTimeout(() => {
+                                    this.showInitialSetup = false;
+                                    this.isAuthenticated = true;
+                                    this.loadData();
+                                }, 1500);
+                            } else {
+                                this.registerError = response.data.message;
+                            }
+                        } catch (error) {
+                            this.registerError = error.response?.data?.message || 'Registration failed';
+                        } finally {
+                            this.registerLoading = false;
+                        }
+                    },
                 async login() {
                     this.loginError = '';
                     this.loginLoading = true;
