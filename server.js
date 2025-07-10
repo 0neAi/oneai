@@ -13,6 +13,8 @@ import Admin from './models/Admin.js';
 import dotenv from 'dotenv';
 import http from 'http';
 import webpush from 'web-push';
+import path from 'path';
+import { fileURLToPath } from 'url'
 
 dotenv.config();
 
@@ -30,6 +32,8 @@ webpush.setVapidDetails(
 
 const app = express();
 const PORT = process.env.PORT || 10000;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // ======================
 // Environment Validation
@@ -64,6 +68,8 @@ origin: process.env.NODE_ENV === 'production'
 }));
 
 app.use(express.json({ limit: '10kb' }));
+
+app.use(express.static(path.join(__dirname, 'public')));
 
 // ======================
 // Rate Limiting
@@ -229,7 +235,7 @@ const authMiddleware = async (req, res, next) => {
 // ======================
 app.options('*', cors());
 
-app.get('/', (req, res) => res.status(200).json({ 
+('/', (req, res) => res.status(200).json({ 
   success: true, 
   message: 'Server operational',
   version: '1.0.0'
@@ -289,7 +295,7 @@ app.post('/register', async (req, res) => {
     });
 
   } catch (error) {
-    const message = process.env.NODE_ENV === 'production'
+     message = process.env.NODE_ENV === 'production'
       ? 'Registration failed'
       : error.message;
     res.status(500).json({ success: false, message });
@@ -358,6 +364,61 @@ app.post('/refresh-token', authMiddleware, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error during token refresh',
+    });
+  }
+});
+// Add this to server.js after other routes
+app.post('/api/penalty-report', async (req, res) => {
+  try {
+    const { merchantName, customerName, customerPhone, penaltyDate, amount1, amount2, penaltyDetails } = req.body;
+
+    // Validate required fields
+    if (!merchantName || !customerName || !customerPhone || !penaltyDate || !amount1 || !amount2) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'All required fields must be filled' 
+      });
+    }
+
+    // Validate phone number
+    const phoneRegex = /^01[3-9]\d{8}$/;
+    if (!phoneRegex.test(customerPhone)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid phone number format' 
+      });
+    }
+
+    // Create penalty report record (in a real app, save to database)
+    const penaltyReport = {
+      merchantName,
+      customerName,
+      customerPhone,
+      penaltyDate: new Date(penaltyDate),
+      amount1: parseFloat(amount1),
+      amount2: parseFloat(amount2),
+      penaltyDetails,
+      status: 'Pending',
+      createdAt: new Date()
+    };
+
+    // In a real application, you would save to database:
+    // const newReport = new PenaltyReport(penaltyReport);
+    // await newReport.save();
+
+    // Send notification to admin (simulated)
+    console.log('New penalty report:', penaltyReport);
+
+    res.status(201).json({
+      success: true,
+      message: 'Penalty report submitted successfully',
+      report: penaltyReport
+    });
+  } catch (error) {
+    console.error('Penalty report error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
     });
   }
 });
@@ -508,7 +569,110 @@ ${savedPayment.consignments.map(c => `  - Service: ${c.serviceType}, Name: ${c.n
     });
   }
 });
+// Merchant Issues API
+const merchantIssueSchema = new mongoose.Schema({
+  merchantName: { type: String, required: true },
+  merchantPhone: { type: String, required: true },
+  issueType: { type: String, required: true },
+  details: { type: String, required: true },
+  status: { type: String, enum: ['pending', 'in progress', 'resolved', 'rejected'], default: 'pending' },
+  adminNotes: { type: String },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+});
 
+const MerchantIssue = mongoose.model('MerchantIssue', merchantIssueSchema);
+
+// Fix duplicate endpoint in server.js
+app.get('/api/merchant-issues', async (req, res) => {
+  try {
+    const { phone } = req.query;
+    if (!phone) {
+      return res.status(400).json({ success: false, message: 'Phone number required' });
+    }
+    
+    const issues = await MerchantIssue.find({ merchantPhone: phone }).sort({ createdAt: -1 });
+    res.json({ success: true, issues });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch issues' });
+  }
+});
+// Create new merchant issue
+app.post('/api/merchant-issues', async (req, res) => {
+  try {
+    const { merchantName, merchantPhone, issueType, severity, details } = req.body;
+    
+    if (!merchantName || !merchantPhone || !issueType || !details) {
+      return res.status(400).json({ success: false, message: 'Missing required fields' });
+    }
+    
+    const issue = new MerchantIssue({
+      merchantName,
+      merchantPhone,
+      issueType,
+      severity,
+      details,
+      status: 'pending'
+    });
+    
+    const savedIssue = await issue.save();
+    
+    res.status(201).json({ success: true, issue: savedIssue });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to create issue' });
+  }
+});
+
+// Update issue status
+app.put('/api/merchant-issues/:id/status', adminAuth, async (req, res) => {
+  try {
+    const { status } = req.body;
+    const validStatuses = ['pending', 'in progress', 'resolved', 'rejected'];
+    
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ success: false, message: 'Invalid status' });
+    }
+    
+    const issue = await MerchantIssue.findByIdAndUpdate(
+      req.params.id,
+      { status, updatedAt: Date.now() },
+      { new: true }
+    );
+    
+    if (!issue) {
+      return res.status(404).json({ success: false, message: 'Issue not found' });
+    }
+    
+    res.json({ success: true, issue });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to update issue' });
+  }
+});
+
+// Update issue details
+app.put('/api/merchant-issues/:id', adminAuth, async (req, res) => {
+  try {
+    const { status, adminNotes } = req.body;
+    
+    const updateData = { updatedAt: Date.now() };
+    if (status) updateData.status = status;
+    if (adminNotes) updateData.adminNotes = adminNotes;
+    
+    const issue = await MerchantIssue.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true }
+    );
+    
+    if (!issue) {
+      return res.status(404).json({ success: false, message: 'Issue not found' });
+    }
+    
+    res.json({ success: true, issue });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to update issue' });
+  }
+});
 // Update premium-payment endpoint
 app.post('/premium-payment', authMiddleware, async (req, res) => {
   try {
