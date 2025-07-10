@@ -328,6 +328,9 @@ adminSchema.statics.register = async function(email, password) {
   if (mongoose.connection.readyState !== 1) {
     throw new Error('Database not connected');
   }
+      if (password.length < 12) {
+        throw new Error('Password must be at least 12 characters');
+    }
   // ... rest of the code
 };
 // ======================
@@ -917,21 +920,34 @@ app.get('/api/payments', adminAuth, async (req, res) => {
 // Admin Registration
 // ======================
 // Remove duplicate endpoint and keep only this one:
-// In server endpoint
+// Admin registration - Fix this endpoint
 app.post('/api/admin/register', async (req, res) => {
-  try {
-    console.log('Registering admin:', req.body.email);
-    const admin = await Admin.register(req.body.email, req.body.password);
-    console.log('Admin created:', admin.email);
-    res.json({ success: true, admin });
-  } catch (error) {
-    console.error('REGISTRATION FAILED:', error.message, error.stack);
-    res.status(400).json({ 
-      success: false, 
-      message: error.message 
-    });
-  }
+    try {
+        const { email, password } = req.body;
+        
+        // Validate password length
+        if (password.length < 12) {
+            return res.status(400).json({
+                success: false,
+                message: 'Password must be at least 12 characters'
+            });
+        }
+        
+        const admin = await Admin.register(email, password);
+        res.json({ 
+            success: true,
+            admin: admin.toSafeObject()
+        });
+    } catch (error) {
+        console.error('Admin registration error:', error);
+        res.status(400).json({
+            success: false,
+            message: error.message
+        });
+    }
 });
+
+// Remove
 
 // ======================
 // Admin validation
