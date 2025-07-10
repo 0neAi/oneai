@@ -850,7 +850,51 @@ app.get('/admin/check-registration', async (req, res) => {
     });
   }
 });
+// Admin exists check
+app.get('/api/admin/exists', async (req, res) => {
+    const count = await Admin.countDocuments();
+    res.json({ exists: count > 0 });
+});
 
+// Admin registration
+app.post('/api/admin/register', async (req, res) => {
+    try {
+        const admin = await Admin.register(req.body.email, req.body.password);
+        res.json(admin);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+});
+
+// Admin login
+app.post('/api/admin/login', async (req, res) => {
+    try {
+        const admin = await Admin.findOne({ email: req.body.email });
+        if (!admin) return res.status(401).json({ message: 'Admin not found' });
+        
+        const valid = await admin.comparePassword(req.body.password);
+        if (!valid) return res.status(401).json({ message: 'Invalid password' });
+        
+        const token = jwt.sign({ adminId: admin._id }, process.env.JWT_SECRET, {
+            expiresIn: '1h'
+        });
+        
+        res.json({ token });
+    } catch (error) {
+        res.status(500).json({ message: 'Login failed' });
+    }
+});
+
+// Protected routes
+app.get('/api/users', adminAuth, async (req, res) => {
+    const users = await User.find().select('-password');
+    res.json(users);
+});
+
+app.get('/api/payments', adminAuth, async (req, res) => {
+    const payments = await Payment.find().populate('user', 'email phone');
+    res.json(payments);
+});
 // ======================
 // Admin Registration
 // ======================
