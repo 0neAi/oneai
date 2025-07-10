@@ -301,7 +301,35 @@ app.post('/register', async (req, res) => {
     res.status(500).json({ success: false, message });
   }
 });
-
+async registerAdmin() {
+  try {
+    const response = await axios.post('/api/admin/register', {
+      email: this.admin.email,
+      password: this.admin.password
+    });
+    
+    if (response.data.success) {
+      this.registerSuccess = 'Admin account created! Redirecting...';
+      setTimeout(() => {
+        this.showInitialSetup = false;
+        this.isAuthenticated = true;
+        this.loadData();
+      }, 1500);
+    } else {
+      this.registerError = response.data.message;
+    }
+  } catch (error) {
+    this.registerError = error.response?.data?.message || 'Registration failed';
+  } finally {
+    this.registerLoading = false;
+  }
+};
+adminSchema.statics.register = async function(email, password) {
+  if (mongoose.connection.readyState !== 1) {
+    throw new Error('Database not connected');
+  }
+  // ... rest of the code
+};
 // ======================
 // User Login Route (Fixed)
 // ======================
@@ -856,16 +884,6 @@ app.get('/api/admin/exists', async (req, res) => {
     res.json({ exists: count > 0 });
 });
 
-// Admin registration
-app.post('/api/admin/register', async (req, res) => {
-    try {
-        const admin = await Admin.register(req.body.email, req.body.password);
-        res.json(admin);
-    } catch (error) {
-        res.status(400).json({ message: error.message });
-    }
-});
-
 // Admin login
 app.post('/api/admin/login', async (req, res) => {
     try {
@@ -898,19 +916,19 @@ app.get('/api/payments', adminAuth, async (req, res) => {
 // ======================
 // Admin Registration
 // ======================
-app.post('/admin/register', async (req, res) => {
+// Remove duplicate endpoint and keep only this one:
+// In server endpoint
+app.post('/api/admin/register', async (req, res) => {
   try {
-    const { email, password } = req.body;
-    const admin = await Admin.register(email, password);
-    
-    res.json({
-      success: true,
-      admin
-    });
+    console.log('Registering admin:', req.body.email);
+    const admin = await Admin.register(req.body.email, req.body.password);
+    console.log('Admin created:', admin.email);
+    res.json({ success: true, admin });
   } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message
+    console.error('REGISTRATION FAILED:', error.message, error.stack);
+    res.status(400).json({ 
+      success: false, 
+      message: error.message 
     });
   }
 });
