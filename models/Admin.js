@@ -8,7 +8,7 @@ const adminSchema = new mongoose.Schema({
     unique: true,
     trim: true,
     lowercase: true,
-    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Invalid email format']
+    match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Invalid email format']
   },
   password: {
     type: String,
