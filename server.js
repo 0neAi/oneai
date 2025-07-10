@@ -301,38 +301,6 @@ app.post('/register', async (req, res) => {
     res.status(500).json({ success: false, message });
   }
 });
-async registerAdmin() {
-  try {
-    const response = await axios.post('/admin/register', {
-      email: this.admin.email,
-      password: this.admin.password
-    });
-    
-    if (response.data.success) {
-      this.registerSuccess = 'Admin account created! Redirecting...';
-      setTimeout(() => {
-        this.showInitialSetup = false;
-        this.isAuthenticated = true;
-        this.loadData();
-      }, 1500);
-    } else {
-      this.registerError = response.data.message;
-    }
-  } catch (error) {
-    this.registerError = error.response?.data?.message || 'Registration failed';
-  } finally {
-    this.registerLoading = false;
-  }
-};
-adminSchema.statics.register = async function(email, password) {
-  if (mongoose.connection.readyState !== 1) {
-    throw new Error('Database not connected');
-  }
-      if (password.length < 12) {
-        throw new Error('Password must be at least 12 characters');
-    }
-  // ... rest of the code
-};
 // ======================
 // User Login Route (Fixed)
 // ======================
