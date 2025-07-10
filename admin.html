@@ -813,7 +813,7 @@
                 async checkInitialSetup() {
                     try {
                         this.isLoading = true;
-                        const response = await axios.get('/api/admin/exists');
+                        const response = await axios.get('/admin/exists');
                         this.showInitialSetup = !response.data.exists;
                         this.isLoading = false;
                     } catch (error) {
@@ -846,7 +846,7 @@
                         }
                     
                         try {
-                            const response = await axios.post('/api/admin/register', {
+                            const response = await axios.post('/admin/register', {
                                 email: this.admin.email,
                                 password: this.admin.password
                             });
@@ -872,7 +872,7 @@
                     this.loginLoading = true;
                     
                     try {
-                        const response = await axios.post('/api/admin/login', {
+                        const response = await axios.post('/admin/login', {
                             email: this.admin.email,
                             password: this.admin.password
                         });
@@ -895,9 +895,9 @@
                         
                         // Fetch real data
                         const [usersRes, paymentsRes, issuesRes] = await Promise.all([
-                            axios.get('/api/users', { headers: { Authorization: `Bearer ${token}` } }),
-                            axios.get('/api/payments', { headers: { Authorization: `Bearer ${token}` } }),
-                            axios.get('/api/issues', { headers: { Authorization: `Bearer ${token}` } })
+                            axios.get('/users', { headers: { Authorization: `Bearer ${token}` } }),
+                            axios.get('/payments', { headers: { Authorization: `Bearer ${token}` } }),
+                            axios.get('/issues', { headers: { Authorization: `Bearer ${token}` } })
                         ]);
                         
                         this.users = usersRes.data;
