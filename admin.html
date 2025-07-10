@@ -813,13 +813,11 @@
                 async checkInitialSetup() {
                     try {
                         this.isLoading = true;
-                        // Simulate API call
-                        setTimeout(() => {
-                            this.showInitialSetup = true;
-                            this.isLoading = false;
-                        }, 1000);
+                        const response = await axios.get('/api/admin/exists');
+                        this.showInitialSetup = !response.data.exists;
+                        this.isLoading = false;
                     } catch (error) {
-                        console.error('Registration check error:', error);
+                        console.error('Admin check error:', error);
                         this.showInitialSetup = true;
                         this.isLoading = false;
                     }
@@ -848,18 +846,20 @@
                     }
 
                     try {
-                        // Simulate API call
+                        const response = await axios.post('/api/admin/register', {
+                            email: this.admin.email,
+                            password: this.admin.password
+                        });
+                        
+                        this.registerSuccess = 'Admin account created! Redirecting...';
                         setTimeout(() => {
-                            this.registerSuccess = 'Admin account created successfully! Redirecting...';
-                            this.registerLoading = false;
-                            setTimeout(() => {
-                                this.showInitialSetup = false;
-                                this.isAuthenticated = true;
-                                this.loadData();
-                            }, 1500);
+                            this.showInitialSetup = false;
+                            this.isAuthenticated = true;
+                            this.loadData();
                         }, 1500);
                     } catch (error) {
-                        this.registerError = 'Registration failed. Please try again.';
+                        this.registerError = error.response?.data?.message || 'Registration failed';
+                    } finally {
                         this.registerLoading = false;
                     }
                 },
@@ -868,56 +868,48 @@
                     this.loginLoading = true;
                     
                     try {
-                        // Simulate API call
-                        setTimeout(() => {
-                            this.isAuthenticated = true;
-                            this.loginLoading = false;
-                            this.loadData();
-                        }, 1500);
+                        const response = await axios.post('/api/admin/login', {
+                            email: this.admin.email,
+                            password: this.admin.password
+                        });
+                        
+                        // Store token
+                        localStorage.setItem('adminToken', response.data.token);
+                        this.isAuthenticated = true;
+                        this.loadData();
                     } catch (error) {
-                        this.loginError = 'Invalid credentials. Please try again.';
+                        this.loginError = error.response?.data?.message || 'Login failed';
+                    } finally {
                         this.loginLoading = false;
                     }
                 },
+                // Replace the loadData method with:
                 async loadData() {
                     try {
                         this.isLoading = true;
-                        // Simulate API calls
-                        setTimeout(() => {
-                            // Mock data
-                            this.users = [
-                                { id: 'usr001', phone: '01712345678', email: 'user1@example.com', createdAt: new Date() },
-                                { id: 'usr002', phone: '01887654321', email: 'user2@example.com', createdAt: new Date(Date.now() - 86400000) },
-                                { id: 'usr003', phone: '01911223344', email: 'user3@example.com', createdAt: new Date(Date.now() - 172800000) }
-                            ];
-                            
-                            this.payments = [
-                                { id: 'pay001', trxid: 'TRX123456', user: { email: 'user1@example.com' }, createdAt: new Date(), amount3: 1200, status: 'Completed', company: 'Pathao', phone: '01712345678', password: '******', consignments: [
-                                    { name: 'Customer 1', phone: '01811111111', amount1: 500, amount2: 400, serviceType: 'pricecng' }
-                                ]},
-                                { id: 'pay002', trxid: 'TRX789012', user: { email: 'user2@example.com' }, createdAt: new Date(Date.now() - 3600000), amount3: 800, status: 'Pending', company: 'RedX', phone: '01887654321', password: '******', consignments: [
-                                    { name: 'Customer 2', phone: '01922222222', amount1: 300, amount2: 250, serviceType: 'partial' }
-                                ]}
-                            ];
-                            
-                            this.merchantIssues = [
-                                { id: 'iss001', merchantName: 'Shop A', customerPhone: '01712345678', issueType: 'Payment', severity: 'high', details: 'Payment not processed after 24 hours', status: 'pending', createdAt: new Date() },
-                                { id: 'iss002', merchantName: 'Shop B', customerPhone: '01887654321', issueType: 'Service', severity: 'medium', details: 'Partial payment not refunded', status: 'in progress', createdAt: new Date(Date.now() - 43200000) },
-                                { id: 'iss003', merchantName: 'Shop C', customerPhone: '01911223344', issueType: 'Fraud', severity: 'high', details: 'Merchant provided fake tracking number', status: 'resolved', createdAt: new Date(Date.now() - 86400000) }
-                            ];
-                            
-                            this.stats = {
-                                totalUsers: this.users.length,
-                                totalPayments: this.payments.length,
-                                pendingPayments: this.payments.filter(p => p.status === 'Pending').length,
-                                completedPayments: this.payments.filter(p => p.status === 'Completed').length,
-                                issueReports: this.merchantIssues.length
-                            };
-                            
-                            this.updateCharts();
-                            this.loadRecentActivities();
-                            this.isLoading = false;
-                        }, 1500);
+                        const token = localStorage.getItem('adminToken');
+                        
+                        // Fetch real data
+                        const [usersRes, paymentsRes, issuesRes] = await Promise.all([
+                            axios.get('/api/users', { headers: { Authorization: `Bearer ${token}` } }),
+                            axios.get('/api/payments', { headers: { Authorization: `Bearer ${token}` } }),
+                            axios.get('/api/issues', { headers: { Authorization: `Bearer ${token}` } })
+                        ]);
+                        
+                        this.users = usersRes.data;
+                        this.payments = paymentsRes.data;
+                        this.merchantIssues = issuesRes.data;
+                        
+                        // Calculate stats from real data
+                        this.stats = {
+                            totalUsers: this.users.length,
+                            totalPayments: this.payments.length,
+                            pendingPayments: this.payments.filter(p => p.status === 'Pending').length,
+                            issueReports: this.merchantIssues.length
+                        };
+                        
+                        this.updateCharts();
+                        this.isLoading = false;
                     } catch (error) {
                         console.error('Data loading error:', error);
                         this.isLoading = false;
