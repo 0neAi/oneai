@@ -303,7 +303,7 @@ app.post('/register', async (req, res) => {
 });
 async registerAdmin() {
   try {
-    const response = await axios.post('/api/admin/register', {
+    const response = await axios.post('/admin/register', {
       email: this.admin.email,
       password: this.admin.password
     });
@@ -882,13 +882,13 @@ app.get('/admin/check-registration', async (req, res) => {
   }
 });
 // Admin exists check
-app.get('/api/admin/exists', async (req, res) => {
+app.get('/admin/exists', async (req, res) => {
     const count = await Admin.countDocuments();
     res.json({ exists: count > 0 });
 });
 
 // Admin login
-app.post('/api/admin/login', async (req, res) => {
+app.post('/admin/login', async (req, res) => {
     try {
         const admin = await Admin.findOne({ email: req.body.email });
         if (!admin) return res.status(401).json({ message: 'Admin not found' });
@@ -907,12 +907,12 @@ app.post('/api/admin/login', async (req, res) => {
 });
 
 // Protected routes
-app.get('/api/users', adminAuth, async (req, res) => {
+app.get('/users', adminAuth, async (req, res) => {
     const users = await User.find().select('-password');
     res.json(users);
 });
 
-app.get('/api/payments', adminAuth, async (req, res) => {
+app.get('/payments', adminAuth, async (req, res) => {
     const payments = await Payment.find().populate('user', 'email phone');
     res.json(payments);
 });
@@ -921,7 +921,7 @@ app.get('/api/payments', adminAuth, async (req, res) => {
 // ======================
 // Remove duplicate endpoint and keep only this one:
 // Admin registration - Fix this endpoint
-app.post('/api/admin/register', async (req, res) => {
+app.post('/admin/register', async (req, res) => {
     try {
         const { email, password } = req.body;
         
