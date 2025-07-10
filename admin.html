@@ -758,6 +758,27 @@
     </div>
 
     <script>
+        const API_BASE = 'https://oneai-wjox.onrender.com';
+        
+        axios.interceptors.request.use(config => {
+            const token = localStorage.getItem('adminToken');
+            if (token) {
+                config.headers.Authorization = `Bearer ${token}`;
+            }
+            return config;
+        });
+
+        axios.interceptors.response.use(
+            response => response,
+            error => {
+                if (error.response && error.response.status === 401) {
+                    localStorage.removeItem('adminToken');
+                    window.location.reload();
+                }
+                return Promise.reject(error);
+            }
+        );
+
         const AdminApp = {
             data() {
                 return {
@@ -777,7 +798,6 @@
                         totalUsers: 0, 
                         totalPayments: 0, 
                         pendingPayments: 0, 
-                        completedPayments: 0,
                         issueReports: 0
                     },
                     paymentFilter: 'all',
@@ -813,98 +833,97 @@
                 async checkInitialSetup() {
                     try {
                         this.isLoading = true;
-                        const response = await axios.get('/admin/exists');
+                        const response = await axios.get(`${API_BASE}/admin/exists`);
                         this.showInitialSetup = !response.data.exists;
-                        this.isLoading = false;
                     } catch (error) {
                         console.error('Admin check error:', error);
                         this.showInitialSetup = true;
+                    } finally {
                         this.isLoading = false;
                     }
                 },
                 validateEmail(email) {
                     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
                 },
-                    // In Vue app methods:
-                    async registerAdmin() {
-                        this.registerError = '';
-                        this.registerSuccess = '';
-                        this.registerLoading = true;
-                        
-                        // Validate email
-                        if (!this.validateEmail(this.admin.email)) {
-                            this.registerError = 'Please enter a valid email address';
-                            this.registerLoading = false;
-                            return;
-                        }
-                        
-                        // Validate password length only (12 characters)
-                        if (this.admin.password.length < 12) {
-                            this.registerError = 'Password must be at least 12 characters';
-                            this.registerLoading = false;
-                            return;
-                        }
+                validatePassword(password) {
+                    return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/.test(password);
+                },
+                async registerAdmin() {
+                    this.registerError = '';
+                    this.registerSuccess = '';
+                    this.registerLoading = true;
                     
-                        try {
-                            const response = await axios.post('/admin/register', {
-                                email: this.admin.email,
-                                password: this.admin.password
-                            });
-                            
-                            if (response.data.success) {
-                                this.registerSuccess = 'Admin account created! Redirecting...';
-                                setTimeout(() => {
-                                    this.showInitialSetup = false;
-                                    this.isAuthenticated = true;
-                                    this.loadData();
-                                }, 1500);
-                            } else {
-                                this.registerError = response.data.message;
-                            }
-                        } catch (error) {
-                            this.registerError = error.response?.data?.message || 'Registration failed';
-                        } finally {
-                            this.registerLoading = false;
+                    if (!this.validateEmail(this.admin.email)) {
+                        this.registerError = 'Please enter a valid email address';
+                        this.registerLoading = false;
+                        return;
+                    }
+                    
+                    if (!this.validatePassword(this.admin.password)) {
+                        this.registerError = 'Password must be at least 12 characters with uppercase, lowercase, number and special character';
+                        this.registerLoading = false;
+                        return;
+                    }
+
+                    try {
+                        const response = await axios.post(`${API_BASE}/admin/register`, {
+                            email: this.admin.email.trim(),
+                            password: this.admin.password
+                        });
+
+                        if (response.data.success) {
+                            this.registerSuccess = 'Admin account created! Redirecting...';
+                            setTimeout(() => {
+                                this.showInitialSetup = false;
+                                this.isAuthenticated = true;
+                                this.loadData();
+                            }, 1500);
+                        } else {
+                            this.registerError = response.data.message;
                         }
-                    },
+                    } catch (error) {
+                        this.registerError = (error.response && error.response.data && error.response.data.message) 
+                            || 'Registration failed. Please try again.';
+                    } finally {
+                        this.registerLoading = false;
+                    }
+                },
                 async login() {
                     this.loginError = '';
                     this.loginLoading = true;
                     
                     try {
-                        const response = await axios.post('/admin/login', {
-                            email: this.admin.email,
-                            password: this.admin.password
-                        });
+                        const response = await axios.post(`${API_BASE}/admin/login`, this.admin);
                         
-                        // Store token
-                        localStorage.setItem('adminToken', response.data.token);
-                        this.isAuthenticated = true;
-                        this.loadData();
+                        if (response.data.success) {
+                            localStorage.setItem('adminToken', response.data.token);
+                            this.isAuthenticated = true;
+                            this.loadData();
+                        }
                     } catch (error) {
-                        this.loginError = error.response?.data?.message || 'Login failed';
+                        this.loginError = (error.response && error.response.data && error.response.data.message) 
+                            || 'Invalid credentials. Please try again.';
                     } finally {
                         this.loginLoading = false;
                     }
                 },
-                // Replace the loadData method with:
                 async loadData() {
                     try {
                         this.isLoading = true;
                         const token = localStorage.getItem('adminToken');
                         
-                        // Fetch real data
+                        // Fetch all data
                         const [usersRes, paymentsRes, issuesRes] = await Promise.all([
-                            axios.get('/users', { headers: { Authorization: `Bearer ${token}` } }),
-                            axios.get('/payments', { headers: { Authorization: `Bearer ${token}` } }),
-                            axios.get('/issues', { headers: { Authorization: `Bearer ${token}` } })
+                            axios.get(`${API_BASE}/admin/users`, { headers: { Authorization: `Bearer ${token}` } }),
+                            axios.get(`${API_BASE}/admin/payments`, { headers: { Authorization: `Bearer ${token}` } }),
+                            axios.get(`${API_BASE}/api/merchant-issues`, { headers: { Authorization: `Bearer ${token}` } })
                         ]);
                         
-                        this.users = usersRes.data;
-                        this.payments = paymentsRes.data;
-                        this.merchantIssues = issuesRes.data;
+                        this.users = usersRes.data.users || [];
+                        this.payments = paymentsRes.data.payments || [];
+                        this.merchantIssues = issuesRes.data.issues || [];
                         
-                        // Calculate stats from real data
+                        // Calculate stats
                         this.stats = {
                             totalUsers: this.users.length,
                             totalPayments: this.payments.length,
@@ -913,56 +932,51 @@
                         };
                         
                         this.updateCharts();
-                        this.isLoading = false;
                     } catch (error) {
                         console.error('Data loading error:', error);
+                        if (error.response && error.response.status === 401) {
+                            this.logout();
+                        }
+                    } finally {
                         this.isLoading = false;
                     }
                 },
                 async refreshPayments() {
                     try {
                         this.isLoading = true;
-                        // Simulate refresh
-                        setTimeout(() => {
-                            this.isLoading = false;
-                        }, 1000);
+                        const response = await axios.get(`${API_BASE}/admin/payments`);
+                        this.payments = response.data.payments || [];
+                        this.stats.pendingPayments = this.payments.filter(p => p.status === 'Pending').length;
                     } catch (error) {
                         console.error('Refresh payments error:', error);
+                    } finally {
                         this.isLoading = false;
                     }
                 },
                 async refreshUsers() {
                     try {
                         this.isLoading = true;
-                        // Simulate refresh
-                        setTimeout(() => {
-                            this.isLoading = false;
-                        }, 1000);
+                        const response = await axios.get(`${API_BASE}/admin/users`);
+                        this.users = response.data.users || [];
+                        this.stats.totalUsers = this.users.length;
                     } catch (error) {
                         console.error('Refresh users error:', error);
+                    } finally {
                         this.isLoading = false;
                     }
                 },
                 async refreshIssues() {
                     try {
                         this.isLoading = true;
-                        // Simulate refresh
-                        setTimeout(() => {
-                            this.isLoading = false;
-                        }, 1000);
+                        const response = await axios.get(`${API_BASE}/api/merchant-issues`);
+                        this.merchantIssues = response.data.issues || [];
+                        this.stats.issueReports = this.merchantIssues.length;
+                        this.updateCharts();
                     } catch (error) {
                         console.error('Refresh issues error:', error);
+                    } finally {
                         this.isLoading = false;
                     }
-                },
-                updateStats() {
-                    this.stats = {
-                        totalUsers: this.users.length,
-                        totalPayments: this.payments.length,
-                        pendingPayments: this.payments.filter(p => p.status === 'Pending').length,
-                        completedPayments: this.payments.filter(p => p.status === 'Completed').length,
-                        issueReports: this.merchantIssues.length
-                    };
                 },
                 statusClass(status) {
                     const classes = {
@@ -991,6 +1005,7 @@
                 },
                 logout() {
                     if (confirm('Are you sure you want to logout?')) {
+                        localStorage.removeItem('adminToken');
                         this.isAuthenticated = false;
                         this.admin = { email: '', password: '' };
                     }
@@ -998,27 +1013,25 @@
                 async updatePaymentStatus(payment) {
                     try {
                         this.isLoading = true;
-                        // Simulate API call
-                        setTimeout(() => {
-                            const newStatus = payment.status === 'Completed' ? 'Pending' : 'Completed';
-                            payment.status = newStatus;
-                            this.updateStats();
-                            this.isLoading = false;
-                        }, 1000);
+                        
+                        const newStatus = payment.status === 'Completed' ? 'Pending' : 'Completed';
+                        const response = await axios.post(
+                            `${API_BASE}/admin/update-status`,
+                            { trxid: payment.trxid, status: newStatus }
+                        );
+
+                        if (response.data.success) {
+                            const index = this.payments.findIndex(p => p._id === payment._id);
+                            if (index > -1) {
+                                this.payments.splice(index, 1, response.data.payment);
+                            }
+                            this.stats.pendingPayments = this.payments.filter(p => p.status === 'Pending').length;
+                        }
                     } catch (error) {
                         console.error('Update status error:', error);
+                    } finally {
                         this.isLoading = false;
                     }
-                },
-                formatCompany(company) {
-                    const companies = {
-                        'govt_nid': 'Govt NID',
-                        'redx': 'RedX',
-                        'pathao': 'Pathao',
-                        'steadfast': 'SteadFast',
-                        'premium_service': 'Premium Service'
-                    };
-                    return companies[company] || company;
                 },
                 showPaymentDetails(payment) {
                     this.selectedPayment = payment;
@@ -1030,7 +1043,7 @@
                     this.paymentModal.show();
                 },
                 viewUserDetails(userId) {
-                    const user = this.users.find(u => u.id === userId);
+                    const user = this.users.find(u => u._id === userId);
                     if (user) {
                         alert(`User Details:\nID: ${userId}\nPhone: ${user.phone}\nEmail: ${user.email}`);
                     }
@@ -1038,16 +1051,22 @@
                 async updateIssueStatus(issue, status) {
                     try {
                         this.isLoading = true;
-                        // Simulate API call
-                        setTimeout(() => {
-                            issue.status = status;
-                            this.updateStats();
-                            this.loadRecentActivities();
+                        const response = await axios.put(
+                            `${API_BASE}/api/merchant-issues/${issue._id}/status`,
+                            { status }
+                        );
+
+                        if (response.data.success) {
+                            const index = this.merchantIssues.findIndex(i => i._id === issue._id);
+                            if (index > -1) {
+                                this.merchantIssues[index] = response.data.issue;
+                            }
+                            this.stats.issueReports = this.merchantIssues.length;
                             this.updateCharts();
-                            this.isLoading = false;
-                        }, 1000);
+                        }
                     } catch (error) {
                         console.error('Update issue status error:', error);
+                    } finally {
                         this.isLoading = false;
                     }
                 },
@@ -1063,23 +1082,27 @@
                 async saveIssueChanges() {
                     try {
                         this.isLoading = true;
-                        // Simulate API call
-                        setTimeout(() => {
-                            const index = this.merchantIssues.findIndex(i => i.id === this.selectedIssue.id);
+                        const response = await axios.put(
+                            `${API_BASE}/api/merchant-issues/${this.selectedIssue._id}`,
+                            this.selectedIssue
+                        );
+
+                        if (response.data.success) {
+                            const index = this.merchantIssues.findIndex(i => i._id === this.selectedIssue._id);
                             if (index > -1) {
-                                this.merchantIssues[index] = {...this.selectedIssue};
+                                this.merchantIssues[index] = response.data.issue;
                             }
                             this.issueModal.hide();
-                            this.loadRecentActivities();
                             this.updateCharts();
-                            this.isLoading = false;
-                        }, 1000);
+                        }
                     } catch (error) {
                         console.error('Save issue changes error:', error);
+                    } finally {
                         this.isLoading = false;
                     }
                 },
                 loadRecentActivities() {
+                    // This would normally come from an API
                     this.recentActivities = [
                         { id: 'act001', message: 'Updated payment status for TRX123456', timestamp: new Date() },
                         { id: 'act002', message: 'Resolved issue with Shop C', timestamp: new Date(Date.now() - 3600000) },
@@ -1160,6 +1183,70 @@
                             }
                         }
                     });
+                },
+                initWebSocket() {
+                    if (this.ws) {
+                        this.ws.close();
+                        this.ws = null;
+                    }
+
+                    this.ws = new WebSocket('wss://oneai-wjox.onrender.com');
+                    this.wsConnectionAttempts++;
+
+                    this.ws.onopen = () => {
+                        console.log('WebSocket connected');
+                        const token = localStorage.getItem('adminToken');
+                        this.wsConnectionAttempts = 0;
+                        
+                        if (token) {
+                            this.ws.send(JSON.stringify({
+                                type: 'auth',
+                                token: token
+                            }));
+                        }
+                    };
+
+                    this.ws.onmessage = (event) => {
+                        try {
+                            const data = JSON.parse(event.data);
+                            
+                            if (data.type === 'payment-updated') {
+                                const index = this.payments.findIndex(p => p.trxid === data.payment.trxid);
+                                if (index > -1) {
+                                    this.payments.splice(index, 1, {
+                                        ...this.payments[index],
+                                        status: data.payment.status
+                                    });
+                                }
+                            } else if (data.type === 'new-payment') {
+                                this.payments.unshift(data.payment);
+                                this.stats.totalPayments = this.payments.length;
+                                this.stats.pendingPayments = this.payments.filter(p => p.status === 'Pending').length;
+                            } else if (data.type === 'new-issue') {
+                                this.merchantIssues.unshift(data.issue);
+                                this.stats.issueReports = this.merchantIssues.length;
+                                this.updateCharts();
+                            }
+                        } catch (error) {
+                            console.error('WebSocket message error:', error);
+                        }
+                    };
+
+                    this.ws.onerror = (error) => {
+                        console.error('WebSocket error:', error);
+                    };
+
+                    this.ws.onclose = (event) => {
+                        console.log('WebSocket disconnected:', event.reason);
+                        
+                        if (this.wsConnectionAttempts < 5) {
+                            console.log(`Reconnecting attempt ${this.wsConnectionAttempts}/5...`);
+                            setTimeout(() => this.initWebSocket(), 3000);
+                        } else {
+                            console.error('Max WebSocket reconnection attempts reached');
+                            this.wsConnectionAttempts = 0;
+                        }
+                    };
                 }
             },
             async mounted() {
@@ -1174,9 +1261,6 @@
                     { keyboard: false }
                 );
                 
-                // Check initial setup
-                await this.checkInitialSetup();
-                
                 // Initialize tabs
                 const triggerTabList = [].slice.call(document.querySelectorAll('#issueTabs button'));
                 triggerTabList.forEach(triggerEl => {
@@ -1186,37 +1270,39 @@
                         tabTrigger.show();
                     });
                 });
+                
+                // Check initial setup
+                await this.checkInitialSetup();
+                
+                // Check authentication if setup is done
+                const token = localStorage.getItem('adminToken');
+                if (token && !this.showInitialSetup) {
+                    try {
+                        // Validate token
+                        await axios.get(`${API_BASE}/admin/validate`);
+                        this.isAuthenticated = true;
+                        
+                        // Load data
+                        this.loadData();
+                        
+                        // Init WebSocket
+                        this.initWebSocket();
+                    } catch (error) {
+                        console.error('Authentication check failed:', error);
+                        localStorage.removeItem('adminToken');
+                    }
+                }
+            },
+            beforeUnmount() {
+                if (this.ws) {
+                    this.ws.close();
+                    this.ws = null;
+                }
             }
         };
 
         const app = Vue.createApp(AdminApp);
         app.mount('#admin-app');
     </script>
-    <!-- Add to admin.html before closing body tag -->
-<script>
-// WebSocket connection for real-time updates
-const setupWebSocket = () => {
-  const ws = new WebSocket(`wss://${window.location.host}`);
-  
-  ws.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    if (data.type === 'payment-updated') {
-      // Update payment status in UI
-      const paymentRow = document.querySelector(`tr[data-trxid="${data.payment.trxid}"]`);
-      if (paymentRow) {
-        paymentRow.querySelector('.status-badge').textContent = data.payment.status;
-        paymentRow.querySelector('.status-badge').className = `status-badge ${statusClass(data.payment.status)}`;
-      }
-    }
-  };
-  
-  ws.onerror = (error) => {
-    console.error('WebSocket error:', error);
-  };
-};
-
-// Call this in Vue mounted hook
-setupWebSocket();
-</script>
 </body>
 </html>
