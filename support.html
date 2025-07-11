@@ -973,6 +973,83 @@
     }
   });
 </script>
+<script>
+  // Function to handle form submissions
+  async function submitForm(formId, endpoint) {
+    const form = document.getElementById(formId);
+    const formData = Object.fromEntries(new FormData(form));
+    const loadingOverlay = document.querySelector('.loading-overlay');
+    
+    try {
+      loadingOverlay.style.display = 'flex';
+      
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+
+      if (!response.ok) throw new Error('Server response not OK');
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        showConfirmation('রিপোর্ট সফলভাবে জমা হয়েছে!', true);
+        
+        // Special handling for penalty report
+        if (formId === 'penalty-report-form' && data.voucherCode) {
+          document.getElementById('voucher-code').textContent = data.voucherCode;
+          document.getElementById('voucher-container').style.display = 'block';
+        }
+        
+        form.reset();
+      } else {
+        throw new Error(data.message || 'Submission failed');
+      }
+    } catch (error) {
+      showConfirmation(`রিপোর্ট জমা দিতে ব্যর্থ: ${error.message}`, false);
+    } finally {
+      loadingOverlay.style.display = 'none';
+    }
+  }
+
+  // Handle issue report form submission
+  document.getElementById('issue-report-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await submitForm('issue-report-form', 'https://oneai-wjox.onrender.com/api/merchant-issues');
+    
+    // Send WhatsApp notification
+    const formData = {
+      merchantName: document.getElementById('issue-merchant-name').value,
+      merchantPhone: document.getElementById('issue-merchant-phone').value,
+      issueType: document.getElementById('issue-type').value,
+      details: document.getElementById('issue-details').value
+    };
+    
+    const message = `New Issue Report:\n\nMerchant: ${formData.merchantName}\nPhone: ${formData.merchantPhone}\nIssue Type: ${formData.issueType}\nDetails:\n${formData.details}`;
+    window.open(`https://wa.me/8801568760780?text=${encodeURIComponent(message)}`, '_blank');
+  });
+
+  // Handle penalty report form submission
+  document.getElementById('penalty-report-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await submitForm('penalty-report-form', 'https://oneai-wjox.onrender.com/api/penalty-report');
+    
+    // Send WhatsApp notification
+    const formData = {
+      merchantName: document.getElementById('merchant-name').value,
+      customerName: document.getElementById('customer-name').value,
+      customerPhone: document.getElementById('customer-phone').value,
+      penaltyDate: document.getElementById('penalty-date').value,
+      amount1: document.getElementById('amount1').value,
+      amount2: document.getElementById('amount2').value,
+      penaltyDetails: document.getElementById('penalty-details').value
+    };
+    
+    const message = `New Penalty Report:\n\nMerchant: ${formData.merchantName}\nCustomer: ${formData.customerName} (${formData.customerPhone})\nDate: ${formData.penaltyDate}\nAmounts: ${formData.amount1} -> ${formData.amount2}\nDetails:\n${formData.penaltyDetails}`;
+    window.open(`https://wa.me/8801568760780?text=${encodeURIComponent(message)}`, '_blank');
+  });
+</script>
   <!-- Include scripts -->
   <script src="./assets/js/hackeranimation.js"></script>
   <script src="./assets/js/main.js"></script>
