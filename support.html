@@ -648,7 +648,7 @@
       
       try {
         // Simulate API call to backend
-        const response = await fetch('https://oneai-wjox.onrender.com/api/penalty-report', {
+        const response = await fetch('https://oneai-wjox.onrender.com/penalty-report', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -698,7 +698,7 @@
       
       try {
         // Send request to backend
-        const response = await fetch('https://oneai-wjox.onrender.com/api/premium', {
+        const response = await fetch('https://oneai-wjox.onrender.com/premium', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -745,7 +745,7 @@
     }
         async function loadUserReports(phone) {
       try {
-        const response = await fetch(`https://oneai-wjox.onrender.com/api/merchant-issues?phone=${encodeURIComponent(phone)}`);
+        const response = await fetch(`https://oneai-wjox.onrender.com/merchant-issues?phone=${encodeURIComponent(phone)}`);
         if (!response.ok) throw new Error('Failed to load reports');
         return await response.json();
       } catch (error) {
@@ -800,7 +800,7 @@
       };
       
       try {
-        const response = await fetch('https://oneai-wjox.onrender.com/api/merchant-issues', {
+        const response = await fetch('https://oneai-wjox.onrender.com/merchant-issues', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -902,7 +902,7 @@
     };
     
     try {
-      const response = await fetch('https://oneai-wjox.onrender.com/api/merchant-issues', {
+      const response = await fetch('https://oneai-wjox.onrender.com/merchant-issues', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -945,7 +945,7 @@
     };
     
     try {
-      const response = await fetch('https://oneai-wjox.onrender.com/api/penalty-report', {
+      const response = await fetch('https://oneai-wjox.onrender.com/penalty-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -1016,7 +1016,7 @@
   // Handle issue report form submission
   document.getElementById('issue-report-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    await submitForm('issue-report-form', 'https://oneai-wjox.onrender.com/api/merchant-issues');
+    await submitForm('issue-report-form', 'https://oneai-wjox.onrender.com/merchant-issues');
     
     // Send WhatsApp notification
     const formData = {
@@ -1033,7 +1033,7 @@
   // Handle penalty report form submission
   document.getElementById('penalty-report-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    await submitForm('penalty-report-form', 'https://oneai-wjox.onrender.com/api/penalty-report');
+    await submitForm('penalty-report-form', 'https://oneai-wjox.onrender.com/penalty-report');
     
     // Send WhatsApp notification
     const formData = {
