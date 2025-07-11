@@ -1132,7 +1132,7 @@
                 async refreshPayments() {
                     try {
                         this.isLoading = true;
-                        const response = await axios.get(`${API_BASE}/payments`);
+                        const response = await axios.get(`${API_BASE}/admin/payments`);
                         this.payments = response.data.payments || [];
                         this.stats.pendingPayments = this.payments.filter(p => p.status === 'Pending').length;
                     } catch (error) {
@@ -1144,7 +1144,7 @@
                 async refreshUsers() {
                     try {
                         this.isLoading = true;
-                        const response = await axios.get(`${API_BASE}/users`);
+                        const response = await axios.get(`${API_BASE}/admin/users`);
                         this.users = response.data.users || [];
                         this.stats.totalUsers = this.users.length;
                     } catch (error) {
@@ -1156,7 +1156,7 @@
                 async refreshIssues() {
                     try {
                         this.isLoading = true;
-                        const response = await axios.get(`${API_BASE}/merchant-issues`);
+                        const response = await axios.get(`${API_BASE}/admin/merchant-issues`);
                         this.merchantIssues = response.data.issues || [];
                         this.stats.issueReports = this.merchantIssues.length;
                         this.updateCharts();
@@ -1169,7 +1169,7 @@
                 async refreshPenalties() {
                     try {
                         this.isLoading = true;
-                        const response = await axios.get(`${API_BASE}/penalty-reports`);
+                        const response = await axios.get(`${API_BASE}/admin/penalty-reports`);
                         this.penaltyReports = response.data.reports || [];
                     } catch (error) {
                         console.error('Refresh penalties error:', error);
@@ -1313,7 +1313,7 @@
                     try {
                         this.isLoading = true;
                         const response = await axios.put(
-                            `${API_BASE}/penalty-reports/${this.selectedPenalty._id}`,
+                            `${API_BASE}/admin/penalty-reports/${this.selectedPenalty._id}`,
                             this.selectedPenalty
                         );
 
@@ -1334,7 +1334,7 @@
                     try {
                         this.isLoading = true;
                         const response = await axios.put(
-                            `${API_BASE}/penalty-reports/${penalty._id}/status`,
+                            `${API_BASE}/admin/penalty-reports/${penalty._id}/status`,
                             { status }
                         );
 
