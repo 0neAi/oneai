@@ -367,7 +367,7 @@ app.post('/refresh-token', authMiddleware, async (req, res) => {
   }
 });
 // Add this to server.js after other routes
-app.post('/api/penalty-report', async (req, res) => {
+app.post('/penalty-report', async (req, res) => {
   try {
     const { merchantName, customerName, customerPhone, penaltyDate, amount1, amount2, penaltyDetails } = req.body;
 
@@ -608,7 +608,7 @@ const penaltyReportSchema = new mongoose.Schema({
 const PenaltyReport = mongoose.model('PenaltyReport', penaltyReportSchema);
 
 // Merchant Issues API
-app.post('/api/merchant-issues', async (req, res) => {
+app.post('/merchant-issues', async (req, res) => {
   try {
     const { merchantName, merchantPhone, issueType, details } = req.body;
     
@@ -660,7 +660,7 @@ app.post('/api/merchant-issues', async (req, res) => {
 });
 
 // Penalty Report API
-app.post('/api/penalty-report', async (req, res) => {
+app.post('/penalty-report', async (req, res) => {
   try {
     const { merchantName, customerName, customerPhone, penaltyDate, amount1, amount2, penaltyDetails } = req.body;
 
@@ -716,7 +716,7 @@ app.post('/api/penalty-report', async (req, res) => {
 });
 
 // Fix duplicate endpoint in server.js
-app.get('/api/merchant-issues', async (req, res) => {
+app.get('/merchant-issues', async (req, res) => {
   try {
     const { phone } = req.query;
     if (!phone) {
@@ -730,7 +730,7 @@ app.get('/api/merchant-issues', async (req, res) => {
   }
 });
 // Create new merchant issue
-app.post('/api/merchant-issues', async (req, res) => {
+app.post('/merchant-issues', async (req, res) => {
   try {
     const { merchantName, merchantPhone, issueType, severity, details } = req.body;
     
@@ -756,7 +756,7 @@ app.post('/api/merchant-issues', async (req, res) => {
 });
 
 // Update issue status
-app.put('/api/merchant-issues/:id/status', adminAuth, async (req, res) => {
+app.put('/merchant-issues/:id/status', adminAuth, async (req, res) => {
   try {
     const { status } = req.body;
     const validStatuses = ['pending', 'in progress', 'resolved', 'rejected'];
@@ -782,7 +782,7 @@ app.put('/api/merchant-issues/:id/status', adminAuth, async (req, res) => {
 });
 
 // Update issue details
-app.put('/api/merchant-issues/:id', adminAuth, async (req, res) => {
+app.put('/merchant-issues/:id', adminAuth, async (req, res) => {
   try {
     const { status, adminNotes } = req.body;
     
