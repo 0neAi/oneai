@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import { WebSocketServer, WebSocket } from 'ws';
+import { WebSocketServer, WebSocket } from 'ws'; // Import both
 import { adminAuth } from './middleware/auth.js';
 import Payment from './models/Payment.js';
 import User from './models/User.js';
@@ -14,7 +14,7 @@ import dotenv from 'dotenv';
 import http from 'http';
 import webpush from 'web-push';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import { fileURLToPath } from 'url'
 
 dotenv.config();
 
@@ -137,15 +137,7 @@ wss.on('connection', (ws, req) => {
     try {
       const data = JSON.parse(message);
       
-      if (data.type === 'auth' && data.role === 'admin') {
-        const decoded = jwt.verify(data.token, process.env.JWT_SECRET);
-        if (!['superadmin', 'moderator'].includes(decoded.role)) {
-          throw new Error('Insufficient privileges');
-        }
-        ws.isAdmin = true;
-        console.log('Admin authenticated via WebSocket');
-      }
-      else if (data.type === 'adminStatusUpdate') {
+      if (data.type === 'adminStatusUpdate') {
         const decoded = jwt.verify(data.token, process.env.JWT_SECRET);
         
         if (!['superadmin', 'moderator'].includes(decoded.role)) {
@@ -243,7 +235,7 @@ const authMiddleware = async (req, res, next) => {
 // ======================
 app.options('*', cors());
 
-app.get('/', (req, res) => res.status(200).json({ 
+('/', (req, res) => res.status(200).json({ 
   success: true, 
   message: 'Server operational',
   version: '1.0.0'
@@ -260,8 +252,10 @@ app.get('/status', (req, res) => res.json({
 // ======================
 app.post('/register', async (req, res) => {
   try {
+    // Fix: Use new variable for normalized email
     const { phone, email: rawEmail, password } = req.body;
     const email = rawEmail.toLowerCase().trim();
+        // Add password validation
     if (password.length < 8) {
       return res.status(400).json({
         success: false,
@@ -273,6 +267,7 @@ app.post('/register', async (req, res) => {
       return res.status(400).json({ success: false, message: 'All fields required' });
     }
 
+    // Add phone duplicate check
     if (await User.findOne({ phone })) {
       return res.status(409).json({ success: false, message: 'Phone number already exists' });
     }
@@ -300,13 +295,15 @@ app.post('/register', async (req, res) => {
     });
 
   } catch (error) {
-     const message = process.env.NODE_ENV === 'production'
+     message = process.env.NODE_ENV === 'production'
       ? 'Registration failed'
       : error.message;
     res.status(500).json({ success: false, message });
   }
 });
-
+// ======================
+// User Login Route (Fixed)
+// ======================
 app.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -369,7 +366,68 @@ app.post('/refresh-token', authMiddleware, async (req, res) => {
     });
   }
 });
+// Add this to server.js after other routes
+// Fix the penalty report endpoint
+app.post('/penalty-report', async (req, res) => {
+  try {
+    const { merchantName, customerName, customerPhone, penaltyDate, amount1, amount2, penaltyDetails } = req.body;
 
+    // Validate required fields
+    if (!merchantName || !customerName || !customerPhone || !penaltyDate || !amount1 || !amount2 || !penaltyDetails) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'All required fields must be filled' 
+      });
+    }
+
+    // Create voucher code
+    const voucherCode = `VC-${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
+
+    // Create and save report
+    const report = new PenaltyReport({
+      merchantName,
+      customerName,
+      customerPhone,
+      penaltyDate: new Date(penaltyDate),
+      amount1: parseFloat(amount1),
+      amount2: parseFloat(amount2),
+      penaltyDetails,
+      status: 'pending',
+      voucherCode
+    });
+
+    await report.save();
+
+    // WebSocket notification
+    wss.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({
+          type: 'new-penalty',
+          report: {
+            _id: report._id,
+            merchantName: report.merchantName,
+            customerPhone: report.customerPhone,
+            status: report.status,
+            createdAt: report.createdAt
+          }
+        }));
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Penalty report submitted successfully',
+      voucherCode,
+      report
+    });
+  } catch (error) {
+    console.error('Penalty report error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to submit penalty report'
+    });
+  }
+});
 // ======================
 // Payment Processing
 // ======================
@@ -377,6 +435,7 @@ app.post('/payment', authMiddleware, async (req, res) => {
   try {
     const { consignments, discount = 0 } = req.body;
 
+    // Validate consignments
     if (!Array.isArray(consignments) || consignments.length === 0) {
       return res.status(400).json({ 
         success: false, 
@@ -384,11 +443,13 @@ app.post('/payment', authMiddleware, async (req, res) => {
       });
     }
 
+    // Validate each consignment
     let amount3 = 0;
     const validServiceTypes = ['pricecng', 'partial', 'drto', 'delivery', 'return'];
     const phoneRegex = /^01[3-9]\d{8}$/;
     
     for (const consignment of consignments) {
+      // Validate service type
       if (!validServiceTypes.includes(consignment.serviceType)) {
         return res.status(400).json({
           success: false,
@@ -396,6 +457,7 @@ app.post('/payment', authMiddleware, async (req, res) => {
         });
       }
 
+      // Validate customer details
       if (!consignment.name || !phoneRegex.test(consignment.phone)) {
         return res.status(400).json({
           success: false,
@@ -403,6 +465,7 @@ app.post('/payment', authMiddleware, async (req, res) => {
         });
       }
 
+      // Service-specific validation
       if (consignment.serviceType === 'pricecng' || consignment.serviceType === 'partial') {
         if (consignment.amount2 >= consignment.amount1) {
           return res.status(400).json({
@@ -417,10 +480,12 @@ app.post('/payment', authMiddleware, async (req, res) => {
       }
     }
 
+    // Apply discount
     if (discount > 0) {
       amount3 *= (1 - discount / 100);
     }
 
+    // Validate final amount
     if (amount3 < 0 || amount3 > 30000) {
       return res.status(400).json({
         success: false,
@@ -428,6 +493,7 @@ app.post('/payment', authMiddleware, async (req, res) => {
       });
     }
 
+    // Create payment
     const payment = new Payment({
       user: req.user._id,
       ...req.body,
@@ -437,6 +503,7 @@ app.post('/payment', authMiddleware, async (req, res) => {
 
     const savedPayment = await payment.save();
 
+    // Prepare WhatsApp message
     const whatsappMessage = `
 New Payment Received!
 --------------------
@@ -454,11 +521,27 @@ Consignments:
 ${savedPayment.consignments.map(c => `  - Service: ${c.serviceType}, Name: ${c.name}, Phone: ${c.phone}, Amount1: ${c.amount1}, Amount2: ${c.amount2}`).join('\n')}
 `;
 
+    // Placeholder for WhatsApp API integration
+    // In a real application, you would integrate a WhatsApp API here (e.g., Twilio, WhatsApp Business API)
+    // For example:
+    // try {
+    //   const client = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+    //   await client.messages.create({
+    //     body: whatsappMessage,
+    //     from: 'whatsapp:+14155238886', // Your Twilio WhatsApp number
+    //     to: `whatsapp:${process.env.HELPLINE_WHATSAPP_NUMBER}`
+    //   });
+    //   console.log('WhatsApp message sent successfully!');
+    // } catch (whatsappError) {
+    //   console.error('Failed to send WhatsApp message:', whatsappError);
+    // }
     console.log('Simulating WhatsApp message to helpline:');
     console.log(whatsappMessage);
 
+
+    // WebSocket notification
     wss.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN && client.isAdmin) {
+      if (client.readyState === WebSocket.OPEN) {
         client.send(JSON.stringify({
           type: 'new-payment',
           payment: {
@@ -492,10 +575,7 @@ ${savedPayment.consignments.map(c => `  - Service: ${c.serviceType}, Name: ${c.n
     });
   }
 });
-
-// ======================
-// Merchant and Penalty Routes
-// ======================
+// Merchant Issues API
 const merchantIssueSchema = new mongoose.Schema({
   merchantName: { type: String, required: true },
   merchantPhone: { type: String, required: true },
@@ -534,6 +614,7 @@ const penaltyReportSchema = new mongoose.Schema({
 
 const PenaltyReport = mongoose.model('PenaltyReport', penaltyReportSchema);
 
+// Merchant Issues API
 app.post('/merchant-issues', async (req, res) => {
   try {
     const { merchantName, merchantPhone, issueType, details } = req.body;
@@ -555,8 +636,9 @@ app.post('/merchant-issues', async (req, res) => {
     
     await issue.save();
     
+    // WebSocket notification
     wss.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN && client.isAdmin) {
+      if (client.readyState === WebSocket.OPEN) {
         client.send(JSON.stringify({
           type: 'new-issue',
           issue: {
@@ -584,6 +666,7 @@ app.post('/merchant-issues', async (req, res) => {
   }
 });
 
+// Penalty Report API
 app.post('/penalty-report', async (req, res) => {
   try {
     const { merchantName, customerName, customerPhone, penaltyDate, amount1, amount2, penaltyDetails } = req.body;
@@ -609,8 +692,9 @@ app.post('/penalty-report', async (req, res) => {
 
     await report.save();
 
+    // WebSocket notification
     wss.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN && client.isAdmin) {
+      if (client.readyState === WebSocket.OPEN) {
         client.send(JSON.stringify({
           type: 'new-penalty',
           report: {
@@ -637,11 +721,120 @@ app.post('/penalty-report', async (req, res) => {
     });
   }
 });
+// Add these endpoints to server.js
+app.get('/admin/merchant-issues', adminAuth, async (req, res) => {
+  try {
+    const issues = await MerchantIssue.find().sort({ createdAt: -1 });
+    res.json({ success: true, issues });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch merchant issues' });
+  }
+});
 
+app.get('/admin/penalty-reports', adminAuth, async (req, res) => {
+  try {
+    const reports = await PenaltyReport.find().sort({ createdAt: -1 });
+    res.json({ success: true, reports });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch penalty reports' });
+  }
+});
+// Fix duplicate endpoint in server.js
+app.get('/merchant-issues', async (req, res) => {
+  try {
+    const { phone } = req.query;
+    if (!phone) {
+      return res.status(400).json({ success: false, message: 'Phone number required' });
+    }
+    
+    const issues = await MerchantIssue.find({ merchantPhone: phone }).sort({ createdAt: -1 });
+    res.json({ success: true, issues });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch issues' });
+  }
+});
+// Create new merchant issue
+app.post('/merchant-issues', async (req, res) => {
+  try {
+    const { merchantName, merchantPhone, issueType, severity, details } = req.body;
+    
+    if (!merchantName || !merchantPhone || !issueType || !details) {
+      return res.status(400).json({ success: false, message: 'Missing required fields' });
+    }
+    
+    const issue = new MerchantIssue({
+      merchantName,
+      merchantPhone,
+      issueType,
+      severity,
+      details,
+      status: 'pending'
+    });
+    
+    const savedIssue = await issue.save();
+    
+    res.status(201).json({ success: true, issue: savedIssue });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to create issue' });
+  }
+});
+
+// Update issue status
+app.put('/merchant-issues/:id/status', adminAuth, async (req, res) => {
+  try {
+    const { status } = req.body;
+    const validStatuses = ['pending', 'in progress', 'resolved', 'rejected'];
+    
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ success: false, message: 'Invalid status' });
+    }
+    
+    const issue = await MerchantIssue.findByIdAndUpdate(
+      req.params.id,
+      { status, updatedAt: Date.now() },
+      { new: true }
+    );
+    
+    if (!issue) {
+      return res.status(404).json({ success: false, message: 'Issue not found' });
+    }
+    
+    res.json({ success: true, issue });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to update issue' });
+  }
+});
+
+// Update issue details
+app.put('/merchant-issues/:id', adminAuth, async (req, res) => {
+  try {
+    const { status, adminNotes } = req.body;
+    
+    const updateData = { updatedAt: Date.now() };
+    if (status) updateData.status = status;
+    if (adminNotes) updateData.adminNotes = adminNotes;
+    
+    const issue = await MerchantIssue.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true }
+    );
+    
+    if (!issue) {
+      return res.status(404).json({ success: false, message: 'Issue not found' });
+    }
+    
+    res.json({ success: true, issue });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to update issue' });
+  }
+});
+// Update premium-payment endpoint
 app.post('/premium-payment', authMiddleware, async (req, res) => {
   try {
     const { phone, trxid, amount, service } = req.body;
     
+    // Create payment record using Payment model
     const payment = new Payment({
       user: req.user._id,
       company: 'premium_service',
@@ -662,8 +855,9 @@ app.post('/premium-payment', authMiddleware, async (req, res) => {
 
     const savedPayment = await payment.save();
     
+    // WebSocket notification
     wss.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN && client.isAdmin) {
+      if (client.readyState === WebSocket.OPEN) {
         client.send(JSON.stringify({
           type: 'new-payment',
           payment: {
@@ -695,7 +889,6 @@ app.post('/premium-payment', authMiddleware, async (req, res) => {
     });
   }
 });
-
 // ======================
 // Admin Routes
 // ======================
@@ -728,12 +921,13 @@ app.post('/admin/update-status', adminAuth, async (req, res) => {
       { trxid },
       { status },
       { new: true }
-    ).populate('user', 'email phone pushSubscription');
+    ).populate('user', 'email phone');
 
     if (!payment) {
       return res.status(404).json({ success: false, message: 'Payment not found' });
     }
 
+    // If the status is completed, send a push notification
     if (status === 'Completed' && payment.user.pushSubscription) {
         const payload = JSON.stringify({
             title: 'Payment Completed!',
@@ -746,6 +940,7 @@ app.post('/admin/update-status', adminAuth, async (req, res) => {
         });
     }
 
+    // Broadcast update via WebSocket
     wss.clients.forEach(client => {
       if (client.readyState === WebSocket.OPEN) {
         client.send(JSON.stringify({
@@ -767,7 +962,277 @@ app.post('/admin/update-status', adminAuth, async (req, res) => {
   }
 });
 
+app.post('/admin/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const admin = await Admin.findOne({ email }).select('+password');
+    
+    if (!admin || !(await admin.comparePassword(password))) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Invalid credentials' 
+      });
+    }
 
+    const token = jwt.sign(
+      { adminId: admin._id, role: admin.role }, 
+      process.env.JWT_SECRET, 
+      { expiresIn: '8h' }
+    );
+
+    res.json({
+      success: true,
+      token,
+      admin: admin.toSafeObject()
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error during admin login' 
+    });
+  }
+});
+
+// ======================
+// Admin registration check
+app.get('/admin/check-registration', async (req, res) => {
+  try {
+    const canRegister = await Admin.countDocuments() === 0;
+    res.json({ allowRegistration: canRegister });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error checking registration status' 
+    });
+  }
+});
+// Admin exists check
+app.get('/admin/exists', async (req, res) => {
+    const count = await Admin.countDocuments();
+    res.json({ exists: count > 0 });
+});
+
+// Admin login
+app.post('/admin/login', async (req, res) => {
+    try {
+        const admin = await Admin.findOne({ email: req.body.email });
+        if (!admin) return res.status(401).json({ message: 'Admin not found' });
+        
+        const valid = await admin.comparePassword(req.body.password);
+        if (!valid) return res.status(401).json({ message: 'Invalid password' });
+        
+        const token = jwt.sign({ adminId: admin._id }, process.env.JWT_SECRET, {
+            expiresIn: '1h'
+        });
+        
+        res.json({ token });
+    } catch (error) {
+        res.status(500).json({ message: 'Login failed' });
+    }
+});
+
+// Protected routes
+app.get('/users', adminAuth, async (req, res) => {
+    const users = await User.find().select('-password');
+    res.json(users);
+});
+
+app.get('/payments', adminAuth, async (req, res) => {
+    const payments = await Payment.find().populate('user', 'email phone');
+    res.json(payments);
+});
+// ======================
+// Admin Registration
+// ======================
+// Remove duplicate endpoint and keep only this one:
+// Admin registration - Fix this endpoint
+app.post('/admin/register', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        
+        // Validate password length
+        if (password.length < 12) {
+            return res.status(400).json({
+                success: false,
+                message: 'Password must be at least 12 characters'
+            });
+        }
+        
+        const admin = await Admin.register(email, password);
+        res.json({ 
+            success: true,
+            admin: admin.toSafeObject()
+        });
+    } catch (error) {
+        console.error('Admin registration error:', error);
+        res.status(400).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+// Remove
+
+// ======================
+// Admin validation
+app.get('/admin/validate', adminAuth, (req, res) => {
+  res.json({ success: true });
+});
+
+// Admin get payments
+app.get('/admin/payments', adminAuth, async (req, res) => {
+  try {
+    const payments = await Payment.find()
+      .populate('user', 'email phone')
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      payments
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch payments'
+    });
+  }
+});
+// ======================
+// Get Payments (Admin)
+// ======================
+app.get('/admin/payments', adminAuth, async (req, res) => {
+  try {
+    const payments = await Payment.find()
+      .populate('user', 'email phone')
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      payments
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch payments'
+    });
+  }
+});
+
+// ======================
+// User Payments Route
+// ======================
+app.get('/payments/user', authMiddleware, async (req, res) => {
+  try {
+    const payments = await Payment.find({ user: req.user._id })
+      .sort({ createdAt: -1 });
+          
+    res.json({ 
+      success: true, 
+      payments 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to fetch user payments' 
+    });
+  }
+});
+
+// ======================
+// Premium Payment Route
+// ======================
+// In the premium-payment route
+app.post('/premium-payment', authMiddleware, async (req, res) => {
+  try {
+    // Validate required fields
+    if (!req.body.phone || !req.body.trxid || !req.body.amount || !req.body.service || !req.body.type) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'All fields required' 
+      });
+    }
+
+    // Create payment record
+    const payment = new Payment({
+      user: req.user._id,
+      company: 'premium_service',
+      phone: req.body.phone,
+      password: 'premium_access',
+      method: 'Premium',
+      trxid: req.body.trxid,
+      consignments: [{
+        name: 'Premium Service',
+        phone: req.body.phone,
+        amount1: req.body.amount,
+        amount2: 0,
+        serviceType: req.body.service
+      }],
+      amount3: req.body.amount,
+      status: 'Pending'
+    });
+
+    // Save and broadcast
+    const savedPayment = await payment.save();
+    wss.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({
+          type: 'new-payment',
+          payment: {
+            _id: savedPayment._id,
+            status: savedPayment.status,
+            trxid: savedPayment.trxid,
+            amount3: savedPayment.amount3,
+            user: {
+              _id: req.user._id,
+              email: req.user.email,
+              phone: req.user.phone
+            },
+            company: 'premium_service',
+            createdAt: savedPayment.createdAt
+          }
+        }));
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Premium payment submitted for verification',
+      payment: savedPayment
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Premium payment processing failed'
+    });
+  }
+});
+
+// ======================
+// Get Users (Admin)
+// ======================
+app.get('/admin/users', adminAuth, async (req, res) => {
+  try {
+    const users = await User.find().select('-password');
+    res.json({ success: true, users });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch users' });
+  }
+});
+
+// ======================
+// User Validation Route
+// ======================
+app.get('/validate', authMiddleware, async (req, res) => {
+  res.json({ success: true });
+});
+// ======================
+// Request Logging
+// ======================
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.url}`);
+  next();
+});
 
 // ======================
 // Error Handling
@@ -786,6 +1251,8 @@ app.use((err, req, res, next) => {
       : err.message
   });
 });
+
+// ======================
 // Server Initialization
 // ======================
 server.listen(PORT, '0.0.0.0', () => {
