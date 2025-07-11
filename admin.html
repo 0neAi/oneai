@@ -1059,6 +1059,7 @@
                     try {
                         this.isLoading = true;
                         const token = localStorage.getItem('adminToken');
+                        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
                         
                         // Fetch all data
                         const [usersRes, paymentsRes, issuesRes, penaltiesRes] = await Promise.all([
