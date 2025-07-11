@@ -916,7 +916,7 @@
                         const [usersRes, paymentsRes, issuesRes] = await Promise.all([
                             axios.get(`${API_BASE}/admin/users`, { headers: { Authorization: `Bearer ${token}` } }),
                             axios.get(`${API_BASE}/admin/payments`, { headers: { Authorization: `Bearer ${token}` } }),
-                            axios.get(`${API_BASE}/api/merchant-issues`, { headers: { Authorization: `Bearer ${token}` } })
+                            axios.get(`${API_BASE}/merchant-issues`, { headers: { Authorization: `Bearer ${token}` } })
                         ]);
                         
                         this.users = usersRes.data.users || [];
@@ -968,7 +968,7 @@
                 async refreshIssues() {
                     try {
                         this.isLoading = true;
-                        const response = await axios.get(`${API_BASE}/api/merchant-issues`);
+                        const response = await axios.get(`${API_BASE}/merchant-issues`);
                         this.merchantIssues = response.data.issues || [];
                         this.stats.issueReports = this.merchantIssues.length;
                         this.updateCharts();
@@ -1052,7 +1052,7 @@
                     try {
                         this.isLoading = true;
                         const response = await axios.put(
-                            `${API_BASE}/api/merchant-issues/${issue._id}/status`,
+                            `${API_BASE}/merchant-issues/${issue._id}/status`,
                             { status }
                         );
 
@@ -1083,7 +1083,7 @@
                     try {
                         this.isLoading = true;
                         const response = await axios.put(
-                            `${API_BASE}/api/merchant-issues/${this.selectedIssue._id}`,
+                            `${API_BASE}/merchant-issues/${this.selectedIssue._id}`,
                             this.selectedIssue
                         );
 
