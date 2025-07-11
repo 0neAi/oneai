@@ -35,6 +35,15 @@
         .table-responsive {
             max-height: 500px;
         }
+        
+        .action-cell {
+            min-width: 150px;
+        }
+        
+        .modal-header {
+            background: linear-gradient(135deg, #0d6efd, #0dcaf0);
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -68,7 +77,10 @@
             <div v-else>
                 <header class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
                     <h1>Admin Dashboard</h1>
-                    <button @click="logout" class="btn btn-danger">Logout</button>
+                    <div>
+                        <span class="me-3 badge bg-secondary">{{ adminRole }}</span>
+                        <button @click="logout" class="btn btn-danger">Logout</button>
+                    </div>
                 </header>
 
                 <!-- Stats -->
@@ -116,12 +128,21 @@
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="penalties-tab" data-bs-toggle="tab" data-bs-target="#penalties" type="button" role="tab">Penalty Reports</button>
                         </li>
+                        <li class="nav-item" role="presentation" v-if="adminRole === 'superadmin'">
+                            <button class="nav-link" id="admins-tab" data-bs-toggle="tab" data-bs-target="#admins" type="button" role="tab">Admins</button>
+                        </li>
                     </ul>
                     <div class="tab-content" id="myTabContent">
+                        <!-- Users Tab -->
                         <div class="tab-pane fade show active" id="users" role="tabpanel">
                             <div class="card">
                                 <div class="card-body">
-                                    <h5 class="card-title">Users</h5>
+                                    <div class="d-flex justify-content-between mb-3">
+                                        <h5 class="card-title">Users</h5>
+                                        <div class="col-md-4">
+                                            <input type="text" class="form-control" placeholder="Search users..." v-model="userSearch">
+                                        </div>
+                                    </div>
                                     <div class="table-responsive">
                                         <table class="table table-striped">
                                             <thead>
@@ -129,13 +150,22 @@
                                                     <th>Email</th>
                                                     <th>Phone</th>
                                                     <th>Joined</th>
+                                                    <th class="action-cell">Actions</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <tr v-for="user in users" :key="user._id">
+                                                <tr v-for="user in filteredUsers" :key="user._id">
                                                     <td>{{ user.email }}</td>
                                                     <td>{{ user.phone }}</td>
-                                                    <td>{{ new Date(user.createdAt).toLocaleDateString() }}</td>
+                                                    <td>{{ formatDate(user.createdAt) }}</td>
+                                                    <td>
+                                                        <button class="btn btn-sm btn-primary me-1" @click="editUser(user)">
+                                                            <i class="bi bi-pencil"></i> Edit
+                                                        </button>
+                                                        <button class="btn btn-sm btn-danger" @click="deleteUser(user._id)">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </td>
                                                 </tr>
                                             </tbody>
                                         </table>
@@ -143,10 +173,17 @@
                                 </div>
                             </div>
                         </div>
+                        
+                        <!-- Payments Tab -->
                         <div class="tab-pane fade" id="payments" role="tabpanel">
                             <div class="card">
                                 <div class="card-body">
-                                    <h5 class="card-title">Payments</h5>
+                                    <div class="d-flex justify-content-between mb-3">
+                                        <h5 class="card-title">Payments</h5>
+                                        <div class="col-md-4">
+                                            <input type="text" class="form-control" placeholder="Search payments..." v-model="paymentSearch">
+                                        </div>
+                                    </div>
                                     <div class="table-responsive">
                                         <table class="table table-striped">
                                             <thead>
@@ -156,19 +193,22 @@
                                                     <th>Amount</th>
                                                     <th>Status</th>
                                                     <th>Date</th>
-                                                    <th>Actions</th>
+                                                    <th class="action-cell">Actions</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <tr v-for="payment in payments" :key="payment._id">
+                                                <tr v-for="payment in filteredPayments" :key="payment._id">
                                                     <td>{{ payment.trxid }}</td>
                                                     <td>{{ payment.user ? payment.user.email : 'N/A' }}</td>
                                                     <td>{{ payment.amount3 }}</td>
                                                     <td><span :class="`badge bg-${payment.status === 'Completed' ? 'success' : 'warning'}`">{{ payment.status }}</span></td>
-                                                    <td>{{ new Date(payment.createdAt).toLocaleString() }}</td>
+                                                    <td>{{ formatDate(payment.createdAt) }}</td>
                                                     <td>
-                                                        <button class="btn btn-sm btn-primary" @click="updatePaymentStatus(payment, 'Completed')">Complete</button>
-                                                        <button class="btn btn-sm btn-danger" @click="updatePaymentStatus(payment, 'Failed')">Fail</button>
+                                                        <button class="btn btn-sm btn-primary me-1" @click="updatePaymentStatus(payment, 'Completed')">Complete</button>
+                                                        <button class="btn btn-sm btn-danger me-1" @click="updatePaymentStatus(payment, 'Failed')">Fail</button>
+                                                        <button class="btn btn-sm btn-secondary" @click="editPayment(payment)">
+                                                            <i class="bi bi-pencil"></i>
+                                                        </button>
                                                     </td>
                                                 </tr>
                                             </tbody>
@@ -177,10 +217,17 @@
                                 </div>
                             </div>
                         </div>
+                        
+                        <!-- Merchant Issues Tab -->
                         <div class="tab-pane fade" id="issues" role="tabpanel">
                            <div class="card">
                                 <div class="card-body">
-                                    <h5 class="card-title">Merchant Issues</h5>
+                                    <div class="d-flex justify-content-between mb-3">
+                                        <h5 class="card-title">Merchant Issues</h5>
+                                        <div class="col-md-4">
+                                            <input type="text" class="form-control" placeholder="Search issues..." v-model="issueSearch">
+                                        </div>
+                                    </div>
                                     <div class="table-responsive">
                                         <table class="table table-striped">
                                             <thead>
@@ -190,23 +237,24 @@
                                                     <th>Issue Type</th>
                                                     <th>Details</th>
                                                     <th>Status</th>
-                                                    <th>Actions</th>
+                                                    <th class="action-cell">Actions</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <tr v-for="issue in merchantIssues" :key="issue._id">
+                                                <tr v-for="issue in filteredIssues" :key="issue._id">
                                                     <td>{{ issue.merchantName }}</td>
                                                     <td>{{ issue.merchantPhone }}</td>
                                                     <td>{{ issue.issueType }}</td>
                                                     <td>{{ issue.details }}</td>
+                                                    <td>{{ issue.status }}</td>
                                                     <td>
-                                                        <span :class="`badge bg-${issue.status === 'resolved' ? 'success' : issue.status === 'pending' ? 'warning' : 'info'}`">{{ issue.status }}</span>
-                                                    </td>
-                                                    <td>
-                                                        <button class="btn btn-sm btn-primary" @click="updateMerchantIssueStatus(issue, 'in progress')">In Progress</button>
-                                                        <button class="btn btn-sm btn-success" @click="updateMerchantIssueStatus(issue, 'resolved')">Resolve</button>
-                                                        <button class="btn btn-sm btn-danger" @click="updateMerchantIssueStatus(issue, 'rejected')">Reject</button>
-                                                        <button class="btn btn-sm btn-danger" @click="deleteMerchantIssue(issue._id)">Delete</button>
+                                                        <button class="btn btn-sm btn-primary me-1" @click="editIssue(issue)">
+                                                            <i class="bi bi-pencil"></i> Edit
+                                                        </button>
+                                                        <button class="btn btn-sm btn-success me-1" @click="updateIssueStatus(issue, 'resolved')">Resolve</button>
+                                                        <button class="btn btn-sm btn-danger" @click="deleteIssue(issue._id)">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
                                                     </td>
                                                 </tr>
                                             </tbody>
@@ -215,10 +263,17 @@
                                 </div>
                             </div>
                         </div>
+                        
+                        <!-- Penalty Reports Tab -->
                         <div class="tab-pane fade" id="penalties" role="tabpanel">
                             <div class="card">
                                 <div class="card-body">
-                                    <h5 class="card-title">Penalty Reports</h5>
+                                    <div class="d-flex justify-content-between mb-3">
+                                        <h5 class="card-title">Penalty Reports</h5>
+                                        <div class="col-md-4">
+                                            <input type="text" class="form-control" placeholder="Search reports..." v-model="penaltySearch">
+                                        </div>
+                                    </div>
                                     <div class="table-responsive">
                                         <table class="table table-striped">
                                             <thead>
@@ -228,15 +283,62 @@
                                                     <th>Amount</th>
                                                     <th>Date</th>
                                                     <th>Status</th>
+                                                    <th class="action-cell">Actions</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <tr v-for="report in penaltyReports" :key="report._id">
+                                                <tr v-for="report in filteredPenalties" :key="report._id">
                                                     <td>{{ report.merchantName }}</td>
                                                     <td>{{ report.customerName }}</td>
-                                                    <td>{{ report.amount1 }} -> {{ report.amount2 }}</td>
-                                                    <td>{{ new Date(report.penaltyDate).toLocaleDateString() }}</td>
+                                                    <td>{{ report.amount1 }} → {{ report.amount2 }}</td>
+                                                    <td>{{ formatDate(report.penaltyDate) }}</td>
                                                     <td>{{ report.status }}</td>
+                                                    <td>
+                                                        <button class="btn btn-sm btn-primary me-1" @click="editPenalty(report)">
+                                                            <i class="bi bi-pencil"></i> Edit
+                                                        </button>
+                                                        <button class="btn btn-sm btn-success" @click="updatePenaltyStatus(report, 'processed')">Process</button>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Admins Tab (Superadmin only) -->
+                        <div class="tab-pane fade" id="admins" role="tabpanel" v-if="adminRole === 'superadmin'">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between mb-3">
+                                        <h5 class="card-title">Admin Accounts</h5>
+                                        <div>
+                                            <button class="btn btn-primary" @click="showAdminModal = true">
+                                                <i class="bi bi-plus-circle"></i> Add Admin
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table class="table table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th>Email</th>
+                                                    <th>Role</th>
+                                                    <th>Last Login</th>
+                                                    <th class="action-cell">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr v-for="admin in admins" :key="admin._id">
+                                                    <td>{{ admin.email }}</td>
+                                                    <td>{{ admin.role }}</td>
+                                                    <td>{{ formatDate(admin.lastLogin) }}</td>
+                                                    <td>
+                                                        <button class="btn btn-sm btn-danger" @click="deleteAdmin(admin._id)">
+                                                            <i class="bi bi-trash"></i> Delete
+                                                        </button>
+                                                    </td>
                                                 </tr>
                                             </tbody>
                                         </table>
@@ -248,9 +350,613 @@
                 </section>
             </div>
         </div>
+        
+        <!-- Edit Modal -->
+        <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">{{ editModalTitle }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <!-- User Form -->
+                        <div v-if="currentEditType === 'user'">
+                            <div class="mb-3">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" v-model="currentItem.email">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Phone</label>
+                                <input type="text" class="form-control" v-model="currentItem.phone">
+                            </div>
+                        </div>
+                        
+                        <!-- Payment Form -->
+                        <div v-if="currentEditType === 'payment'">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">TRX ID</label>
+                                    <input type="text" class="form-control" v-model="currentItem.trxid">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Amount</label>
+                                    <input type="number" class="form-control" v-model="currentItem.amount3">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Status</label>
+                                <select class="form-select" v-model="currentItem.status">
+                                    <option value="Pending">Pending</option>
+                                    <option value="Completed">Completed</option>
+                                    <option value="Failed">Failed</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Issue Form -->
+                        <div v-if="currentEditType === 'issue'">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Merchant Name</label>
+                                    <input type="text" class="form-control" v-model="currentItem.merchantName">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Phone</label>
+                                    <input type="text" class="form-control" v-model="currentItem.merchantPhone">
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Issue Type</label>
+                                    <input type="text" class="form-control" v-model="currentItem.issueType">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Status</label>
+                                    <select class="form-select" v-model="currentItem.status">
+                                        <option value="pending">Pending</option>
+                                        <option value="in progress">In Progress</option>
+                                        <option value="resolved">Resolved</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Details</label>
+                                <textarea class="form-control" v-model="currentItem.details"></textarea>
+                            </div>
+                        </div>
+                        
+                        <!-- Penalty Form -->
+                        <div v-if="currentEditType === 'penalty'">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Merchant Name</label>
+                                    <input type="text" class="form-control" v-model="currentItem.merchantName">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Customer Name</label>
+                                    <input type="text" class="form-control" v-model="currentItem.customerName">
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Customer Phone</label>
+                                    <input type="text" class="form-control" v-model="currentItem.customerPhone">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Status</label>
+                                    <select class="form-select" v-model="currentItem.status">
+                                        <option value="pending">Pending</option>
+                                        <option value="processed">Processed</option>
+                                        <option value="rejected">Rejected</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Original Amount</label>
+                                    <input type="number" class="form-control" v-model="currentItem.amount1">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Updated Amount</label>
+                                    <input type="number" class="form-control" v-model="currentItem.amount2">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Details</label>
+                                <textarea class="form-control" v-model="currentItem.penaltyDetails"></textarea>
+                            </div>
+                        </div>
+                        
+                        <!-- Admin Form -->
+                        <div v-if="currentEditType === 'admin'">
+                            <div class="mb-3">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" v-model="currentItem.email">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Password</label>
+                                <input type="password" class="form-control" v-model="currentItem.password" placeholder="Leave blank to keep current">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Role</label>
+                                <select class="form-select" v-model="currentItem.role">
+                                    <option value="superadmin">Super Admin</option>
+                                    <option value="moderator">Moderator</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" @click="saveChanges">Save Changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Add Admin Modal -->
+        <div class="modal fade" id="addAdminModal" tabindex="-1" aria-hidden="true" v-if="adminRole === 'superadmin'">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Add New Admin</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" v-model="newAdmin.email">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Password</label>
+                            <input type="password" class="form-control" v-model="newAdmin.password">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Role</label>
+                            <select class="form-select" v-model="newAdmin.role">
+                                <option value="superadmin">Super Admin</option>
+                                <option value="moderator">Moderator</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" @click="createAdmin">Create Admin</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="./assets/js/admin.js"></script>
+    <script>
+        const API_BASE = 'https://oneai-wjox.onrender.com';
+
+        const AdminApp = {
+            data() {
+                return {
+                    isLoading: true,
+                    authenticated: false,
+                    adminRole: '',
+                    loginError: '',
+                    credentials: {
+                        email: '',
+                        password: ''
+                    },
+                    users: [],
+                    payments: [],
+                    merchantIssues: [],
+                    penaltyReports: [],
+                    admins: [],
+                    stats: {},
+                    ws: null,
+                    charts: {
+                        paymentsChart: null,
+                        usersIssuesChart: null
+                    },
+                    
+                    // Search filters
+                    userSearch: '',
+                    paymentSearch: '',
+                    issueSearch: '',
+                    penaltySearch: '',
+                    
+                    // Edit modal
+                    currentItem: null,
+                    currentEditType: '',
+                    editModalTitle: '',
+                    
+                    // New admin
+                    newAdmin: {
+                        email: '',
+                        password: '',
+                        role: 'moderator'
+                    }
+                };
+            },
+            computed: {
+                filteredUsers() {
+                    return this.users.filter(user => 
+                        user.email.toLowerCase().includes(this.userSearch.toLowerCase()) ||
+                        user.phone.includes(this.userSearch)
+                },
+                filteredPayments() {
+                    return this.payments.filter(payment => 
+                        payment.trxid.toLowerCase().includes(this.paymentSearch.toLowerCase()) ||
+                        (payment.user && payment.user.email.toLowerCase().includes(this.paymentSearch.toLowerCase())) ||
+                        payment.status.toLowerCase().includes(this.paymentSearch.toLowerCase())
+                },
+                filteredIssues() {
+                    return this.merchantIssues.filter(issue => 
+                        issue.merchantName.toLowerCase().includes(this.issueSearch.toLowerCase()) ||
+                        issue.merchantPhone.includes(this.issueSearch) ||
+                        issue.issueType.toLowerCase().includes(this.issueSearch.toLowerCase()) ||
+                        issue.status.toLowerCase().includes(this.issueSearch.toLowerCase()))
+                },
+                filteredPenalties() {
+                    return this.penaltyReports.filter(report => 
+                        report.merchantName.toLowerCase().includes(this.penaltySearch.toLowerCase()) ||
+                        report.customerName.toLowerCase().includes(this.penaltySearch.toLowerCase()) ||
+                        report.customerPhone.includes(this.penaltySearch) ||
+                        report.status.toLowerCase().includes(this.penaltySearch.toLowerCase()))
+                }
+            },
+            methods: {
+                async login() {
+                    this.loginError = '';
+                    try {
+                        const response = await axios.post(`${API_BASE}/admin/login`, this.credentials);
+                        localStorage.setItem('adminToken', response.data.token);
+                        axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
+                        
+                        // Get admin role
+                        const tokenData = JSON.parse(atob(response.data.token.split('.')[1]));
+                        this.adminRole = tokenData.role;
+                        
+                        this.authenticated = true;
+                        this.loadData();
+                        this.initWebSocket();
+                    } catch (error) {
+                        this.loginError = 'Invalid credentials. Please try again.';
+                        console.error('Login failed:', error);
+                    }
+                },
+                logout() {
+                    localStorage.removeItem('adminToken');
+                    this.authenticated = false;
+                    if (this.ws) {
+                        this.ws.close();
+                    }
+                },
+                async loadData() {
+                    this.isLoading = true;
+                    try {
+                        const [usersRes, paymentsRes, issuesRes, penaltyRes, adminsRes] = await Promise.all([
+                            axios.get(`${API_BASE}/admin/users`),
+                            axios.get(`${API_BASE}/admin/payments`),
+                            axios.get(`${API_BASE}/admin/merchant-issues`),
+                            axios.get(`${API_BASE}/admin/penalty-reports`),
+                            this.adminRole === 'superadmin' ? axios.get(`${API_BASE}/admin/admins`) : Promise.resolve({ data: { admins: [] } })
+                        ]);
+                        
+                        this.users = usersRes.data.users || [];
+                        this.payments = paymentsRes.data.payments || [];
+                        this.merchantIssues = issuesRes.data.issues || [];
+                        this.penaltyReports = penaltyRes.data.reports || [];
+                        this.admins = adminsRes.data.admins || [];
+                        
+                        this.stats = {
+                            totalUsers: { label: 'Total Users', value: this.users.length, bg: 'bg-primary' },
+                            totalPayments: { label: 'Total Payments', value: this.payments.length, bg: 'bg-success' },
+                            pendingPayments: { label: 'Pending Payments', value: this.payments.filter(p => p.status === 'Pending').length, bg: 'bg-warning' },
+                            issueReports: { label: 'Issue Reports', value: this.merchantIssues.length, bg: 'bg-danger' },
+                            penaltyReports: { label: 'Penalty Reports', value: this.penaltyReports.length, bg: 'bg-info' }
+                        };
+                        
+                        this.updateCharts();
+                    } catch (error) {
+                        console.error('Data loading error:', error);
+                        if (error.response && error.response.status === 401) {
+                            this.logout();
+                        }
+                    } finally {
+                        this.isLoading = false;
+                    }
+                },
+                initWebSocket() {
+                    if (this.ws) this.ws.close();
+                    this.ws = new WebSocket('wss://oneai-wjox.onrender.com');
+                    
+                    this.ws.onopen = () => {
+                        console.log('WebSocket connected');
+                        const token = localStorage.getItem('adminToken');
+                        if (token) {
+                            this.ws.send(JSON.stringify({ type: 'auth', token: token, role: 'admin' }));
+                        }
+                    };
+                
+                    this.ws.onmessage = (event) => {
+                        try {
+                            const data = JSON.parse(event.data);
+                            if (data.type === 'payment-updated' || data.type === 'new-payment') {
+                                this.loadData();
+                            } else if (data.type === 'new-penalty' || data.type === 'new-issue') {
+                                this.loadData();
+                            }
+                        } catch (error) {
+                            console.error('WebSocket message error:', error);
+                        }
+                    };
+                
+                    this.ws.onerror = (error) => console.error('WebSocket error:', error);
+                    this.ws.onclose = () => setTimeout(() => this.initWebSocket(), 3000);
+                },
+                async updatePaymentStatus(payment, status) {
+                    try {
+                        await axios.post(`${API_BASE}/admin/update-status`, {
+                            trxid: payment.trxid,
+                            status: status
+                        });
+                    } catch (error) {
+                        console.error('Failed to update payment status', error);
+                        alert('Failed to update payment status.');
+                    }
+                },
+                updateCharts() {
+                    this.$nextTick(() => {
+                        this.createPaymentsChart();
+                        this.createUsersIssuesChart();
+                    });
+                },
+                createPaymentsChart() {
+                    const ctx = document.getElementById('paymentsChart')?.getContext('2d');
+                    if (!ctx) return;
+                    if (this.charts.paymentsChart) this.charts.paymentsChart.destroy();
+
+                    const completed = this.payments.filter(p => p.status === 'Completed').length;
+                    const pending = this.payments.filter(p => p.status === 'Pending').length;
+                    const failed = this.payments.filter(p => p.status === 'Failed').length;
+
+                    this.charts.paymentsChart = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Completed', 'Pending', 'Failed'],
+                            datasets: [{
+                                data: [completed, pending, failed],
+                                backgroundColor: ['#198754', '#ffc107', '#dc3545']
+                            }]
+                        }
+                    });
+                },
+                createUsersIssuesChart() {
+                    const ctx = document.getElementById('usersIssuesChart')?.getContext('2d');
+                    if (!ctx) return;
+                    if (this.charts.usersIssuesChart) this.charts.usersIssuesChart.destroy();
+
+                    this.charts.usersIssuesChart = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: ['Users', 'Merchant Issues', 'Penalty Reports'],
+                            datasets: [{
+                                label: 'Count',
+                                data: [this.users.length, this.merchantIssues.length, this.penaltyReports.length],
+                                backgroundColor: ['#0d6efd', '#dc3545', '#0dcaf0']
+                            }]
+                        },
+                        options: {
+                            scales: {
+                                y: {
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    });
+                },
+                
+                // Format date for display
+                formatDate(dateString) {
+                    if (!dateString) return 'N/A';
+                    const date = new Date(dateString);
+                    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+                },
+                
+                // User management
+                editUser(user) {
+                    this.currentItem = { ...user };
+                    this.currentEditType = 'user';
+                    this.editModalTitle = 'Edit User';
+                    this.showModal('editModal');
+                },
+                
+                async saveUser() {
+                    try {
+                        await axios.put(`${API_BASE}/admin/users/${this.currentItem._id}`, this.currentItem);
+                        this.loadData();
+                        this.hideModal('editModal');
+                        alert('User updated successfully');
+                    } catch (error) {
+                        console.error('Failed to update user:', error);
+                        alert('Failed to update user');
+                    }
+                },
+                
+                async deleteUser(userId) {
+                    if (confirm('Are you sure you want to delete this user?')) {
+                        try {
+                            await axios.delete(`${API_BASE}/admin/users/${userId}`);
+                            this.loadData();
+                            alert('User deleted successfully');
+                        } catch (error) {
+                            console.error('Failed to delete user:', error);
+                            alert('Failed to delete user');
+                        }
+                    }
+                },
+                
+                // Payment management
+                editPayment(payment) {
+                    this.currentItem = { ...payment };
+                    this.currentEditType = 'payment';
+                    this.editModalTitle = 'Edit Payment';
+                    this.showModal('editModal');
+                },
+                
+                async savePayment() {
+                    try {
+                        await axios.put(`${API_BASE}/admin/payments/${this.currentItem._id}`, this.currentItem);
+                        this.loadData();
+                        this.hideModal('editModal');
+                        alert('Payment updated successfully');
+                    } catch (error) {
+                        console.error('Failed to update payment:', error);
+                        alert('Failed to update payment');
+                    }
+                },
+                
+                // Issue management
+                editIssue(issue) {
+                    this.currentItem = { ...issue };
+                    this.currentEditType = 'issue';
+                    this.editModalTitle = 'Edit Merchant Issue';
+                    this.showModal('editModal');
+                },
+                
+                async saveIssue() {
+                    try {
+                        await axios.put(`${API_BASE}/admin/merchant-issues/${this.currentItem._id}`, this.currentItem);
+                        this.loadData();
+                        this.hideModal('editModal');
+                        alert('Issue updated successfully');
+                    } catch (error) {
+                        console.error('Failed to update issue:', error);
+                        alert('Failed to update issue');
+                    }
+                },
+                
+                async updateIssueStatus(issue, status) {
+                    try {
+                        await axios.put(`${API_BASE}/admin/merchant-issues/${issue._id}/status`, { status });
+                        this.loadData();
+                        alert('Issue status updated');
+                    } catch (error) {
+                        console.error('Failed to update issue status:', error);
+                        alert('Failed to update issue status');
+                    }
+                },
+                
+                async deleteIssue(issueId) {
+                    if (confirm('Are you sure you want to delete this issue?')) {
+                        try {
+                            await axios.delete(`${API_BASE}/admin/merchant-issues/${issueId}`);
+                            this.loadData();
+                            alert('Issue deleted successfully');
+                        } catch (error) {
+                            console.error('Failed to delete issue:', error);
+                            alert('Failed to delete issue');
+                        }
+                    }
+                },
+                
+                // Penalty management
+                editPenalty(penalty) {
+                    this.currentItem = { ...penalty };
+                    this.currentEditType = 'penalty';
+                    this.editModalTitle = 'Edit Penalty Report';
+                    this.showModal('editModal');
+                },
+                
+                async savePenalty() {
+                    try {
+                        await axios.put(`${API_BASE}/admin/penalty-reports/${this.currentItem._id}`, this.currentItem);
+                        this.loadData();
+                        this.hideModal('editModal');
+                        alert('Penalty report updated successfully');
+                    } catch (error) {
+                        console.error('Failed to update penalty report:', error);
+                        alert('Failed to update penalty report');
+                    }
+                },
+                
+                async updatePenaltyStatus(penalty, status) {
+                    try {
+                        await axios.put(`${API_BASE}/admin/penalty-reports/${penalty._id}/status`, { status });
+                        this.loadData();
+                        alert('Penalty status updated');
+                    } catch (error) {
+                        console.error('Failed to update penalty status:', error);
+                        alert('Failed to update penalty status');
+                    }
+                },
+                
+                // Admin management
+                async createAdmin() {
+                    try {
+                        await axios.post(`${API_BASE}/admin/admins`, this.newAdmin);
+                        this.loadData();
+                        this.hideModal('addAdminModal');
+                        this.newAdmin = { email: '', password: '', role: 'moderator' };
+                        alert('Admin created successfully');
+                    } catch (error) {
+                        console.error('Failed to create admin:', error);
+                        alert('Failed to create admin: ' + error.response?.data?.message || error.message);
+                    }
+                },
+                
+                async deleteAdmin(adminId) {
+                    if (confirm('Are you sure you want to delete this admin?')) {
+                        try {
+                            await axios.delete(`${API_BASE}/admin/admins/${adminId}`);
+                            this.loadData();
+                            alert('Admin deleted successfully');
+                        } catch (error) {
+                            console.error('Failed to delete admin:', error);
+                            alert('Failed to delete admin');
+                        }
+                    }
+                },
+                
+                // Modal helpers
+                showModal(id) {
+                    const modal = new bootstrap.Modal(document.getElementById(id));
+                    modal.show();
+                },
+                
+                hideModal(id) {
+                    const modal = bootstrap.Modal.getInstance(document.getElementById(id));
+                    if (modal) modal.hide();
+                },
+                
+                // Save changes handler
+                saveChanges() {
+                    switch (this.currentEditType) {
+                        case 'user': this.saveUser(); break;
+                        case 'payment': this.savePayment(); break;
+                        case 'issue': this.saveIssue(); break;
+                        case 'penalty': this.savePenalty(); break;
+                        default: 
+                            console.error('Unknown edit type:', this.currentEditType);
+                    }
+                }
+            },
+            mounted() {
+                const token = localStorage.getItem('adminToken');
+                if (token) {
+                    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                    
+                    // Get admin role from token
+                    const tokenData = JSON.parse(atob(token.split('.')[1]));
+                    this.adminRole = tokenData.role;
+                    
+                    this.authenticated = true;
+                    this.loadData();
+                    this.initWebSocket();
+                }
+            }
+        };
+
+        const app = Vue.createApp(AdminApp);
+        app.mount('#admin-app');
+    </script>
 </body>
 </html>
