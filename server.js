@@ -582,6 +582,139 @@ const merchantIssueSchema = new mongoose.Schema({
 
 const MerchantIssue = mongoose.model('MerchantIssue', merchantIssueSchema);
 
+const penaltyReportSchema = new mongoose.Schema({
+  merchantName: { type: String, required: true },
+  customerName: { type: String, required: true },
+  customerPhone: { 
+    type: String, 
+    required: true,
+    validate: {
+      validator: v => /^01[3-9]\d{8}$/.test(v),
+      message: props => `Invalid Bangladeshi phone number: ${props.value}`
+    }
+  },
+  penaltyDate: { type: Date, required: true },
+  amount1: { type: Number, required: true },
+  amount2: { type: Number, required: true },
+  penaltyDetails: { type: String, required: true },
+  status: {
+    type: String,
+    enum: ['pending', 'processed', 'rejected'],
+    default: 'pending'
+  },
+  voucherCode: String
+}, { timestamps: true });
+
+const PenaltyReport = mongoose.model('PenaltyReport', penaltyReportSchema);
+
+// Merchant Issues API
+app.post('/api/merchant-issues', async (req, res) => {
+  try {
+    const { merchantName, merchantPhone, issueType, details } = req.body;
+    
+    if (!merchantName || !merchantPhone || !issueType || !details) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Missing required fields' 
+      });
+    }
+    
+    const issue = new MerchantIssue({
+      merchantName,
+      merchantPhone,
+      issueType,
+      details,
+      status: 'pending'
+    });
+    
+    await issue.save();
+    
+    // WebSocket notification
+    wss.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({
+          type: 'new-issue',
+          issue: {
+            _id: issue._id,
+            merchantName: issue.merchantName,
+            issueType: issue.issueType,
+            status: issue.status,
+            createdAt: issue.createdAt
+          }
+        }));
+      }
+    });
+
+    res.status(201).json({ 
+      success: true, 
+      message: 'Issue report submitted successfully',
+      issue 
+    });
+  } catch (error) {
+    console.error('Issue report error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to submit issue report' 
+    });
+  }
+});
+
+// Penalty Report API
+app.post('/api/penalty-report', async (req, res) => {
+  try {
+    const { merchantName, customerName, customerPhone, penaltyDate, amount1, amount2, penaltyDetails } = req.body;
+
+    if (!merchantName || !customerName || !customerPhone || !penaltyDate || !amount1 || !amount2 || !penaltyDetails) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'All required fields must be filled' 
+      });
+    }
+
+    const report = new PenaltyReport({
+      merchantName,
+      customerName,
+      customerPhone,
+      penaltyDate: new Date(penaltyDate),
+      amount1,
+      amount2,
+      penaltyDetails,
+      status: 'pending',
+      voucherCode: `VC-${Math.random().toString(36).substr(2, 8).toUpperCase()}`
+    });
+
+    await report.save();
+
+    // WebSocket notification
+    wss.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({
+          type: 'new-penalty',
+          report: {
+            _id: report._id,
+            merchantName: report.merchantName,
+            customerPhone: report.customerPhone,
+            status: report.status,
+            createdAt: report.createdAt
+          }
+        }));
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Penalty report submitted successfully',
+      voucherCode: report.voucherCode
+    });
+  } catch (error) {
+    console.error('Penalty report error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to submit penalty report'
+    });
+  }
+});
+
 // Fix duplicate endpoint in server.js
 app.get('/api/merchant-issues', async (req, res) => {
   try {
