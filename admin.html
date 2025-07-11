@@ -1212,7 +1212,7 @@
                         
                         const newStatus = payment.status === 'Completed' ? 'Pending' : 'Completed';
                         const response = await axios.post(
-                            `${API_BASE}/update-status`,
+                            `${API_BASE}/admin/update-status`,
                             { trxid: payment.trxid, status: newStatus }
                         );
 
@@ -1248,7 +1248,7 @@
                     try {
                         this.isLoading = true;
                         const response = await axios.put(
-                            `${API_BASE}/merchant-issues/${issue._id}/status`,
+                            `${API_BASE}/admin/merchant-issues/${issue._id}/status`,
                             { status }
                         );
 
@@ -1532,7 +1532,7 @@
                 if (token && !this.showInitialSetup) {
                     try {
                         // Validate token
-                        await axios.get(`${API_BASE}/validate`);
+                        await axios.get(`${API_BASE}/admin/validate`);
                         this.isAuthenticated = true;
                         
                         // Load data
