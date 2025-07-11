@@ -1099,10 +1099,10 @@
                         
                         // Fetch all data
                         const [usersRes, paymentsRes, issuesRes, penaltiesRes] = await Promise.all([
-                            axios.get(`${API_BASE}/users`),
-                            axios.get(`${API_BASE}/payments`),
-                            axios.get(`${API_BASE}/merchant-issues`),
-                            axios.get(`${API_BASE}/penalty-reports`)
+                            axios.get(`${API_BASE}/admin/users`),
+                            axios.get(`${API_BASE}/admin/payments`),
+                            axios.get(`${API_BASE}/admin/merchant-issues`),
+                            axios.get(`${API_BASE}/admin/penalty-reports`)
                         ]);
                         
                         this.users = usersRes.data.users || [];
