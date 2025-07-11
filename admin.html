@@ -6,929 +6,669 @@
     <title>Admin Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/vue@3.2.31/dist/vue.global.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.2.31/dist/vue.global.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <style>
-        :root {
-            --primary-color: #4e73df;
-            --success-color: #1cc88a;
-            --warning-color: #f6c23e;
-            --danger-color: #e74a3b;
-            --dark-color: #5a5c69;
-            --light-bg: #f8f9fc;
-            --dark-bg: #1a1a2e;
-        }
-        
         body {
-            background-color: var(--light-bg);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: #333;
+            background-color: #f8f9fa;
         }
-        
-        .auth-container {
-            max-width: 500px;
-            margin: 2rem auto;
-            padding: 2rem;
-            border-radius: 0.35rem;
-            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-            background: white;
-        }
-        
-        .card {
-            border: none;
-            border-radius: 0.35rem;
-            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
-            margin-bottom: 1.5rem;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 0.5rem 1.5rem rgba(58, 59, 69, 0.2);
-        }
-        
-        .card-header {
-            background-color: #f8f9fc;
-            border-bottom: 1px solid #e3e6f0;
-            font-weight: 600;
-            padding: 1rem 1.5rem;
-        }
-        
-        .bg-primary { background-color: var(--primary-color)!important; }
-        .bg-success { background-color: var(--success-color)!important; }
-        .bg-warning { background-color: var(--warning-color)!important; }
-        .bg-danger { background-color: var(--danger-color)!important; }
-        .bg-dark { background-color: var(--dark-bg)!important; }
-        
-        .status-badge {
-            padding: 0.35em 0.65em;
-            border-radius: 0.25rem;
-            color: white;
-            font-size: 0.75rem;
-            font-weight: 700;
-        }
-        
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.8);
+        #admin-app {
             display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
+            flex-direction: column;
+            min-height: 100vh;
         }
-        
-        .spinner {
-            width: 3rem;
-            height: 3rem;
+        .main-content {
+            flex: 1;
         }
-        
-        .nav-brand {
-            font-weight: 800;
-            font-size: 1.5rem;
-            color: var(--primary-color);
-        }
-        
-        .dashboard-header {
-            background: linear-gradient(135deg, var(--primary-color), #2a4cb2);
-            color: white;
-            border-radius: 0.35rem;
-            padding: 1rem;
-            margin-bottom: 1.5rem;
-        }
-        
-        /* Merchant Issues Styles */
-        .issue-card {
-            border-left: 4px solid;
-            margin-bottom: 1rem;
-            background-color: white;
-            border-radius: 0.35rem;
-            overflow: hidden;
-        }
-        
-        .issue-card.low {
-            border-left-color: #28a745;
-        }
-        
-        .issue-card.medium {
-            border-left-color: #ffc107;
-        }
-        
-        .issue-card.high {
-            border-left-color: #dc3545;
-        }
-        
-        .issue-card .card-body {
-            padding: 1rem;
-        }
-        
-        .issue-card .meta {
-            font-size: 0.85rem;
-            color: #6c757d;
-        }
-        
-        .issue-card .actions {
-            margin-top: 1rem;
-        }
-        
-        .issue-type-badge {
-            display: inline-block;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: bold;
-            margin-right: 0.5rem;
-            background-color: #e9ecef;
-        }
-        
-        .issue-status-badge {
-            display: inline-block;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: bold;
-        }
-        
-        .status-pending {
-            background-color: #ffc107;
-            color: #212529;
-        }
-        
-        .status-in-progress {
-            background-color: #17a2b8;
-            color: white;
-        }
-        
-        .status-resolved {
-            background-color: #28a745;
-            color: white;
-        }
-        
-        .status-rejected {
-            background-color: #dc3545;
-            color: white;
-        }
-        
-        .nav-tabs .nav-link {
-            color: #495057;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            font-weight: 500;
-        }
-        
-        .nav-tabs .nav-link.active {
-            color: var(--primary-color);
-            background-color: transparent;
-            border-bottom: 3px solid var(--primary-color);
-        }
-        
-        .tab-content {
-            padding: 1.5rem 0;
-        }
-        
-        .chart-container {
-            position: relative;
-            height: 250px;
-            margin-bottom: 1.5rem;
-        }
-        
         .stat-card {
-            text-align: center;
-            padding: 1.5rem;
-            border-radius: 0.35rem;
-            margin-bottom: 1.5rem;
-            color: white;
-        }
-        
-        .stat-card .number {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin: 0.5rem 0;
-        }
-        
-        .stat-card .label {
-            font-size: 0.9rem;
-            opacity: 0.9;
-        }
-        
-        .btn-action {
-            padding: 0.3rem 0.6rem;
-            margin: 0 0.2rem;
-        }
-        
-        .table-hover tbody tr {
-            transition: background-color 0.2s ease;
-        }
-        
-        .table-hover tbody tr:hover {
-            background-color: rgba(78, 115, 223, 0.05);
-        }
-        
-        .main-container {
-            background-color: white;
             border-radius: 0.5rem;
-            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.05);
-            padding: 2rem;
-            margin-top: 1rem;
+            color: white;
+            padding: 1.5rem;
+        }
+        .bg-primary { background-color: #0d6efd !important; }
+        .bg-success { background-color: #198754 !important; }
+        .bg-warning { background-color: #ffc107 !important; }
+        .bg-danger { background-color: #dc3545 !important; }
+        .bg-info { background-color: #0dcaf0 !important; }
+
+        .table-responsive {
+            max-height: 500px;
+        }
+        
+        .action-cell {
+            min-width: 150px;
+        }
+        
+        .modal-header {
+            background: linear-gradient(135deg, #0d6efd, #0dcaf0);
+            color: white;
         }
     </style>
 </head>
 <body>
-    <div id="admin-app" class="container-fluid py-3">
-        <!-- Loading Overlay -->
-        <div v-if="isLoading" class="loading-overlay">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-        </div>
-
-        <!-- Initial Setup -->
-        <div v-if="showInitialSetup" class="text-center py-5">
-            <div class="d-flex justify-content-center mb-4">
-                <div class="nav-brand">Admin Panel</div>
-            </div>
-            <div class="auth-container">
-                <h3 class="mb-4">Create First Admin</h3>
-                <form @submit.prevent="registerAdmin">
+    <div id="admin-app">
+        <div v-if="!authenticated" class="d-flex align-items-center justify-content-center vh-100">
+            <div class="card p-4" style="width: 100%; max-width: 400px;">
+                <h3 class="card-title text-center">Admin Login</h3>
+                <div v-if="loginError" class="alert alert-danger">{{ loginError }}</div>
+                <form @submit.prevent="login">
                     <div class="mb-3">
-                        <label for="email" class="form-label">Email</label>
-                        <input id="email" type="email" class="form-control" 
-                               v-model="admin.email" required>
+                        <label for="email" class="form-label">Email address</label>
+                        <input type="email" class="form-control" id="email" v-model="credentials.email" required>
                     </div>
                     <div class="mb-3">
                         <label for="password" class="form-label">Password</label>
-                        <input id="password" type="password" class="form-control"
-                               v-model="admin.password" required minlength="12">
-                        <small class="text-muted">Minimum 12 characters with uppercase, lowercase, number and special character</small>
+                        <input type="password" class="form-control" id="password" v-model="credentials.password" required>
                     </div>
-                    <button type="submit" class="btn btn-primary w-100">
-                        <span v-if="!registerLoading">Create Admin Account</span>
-                        <span v-else class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                    </button>
-                    <div v-if="registerError" class="alert alert-danger mt-3">
-                        <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ registerError }}
-                    </div>
-                    <div v-if="registerSuccess" class="alert alert-success mt-3">
-                        <i class="bi bi-check-circle-fill me-2"></i>{{ registerSuccess }}
-                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Login</button>
                 </form>
             </div>
         </div>
 
-        <!-- Login Form -->
-        <div v-else-if="!isAuthenticated" class="auth-container">
-            <div class="d-flex justify-content-center mb-4">
-                <div class="nav-brand">Admin Panel</div>
-            </div>
-            <h2 class="mb-4 text-center">Admin Login</h2>
-            <form @submit.prevent="login">
-                <div class="mb-3">
-                    <label for="login-email" class="form-label">Email</label>
-                    <input id="login-email" type="email" class="form-control" 
-                           v-model="admin.email" required>
+        <div v-else class="main-content p-4">
+            <div v-if="isLoading" class="text-center">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
                 </div>
-                <div class="mb-3">
-                    <label for="login-password" class="form-label">Password</label>
-                    <input id="login-password" type="password" class="form-control" 
-                           v-model="admin.password" required>
-                </div>
-                <button type="submit" class="btn btn-primary w-100">
-                    <span v-if="!loginLoading">Login</span>
-                    <span v-else class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                </button>
-                <div v-if="loginError" class="alert alert-danger mt-3">
-                    <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ loginError }}
-                </div>
-            </form>
-        </div>
-
-        <!-- Main Dashboard -->
-        <div v-else>
-            <!-- Navigation -->
-            <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 rounded">
-                <div class="container-fluid">
-                    <span class="navbar-brand">
-                        <i class="bi bi-shield-lock me-2"></i>Admin Dashboard
-                    </span>
-                    <div class="d-flex align-items-center">
-                        <span class="text-light me-3">
-                            <i class="bi bi-person-circle me-1"></i> {{ admin.email }}
-                        </span>
-                        <button class="btn btn-outline-light" @click="logout">
-                            <i class="bi bi-box-arrow-right me-1"></i>Logout
-                        </button>
-                    </div>
-                </div>
-            </nav>
-
-            <!-- Dashboard Header -->
-            <div class="dashboard-header">
-                <h3><i class="bi bi-speedometer2 me-2"></i> Dashboard Overview</h3>
-                <p class="mb-0">Monitor and manage your platform activities</p>
+                <p>Loading Admin Data...</p>
             </div>
 
-            <!-- Statistics Cards -->
-            <div class="row g-4 mb-4">
-                <div class="col-12 col-md-6 col-xl-3">
-                    <div class="stat-card bg-primary">
-                        <i class="bi bi-people-fill fs-1"></i>
-                        <div class="number">{{ stats.totalUsers }}</div>
-                        <div class="label">Total Users</div>
+            <div v-else>
+                <header class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+                    <h1>Admin Dashboard</h1>
+                    <div>
+                        <span class="me-3 badge bg-secondary">{{ adminRole }}</span>
+                        <button @click="logout" class="btn btn-danger">Logout</button>
                     </div>
-                </div>
-                <div class="col-12 col-md-6 col-xl-3">
-                    <div class="stat-card bg-success">
-                        <i class="bi bi-credit-card-fill fs-1"></i>
-                        <div class="number">{{ stats.totalPayments }}</div>
-                        <div class="label">Total Payments</div>
-                    </div>
-                </div>
-                <div class="col-12 col-md-6 col-xl-3">
-                    <div class="stat-card bg-warning">
-                        <i class="bi bi-hourglass-split fs-1"></i>
-                        <div class="number">{{ stats.pendingPayments }}</div>
-                        <div class="label">Pending Payments</div>
-                    </div>
-                </div>
-                <div class="col-12 col-md-6 col-xl-3">
-                    <div class="stat-card bg-danger">
-                        <i class="bi bi-exclamation-triangle-fill fs-1"></i>
-                        <div class="number">{{ stats.issueReports }}</div>
-                        <div class="label">Issue Reports</div>
-                    </div>
-                </div>
-            </div>
+                </header>
 
-            <div class="main-container">
-                <!-- Payments Section -->
-                <div class="card shadow-sm mb-5">
-                    <div class="card-header d-flex justify-content-between align-items-center py-3">
-                        <h5 class="mb-0"><i class="bi bi-credit-card me-2"></i>Recent Payments</h5>
-                        <div class="d-flex">
-                            <select v-model="paymentFilter" class="form-select form-select-sm w-auto me-2">
-                                <option value="all">All</option>
-                                <option value="Pending">Pending</option>
-                                <option value="Completed">Completed</option>
-                                <option value="Failed">Failed</option>
-                            </select>
-                            <button class="btn btn-sm btn-outline-primary" @click="refreshPayments">
-                                <i class="bi bi-arrow-clockwise"></i>
-                            </button>
+                <!-- Stats -->
+                <section class="row mb-4 g-4">
+                    <div class="col-md-4 col-lg-2" v-for="(stat, key) in stats" :key="key">
+                        <div class="stat-card" :class="stat.bg">
+                            <h5>{{ stat.label }}</h5>
+                            <h3>{{ stat.value }}</h3>
                         </div>
                     </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover mb-0">
-                                <thead class="bg-light">
-                                    <tr>
-                                        <th>TRX ID</th>
-                                        <th>User</th>
-                                        <th>Date</th>
-                                        <th>Amount</th>
-                                        <th>Status</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="payment in filteredPayments" :key="payment._id">
-                                        <td>{{ payment.trxid }}</td>
-                                        <td>
-                                            <span v-if="payment.user">{{ payment.user.email }}</span>
-                                            <span v-else class="text-muted">N/A</span>
-                                        </td>
-                                        <td>{{ formatDate(payment.createdAt) }}</td>
-                                        <td>৳{{ payment.amount3.toFixed(2) }}</td>
-                                        <td>
-                                            <span class="status-badge" :class="statusClass(payment.status)">
-                                                {{ payment.status }}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <button class="btn btn-sm btn-outline-primary me-1 btn-action" 
-                                                    @click="showPaymentDetails(payment)"
-                                                    title="View Details">
-                                                <i class="bi bi-eye-fill"></i>
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-success btn-action" 
-                                                    @click="updatePaymentStatus(payment)"
-                                                    title="Update Status">
-                                                <i class="bi bi-check2-circle"></i>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    <tr v-if="filteredPayments.length === 0">
-                                        <td colspan="6" class="text-center py-4 text-muted">
-                                            No payments found
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
+                </section>
 
-                <!-- Merchant Issues Section -->
-                <div class="card shadow-sm mb-5">
-                    <div class="card-header d-flex justify-content-between align-items-center py-3">
-                        <h5 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Merchant Issues</h5>
-                        <div class="d-flex">
-                            <select v-model="issueFilter" class="form-select form-select-sm w-auto me-2">
-                                <option value="all">All</option>
-                                <option value="pending">Pending</option>
-                                <option value="in-progress">In Progress</option>
-                                <option value="resolved">Resolved</option>
-                                <option value="rejected">Rejected</option>
-                            </select>
-                            <button class="btn btn-sm btn-outline-primary" @click="refreshIssues">
-                                <i class="bi bi-arrow-clockwise"></i>
-                            </button>
+                <!-- Charts -->
+                <section class="row mb-4 g-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Payments Overview</h5>
+                                <canvas id="paymentsChart"></canvas>
+                            </div>
                         </div>
                     </div>
-                    
-                    <div class="card-body">
-                        <ul class="nav nav-tabs" id="issueTabs" role="tablist">
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link active" id="all-tab" data-bs-toggle="tab" 
-                                        data-bs-target="#all-issues" type="button" role="tab">
-                                    All Issues
-                                </button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="stats-tab" data-bs-toggle="tab" 
-                                        data-bs-target="#issue-stats" type="button" role="tab">
-                                    Statistics
-                                </button>
-                            </li>
-                        </ul>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Users & Issues</h5>
+                                <canvas id="usersIssuesChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Data Tables -->
+                <section>
+                    <ul class="nav nav-tabs" id="myTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="users-tab" data-bs-toggle="tab" data-bs-target="#users" type="button" role="tab">Users</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="payments-tab" data-bs-toggle="tab" data-bs-target="#payments" type="button" role="tab">Payments</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="issues-tab" data-bs-toggle="tab" data-bs-target="#issues" type="button" role="tab">Merchant Issues</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="penalties-tab" data-bs-toggle="tab" data-bs-target="#penalties" type="button" role="tab">Penalty Reports</button>
+                        </li>
+                        <li class="nav-item" role="presentation" v-if="adminRole === 'superadmin'">
+                            <button class="nav-link" id="admins-tab" data-bs-toggle="tab" data-bs-target="#admins" type="button" role="tab">Admins</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content" id="myTabContent">
+                        <!-- Users Tab -->
+                        <div class="tab-pane fade show active" id="users" role="tabpanel">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between mb-3">
+                                        <h5 class="card-title">Users</h5>
+                                        <div class="col-md-4">
+                                            <input type="text" class="form-control" placeholder="Search users..." v-model="userSearch">
+                                        </div>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table class="table table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th>Email</th>
+                                                    <th>Phone</th>
+                                                    <th>Joined</th>
+                                                    <th class="action-cell">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr v-for="user in filteredUsers" :key="user._id">
+                                                    <td>{{ user.email }}</td>
+                                                    <td>{{ user.phone }}</td>
+                                                    <td>{{ formatDate(user.createdAt) }}</td>
+                                                    <td>
+                                                        <button class="btn btn-sm btn-primary me-1" @click="editUser(user)">
+                                                            <i class="bi bi-pencil"></i> Edit
+                                                        </button>
+                                                        <button class="btn btn-sm btn-danger" @click="deleteUser(user._id)">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                         
-                        <div class="tab-content" id="issueTabContent">
-                            <div class="tab-pane fade show active" id="all-issues" role="tabpanel">
-                                <div v-if="filteredIssues.length === 0" class="text-center py-4 text-muted">
-                                    No issues found
-                                </div>
-                                
-                                <div v-for="issue in filteredIssues" :key="issue.id" 
-                                     class="issue-card" :class="issue.severity">
-                                    <div class="card-body">
-                                        <h5>{{ issue.merchantName }}</h5>
-                                        <div class="meta mb-2">
-                                            <span class="issue-type-badge">{{ issue.issueType }}</span>
-                                            <span class="issue-status-badge" :class="'status-' + issue.status.replace(' ', '-')">
-                                                {{ issue.status }}
-                                            </span>
-                                            <span class="ms-2">{{ formatDateTime(issue.createdAt) }}</span>
+                        <!-- Payments Tab -->
+                        <div class="tab-pane fade" id="payments" role="tabpanel">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between mb-3">
+                                        <h5 class="card-title">Payments</h5>
+                                        <div class="col-md-4">
+                                            <input type="text" class="form-control" placeholder="Search payments..." v-model="paymentSearch">
                                         </div>
-                                        <p class="mb-2"><strong>Phone:</strong> {{ issue.customerPhone }}</p>
-                                        <p>{{ issue.details }}</p>
-                                        
-                                        <div class="actions">
-                                            <button class="btn btn-sm btn-outline-primary me-2" 
-                                                    @click="showIssueDetails(issue)">
-                                                <i class="bi bi-eye me-1"></i>Details
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-success me-2" 
-                                                    @click="updateIssueStatus(issue, 'in-progress')"
-                                                    v-if="issue.status === 'pending'">
-                                                <i class="bi bi-play me-1"></i>Start Progress
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-success me-2" 
-                                                    @click="updateIssueStatus(issue, 'resolved')"
-                                                    v-if="issue.status === 'in-progress'">
-                                                <i class="bi bi-check me-1"></i>Resolve
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-danger" 
-                                                    @click="updateIssueStatus(issue, 'rejected')"
-                                                    v-if="issue.status !== 'rejected' && issue.status !== 'resolved'">
-                                                <i class="bi bi-x me-1"></i>Reject
-                                            </button>
-                                        </div>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table class="table table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th>TRX ID</th>
+                                                    <th>User</th>
+                                                    <th>Amount</th>
+                                                    <th>Status</th>
+                                                    <th>Date</th>
+                                                    <th class="action-cell">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr v-for="payment in filteredPayments" :key="payment._id">
+                                                    <td>{{ payment.trxid }}</td>
+                                                    <td>{{ payment.user ? payment.user.email : 'N/A' }}</td>
+                                                    <td>{{ payment.amount3 }}</td>
+                                                    <td><span :class="`badge bg-${payment.status === 'Completed' ? 'success' : 'warning'}`">{{ payment.status }}</span></td>
+                                                    <td>{{ formatDate(payment.createdAt) }}</td>
+                                                    <td>
+                                                        <button class="btn btn-sm btn-primary me-1" @click="updatePaymentStatus(payment, 'Completed')">Complete</button>
+                                                        <button class="btn btn-sm btn-danger me-1" @click="updatePaymentStatus(payment, 'Failed')">Fail</button>
+                                                        <button class="btn btn-sm btn-secondary" @click="editPayment(payment)">
+                                                            <i class="bi bi-pencil"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
                             </div>
-                            
-                            <div class="tab-pane fade" id="issue-stats" role="tabpanel">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="card mb-4">
-                                            <div class="card-body">
-                                                <h5>Issues by Status</h5>
-                                                <div class="chart-container">
-                                                    <canvas id="issueStatusChart"></canvas>
-                                                </div>
-                                            </div>
+                        </div>
+                        
+                        <!-- Merchant Issues Tab -->
+                        <div class="tab-pane fade" id="issues" role="tabpanel">
+                           <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between mb-3">
+                                        <h5 class="card-title">Merchant Issues</h5>
+                                        <div class="col-md-4">
+                                            <input type="text" class="form-control" placeholder="Search issues..." v-model="issueSearch">
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
-                                        <div class="card mb-4">
-                                            <div class="card-body">
-                                                <h5>Issues by Type</h5>
-                                                <div class="chart-container">
-                                                    <canvas id="issueTypeChart"></canvas>
-                                                </div>
-                                            </div>
-                                        </div>
+                                    <div class="table-responsive">
+                                        <table class="table table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th>Merchant</th>
+                                                    <th>Phone</th>
+                                                    <th>Issue Type</th>
+                                                    <th>Details</th>
+                                                    <th>Status</th>
+                                                    <th class="action-cell">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr v-for="issue in filteredIssues" :key="issue._id">
+                                                    <td>{{ issue.merchantName }}</td>
+                                                    <td>{{ issue.merchantPhone }}</td>
+                                                    <td>{{ issue.issueType }}</td>
+                                                    <td>{{ issue.details }}</td>
+                                                    <td>{{ issue.status }}</td>
+                                                    <td>
+                                                        <button class="btn btn-sm btn-primary me-1" @click="editIssue(issue)">
+                                                            <i class="bi bi-pencil"></i> Edit
+                                                        </button>
+                                                        <button class="btn btn-sm btn-success me-1" @click="updateIssueStatus(issue, 'resolved')">Resolve</button>
+                                                        <button class="btn btn-sm btn-danger" @click="deleteIssue(issue._id)">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
-                                <div class="card">
-                                    <div class="card-body">
-                                        <h5>Recent Activity</h5>
-                                        <ul class="list-group">
-                                            <li v-for="activity in recentActivities" :key="activity.id" 
-                                                class="list-group-item">
-                                                <small class="text-muted">{{ formatDateTime(activity.timestamp) }}</small><br>
-                                                {{ activity.message }}
-                                            </li>
-                                        </ul>
+                            </div>
+                        </div>
+                        
+                        <!-- Penalty Reports Tab -->
+                        <div class="tab-pane fade" id="penalties" role="tabpanel">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between mb-3">
+                                        <h5 class="card-title">Penalty Reports</h5>
+                                        <div class="col-md-4">
+                                            <input type="text" class="form-control" placeholder="Search reports..." v-model="penaltySearch">
+                                        </div>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table class="table table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th>Merchant</th>
+                                                    <th>Customer</th>
+                                                    <th>Amount</th>
+                                                    <th>Date</th>
+                                                    <th>Status</th>
+                                                    <th class="action-cell">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr v-for="report in filteredPenalties" :key="report._id">
+                                                    <td>{{ report.merchantName }}</td>
+                                                    <td>{{ report.customerName }}</td>
+                                                    <td>{{ report.amount1 }} → {{ report.amount2 }}</td>
+                                                    <td>{{ formatDate(report.penaltyDate) }}</td>
+                                                    <td>{{ report.status }}</td>
+                                                    <td>
+                                                        <button class="btn btn-sm btn-primary me-1" @click="editPenalty(report)">
+                                                            <i class="bi bi-pencil"></i> Edit
+                                                        </button>
+                                                        <button class="btn btn-sm btn-success" @click="updatePenaltyStatus(report, 'processed')">Process</button>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Admins Tab (Superadmin only) -->
+                        <div class="tab-pane fade" id="admins" role="tabpanel" v-if="adminRole === 'superadmin'">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between mb-3">
+                                        <h5 class="card-title">Admin Accounts</h5>
+                                        <div>
+                                            <button class="btn btn-primary" @click="showAdminModal = true">
+                                                <i class="bi bi-plus-circle"></i> Add Admin
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table class="table table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th>Email</th>
+                                                    <th>Role</th>
+                                                    <th>Last Login</th>
+                                                    <th class="action-cell">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr v-for="admin in admins" :key="admin._id">
+                                                    <td>{{ admin.email }}</td>
+                                                    <td>{{ admin.role }}</td>
+                                                    <td>{{ formatDate(admin.lastLogin) }}</td>
+                                                    <td>
+                                                        <button class="btn btn-sm btn-danger" @click="deleteAdmin(admin._id)">
+                                                            <i class="bi bi-trash"></i> Delete
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-
-                <!-- Users Table -->
-                <div class="card shadow-sm">
-                    <div class="card-header d-flex justify-content-between align-items-center py-3">
-                        <h5 class="mb-0"><i class="bi bi-people-fill me-2"></i>Registered Users</h5>
-                        <button class="btn btn-sm btn-outline-primary" @click="refreshUsers">
-                            <i class="bi bi-arrow-clockwise"></i> Refresh
-                        </button>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover mb-0">
-                                <thead class="bg-light">
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Phone</th>
-                                        <th>Email</th>
-                                        <th>Registered</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="user in users" :key="user.id">
-                                        <td class="text-muted">{{ shortId(user.id) }}</td>
-                                        <td>{{ user.phone }}</td>
-                                        <td>{{ user.email }}</td>
-                                        <td>{{ formatDateTime(user.createdAt) }}</td>
-                                        <td>
-                                            <button class="btn btn-sm btn-outline-primary"
-                                                    @click="viewUserDetails(user.id)">
-                                                <i class="bi bi-eye-fill me-1"></i>Details
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    <tr v-if="users.length === 0">
-                                        <td colspan="5" class="text-center py-4 text-muted">
-                                            No users found
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
+                </section>
             </div>
         </div>
-
-        <!-- Payment Details Modal -->
-        <div class="modal fade" id="paymentModal" tabindex="-1" aria-hidden="true">
+        
+        <!-- Edit Modal -->
+        <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-lg">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">Payment Details</h5>
+                        <h5 class="modal-title">{{ editModalTitle }}</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <div v-if="selectedPayment">
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label class="form-label">Payment ID</label>
-                                        <input type="text" class="form-control" :value="selectedPayment.id" readonly>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label class="form-label">Status</label>
-                                        <input type="text" class="form-control" 
-                                               :class="statusClass(selectedPayment.status)"
-                                               :value="selectedPayment.status" readonly>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label class="form-label">User Email</label>
-                                        <input type="text" class="form-control" 
-                                               :value="(selectedPayment.user && selectedPayment.user.email) || 'N/A'" readonly>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label class="form-label">Transaction ID</label>
-                                        <input type="text" class="form-control" :value="selectedPayment.trxid" readonly>
-                                    </div>
-                                </div>
-                            </div>
-                            
+                        <!-- User Form -->
+                        <div v-if="currentEditType === 'user'">
                             <div class="mb-3">
-                                <label class="form-label">Company</label>
-                                <input type="text" class="form-control" :value="selectedPayment.company" readonly>
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" v-model="currentItem.email">
                             </div>
-                            
                             <div class="mb-3">
                                 <label class="form-label">Phone</label>
-                                <input type="text" class="form-control" :value="selectedPayment.phone" readonly>
+                                <input type="text" class="form-control" v-model="currentItem.phone">
                             </div>
-                            
+                        </div>
+                        
+                        <!-- Payment Form -->
+                        <div v-if="currentEditType === 'payment'">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">TRX ID</label>
+                                    <input type="text" class="form-control" v-model="currentItem.trxid">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Amount</label>
+                                    <input type="number" class="form-control" v-model="currentItem.amount3">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Status</label>
+                                <select class="form-select" v-model="currentItem.status">
+                                    <option value="Pending">Pending</option>
+                                    <option value="Completed">Completed</option>
+                                    <option value="Failed">Failed</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Issue Form -->
+                        <div v-if="currentEditType === 'issue'">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Merchant Name</label>
+                                    <input type="text" class="form-control" v-model="currentItem.merchantName">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Phone</label>
+                                    <input type="text" class="form-control" v-model="currentItem.merchantPhone">
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Issue Type</label>
+                                    <input type="text" class="form-control" v-model="currentItem.issueType">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Status</label>
+                                    <select class="form-select" v-model="currentItem.status">
+                                        <option value="pending">Pending</option>
+                                        <option value="in progress">In Progress</option>
+                                        <option value="resolved">Resolved</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Details</label>
+                                <textarea class="form-control" v-model="currentItem.details"></textarea>
+                            </div>
+                        </div>
+                        
+                        <!-- Penalty Form -->
+                        <div v-if="currentEditType === 'penalty'">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Merchant Name</label>
+                                    <input type="text" class="form-control" v-model="currentItem.merchantName">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Customer Name</label>
+                                    <input type="text" class="form-control" v-model="currentItem.customerName">
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Customer Phone</label>
+                                    <input type="text" class="form-control" v-model="currentItem.customerPhone">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Status</label>
+                                    <select class="form-select" v-model="currentItem.status">
+                                        <option value="pending">Pending</option>
+                                        <option value="processed">Processed</option>
+                                        <option value="rejected">Rejected</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Original Amount</label>
+                                    <input type="number" class="form-control" v-model="currentItem.amount1">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Updated Amount</label>
+                                    <input type="number" class="form-control" v-model="currentItem.amount2">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Details</label>
+                                <textarea class="form-control" v-model="currentItem.penaltyDetails"></textarea>
+                            </div>
+                        </div>
+                        
+                        <!-- Admin Form -->
+                        <div v-if="currentEditType === 'admin'">
+                            <div class="mb-3">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" v-model="currentItem.email">
+                            </div>
                             <div class="mb-3">
                                 <label class="form-label">Password</label>
-                                <input type="text" class="form-control" :value="selectedPayment.password" readonly>
+                                <input type="password" class="form-control" v-model="currentItem.password" placeholder="Leave blank to keep current">
                             </div>
-                            
-                            <h5 class="mt-4 mb-3">Consignments</h5>
-                            <div class="table-responsive">
-                                <table class="table table-bordered">
-                                    <thead>
-                                        <tr>
-                                            <th>Name</th>
-                                            <th>Phone</th>
-                                            <th>Original Amount</th>
-                                            <th>Updated Amount</th>
-                                            <th>Service</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr v-for="(consignment, index) in selectedPayment.consignments" :key="index">
-                                            <td>{{ consignment.name }}</td>
-                                            <td>{{ consignment.phone }}</td>
-                                            <td>৳{{ consignment.amount1.toFixed(2) }}</td>
-                                            <td>৳{{ consignment.amount2.toFixed(2) }}</td>
-                                            <td>{{ consignment.serviceType }}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                            <div class="mb-3">
+                                <label class="form-label">Role</label>
+                                <select class="form-select" v-model="currentItem.role">
+                                    <option value="superadmin">Super Admin</option>
+                                    <option value="moderator">Moderator</option>
+                                </select>
                             </div>
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" @click="saveChanges">Save Changes</button>
                     </div>
                 </div>
             </div>
         </div>
-
-        <!-- Issue Details Modal -->
-        <div class="modal fade" id="issueModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-lg">
+        
+        <!-- Add Admin Modal -->
+        <div class="modal fade" id="addAdminModal" tabindex="-1" aria-hidden="true" v-if="adminRole === 'superadmin'">
+            <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">Issue Details</h5>
+                        <h5 class="modal-title">Add New Admin</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <div v-if="selectedIssue">
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label class="form-label">Merchant Name</label>
-                                        <input type="text" class="form-control" :value="selectedIssue.merchantName" readonly>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label class="form-label">Customer Phone</label>
-                                        <input type="text" class="form-control" :value="selectedIssue.customerPhone" readonly>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label class="form-label">Issue Type</label>
-                                        <input type="text" class="form-control" :value="selectedIssue.issueType" readonly>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label class="form-label">Severity</label>
-                                        <input type="text" class="form-control" :value="selectedIssue.severity" readonly>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label class="form-label">Details</label>
-                                <textarea class="form-control" rows="4" readonly>{{ selectedIssue.details }}</textarea>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label class="form-label">Status</label>
-                                <select class="form-select" v-model="selectedIssue.status">
-                                    <option value="pending">Pending</option>
-                                    <option value="in-progress">In Progress</option>
-                                    <option value="resolved">Resolved</option>
-                                    <option value="rejected">Rejected</option>
-                                </select>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label class="form-label">Admin Notes</label>
-                                <textarea class="form-control" rows="3" v-model="selectedIssue.adminNotes" placeholder="Add notes about this issue"></textarea>
-                            </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" v-model="newAdmin.email">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Password</label>
+                            <input type="password" class="form-control" v-model="newAdmin.password">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Role</label>
+                            <select class="form-select" v-model="newAdmin.role">
+                                <option value="superadmin">Super Admin</option>
+                                <option value="moderator">Moderator</option>
+                            </select>
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                        <button type="button" class="btn btn-primary" @click="saveIssueChanges">Save Changes</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" @click="createAdmin">Create Admin</button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const API_BASE = 'https://oneai-wjox.onrender.com';
-        
-        axios.interceptors.request.use(config => {
-            const token = localStorage.getItem('adminToken');
-            if (token) {
-                config.headers.Authorization = `Bearer ${token}`;
-            }
-            return config;
-        });
 
-        axios.interceptors.response.use(
-            response => response,
-            error => {
-                if (error.response && error.response.status === 401) {
-                    localStorage.removeItem('adminToken');
-                    window.location.reload();
-                }
-                return Promise.reject(error);
+        // Helper function to parse JWT
+        function parseJwt(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(
+                    atob(base64)
+                    .split('')
+                    .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+                    .join('')
+                );
+                return JSON.parse(jsonPayload);
+            } catch (e) {
+                return null;
             }
-        );
+        }
 
         const AdminApp = {
             data() {
                 return {
                     isLoading: true,
-                    showInitialSetup: false,
-                    isAuthenticated: false,
-                    admin: { email: '', password: '' },
+                    authenticated: false,
+                    adminRole: '',
                     loginError: '',
-                    loginLoading: false,
-                    registerError: '',
-                    registerSuccess: '',
-                    registerLoading: false,
+                    credentials: {
+                        email: '',
+                        password: ''
+                    },
                     users: [],
                     payments: [],
                     merchantIssues: [],
-                    stats: { 
-                        totalUsers: 0, 
-                        totalPayments: 0, 
-                        pendingPayments: 0, 
-                        issueReports: 0
-                    },
-                    paymentFilter: 'all',
-                    issueFilter: 'all',
-                    selectedPayment: null,
-                    selectedIssue: null,
-                    paymentModal: null,
-                    issueModal: null,
-                    issueStatusChart: null,
-                    issueTypeChart: null,
-                    recentActivities: [],
+                    penaltyReports: [],
+                    admins: [],
+                    stats: {},
                     ws: null,
-                    wsConnectionAttempts: 0
+                    charts: {
+                        paymentsChart: null,
+                        usersIssuesChart: null
+                    },
+                    
+                    // Search filters
+                    userSearch: '',
+                    paymentSearch: '',
+                    issueSearch: '',
+                    penaltySearch: '',
+                    
+                    // Edit modal
+                    currentItem: null,
+                    currentEditType: '',
+                    editModalTitle: '',
+                    
+                    // New admin
+                    newAdmin: {
+                        email: '',
+                        password: '',
+                        role: 'moderator'
+                    }
                 };
             },
             computed: {
+                filteredUsers() {
+                    return this.users.filter(user => 
+                        user.email.toLowerCase().includes(this.userSearch.toLowerCase()) ||
+                        user.phone.includes(this.userSearch)
+                },
                 filteredPayments() {
-                    if (this.paymentFilter === 'all') {
-                        return this.payments;
-                    }
-                    return this.payments.filter(p => p.status === this.paymentFilter);
+                    return this.payments.filter(payment => 
+                        payment.trxid.toLowerCase().includes(this.paymentSearch.toLowerCase()) ||
+                        (payment.user && payment.user.email.toLowerCase().includes(this.paymentSearch.toLowerCase())) ||
+                        payment.status.toLowerCase().includes(this.paymentSearch.toLowerCase())
                 },
                 filteredIssues() {
-                    if (this.issueFilter === 'all') {
-                        return this.merchantIssues;
-                    }
                     return this.merchantIssues.filter(issue => 
-                        issue.status === this.issueFilter.replace('-', ' ')
-                    );
+                        issue.merchantName.toLowerCase().includes(this.issueSearch.toLowerCase()) ||
+                        issue.merchantPhone.includes(this.issueSearch) ||
+                        issue.issueType.toLowerCase().includes(this.issueSearch.toLowerCase()) ||
+                        issue.status.toLowerCase().includes(this.issueSearch.toLowerCase()))
+                },
+                filteredPenalties() {
+                    return this.penaltyReports.filter(report => 
+                        report.merchantName.toLowerCase().includes(this.penaltySearch.toLowerCase()) ||
+                        report.customerName.toLowerCase().includes(this.penaltySearch.toLowerCase()) ||
+                        report.customerPhone.includes(this.penaltySearch) ||
+                        report.status.toLowerCase().includes(this.penaltySearch.toLowerCase()))
                 }
             },
             methods: {
-                async checkInitialSetup() {
-                    try {
-                        this.isLoading = true;
-                        const response = await axios.get(`${API_BASE}/admin/exists`);
-                        this.showInitialSetup = !response.data.exists;
-                    } catch (error) {
-                        console.error('Admin check error:', error);
-                        this.showInitialSetup = true;
-                    } finally {
-                        this.isLoading = false;
-                    }
-                },
-                validateEmail(email) {
-                    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-                },
-                validatePassword(password) {
-                    return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/.test(password);
-                },
-                async registerAdmin() {
-                    this.registerError = '';
-                    this.registerSuccess = '';
-                    this.registerLoading = true;
-                    
-                    if (!this.validateEmail(this.admin.email)) {
-                        this.registerError = 'Please enter a valid email address';
-                        this.registerLoading = false;
-                        return;
-                    }
-                    
-                    if (!this.validatePassword(this.admin.password)) {
-                        this.registerError = 'Password must be at least 12 characters with uppercase, lowercase, number and special character';
-                        this.registerLoading = false;
-                        return;
-                    }
-
-                    try {
-                        const response = await axios.post(`${API_BASE}/admin/register`, {
-                            email: this.admin.email.trim(),
-                            password: this.admin.password
-                        });
-
-                        if (response.data.success) {
-                            this.registerSuccess = 'Admin account created! Redirecting...';
-                            setTimeout(() => {
-                                this.showInitialSetup = false;
-                                this.isAuthenticated = true;
-                                this.loadData();
-                            }, 1500);
-                        } else {
-                            this.registerError = response.data.message;
-                        }
-                    } catch (error) {
-                        this.registerError = (error.response && error.response.data && error.response.data.message) 
-                            || 'Registration failed. Please try again.';
-                    } finally {
-                        this.registerLoading = false;
-                    }
-                },
                 async login() {
                     this.loginError = '';
-                    this.loginLoading = true;
-                    
                     try {
-                        const response = await axios.post(`${API_BASE}/admin/login`, this.admin);
+                        const response = await axios.post(`${API_BASE}/admin/login`, this.credentials);
+                        localStorage.setItem('adminToken', response.data.token);
+                        axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
                         
-                        if (response.data.success) {
-                            localStorage.setItem('adminToken', response.data.token);
-                            this.isAuthenticated = true;
-                            this.loadData();
-                        }
+                        // Get admin role
+                        const tokenData = parseJwt(response.data.token);
+                        this.adminRole = tokenData.role;
+                        
+                        this.authenticated = true;
+                        this.loadData();
+                        this.initWebSocket();
                     } catch (error) {
-                        this.loginError = (error.response && error.response.data && error.response.data.message) 
-                            || 'Invalid credentials. Please try again.';
-                    } finally {
-                        this.loginLoading = false;
+                        this.loginError = 'Invalid credentials. Please try again.';
+                        console.error('Login failed:', error);
+                    }
+                },
+                logout() {
+                    localStorage.removeItem('adminToken');
+                    this.authenticated = false;
+                    if (this.ws) {
+                        this.ws.close();
                     }
                 },
                 async loadData() {
+                    this.isLoading = true;
                     try {
-                        this.isLoading = true;
-                        const token = localStorage.getItem('adminToken');
-                        
-                        // Fetch all data
-                        const [usersRes, paymentsRes, issuesRes] = await Promise.all([
-                            axios.get(`${API_BASE}/admin/users`, { headers: { Authorization: `Bearer ${token}` } }),
-                            axios.get(`${API_BASE}/admin/payments`, { headers: { Authorization: `Bearer ${token}` } }),
-                            axios.get(`${API_BASE}/merchant-issues`, { headers: { Authorization: `Bearer ${token}` } })
+                        const [usersRes, paymentsRes, issuesRes, penaltyRes, adminsRes] = await Promise.all([
+                            axios.get(`${API_BASE}/admin/users`),
+                            axios.get(`${API_BASE}/admin/payments`),
+                            axios.get(`${API_BASE}/admin/merchant-issues`),
+                            axios.get(`${API_BASE}/admin/penalty-reports`),
+                            this.adminRole === 'superadmin' ? axios.get(`${API_BASE}/admin/admins`) : Promise.resolve({ data: { admins: [] } })
                         ]);
                         
                         this.users = usersRes.data.users || [];
                         this.payments = paymentsRes.data.payments || [];
                         this.merchantIssues = issuesRes.data.issues || [];
+                        this.penaltyReports = penaltyRes.data.reports || [];
+                        this.admins = adminsRes.data.admins || [];
                         
-                        // Calculate stats
                         this.stats = {
-                            totalUsers: this.users.length,
-                            totalPayments: this.payments.length,
-                            pendingPayments: this.payments.filter(p => p.status === 'Pending').length,
-                            issueReports: this.merchantIssues.length
+                            totalUsers: { label: 'Total Users', value: this.users.length, bg: 'bg-primary' },
+                            totalPayments: { label: 'Total Payments', value: this.payments.length, bg: 'bg-success' },
+                            pendingPayments: { label: 'Pending Payments', value: this.payments.filter(p => p.status === 'Pending').length, bg: 'bg-warning' },
+                            issueReports: { label: 'Issue Reports', value: this.merchantIssues.length, bg: 'bg-danger' },
+                            penaltyReports: { label: 'Penalty Reports', value: this.penaltyReports.length, bg: 'bg-info' }
                         };
                         
                         this.updateCharts();
@@ -941,362 +681,308 @@
                         this.isLoading = false;
                     }
                 },
-                async refreshPayments() {
-                    try {
-                        this.isLoading = true;
-                        const response = await axios.get(`${API_BASE}/admin/payments`);
-                        this.payments = response.data.payments || [];
-                        this.stats.pendingPayments = this.payments.filter(p => p.status === 'Pending').length;
-                    } catch (error) {
-                        console.error('Refresh payments error:', error);
-                    } finally {
-                        this.isLoading = false;
-                    }
-                },
-                async refreshUsers() {
-                    try {
-                        this.isLoading = true;
-                        const response = await axios.get(`${API_BASE}/admin/users`);
-                        this.users = response.data.users || [];
-                        this.stats.totalUsers = this.users.length;
-                    } catch (error) {
-                        console.error('Refresh users error:', error);
-                    } finally {
-                        this.isLoading = false;
-                    }
-                },
-                async refreshIssues() {
-                    try {
-                        this.isLoading = true;
-                        const response = await axios.get(`${API_BASE}/merchant-issues`);
-                        this.merchantIssues = response.data.issues || [];
-                        this.stats.issueReports = this.merchantIssues.length;
-                        this.updateCharts();
-                    } catch (error) {
-                        console.error('Refresh issues error:', error);
-                    } finally {
-                        this.isLoading = false;
-                    }
-                },
-                statusClass(status) {
-                    const classes = {
-                        'Pending': 'bg-warning',
-                        'Completed': 'bg-success',
-                        'Failed': 'bg-danger',
-                        'pending': 'bg-warning',
-                        'in progress': 'bg-info',
-                        'resolved': 'bg-success',
-                        'rejected': 'bg-danger'
-                    };
-                    return classes[status] || 'bg-secondary';
-                },
-                shortId(id) {
-                    return id ? `${id.substring(0, 6)}...` : '';
-                },
-                formatDate(dateString) {
-                    if (!dateString) return '';
-                    const date = new Date(dateString);
-                    return date.toLocaleDateString();
-                },
-                formatDateTime(dateString) {
-                    if (!dateString) return '';
-                    const date = new Date(dateString);
-                    return date.toLocaleString();
-                },
-                logout() {
-                    if (confirm('Are you sure you want to logout?')) {
-                        localStorage.removeItem('adminToken');
-                        this.isAuthenticated = false;
-                        this.admin = { email: '', password: '' };
-                    }
-                },
-                async updatePaymentStatus(payment) {
-                    try {
-                        this.isLoading = true;
-                        
-                        const newStatus = payment.status === 'Completed' ? 'Pending' : 'Completed';
-                        const response = await axios.post(
-                            `${API_BASE}/admin/update-status`,
-                            { trxid: payment.trxid, status: newStatus }
-                        );
-
-                        if (response.data.success) {
-                            const index = this.payments.findIndex(p => p._id === payment._id);
-                            if (index > -1) {
-                                this.payments.splice(index, 1, response.data.payment);
-                            }
-                            this.stats.pendingPayments = this.payments.filter(p => p.status === 'Pending').length;
-                        }
-                    } catch (error) {
-                        console.error('Update status error:', error);
-                    } finally {
-                        this.isLoading = false;
-                    }
-                },
-                showPaymentDetails(payment) {
-                    this.selectedPayment = payment;
-                    if (!this.paymentModal) {
-                        this.paymentModal = new bootstrap.Modal(
-                            document.getElementById('paymentModal')
-                        );
-                    }
-                    this.paymentModal.show();
-                },
-                viewUserDetails(userId) {
-                    const user = this.users.find(u => u._id === userId);
-                    if (user) {
-                        alert(`User Details:\nID: ${userId}\nPhone: ${user.phone}\nEmail: ${user.email}`);
-                    }
-                },
-                async updateIssueStatus(issue, status) {
-                    try {
-                        this.isLoading = true;
-                        const response = await axios.put(
-                            `${API_BASE}/merchant-issues/${issue._id}/status`,
-                            { status }
-                        );
-
-                        if (response.data.success) {
-                            const index = this.merchantIssues.findIndex(i => i._id === issue._id);
-                            if (index > -1) {
-                                this.merchantIssues[index] = response.data.issue;
-                            }
-                            this.stats.issueReports = this.merchantIssues.length;
-                            this.updateCharts();
-                        }
-                    } catch (error) {
-                        console.error('Update issue status error:', error);
-                    } finally {
-                        this.isLoading = false;
-                    }
-                },
-                showIssueDetails(issue) {
-                    this.selectedIssue = {...issue};
-                    if (!this.issueModal) {
-                        this.issueModal = new bootstrap.Modal(
-                            document.getElementById('issueModal')
-                        );
-                    }
-                    this.issueModal.show();
-                },
-                async saveIssueChanges() {
-                    try {
-                        this.isLoading = true;
-                        const response = await axios.put(
-                            `${API_BASE}/merchant-issues/${this.selectedIssue._id}`,
-                            this.selectedIssue
-                        );
-
-                        if (response.data.success) {
-                            const index = this.merchantIssues.findIndex(i => i._id === this.selectedIssue._id);
-                            if (index > -1) {
-                                this.merchantIssues[index] = response.data.issue;
-                            }
-                            this.issueModal.hide();
-                            this.updateCharts();
-                        }
-                    } catch (error) {
-                        console.error('Save issue changes error:', error);
-                    } finally {
-                        this.isLoading = false;
-                    }
-                },
-                loadRecentActivities() {
-                    // This would normally come from an API
-                    this.recentActivities = [
-                        { id: 'act001', message: 'Updated payment status for TRX123456', timestamp: new Date() },
-                        { id: 'act002', message: 'Resolved issue with Shop C', timestamp: new Date(Date.now() - 3600000) },
-                        { id: 'act003', message: 'Added new admin note to issue ISS001', timestamp: new Date(Date.now() - 7200000) }
-                    ];
-                },
-                updateCharts() {
-                    // Issue status chart
-                    const statusCounts = {
-                        'pending': this.merchantIssues.filter(i => i.status === 'pending').length,
-                        'in progress': this.merchantIssues.filter(i => i.status === 'in progress').length,
-                        'resolved': this.merchantIssues.filter(i => i.status === 'resolved').length,
-                        'rejected': this.merchantIssues.filter(i => i.status === 'rejected').length
-                    };
-                    
-                    const statusCtx = document.getElementById('issueStatusChart');
-                    if (this.issueStatusChart) {
-                        this.issueStatusChart.destroy();
-                    }
-                    this.issueStatusChart = new Chart(statusCtx, {
-                        type: 'doughnut',
-                        data: {
-                            labels: ['Pending', 'In Progress', 'Resolved', 'Rejected'],
-                            datasets: [{
-                                data: Object.values(statusCounts),
-                                backgroundColor: [
-                                    'rgba(255, 193, 7, 0.8)',
-                                    'rgba(23, 162, 184, 0.8)',
-                                    'rgba(40, 167, 69, 0.8)',
-                                    'rgba(220, 53, 69, 0.8)'
-                                ],
-                                borderWidth: 1
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: {
-                                    position: 'bottom'
-                                }
-                            }
-                        }
-                    });
-                    
-                    // Issue type chart
-                    const types = [...new Set(this.merchantIssues.map(i => i.issueType))];
-                    const typeCounts = types.map(type => 
-                        this.merchantIssues.filter(i => i.issueType === type).length
-                    );
-                    
-                    const typeCtx = document.getElementById('issueTypeChart');
-                    if (this.issueTypeChart) {
-                        this.issueTypeChart.destroy();
-                    }
-                    this.issueTypeChart = new Chart(typeCtx, {
-                        type: 'bar',
-                        data: {
-                            labels: types,
-                            datasets: [{
-                                label: 'Number of Issues',
-                                data: typeCounts,
-                                backgroundColor: 'rgba(78, 115, 223, 0.8)',
-                                borderColor: 'rgba(78, 115, 223, 1)',
-                                borderWidth: 1
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            scales: {
-                                y: {
-                                    beginAtZero: true,
-                                    ticks: {
-                                        precision: 0
-                                    }
-                                }
-                            }
-                        }
-                    });
-                },
                 initWebSocket() {
-                    if (this.ws) {
-                        this.ws.close();
-                        this.ws = null;
-                    }
-
+                    if (this.ws) this.ws.close();
                     this.ws = new WebSocket('wss://oneai-wjox.onrender.com');
-                    this.wsConnectionAttempts++;
-
+                    
                     this.ws.onopen = () => {
                         console.log('WebSocket connected');
                         const token = localStorage.getItem('adminToken');
-                        this.wsConnectionAttempts = 0;
-                        
                         if (token) {
-                            this.ws.send(JSON.stringify({
-                                type: 'auth',
-                                token: token
-                            }));
+                            this.ws.send(JSON.stringify({ type: 'auth', token: token, role: 'admin' }));
                         }
                     };
-
+                
                     this.ws.onmessage = (event) => {
                         try {
                             const data = JSON.parse(event.data);
-                            
-                            if (data.type === 'payment-updated') {
-                                const index = this.payments.findIndex(p => p.trxid === data.payment.trxid);
-                                if (index > -1) {
-                                    this.payments.splice(index, 1, {
-                                        ...this.payments[index],
-                                        status: data.payment.status
-                                    });
-                                }
-                            } else if (data.type === 'new-payment') {
-                                this.payments.unshift(data.payment);
-                                this.stats.totalPayments = this.payments.length;
-                                this.stats.pendingPayments = this.payments.filter(p => p.status === 'Pending').length;
-                            } else if (data.type === 'new-issue') {
-                                this.merchantIssues.unshift(data.issue);
-                                this.stats.issueReports = this.merchantIssues.length;
-                                this.updateCharts();
+                            if (data.type === 'payment-updated' || data.type === 'new-payment') {
+                                this.loadData();
+                            } else if (data.type === 'new-penalty' || data.type === 'new-issue') {
+                                this.loadData();
                             }
                         } catch (error) {
                             console.error('WebSocket message error:', error);
                         }
                     };
-
-                    this.ws.onerror = (error) => {
-                        console.error('WebSocket error:', error);
-                    };
-
-                    this.ws.onclose = (event) => {
-                        console.log('WebSocket disconnected:', event.reason);
-                        
-                        if (this.wsConnectionAttempts < 5) {
-                            console.log(`Reconnecting attempt ${this.wsConnectionAttempts}/5...`);
-                            setTimeout(() => this.initWebSocket(), 3000);
-                        } else {
-                            console.error('Max WebSocket reconnection attempts reached');
-                            this.wsConnectionAttempts = 0;
-                        }
-                    };
-                }
-            },
-            async mounted() {
-                // Initialize modals
-                this.paymentModal = new bootstrap.Modal(
-                    document.getElementById('paymentModal'), 
-                    { keyboard: false }
-                );
                 
-                this.issueModal = new bootstrap.Modal(
-                    document.getElementById('issueModal'), 
-                    { keyboard: false }
-                );
-                
-                // Initialize tabs
-                const triggerTabList = [].slice.call(document.querySelectorAll('#issueTabs button'));
-                triggerTabList.forEach(triggerEl => {
-                    const tabTrigger = new bootstrap.Tab(triggerEl);
-                    triggerEl.addEventListener('click', event => {
-                        event.preventDefault();
-                        tabTrigger.show();
-                    });
-                });
-                
-                // Check initial setup
-                await this.checkInitialSetup();
-                
-                // Check authentication if setup is done
-                const token = localStorage.getItem('adminToken');
-                if (token && !this.showInitialSetup) {
+                    this.ws.onerror = (error) => console.error('WebSocket error:', error);
+                    this.ws.onclose = () => setTimeout(() => this.initWebSocket(), 3000);
+                },
+                async updatePaymentStatus(payment, status) {
                     try {
-                        // Validate token
-                        await axios.get(`${API_BASE}/admin/validate`);
-                        this.isAuthenticated = true;
-                        
-                        // Load data
-                        this.loadData();
-                        
-                        // Init WebSocket
-                        this.initWebSocket();
+                        await axios.post(`${API_BASE}/admin/update-status`, {
+                            trxid: payment.trxid,
+                            status: status
+                        });
                     } catch (error) {
-                        console.error('Authentication check failed:', error);
-                        localStorage.removeItem('adminToken');
+                        console.error('Failed to update payment status', error);
+                        alert('Failed to update payment status.');
+                    }
+                },
+                updateCharts() {
+                    this.$nextTick(() => {
+                        this.createPaymentsChart();
+                        this.createUsersIssuesChart();
+                    });
+                },
+                createPaymentsChart() {
+                    const ctx = document.getElementById('paymentsChart')?.getContext('2d');
+                    if (!ctx) return;
+                    if (this.charts.paymentsChart) this.charts.paymentsChart.destroy();
+
+                    const completed = this.payments.filter(p => p.status === 'Completed').length;
+                    const pending = this.payments.filter(p => p.status === 'Pending').length;
+                    const failed = this.payments.filter(p => p.status === 'Failed').length;
+
+                    this.charts.paymentsChart = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Completed', 'Pending', 'Failed'],
+                            datasets: [{
+                                data: [completed, pending, failed],
+                                backgroundColor: ['#198754', '#ffc107', '#dc3545']
+                            }]
+                        }
+                    });
+                },
+                createUsersIssuesChart() {
+                    const ctx = document.getElementById('usersIssuesChart')?.getContext('2d');
+                    if (!ctx) return;
+                    if (this.charts.usersIssuesChart) this.charts.usersIssuesChart.destroy();
+
+                    this.charts.usersIssuesChart = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: ['Users', 'Merchant Issues', 'Penalty Reports'],
+                            datasets: [{
+                                label: 'Count',
+                                data: [this.users.length, this.merchantIssues.length, this.penaltyReports.length],
+                                backgroundColor: ['#0d6efd', '#dc3545', '#0dcaf0']
+                            }]
+                        },
+                        options: {
+                            scales: {
+                                y: {
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    });
+                },
+                // Format date for display
+                formatDate(dateString) {
+                    if (!dateString) return 'N/A';
+                    const date = new Date(dateString);
+                    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+                },
+                
+                // User management
+                editUser(user) {
+                    this.currentItem = { ...user };
+                    this.currentEditType = 'user';
+                    this.editModalTitle = 'Edit User';
+                    this.showModal('editModal');
+                },
+                
+                async saveUser() {
+                    try {
+                        await axios.put(`${API_BASE}/admin/users/${this.currentItem._id}`, this.currentItem);
+                        this.loadData();
+                        this.hideModal('editModal');
+                        alert('User updated successfully');
+                    } catch (error) {
+                        console.error('Failed to update user:', error);
+                        alert('Failed to update user');
+                    }
+                },
+                
+                async deleteUser(userId) {
+                    if (confirm('Are you sure you want to delete this user?')) {
+                        try {
+                            await axios.delete(`${API_BASE}/admin/users/${userId}`);
+                            this.loadData();
+                            alert('User deleted successfully');
+                        } catch (error) {
+                            console.error('Failed to delete user:', error);
+                            alert('Failed to delete user');
+                        }
+                    }
+                },
+                
+                // Payment management
+                editPayment(payment) {
+                    this.currentItem = { ...payment };
+                    this.currentEditType = 'payment';
+                    this.editModalTitle = 'Edit Payment';
+                    this.showModal('editModal');
+                },
+                
+                async savePayment() {
+                    try {
+                        await axios.put(`${API_BASE}/admin/payments/${this.currentItem._id}`, this.currentItem);
+                        this.loadData();
+                        this.hideModal('editModal');
+                        alert('Payment updated successfully');
+                    } catch (error) {
+                        console.error('Failed to update payment:', error);
+                        alert('Failed to update payment');
+                    }
+                },
+                
+                // Issue management
+                editIssue(issue) {
+                    this.currentItem = { ...issue };
+                    this.currentEditType = 'issue';
+                    this.editModalTitle = 'Edit Merchant Issue';
+                    this.showModal('editModal');
+                },
+                
+                async saveIssue() {
+                    try {
+                        await axios.put(`${API_BASE}/admin/merchant-issues/${this.currentItem._id}`, this.currentItem);
+                        this.loadData();
+                        this.hideModal('editModal');
+                        alert('Issue updated successfully');
+                    } catch (error) {
+                        console.error('Failed to update issue:', error);
+                        alert('Failed to update issue');
+                    }
+                },
+                
+                async updateIssueStatus(issue, status) {
+                    try {
+                        await axios.put(`${API_BASE}/admin/merchant-issues/${issue._id}/status`, { status });
+                        this.loadData();
+                        alert('Issue status updated');
+                    } catch (error) {
+                        console.error('Failed to update issue status:', error);
+                        alert('Failed to update issue status');
+                    }
+                },
+                
+                async deleteIssue(issueId) {
+                    if (confirm('Are you sure you want to delete this issue?')) {
+                        try {
+                            await axios.delete(`${API_BASE}/admin/merchant-issues/${issueId}`);
+                            this.loadData();
+                            alert('Issue deleted successfully');
+                        } catch (error) {
+                            console.error('Failed to delete issue:', error);
+                            alert('Failed to delete issue');
+                        }
+                    }
+                },
+                
+                // Penalty management
+                editPenalty(penalty) {
+                    this.currentItem = { ...penalty };
+                    this.currentEditType = 'penalty';
+                    this.editModalTitle = 'Edit Penalty Report';
+                    this.showModal('editModal');
+                },
+                
+                async savePenalty() {
+                    try {
+                        await axios.put(`${API_BASE}/admin/penalty-reports/${this.currentItem._id}`, this.currentItem);
+                        this.loadData();
+                        this.hideModal('editModal');
+                        alert('Penalty report updated successfully');
+                    } catch (error) {
+                        console.error('Failed to update penalty report:', error);
+                        alert('Failed to update penalty report');
+                    }
+                },
+                
+                async updatePenaltyStatus(penalty, status) {
+                    try {
+                        await axios.put(`${API_BASE}/admin/penalty-reports/${penalty._id}/status`, { status });
+                        this.loadData();
+                        alert('Penalty status updated');
+                    } catch (error) {
+                        console.error('Failed to update penalty status:', error);
+                        alert('Failed to update penalty status');
+                    }
+                },
+                
+                // Admin management
+                async createAdmin() {
+                    try {
+                        await axios.post(`${API_BASE}/admin/admins`, this.newAdmin);
+                        this.loadData();
+                        this.hideModal('addAdminModal');
+                        this.newAdmin = { email: '', password: '', role: 'moderator' };
+                        alert('Admin created successfully');
+                    } catch (error) {
+                        console.error('Failed to create admin:', error);
+                        alert('Failed to create admin: ' + error.response?.data?.message || error.message);
+                    }
+                },
+                
+                async deleteAdmin(adminId) {
+                    if (confirm('Are you sure you want to delete this admin?')) {
+                        try {
+                            await axios.delete(`${API_BASE}/admin/admins/${adminId}`);
+                            this.loadData();
+                            alert('Admin deleted successfully');
+                        } catch (error) {
+                            console.error('Failed to delete admin:', error);
+                            alert('Failed to delete admin');
+                        }
+                    }
+                },
+                
+                // Modal helpers
+                showModal(id) {
+                    const modal = new bootstrap.Modal(document.getElementById(id));
+                    modal.show();
+                },
+                
+                hideModal(id) {
+                    const modal = bootstrap.Modal.getInstance(document.getElementById(id));
+                    if (modal) modal.hide();
+                },
+                
+                // Save changes handler
+                saveChanges() {
+                    switch (this.currentEditType) {
+                        case 'user': this.saveUser(); break;
+                        case 'payment': this.savePayment(); break;
+                        case 'issue': this.saveIssue(); break;
+                        case 'penalty': this.savePenalty(); break;
+                        default: 
+                            console.error('Unknown edit type:', this.currentEditType);
                     }
                 }
             },
-            beforeUnmount() {
-                if (this.ws) {
-                    this.ws.close();
-                    this.ws = null;
+            async mounted() {
+                const token = localStorage.getItem('adminToken');
+                if (token) {
+                    try {
+                        const tokenData = parseJwt(token);
+                        
+                        // Verify token has required properties
+                        if (tokenData && tokenData.role) {
+                            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                            
+                            // Verify token is still valid with server
+                            const response = await axios.get(`${API_BASE}/admin/validate`);
+                            if (response.data.success) {
+                                this.adminRole = tokenData.role;
+                                this.authenticated = true;
+                                this.loadData();
+                                this.initWebSocket();
+                            } else {
+                                throw new Error('Token validation failed');
+                            }
+                        } else {
+                            throw new Error('Invalid token structure');
+                        }
+                    } catch (error) {
+                        console.error('Token validation failed:', error);
+                        // Clear invalid token but don't show error yet
+                        localStorage.removeItem('adminToken');
+                    }
                 }
             }
         };
