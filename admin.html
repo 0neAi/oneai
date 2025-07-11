@@ -967,40 +967,40 @@
                     }
                 }
             },
-           async mounted() {
-    const token = localStorage.getItem('adminToken');
-    if (token) {
-        try {
-            // Safely decode token
-            const payload = token.split('.')[1];
-            const decodedPayload = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
-            const tokenData = parseJwt(token);
-            
-            // Verify token has required properties
-            if (tokenData && tokenData.role) {
-                this.adminRole = tokenData.role;
-                axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-                const response = await axios.get(`${API_BASE}/admin/validate`);
-                if (!response.data.success) {
-                    throw new Error('Token validation failed');
+        async mounted() {
+            const token = localStorage.getItem('adminToken');
+            if (token) {
+                try {
+                    const tokenData = parseJwt(token);
+                    
+                    // Verify token has required properties
+                    if (tokenData && tokenData.role) {
+                        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                        
+                        // Verify token is still valid with server
+                        const response = await axios.get(`${API_BASE}/admin/validate`);
+                        if (response.data.success) {
+                            this.adminRole = tokenData.role;
+                            this.authenticated = true;
+                            this.loadData();
+                            this.initWebSocket();
+                        } else {
+                            throw new Error('Token validation failed');
+                        }
+                    } else {
+                        throw new Error('Invalid token structure');
+                    }
+                } catch (error) {
+                    console.error('Token validation failed:', error);
+                    // Clear invalid token but don't show error yet
+                    localStorage.removeItem('adminToken');
                 }
-                this.authenticated = true;
-                this.loadData();
-                this.initWebSocket();
-            } else {
-                throw new Error('Invalid token structure');
             }
-        } catch (error) {
-            console.error('Token validation failed:', error);
-            // Clear invalid token and show login form
-            localStorage.removeItem('adminToken');
-            this.loginError = 'Your session has expired. Please login again.';
         }
-    }
-};
+    };
 
-        const app = Vue.createApp(AdminApp);
-        app.mount('#admin-app');
-    </script>
+    const app = Vue.createApp(AdminApp);
+    app.mount('#admin-app');
+</script>
 </body>
 </html>
