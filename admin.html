@@ -331,6 +331,13 @@
                 <h3><i class="bi bi-speedometer2 me-2"></i> Dashboard Overview</h3>
                 <p class="mb-0">Monitor and manage your platform activities</p>
             </div>
+            <div class="col-12 col-md-6 col-xl-3">
+              <div class="stat-card bg-info">
+                <i class="bi bi-clipboard-exclamation fs-1"></i>
+                <div class="number">{{ stats.penaltyReports }}</div>
+                <div class="label">Penalty Reports</div>
+              </div>
+            </div>
 
             <!-- Statistics Cards -->
             <div class="row g-4 mb-4">
@@ -550,6 +557,49 @@
                         </div>
                     </div>
                 </div>
+                <!-- Add this section to admin.html -->
+                <div class="card shadow-sm mb-5">
+                  <div class="card-header d-flex justify-content-between align-items-center py-3">
+                    <h5 class="mb-0"><i class="bi bi-exclamation-circle me-2"></i>Penalty Reports</h5>
+                  </div>
+                  <div class="card-body p-0">
+                    <div class="table-responsive">
+                      <table class="table table-hover mb-0">
+                        <thead class="bg-light">
+                          <tr>
+                            <th>Merchant</th>
+                            <th>Customer</th>
+                            <th>Phone</th>
+                            <th>Amount</th>
+                            <th>Voucher</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr v-for="report in penaltyReports" :key="report._id">
+                            <td>{{ report.merchantName }}</td>
+                            <td>{{ report.customerName }}</td>
+                            <td>{{ report.customerPhone }}</td>
+                            <td>৳{{ report.amount1 }} → ৳{{ report.amount2 }}</td>
+                            <td>{{ report.voucherCode }}</td>
+                            <td>{{ formatDate(report.createdAt) }}</td>
+                            <td>
+                              <span class="status-badge" :class="penaltyStatusClass(report.status)">
+                                {{ report.status }}
+                              </span>
+                            </td>
+                          </tr>
+                          <tr v-if="penaltyReports.length === 0">
+                            <td colspan="6" class="text-center py-4 text-muted">
+                              No penalty reports found
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
 
                 <!-- Users Table -->
                 <div class="card shadow-sm">
@@ -756,48 +806,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Add this section to admin.html -->
-<div class="card shadow-sm mb-5">
-  <div class="card-header d-flex justify-content-between align-items-center py-3">
-    <h5 class="mb-0"><i class="bi bi-exclamation-circle me-2"></i>Penalty Reports</h5>
-  </div>
-  <div class="card-body p-0">
-    <div class="table-responsive">
-      <table class="table table-hover mb-0">
-        <thead class="bg-light">
-          <tr>
-            <th>Merchant</th>
-            <th>Customer</th>
-            <th>Phone</th>
-            <th>Amount</th>
-            <th>Voucher</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="report in penaltyReports" :key="report._id">
-            <td>{{ report.merchantName }}</td>
-            <td>{{ report.customerName }}</td>
-            <td>{{ report.customerPhone }}</td>
-            <td>৳{{ report.amount1 }} → ৳{{ report.amount2 }}</td>
-            <td>{{ report.voucherCode }}</td>
-            <td>
-              <span class="status-badge" :class="statusClass(report.status)">
-                {{ report.status }}
-              </span>
-            </td>
-          </tr>
-          <tr v-if="penaltyReports.length === 0">
-            <td colspan="6" class="text-center py-4 text-muted">
-              No penalty reports found
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>
     
     <script>
         const API_BASE = 'https://oneai-wjox.onrender.com';
@@ -836,6 +844,7 @@
                     users: [],
                     payments: [],
                     merchantIssues: [],
+                    penaltyReports: [],
                     stats: { 
                         totalUsers: 0, 
                         totalPayments: 0, 
@@ -1035,6 +1044,11 @@
                         'rejected': 'bg-danger'
                     };
                     return classes[status] || 'bg-secondary';
+                },
+                 penaltyStatusClass(status) {
+                    return status === 'pending' ? 'bg-warning' : 
+                           status === 'processed' ? 'bg-success' : 'bg-danger';
+                  }
                 },
                 shortId(id) {
                     return id ? `${id.substring(0, 6)}...` : '';
@@ -1245,7 +1259,8 @@
                 if (token) {
                   this.ws.send(JSON.stringify({
                     type: 'auth',
-                    token: token
+                    token: token,
+                    role: 'admin'
                   }));
                 }
               };
@@ -1255,7 +1270,11 @@
                   const data = JSON.parse(event.data);
                   
                   if (data.type === 'payment-updated') {
-                    // Update payment logic
+                          const index = this.payments.findIndex(p => p.trxid === data.payment.trxid);
+                              if (index > -1) {
+                                this.payments.splice(index, 1, data.payment);
+                                this.stats.pendingPayments = this.payments.filter(p => p.status === 'Pending').length;
+                              }
                   } else if (data.type === 'new-payment') {
                     // Add new payment logic
                   } else if (data.type === 'new-issue') {
@@ -1263,6 +1282,11 @@
                   } else if (data.type === 'new-penalty') {
                     this.penaltyReports.unshift(data.report);
                     this.stats.penaltyReports = this.penaltyReports.length;
+                    this.recentActivities.unshift({
+                        id: 'act-' + Date.now(),
+                        message: `New penalty report from ${data.report.merchantName}`,
+                        timestamp: new Date()
+                      });
                     this.updateCharts();
                   }
                 } catch (error) {
