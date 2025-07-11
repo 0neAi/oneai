@@ -721,7 +721,24 @@ app.post('/penalty-report', async (req, res) => {
     });
   }
 });
+// Add these endpoints to server.js
+app.get('/admin/merchant-issues', adminAuth, async (req, res) => {
+  try {
+    const issues = await MerchantIssue.find().sort({ createdAt: -1 });
+    res.json({ success: true, issues });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch merchant issues' });
+  }
+});
 
+app.get('/admin/penalty-reports', adminAuth, async (req, res) => {
+  try {
+    const reports = await PenaltyReport.find().sort({ createdAt: -1 });
+    res.json({ success: true, reports });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch penalty reports' });
+  }
+});
 // Fix duplicate endpoint in server.js
 app.get('/merchant-issues', async (req, res) => {
   try {
