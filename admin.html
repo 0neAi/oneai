@@ -753,7 +753,19 @@
                         }
                     });
                 },
-                
+                function parseJwt(token) {
+                    try {
+                        const base64Url = token.split('.')[1];
+                        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                        const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => 
+                            '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+                        ).join(''));
+                        
+                        return JSON.parse(jsonPayload);
+                    } catch (e) {
+                        return null;
+                    }
+                },
                 // Format date for display
                 formatDate(dateString) {
                     if (!dateString) return 'N/A';
@@ -946,12 +958,16 @@
             // Safely decode token
             const payload = token.split('.')[1];
             const decodedPayload = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
-            const tokenData = JSON.parse(decodedPayload);
+            const tokenData = parseJwt(token);
             
             // Verify token has required properties
             if (tokenData && tokenData.role) {
                 this.adminRole = tokenData.role;
                 axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                const response = await axios.get(`${API_BASE}/admin/validate`);
+                if (!response.data.success) {
+                    throw new Error('Token validation failed');
+                }
                 this.authenticated = true;
                 this.loadData();
                 this.initWebSocket();
