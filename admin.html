@@ -940,20 +940,32 @@
                 }
             },
             mounted() {
-                const token = localStorage.getItem('adminToken');
-                if (token) {
-                    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-                    
-                    // Get admin role from token
-                    const tokenData = JSON.parse(atob(token.split('.')[1]));
-                    this.adminRole = tokenData.role;
-                    
-                    this.authenticated = true;
-                    this.loadData();
-                    this.initWebSocket();
-                }
+    const token = localStorage.getItem('adminToken');
+    if (token) {
+        try {
+            // Safely decode token
+            const payload = token.split('.')[1];
+            const decodedPayload = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+            const tokenData = JSON.parse(decodedPayload);
+            
+            // Verify token has required properties
+            if (tokenData && tokenData.role) {
+                this.adminRole = tokenData.role;
+                axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                this.authenticated = true;
+                this.loadData();
+                this.initWebSocket();
+            } else {
+                throw new Error('Invalid token structure');
             }
-        };
+        } catch (error) {
+            console.error('Token validation failed:', error);
+            // Clear invalid token and show login form
+            localStorage.removeItem('adminToken');
+            this.loginError = 'Your session has expired. Please login again.';
+        }
+    }
+}
 
         const app = Vue.createApp(AdminApp);
         app.mount('#admin-app');
