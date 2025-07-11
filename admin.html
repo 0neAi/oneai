@@ -1062,10 +1062,10 @@
                         
                         // Fetch all data
                         const [usersRes, paymentsRes, issuesRes, penaltiesRes] = await Promise.all([
-                            axios.get(`${API_BASE}/admin/users`),
-                            axios.get(`${API_BASE}/admin/payments`),
-                            axios.get(`${API_BASE}/admin/merchant-issues`),
-                            axios.get(`${API_BASE}/admin/penalty-reports`)
+                            axios.get(`${API_BASE}/users`),
+                            axios.get(`${API_BASE}/payments`),
+                            axios.get(`${API_BASE}/merchant-issues`),
+                            axios.get(`${API_BASE}/penalty-reports`)
                         ]);
                         
                         this.users = usersRes.data.users || [];
@@ -1095,7 +1095,7 @@
                 async refreshPayments() {
                     try {
                         this.isLoading = true;
-                        const response = await axios.get(`${API_BASE}/admin/payments`);
+                        const response = await axios.get(`${API_BASE}/payments`);
                         this.payments = response.data.payments || [];
                         this.stats.pendingPayments = this.payments.filter(p => p.status === 'Pending').length;
                     } catch (error) {
@@ -1107,7 +1107,7 @@
                 async refreshUsers() {
                     try {
                         this.isLoading = true;
-                        const response = await axios.get(`${API_BASE}/admin/users`);
+                        const response = await axios.get(`${API_BASE}/users`);
                         this.users = response.data.users || [];
                         this.stats.totalUsers = this.users.length;
                     } catch (error) {
@@ -1119,7 +1119,7 @@
                 async refreshIssues() {
                     try {
                         this.isLoading = true;
-                        const response = await axios.get(`${API_BASE}/admin/merchant-issues`);
+                        const response = await axios.get(`${API_BASE}/merchant-issues`);
                         this.merchantIssues = response.data.issues || [];
                         this.stats.issueReports = this.merchantIssues.length;
                         this.updateCharts();
@@ -1132,7 +1132,7 @@
                 async refreshPenalties() {
                     try {
                         this.isLoading = true;
-                        const response = await axios.get(`${API_BASE}/admin/penalty-reports`);
+                        const response = await axios.get(`${API_BASE}/penalty-reports`);
                         this.penaltyReports = response.data.reports || [];
                     } catch (error) {
                         console.error('Refresh penalties error:', error);
@@ -1178,7 +1178,7 @@
                         
                         const newStatus = payment.status === 'Completed' ? 'Pending' : 'Completed';
                         const response = await axios.post(
-                            `${API_BASE}/admin/update-status`,
+                            `${API_BASE}/update-status`,
                             { trxid: payment.trxid, status: newStatus }
                         );
 
@@ -1276,7 +1276,7 @@
                     try {
                         this.isLoading = true;
                         const response = await axios.put(
-                            `${API_BASE}/admin/penalty-reports/${this.selectedPenalty._id}`,
+                            `${API_BASE}/penalty-reports/${this.selectedPenalty._id}`,
                             this.selectedPenalty
                         );
 
@@ -1297,7 +1297,7 @@
                     try {
                         this.isLoading = true;
                         const response = await axios.put(
-                            `${API_BASE}/admin/penalty-reports/${penalty._id}/status`,
+                            `${API_BASE}/penalty-reports/${penalty._id}/status`,
                             { status }
                         );
 
@@ -1498,7 +1498,7 @@
                 if (token && !this.showInitialSetup) {
                     try {
                         // Validate token
-                        await axios.get(`${API_BASE}/admin/validate`);
+                        await axios.get(`${API_BASE}/validate`);
                         this.isAuthenticated = true;
                         
                         // Load data
