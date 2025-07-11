@@ -367,29 +367,24 @@ app.post('/refresh-token', authMiddleware, async (req, res) => {
   }
 });
 // Add this to server.js after other routes
+// Fix the penalty report endpoint
 app.post('/penalty-report', async (req, res) => {
   try {
     const { merchantName, customerName, customerPhone, penaltyDate, amount1, amount2, penaltyDetails } = req.body;
 
     // Validate required fields
-    if (!merchantName || !customerName || !customerPhone || !penaltyDate || !amount1 || !amount2) {
+    if (!merchantName || !customerName || !customerPhone || !penaltyDate || !amount1 || !amount2 || !penaltyDetails) {
       return res.status(400).json({ 
         success: false, 
         message: 'All required fields must be filled' 
       });
     }
 
-    // Validate phone number
-    const phoneRegex = /^01[3-9]\d{8}$/;
-    if (!phoneRegex.test(customerPhone)) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Invalid phone number format' 
-      });
-    }
+    // Create voucher code
+    const voucherCode = `VC-${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
 
-    // Create penalty report record (in a real app, save to database)
-    const penaltyReport = {
+    // Create and save report
+    const report = new PenaltyReport({
       merchantName,
       customerName,
       customerPhone,
@@ -397,27 +392,39 @@ app.post('/penalty-report', async (req, res) => {
       amount1: parseFloat(amount1),
       amount2: parseFloat(amount2),
       penaltyDetails,
-      status: 'Pending',
-      createdAt: new Date()
-    };
+      status: 'pending',
+      voucherCode
+    });
 
-    // In a real application, you would save to database:
-    // const newReport = new PenaltyReport(penaltyReport);
-    // await newReport.save();
+    await report.save();
 
-    // Send notification to admin (simulated)
-    console.log('New penalty report:', penaltyReport);
+    // WebSocket notification
+    wss.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({
+          type: 'new-penalty',
+          report: {
+            _id: report._id,
+            merchantName: report.merchantName,
+            customerPhone: report.customerPhone,
+            status: report.status,
+            createdAt: report.createdAt
+          }
+        }));
+      }
+    });
 
     res.status(201).json({
       success: true,
       message: 'Penalty report submitted successfully',
-      report: penaltyReport
+      voucherCode,
+      report
     });
   } catch (error) {
     console.error('Penalty report error:', error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      message: 'Failed to submit penalty report'
     });
   }
 });
