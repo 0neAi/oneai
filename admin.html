@@ -757,6 +757,48 @@
         </div>
     </div>
 
+    <!-- Add this section to admin.html -->
+<div class="card shadow-sm mb-5">
+  <div class="card-header d-flex justify-content-between align-items-center py-3">
+    <h5 class="mb-0"><i class="bi bi-exclamation-circle me-2"></i>Penalty Reports</h5>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="bg-light">
+          <tr>
+            <th>Merchant</th>
+            <th>Customer</th>
+            <th>Phone</th>
+            <th>Amount</th>
+            <th>Voucher</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="report in penaltyReports" :key="report._id">
+            <td>{{ report.merchantName }}</td>
+            <td>{{ report.customerName }}</td>
+            <td>{{ report.customerPhone }}</td>
+            <td>৳{{ report.amount1 }} → ৳{{ report.amount2 }}</td>
+            <td>{{ report.voucherCode }}</td>
+            <td>
+              <span class="status-badge" :class="statusClass(report.status)">
+                {{ report.status }}
+              </span>
+            </td>
+          </tr>
+          <tr v-if="penaltyReports.length === 0">
+            <td colspan="6" class="text-center py-4 text-muted">
+              No penalty reports found
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+    
     <script>
         const API_BASE = 'https://oneai-wjox.onrender.com';
         
@@ -1188,71 +1230,55 @@
                         }
                     });
                 },
-                initWebSocket() {
-                    if (this.ws) {
-                        this.ws.close();
-                        this.ws = null;
-                    }
-
-                    this.ws = new WebSocket('wss://oneai-wjox.onrender.com');
-                    this.wsConnectionAttempts++;
-
-                    this.ws.onopen = () => {
-                        console.log('WebSocket connected');
-                        const token = localStorage.getItem('adminToken');
-                        this.wsConnectionAttempts = 0;
-                        
-                        if (token) {
-                            this.ws.send(JSON.stringify({
-                                type: 'auth',
-                                token: token
-                            }));
-                        }
-                    };
-
-                    this.ws.onmessage = (event) => {
-                        try {
-                            const data = JSON.parse(event.data);
-                            
-                            if (data.type === 'payment-updated') {
-                                const index = this.payments.findIndex(p => p.trxid === data.payment.trxid);
-                                if (index > -1) {
-                                    this.payments.splice(index, 1, {
-                                        ...this.payments[index],
-                                        status: data.payment.status
-                                    });
-                                }
-                            } else if (data.type === 'new-payment') {
-                                this.payments.unshift(data.payment);
-                                this.stats.totalPayments = this.payments.length;
-                                this.stats.pendingPayments = this.payments.filter(p => p.status === 'Pending').length;
-                            } else if (data.type === 'new-issue') {
-                                this.merchantIssues.unshift(data.issue);
-                                this.stats.issueReports = this.merchantIssues.length;
-                                this.updateCharts();
-                            }
-                        } catch (error) {
-                            console.error('WebSocket message error:', error);
-                        }
-                    };
-
-                    this.ws.onerror = (error) => {
-                        console.error('WebSocket error:', error);
-                    };
-
-                    this.ws.onclose = (event) => {
-                        console.log('WebSocket disconnected:', event.reason);
-                        
-                        if (this.wsConnectionAttempts < 5) {
-                            console.log(`Reconnecting attempt ${this.wsConnectionAttempts}/5...`);
-                            setTimeout(() => this.initWebSocket(), 3000);
-                        } else {
-                            console.error('Max WebSocket reconnection attempts reached');
-                            this.wsConnectionAttempts = 0;
-                        }
-                    };
+        // Update WebSocket connection in admin.html
+            initWebSocket() {
+              if (this.ws) {
+                this.ws.close();
+                this.ws = null;
+              }
+            
+              this.ws = new WebSocket('wss://oneai-wjox.onrender.com');
+              
+              this.ws.onopen = () => {
+                console.log('WebSocket connected');
+                const token = localStorage.getItem('adminToken');
+                if (token) {
+                  this.ws.send(JSON.stringify({
+                    type: 'auth',
+                    token: token
+                  }));
                 }
-            },
+              };
+            
+              this.ws.onmessage = (event) => {
+                try {
+                  const data = JSON.parse(event.data);
+                  
+                  if (data.type === 'payment-updated') {
+                    // Update payment logic
+                  } else if (data.type === 'new-payment') {
+                    // Add new payment logic
+                  } else if (data.type === 'new-issue') {
+                    // Add new issue logic
+                  } else if (data.type === 'new-penalty') {
+                    this.penaltyReports.unshift(data.report);
+                    this.stats.penaltyReports = this.penaltyReports.length;
+                    this.updateCharts();
+                  }
+                } catch (error) {
+                  console.error('WebSocket message error:', error);
+                }
+              };
+            
+              this.ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+              };
+            
+              this.ws.onclose = (event) => {
+                console.log('WebSocket disconnected:', event.reason);
+                setTimeout(() => this.initWebSocket(), 3000);
+              };
+            }
             async mounted() {
                 // Initialize modals
                 this.paymentModal = new bootstrap.Modal(
