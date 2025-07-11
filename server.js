@@ -721,6 +721,79 @@ app.post('/penalty-report', async (req, res) => {
     });
   }
 });
+// Add after existing endpoints
+app.get('/admin/admins', adminAuth, async (req, res) => {
+  try {
+    const admins = await Admin.find().select('-password');
+    res.json({ success: true, admins });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch admins' });
+  }
+});
+
+app.post('/admin/admins', adminAuth, async (req, res) => {
+  try {
+    if (req.admin.role !== 'superadmin') {
+      return res.status(403).json({ success: false, message: 'Permission denied' });
+    }
+    
+    const { email, password, role } = req.body;
+    const admin = new Admin({ email, password, role });
+    await admin.save();
+    
+    res.status(201).json({ success: true, admin: admin.toSafeObject() });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.delete('/admin/admins/:id', adminAuth, async (req, res) => {
+  try {
+    if (req.admin.role !== 'superadmin') {
+      return res.status(403).json({ success: false, message: 'Permission denied' });
+    }
+    
+    await Admin.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: 'Admin deleted' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to delete admin' });
+  }
+});
+
+app.put('/admin/users/:id', adminAuth, async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
+    res.json({ success: true, user });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to update user' });
+  }
+});
+
+app.delete('/admin/users/:id', adminAuth, async (req, res) => {
+  try {
+    await User.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: 'User deleted' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to delete user' });
+  }
+});
+
+app.put('/admin/merchant-issues/:id', adminAuth, async (req, res) => {
+  try {
+    const issue = await MerchantIssue.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
+    res.json({ success: true, issue });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to update issue' });
+  }
+});
 // Add these endpoints to server.js
 app.get('/admin/merchant-issues', adminAuth, async (req, res) => {
   try {
