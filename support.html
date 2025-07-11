@@ -630,52 +630,56 @@
     }
 
     // Handle penalty report form submission
-    document.getElementById('penalty-report-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      loadingOverlay.style.display = 'flex';
-      
-      const formData = {
-        merchantName: document.getElementById('merchant-name').value,
-        customerName: document.getElementById('customer-name').value,
-        customerPhone: document.getElementById('customer-phone').value,
-        penaltyDate: document.getElementById('penalty-date').value,
-        amount1: document.getElementById('amount1').value,
-        amount2: document.getElementById('amount2').value,
-        penaltyDetails: document.getElementById('penalty-details').value
-      };
-      
-      try {
-        // Simulate API call to backend
-        const response = await fetch('https://oneai-wjox.onrender.com/penalty-report', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(formData)
-        });
+document.getElementById('penalty-report-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  try {
+    loadingOverlay.style.display = 'flex';
+    const formData = {
+      merchantName: document.getElementById('merchant-name').value,
+      customerName: document.getElementById('customer-name').value,
+      customerPhone: document.getElementById('customer-phone').value,
+      penaltyDate: document.getElementById('penalty-date').value,
+      amount1: document.getElementById('amount1').value,
+      amount2: document.getElementById('amount2').value,
+      penaltyDetails: document.getElementById('penalty-details').value
+    };
 
-        if (!response.ok) {
-          throw new Error('সার্ভার থেকে রেসপন্স পেতে সমস্যা হয়েছে');
-        }
-
-        const data = await response.json();
-        
-        // Show voucher to user
-        const voucherCode = generateVoucherCode();
-        document.getElementById('voucher-code').textContent = voucherCode;
-        document.getElementById('voucher-container').style.display = 'block';
-        
-        // Clear form
-        document.getElementById('penalty-report-form').reset();
-        
-        showAlert('আপনার পেনাল্টি রিপোর্ট সফলভাবে জমা হয়েছে! ভাউচারটি এডমিন চেক করার পর আপনার কাছে এসএমএসের মাধ্যমে পাঠানো হবে।', 'success');
-      } catch (error) {
-        console.error('রিপোর্ট জমা দিতে ব্যর্থ:', error);
-        showAlert(`রিপোর্ট জমা দিতে ব্যর্থ: ${error.message}`, 'error');
-      } finally {
-        loadingOverlay.style.display = 'none';
-      }
+    // Send to correct endpoint with proper headers
+    const response = await fetch('https://oneai-wjox.onrender.com/penalty-report', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+      },
+      body: JSON.stringify(formData)
     });
+
+    if (!response.ok) throw new Error('সার্ভার থেকে রেসপন্স পেতে সমস্যা হয়েছে');
+    
+    const data = await response.json();
+    showConfirmation('আপনার পেনাল্টি রিপোর্ট সফলভাবে জমা হয়েছে!', true);
+    
+    // Show voucher
+    document.getElementById('voucher-code').textContent = data.voucherCode;
+    document.getElementById('voucher-container').style.display = 'block';
+    
+    // Clear form
+    document.getElementById('penalty-report-form').reset();
+    
+    // Send WebSocket notification
+    if (window.ws && window.ws.readyState === WebSocket.OPEN) {
+      window.ws.send(JSON.stringify({
+        type: 'new-penalty',
+        report: data.report
+      }));
+    }
+  } catch (error) {
+    showConfirmation(`রিপোর্ট জমা দিতে ব্যর্থ: ${error.message}`, false);
+  } finally {
+    loadingOverlay.style.display = 'none';
+  }
+});
 
     // Handle premium service form submission
     document.getElementById('premium-service-form').addEventListener('submit', async (e) => {
