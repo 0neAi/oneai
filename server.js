@@ -1,1340 +1,1568 @@
-import express from 'express';
-import mongoose from 'mongoose';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
-import cors from 'cors';
-import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
-import { WebSocketServer, WebSocket } from 'ws'; // Import both
-import { adminAuth } from './middleware/auth.js';
-import Payment from './models/Payment.js';
-import User from './models/User.js';
-import Admin from './models/Admin.js';
-import dotenv from 'dotenv';
-import http from 'http';
-import webpush from 'web-push';
-import path from 'path';
-import { fileURLToPath } from 'url'
-
-dotenv.config();
-
-// VAPID keys
-const vapidKeys = {
-    publicKey: process.env.VAPID_PUBLIC_KEY,
-    privateKey: process.env.VAPID_PRIVATE_KEY
-};
-
-webpush.setVapidDetails(
-    'mailto:your-email@example.com',
-    vapidKeys.publicKey,
-    vapidKeys.privateKey
-);
-
-const app = express();
-const PORT = process.env.PORT || 10000;
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// ======================
-// Environment Validation
-// ======================
-if (!process.env.MONGODB_URI || !process.env.JWT_SECRET) {
-  console.error('❌ Missing required environment variables');
-  process.exit(1);
-}
-
-// ======================
-// Security Middlewares
-// ======================
-app.set('trust proxy', 1);
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "https://cdn.jsdelivr.net"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", "data:"]
-    }
-  }
-}));
-
-app.use(cors({
-origin: process.env.NODE_ENV === 'production'
-  ? ['https://0neai.github.io', 'https://oneai-wjox.onrender.com', 'https://0neai.github.io/oneai']
-  : '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-User-ID'],
-  credentials: true
-}));
-
-app.use(express.json({ limit: '10kb' }));
-
-app.use(express.static(path.join(__dirname, 'public')));
-
-// ======================
-// Rate Limiting
-// ======================
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  validate: { trustProxy: true },
-  keyGenerator: (req) => req.ip || req.socket.remoteAddress
-});
-app.use(limiter);
-
-// ======================
-// Database Connection
-// ======================
-let isReady = false;
-
-mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-  serverSelectionTimeoutMS: 5000
-})
-.then(() => console.log('✅ MongoDB connected successfully'))
-.catch(err => console.error('❌ MongoDB connection error:', err));
-
-mongoose.connection.on('connected', () => {
-  isReady = true;
-  console.log('✅ Server ready to accept requests');
-});
-
-mongoose.connection.on('disconnected', () => {
-  isReady = false;
-  console.log('⚠️  MongoDB disconnected - attempting to reconnect...');
-  setTimeout(() => mongoose.connect(process.env.MONGODB_URI), 5000);
-});
-
-mongoose.connection.on('error', err => {
-  console.error('❌ MongoDB connection error:', err);
-  isReady = false;
-});
-
-// ======================
-// WebSocket Configuration
-// ======================
-const server = http.createServer(app);
-const wss = new WebSocketServer({ server });
-
-wss.on('connection', (ws, req) => {
-  if (process.env.NODE_ENV === 'production') {
-    const allowedOrigins = [
-      'https://0neai.github.io',
-      'https://oneai-wjox.onrender.com'
-    ];
-    if (!req.headers.origin || !allowedOrigins.includes(req.headers.origin)) {
-      console.log(`Blocked WebSocket connection from unauthorized origin: ${req.headers.origin}`);
-      return ws.close(1008, 'Unauthorized origin');
-    }
-  }
-
-  ws.on('error', (error) => {
-    console.error('WebSocket error:', error);
-  });
-
-  ws.on('message', async (message) => {
-    try {
-      const data = JSON.parse(message);
-      
-      if (data.type === 'adminStatusUpdate') {
-        const decoded = jwt.verify(data.token, process.env.JWT_SECRET);
-        
-        if (!['superadmin', 'moderator'].includes(decoded.role)) {
-          throw new Error('Insufficient privileges');
-        }
-
-        wss.clients.forEach(client => {
-          if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({
-              type: 'payment-updated',
-              payment: data.payment
-            }));
-          }
-        });
-      }
-    } catch (error) {
-      console.error('WebSocket error:', error.message);
-      ws.close(1008, 'Authentication failed');
-    }
-  });
-});
-
-app.set('wss', wss);
-
-// ======================
-// Server Readiness Check
-// ======================
-app.use((req, res, next) => {
-  if (!isReady) {
-    return res.status(503).json({
-      success: false,
-      message: 'Server initializing... Try again in 10 seconds'
-    });
-  }
-  next();
-});
-
-// ======================
-// Request Logging
-// ======================
-app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-  next();
-});
-
-// ======================
-// Authentication Middleware
-// ======================
-const authMiddleware = async (req, res, next) => {
-  try {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
-    const userID = req.header('X-User-ID');
-
-    if (!token) {
-      console.error('Auth Error: Missing token');
-      return res.status(401).json({ success: false, message: 'Authentication failed: Token missing' });
-    }
-    if (!userID) {
-      console.error('Auth Error: Missing User ID');
-      return res.status(401).json({ success: false, message: 'Authentication failed: User ID missing' });
-    }
-    
-    let decoded;
-    try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET);
-    } catch (jwtError) {
-      console.error('Auth Error: JWT verification failed', jwtError.message);
-      const message = jwtError.name === 'TokenExpiredError' 
-        ? 'Authentication failed: Session expired. Please log in again.' 
-        : 'Authentication failed: Invalid token.';
-      return res.status(401).json({ success: false, message });
-    }
-
-    if (decoded.userId !== userID) {
-      console.error('Auth Error: User ID mismatch', { decodedId: decoded.userId, headerId: userID });
-      return res.status(401).json({ success: false, message: 'Authentication failed: User ID mismatch' });
-    }
-
-    const user = await User.findById(userID);
-    if (!user) {
-      console.error('Auth Error: User not found in DB', { userID });
-      return res.status(401).json({ success: false, message: 'Authentication failed: User not found' });
-    }
-    
-    req.user = user;
-    next();
-  } catch (error) {
-    console.error('Auth Error: Unexpected error', error.message);
-    res.status(500).json({ success: false, message: 'Authentication failed: Internal server error' });
-  }
-};
-
-// ======================
-// Core Routes
-// ======================
-app.options('*', cors());
-
-('/', (req, res) => res.status(200).json({ 
-  success: true, 
-  message: 'Server operational',
-  version: '1.0.0'
-}));
-
-app.get('/status', (req, res) => res.json({
-  status: 'live',
-  db: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
-  uptime: process.uptime().toFixed(2) + 's'
-}));
-
-// ======================
-// User Authentication Routes
-// ======================
-app.post('/register', async (req, res) => {
-  try {
-    // Fix: Use new variable for normalized email
-    const { phone, email: rawEmail, password } = req.body;
-    const email = rawEmail.toLowerCase().trim();
-        // Add password validation
-    if (password.length < 8) {
-      return res.status(400).json({
-        success: false,
-        message: 'Password must be at least 8 characters'
-      });
-    }
-    
-    if (!phone || !email || !password) {
-      return res.status(400).json({ success: false, message: 'All fields required' });
-    }
-
-    // Add phone duplicate check
-    if (await User.findOne({ phone })) {
-      return res.status(409).json({ success: false, message: 'Phone number already exists' });
-    }
-
-    if (await User.findOne({ email })) {
-      return res.status(409).json({ success: false, message: 'Email already exists' });
-    }
-
-    const user = new User({
-      phone,
-      email,
-      password
-    });
-
-    await user.save();
-
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '3h' });
-
-    res.status(201).json({
-      success: true,
-      message: 'Registration successful',
-      userID: user._id,
-      token,
-      expiresIn: Date.now() + 3 * 60 * 60 * 1000
-    });
-
-  } catch (error) {
-     message = process.env.NODE_ENV === 'production'
-      ? 'Registration failed'
-      : error.message;
-    res.status(500).json({ success: false, message });
-  }
-});
-// ======================
-// User Login Route (Fixed)
-// ======================
-app.post('/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const normalizedEmail = email.toLowerCase().trim();
-    
-    const user = await User.findOne({ email: normalizedEmail }).select('+password');
-    
-    if (!user) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Invalid Email' 
-      });
-    }
-
-    const isMatch = await user.comparePassword(password);
-    
-    if (!isMatch) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Invalid Password' 
-      });
-    }
-
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { 
-      expiresIn: '3h' 
-    });
-
-    res.json({
-      success: true,
-      token,
-      userID: user._id,
-      expiresIn: Date.now() + 3 * 60 * 60 * 1000
-    });
-  } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error during login'
-    });
-  }
-});
-
-app.post('/refresh-token', authMiddleware, async (req, res) => {
-  try {
-    const token = jwt.sign({ userId: req.user._id }, process.env.JWT_SECRET, {
-      expiresIn: '3h',
-    });
-
-    res.json({
-      success: true,
-      token,
-      userID: req.user._id,
-      expiresIn: Date.now() + 3 * 60 * 60 * 1000,
-    });
-  } catch (error) {
-    console.error('Token refresh error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error during token refresh',
-    });
-  }
-});
-// Add this to server.js after other routes
-// Fix the penalty report endpoint
-app.post('/penalty-report', async (req, res) => {
-  try {
-    const { merchantName, customerName, customerPhone, penaltyDate, amount1, amount2, penaltyDetails } = req.body;
-
-    // Validate required fields
-    if (!merchantName || !customerName || !customerPhone || !penaltyDate || !amount1 || !amount2 || !penaltyDetails) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'All required fields must be filled' 
-      });
-    }
-
-    // Create voucher code
-    const voucherCode = `VC-${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
-
-    // Create and save report
-    const report = new PenaltyReport({
-      merchantName,
-      customerName,
-      customerPhone,
-      penaltyDate: new Date(penaltyDate),
-      amount1: parseFloat(amount1),
-      amount2: parseFloat(amount2),
-      penaltyDetails,
-      status: 'pending',
-      voucherCode
-    });
-
-    await report.save();
-
-    // WebSocket notification
-    wss.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify({
-          type: 'new-penalty',
-          report: {
-            _id: report._id,
-            merchantName: report.merchantName,
-            customerPhone: report.customerPhone,
-            status: report.status,
-            createdAt: report.createdAt
-          }
-        }));
-      }
-    });
-
-    res.status(201).json({
-      success: true,
-      message: 'Penalty report submitted successfully',
-      voucherCode,
-      report
-    });
-  } catch (error) {
-    console.error('Penalty report error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to submit penalty report'
-    });
-  }
-});
-// ======================
-// Payment Processing
-// ======================
-app.post('/payment', authMiddleware, async (req, res) => {
-  try {
-    const { consignments, discount = 0 } = req.body;
-
-    // Validate consignments
-    if (!Array.isArray(consignments) || consignments.length === 0) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'At least one consignment required' 
-      });
-    }
-
-    // Validate each consignment
-    let amount3 = 0;
-    const validServiceTypes = ['pricecng', 'partial', 'drto', 'delivery', 'return'];
-    const phoneRegex = /^01[3-9]\d{8}$/;
-    
-    for (const consignment of consignments) {
-      // Validate service type
-      if (!validServiceTypes.includes(consignment.serviceType)) {
-        return res.status(400).json({
-          success: false,
-          message: `Invalid service type: ${consignment.serviceType}`
-        });
-      }
-
-      // Validate customer details
-      if (!consignment.name || !phoneRegex.test(consignment.phone)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid customer details'
-        });
-      }
-
-      // Service-specific validation
-      if (consignment.serviceType === 'pricecng' || consignment.serviceType === 'partial') {
-        if (consignment.amount2 >= consignment.amount1) {
-          return res.status(400).json({
-            success: false,
-            message: 'Updated amount must be less than original amount'
-          });
-        }
-        amount3 += (consignment.amount1 - consignment.amount2) / 2;
-      } 
-      else if (consignment.serviceType === 'drto' && consignment.amount2 < 40) {
-        amount3 += 40;
-      }
-    }
-
-    // Apply discount
-    if (discount > 0) {
-      amount3 *= (1 - discount / 100);
-    }
-
-    // Validate final amount
-    if (amount3 < 0 || amount3 > 30000) {
-      return res.status(400).json({
-        success: false,
-        message: 'Final amount must be between 0 and 30,000'
-      });
-    }
-
-    // Create payment
-    const payment = new Payment({
-      user: req.user._id,
-      ...req.body,
-      amount3,
-      status: 'Pending'
-    });
-
-    const savedPayment = await payment.save();
-
-    // Prepare WhatsApp message
-    const whatsappMessage = `
-New Payment Received!
---------------------
-User ID: ${req.user._id}
-User Email: ${req.user.email}
-User Phone: ${req.user.phone}
-Company: ${savedPayment.company}
-TRX ID: ${savedPayment.trxid}
-Amount: ${savedPayment.amount3} BDT
-Payment Method: ${savedPayment.method}
-Status: ${savedPayment.status}
-Timestamp: ${new Date(savedPayment.createdAt).toLocaleString()}
-
-Consignments:
-${savedPayment.consignments.map(c => `  - Service: ${c.serviceType}, Name: ${c.name}, Phone: ${c.phone}, Amount1: ${c.amount1}, Amount2: ${c.amount2}`).join('\n')}
-`;
-
-    // Placeholder for WhatsApp API integration
-    // In a real application, you would integrate a WhatsApp API here (e.g., Twilio, WhatsApp Business API)
-    // For example:
-    // try {
-    //   const client = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-    //   await client.messages.create({
-    //     body: whatsappMessage,
-    //     from: 'whatsapp:+14155238886', // Your Twilio WhatsApp number
-    //     to: `whatsapp:${process.env.HELPLINE_WHATSAPP_NUMBER}`
-    //   });
-    //   console.log('WhatsApp message sent successfully!');
-    // } catch (whatsappError) {
-    //   console.error('Failed to send WhatsApp message:', whatsappError);
-    // }
-    console.log('Simulating WhatsApp message to helpline:');
-    console.log(whatsappMessage);
-
-
-    // WebSocket notification
-    wss.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify({
-          type: 'new-payment',
-          payment: {
-            _id: savedPayment._id,
-            status: savedPayment.status,
-            trxid: savedPayment.trxid,
-            amount3: savedPayment.amount3,
-            user: {
-              _id: req.user._id,
-              email: req.user.email,
-              phone: req.user.phone
-            },
-            company: savedPayment.company,
-            createdAt: savedPayment.createdAt
-          }
-        }));
-      }
-    });
-
-    res.status(201).json({
-      success: true,
-      message: 'Payment processed successfully',
-      payment: savedPayment
-    });
-
-  } catch (error) {
-    console.error('Payment processing error:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message || 'Payment processing failed'
-    });
-  }
-});
-// Merchant Issues API
-const merchantIssueSchema = new mongoose.Schema({
-  merchantName: { type: String, required: true },
-  merchantPhone: { type: String, required: true },
-  issueType: { type: String, required: true },
-  details: { type: String, required: true },
-  status: { type: String, enum: ['pending', 'in progress', 'resolved', 'rejected'], default: 'pending' },
-  adminNotes: { type: String },
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
-});
-
-const MerchantIssue = mongoose.model('MerchantIssue', merchantIssueSchema);
-
-const penaltyReportSchema = new mongoose.Schema({
-  merchantName: { type: String, required: true },
-  customerName: { type: String, required: true },
-  customerPhone: { 
-    type: String, 
-    required: true,
-    validate: {
-      validator: v => /^01[3-9]\d{8}$/.test(v),
-      message: props => `Invalid Bangladeshi phone number: ${props.value}`
-    }
-  },
-  penaltyDate: { type: Date, required: true },
-  amount1: { type: Number, required: true },
-  amount2: { type: Number, required: true },
-  penaltyDetails: { type: String, required: true },
-  status: {
-    type: String,
-    enum: ['pending', 'processed', 'rejected'],
-    default: 'pending'
-  },
-  voucherCode: String
-}, { timestamps: true });
-
-const PenaltyReport = mongoose.model('PenaltyReport', penaltyReportSchema);
-
-// Merchant Issues API
-app.post('/merchant-issues', async (req, res) => {
-  try {
-    const { merchantName, merchantPhone, issueType, details } = req.body;
-    
-    if (!merchantName || !merchantPhone || !issueType || !details) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Missing required fields' 
-      });
-    }
-    
-    const issue = new MerchantIssue({
-      merchantName,
-      merchantPhone,
-      issueType,
-      details,
-      status: 'pending'
-    });
-    
-    await issue.save();
-    
-    // WebSocket notification
-    wss.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify({
-          type: 'new-issue',
-          issue: {
-            _id: issue._id,
-            merchantName: issue.merchantName,
-            issueType: issue.issueType,
-            status: issue.status,
-            createdAt: issue.createdAt
-          }
-        }));
-      }
-    });
-
-    res.status(201).json({ 
-      success: true, 
-      message: 'Issue report submitted successfully',
-      issue 
-    });
-  } catch (error) {
-    console.error('Issue report error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to submit issue report' 
-    });
-  }
-});
-
-// Penalty Report API
-app.post('/penalty-report', async (req, res) => {
-  try {
-    const { merchantName, customerName, customerPhone, penaltyDate, amount1, amount2, penaltyDetails } = req.body;
-
-    if (!merchantName || !customerName || !customerPhone || !penaltyDate || !amount1 || !amount2 || !penaltyDetails) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'All required fields must be filled' 
-      });
-    }
-
-    const report = new PenaltyReport({
-      merchantName,
-      customerName,
-      customerPhone,
-      penaltyDate: new Date(penaltyDate),
-      amount1,
-      amount2,
-      penaltyDetails,
-      status: 'pending',
-      voucherCode: `VC-${Math.random().toString(36).substr(2, 8).toUpperCase()}`
-    });
-
-    await report.save();
-
-    // WebSocket notification
-    wss.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify({
-          type: 'new-penalty',
-          report: {
-            _id: report._id,
-            merchantName: report.merchantName,
-            customerPhone: report.customerPhone,
-            status: report.status,
-            createdAt: report.createdAt
-          }
-        }));
-      }
-    });
-
-    res.status(201).json({
-      success: true,
-      message: 'Penalty report submitted successfully',
-      voucherCode: report.voucherCode
-    });
-  } catch (error) {
-    console.error('Penalty report error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to submit penalty report'
-    });
-  }
-});
-// Add after existing endpoints
-app.get('/admin/admins', adminAuth, async (req, res) => {
-  try {
-    const admins = await Admin.find().select('-password');
-    res.json({ success: true, admins });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to fetch admins' });
-  }
-});
-
-app.post('/admin/admins', adminAuth, async (req, res) => {
-  try {
-    if (req.admin.role !== 'superadmin') {
-      return res.status(403).json({ success: false, message: 'Permission denied' });
-    }
-    
-    const { email, password, role } = req.body;
-    const admin = new Admin({ email, password, role });
-    await admin.save();
-    
-    res.status(201).json({ success: true, admin: admin.toSafeObject() });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-app.delete('/admin/admins/:id', adminAuth, async (req, res) => {
-  try {
-    if (req.admin.role !== 'superadmin') {
-      return res.status(403).json({ success: false, message: 'Permission denied' });
-    }
-    
-    await Admin.findByIdAndDelete(req.params.id);
-    res.json({ success: true, message: 'Admin deleted' });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to delete admin' });
-  }
-});
-
-app.put('/admin/users/:id', adminAuth, async (req, res) => {
-  try {
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    );
-    res.json({ success: true, user });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to update user' });
-  }
-});
-
-app.delete('/admin/users/:id', adminAuth, async (req, res) => {
-  try {
-    await User.findByIdAndDelete(req.params.id);
-    res.json({ success: true, message: 'User deleted' });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to delete user' });
-  }
-});
-
-app.put('/admin/merchant-issues/:id', adminAuth, async (req, res) => {
-  try {
-    const issue = await MerchantIssue.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    );
-    res.json({ success: true, issue });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to update issue' });
-  }
-});
-// Add these endpoints to server.js
-app.get('/admin/merchant-issues', adminAuth, async (req, res) => {
-  try {
-    const issues = await MerchantIssue.find().sort({ createdAt: -1 });
-    res.json({ success: true, issues });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to fetch merchant issues' });
-  }
-});
-
-app.get('/admin/penalty-reports', adminAuth, async (req, res) => {
-  try {
-    const reports = await PenaltyReport.find().sort({ createdAt: -1 });
-    res.json({ success: true, reports });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to fetch penalty reports' });
-  }
-});
-// Fix duplicate endpoint in server.js
-app.get('/merchant-issues', async (req, res) => {
-  try {
-    const { phone } = req.query;
-    if (!phone) {
-      return res.status(400).json({ success: false, message: 'Phone number required' });
-    }
-    
-    const issues = await MerchantIssue.find({ merchantPhone: phone }).sort({ createdAt: -1 });
-    res.json({ success: true, issues });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to fetch issues' });
-  }
-});
-// Create new merchant issue
-app.post('/merchant-issues', async (req, res) => {
-  try {
-    const { merchantName, merchantPhone, issueType, severity, details } = req.body;
-    
-    if (!merchantName || !merchantPhone || !issueType || !details) {
-      return res.status(400).json({ success: false, message: 'Missing required fields' });
-    }
-    
-    const issue = new MerchantIssue({
-      merchantName,
-      merchantPhone,
-      issueType,
-      severity,
-      details,
-      status: 'pending'
-    });
-    
-    const savedIssue = await issue.save();
-    
-    res.status(201).json({ success: true, issue: savedIssue });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to create issue' });
-  }
-});
-
-// Update issue status
-app.put('/merchant-issues/:id/status', adminAuth, async (req, res) => {
-  try {
-    const { status } = req.body;
-    const validStatuses = ['pending', 'in progress', 'resolved', 'rejected'];
-    
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({ success: false, message: 'Invalid status' });
-    }
-    
-    const issue = await MerchantIssue.findByIdAndUpdate(
-      req.params.id,
-      { status, updatedAt: Date.now() },
-      { new: true }
-    );
-    
-    if (!issue) {
-      return res.status(404).json({ success: false, message: 'Issue not found' });
-    }
-    
-    res.json({ success: true, issue });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to update issue' });
-  }
-});
-
-// Update issue details
-app.put('/merchant-issues/:id', adminAuth, async (req, res) => {
-  try {
-    const { status, adminNotes } = req.body;
-    
-    const updateData = { updatedAt: Date.now() };
-    if (status) updateData.status = status;
-    if (adminNotes) updateData.adminNotes = adminNotes;
-    
-    const issue = await MerchantIssue.findByIdAndUpdate(
-      req.params.id,
-      updateData,
-      { new: true }
-    );
-    
-    if (!issue) {
-      return res.status(404).json({ success: false, message: 'Issue not found' });
-    }
-    
-    res.json({ success: true, issue });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to update issue' });
-  }
-});
-// Update premium-payment endpoint
-app.post('/premium-payment', authMiddleware, async (req, res) => {
-  try {
-    const { phone, trxid, amount, service } = req.body;
-    
-    // Create payment record using Payment model
-    const payment = new Payment({
-      user: req.user._id,
-      company: 'premium_service',
-      phone,
-      password: 'premium_access',
-      method: 'Premium',
-      trxid,
-      consignments: [{
-        name: 'Premium Service',
-        phone,
-        amount1: amount,
-        amount2: 0,
-        serviceType: service
-      }],
-      amount3: amount,
-      status: 'Pending'
-    });
-
-    const savedPayment = await payment.save();
-    
-    // WebSocket notification
-    wss.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify({
-          type: 'new-payment',
-          payment: {
-            _id: savedPayment._id,
-            status: savedPayment.status,
-            trxid: savedPayment.trxid,
-            amount3: savedPayment.amount3,
-            user: {
-              _id: req.user._id,
-              email: req.user.email,
-              phone: req.user.phone
-            },
-            company: 'premium_service',
-            createdAt: savedPayment.createdAt
-          }
-        }));
-      }
-    });
-
-    res.status(201).json({
-      success: true,
-      message: 'Premium payment submitted',
-      payment: savedPayment
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-});
-// ======================
-// Admin Routes
-// ======================
-const adminLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
-  message: 'Too many login attempts, please try again after 15 minutes'
-});
-
-app.post('/subscribe', authMiddleware, async (req, res) => {
-    try {
-        const subscription = req.body;
-        await User.findByIdAndUpdate(req.user._id, { pushSubscription: subscription });
-        res.status(201).json({ success: true, message: 'Subscribed successfully' });
-    } catch (error) {
-        console.error('Subscription error:', error);
-        res.status(500).json({ success: false, message: 'Subscription failed' });
-    }
-});
-
-app.post('/admin/update-status', adminAuth, async (req, res) => {
-  try {
-    const { trxid, status } = req.body;
-    
-    if (!['Pending', 'Completed', 'Failed'].includes(status)) {
-      return res.status(400).json({ success: false, message: 'Invalid status' });
-    }
-
-    const payment = await Payment.findOneAndUpdate(
-      { trxid },
-      { status },
-      { new: true }
-    ).populate('user', 'email phone');
-
-    if (!payment) {
-      return res.status(404).json({ success: false, message: 'Payment not found' });
-    }
-
-    // If the status is completed, send a push notification
-    if (status === 'Completed' && payment.user.pushSubscription) {
-        const payload = JSON.stringify({
-            title: 'Payment Completed!',
-            body: `Your payment of ৳${payment.amount3} has been successfully processed.`,
-            icon: 'https://oneai-wjox.onrender.com/images/logo.png'
-        });
-
-        webpush.sendNotification(payment.user.pushSubscription, payload).catch(error => {
-            console.error('Push notification error:', error);
-        });
-    }
-
-    // Broadcast update via WebSocket
-    wss.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify({
-          type: 'payment-updated',
-          payment: {
-            trxid: payment.trxid,
-            status: payment.status,
-            amount: payment.amount3,
-            timestamp: payment.updatedAt
-          }
-        }));
-      }
-    });
-
-    res.json({ success: true, payment });
-  } catch (error) {
-    console.error('Status update error:', error);
-    res.status(500).json({ success: false, message: 'Status update failed' });
-  }
-});
-
-app.post('/admin/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const admin = await Admin.findOne({ email }).select('+password');
-    
-    if (!admin || !(await admin.comparePassword(password))) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Invalid credentials' 
-      });
-    }
-
-    const token = jwt.sign(
-      { adminId: admin._id, role: admin.role }, 
-      process.env.JWT_SECRET, 
-      { expiresIn: '8h' }
-    );
-
-    res.json({
-      success: true,
-      token,
-      admin: admin.toSafeObject()
-    });
-  } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      message: 'Server error during admin login' 
-    });
-  }
-});
-
-// ======================
-// Admin registration check
-app.get('/admin/check-registration', async (req, res) => {
-  try {
-    const canRegister = await Admin.countDocuments() === 0;
-    res.json({ allowRegistration: canRegister });
-  } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      message: 'Error checking registration status' 
-    });
-  }
-});
-// Admin exists check
-app.get('/admin/exists', async (req, res) => {
-    const count = await Admin.countDocuments();
-    res.json({ exists: count > 0 });
-});
-
-// Admin login
-app.post('/admin/login', async (req, res) => {
-    try {
-        const admin = await Admin.findOne({ email: req.body.email });
-        if (!admin) return res.status(401).json({ message: 'Admin not found' });
-        
-        const valid = await admin.comparePassword(req.body.password);
-        if (!valid) return res.status(401).json({ message: 'Invalid password' });
-        
-        const token = jwt.sign({ adminId: admin._id }, process.env.JWT_SECRET, {
-            expiresIn: '1h'
-        });
-        
-        res.json({ token });
-    } catch (error) {
-        res.status(500).json({ message: 'Login failed' });
-    }
-});
-
-// Protected routes
-app.get('/users', adminAuth, async (req, res) => {
-    const users = await User.find().select('-password');
-    res.json(users);
-});
-
-app.get('/payments', adminAuth, async (req, res) => {
-    const payments = await Payment.find().populate('user', 'email phone');
-    res.json(payments);
-});
-// ======================
-// Admin Registration
-// ======================
-// Remove duplicate endpoint and keep only this one:
-// Admin registration - Fix this endpoint
-app.post('/admin/register', async (req, res) => {
-    try {
-        const { email, password } = req.body;
-        
-        // Validate password length
-        if (password.length < 12) {
-            return res.status(400).json({
-                success: false,
-                message: 'Password must be at least 12 characters'
-            });
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.2.31/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #4e73df;
+            --success-color: #1cc88a;
+            --warning-color: #f6c23e;
+            --danger-color: #e74a3b;
+            --dark-color: #5a5c69;
+            --light-bg: #f8f9fc;
+            --dark-bg: #1a1a2e;
         }
         
-        const admin = await Admin.register(email, password);
-        res.json({ 
-            success: true,
-            admin: admin.toSafeObject()
-        });
-    } catch (error) {
-        console.error('Admin registration error:', error);
-        res.status(400).json({
-            success: false,
-            message: error.message
-        });
-    }
-});
+        body {
+            background-color: var(--light-bg);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333;
+        }
+        
+        #admin-app {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        
+        .main-content {
+            flex: 1;
+        }
+        
+        .stat-card {
+            border-radius: 0.5rem;
+            color: white;
+            padding: 1.5rem;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0.5rem 1.5rem rgba(58, 59, 69, 0.2);
+        }
+        
+        .bg-primary { background-color: var(--primary-color)!important; }
+        .bg-success { background-color: var(--success-color)!important; }
+        .bg-warning { background-color: var(--warning-color)!important; }
+        .bg-danger { background-color: var(--danger-color)!important; }
+        .bg-info { background-color: #0dcaf0!important; }
+        .bg-dark { background-color: var(--dark-bg)!important; }
 
-// Remove
+        .dashboard-header {
+            background: linear-gradient(135deg, var(--primary-color), #2a4cb2);
+            color: white;
+            border-radius: 0.35rem;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        
+        .spinner {
+            width: 3rem;
+            height: 3rem;
+        }
+        
+        .table-responsive {
+            max-height: 500px;
+        }
+        
+        .action-cell {
+            min-width: 150px;
+        }
+        
+        .modal-header {
+            background: linear-gradient(135deg, var(--primary-color), #0dcaf0);
+            color: white;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 0.35rem;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
+            margin-bottom: 1.5rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0.5rem 1.5rem rgba(58, 59, 69, 0.2);
+        }
+        
+        .card-header {
+            background-color: #f8f9fc;
+            border-bottom: 1px solid #e3e6f0;
+            font-weight: 600;
+            padding: 1rem 1.5rem;
+        }
+        
+        .status-badge {
+            padding: 0.35em 0.65em;
+            border-radius: 0.25rem;
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+        
+        .issue-card {
+            border-left: 4px solid;
+            margin-bottom: 1rem;
+            background-color: white;
+            border-radius: 0.35rem;
+            overflow: hidden;
+        }
+        
+        .issue-card.low {
+            border-left-color: #28a745;
+        }
+        
+        .issue-card.medium {
+            border-left-color: #ffc107;
+        }
+        
+        .issue-card.high {
+            border-left-color: #dc3545;
+        }
+        
+        .issue-card .card-body {
+            padding: 1rem;
+        }
+        
+        .issue-card .meta {
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+        
+        .issue-card .actions {
+            margin-top: 1rem;
+        }
+        
+        .issue-type-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            margin-right: 0.5rem;
+            background-color: #e9ecef;
+        }
+        
+        .issue-status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        
+        .status-pending {
+            background-color: #ffc107;
+            color: #212529;
+        }
+        
+        .status-in-progress {
+            background-color: #17a2b8;
+            color: white;
+        }
+        
+        .status-resolved {
+            background-color: #28a745;
+            color: white;
+        }
+        
+        .status-rejected {
+            background-color: #dc3545;
+            color: white;
+        }
+        
+        .nav-tabs .nav-link {
+            color: #495057;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+        }
+        
+        .nav-tabs .nav-link.active {
+            color: var(--primary-color);
+            background-color: transparent;
+            border-bottom: 3px solid var(--primary-color);
+        }
+        
+        .tab-content {
+            padding: 1.5rem 0;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 250px;
+            margin-bottom: 1.5rem;
+        }
+        
+        .main-container {
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.05);
+            padding: 2rem;
+            margin-top: 1rem;
+        }
+        
+        .nav-brand {
+            font-weight: 800;
+            font-size: 1.5rem;
+            color: var(--primary-color);
+        }
+        
+        .auth-container {
+            max-width: 500px;
+            margin: 2rem auto;
+            padding: 2rem;
+            border-radius: 0.35rem;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+            background: white;
+        }
+    </style>
+</head>
+<body>
+    <div id="admin-app">
+        <!-- Loading Overlay -->
+        <div v-if="isLoading" class="loading-overlay">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="ms-3">Loading Admin Data...</p>
+        </div>
 
-// ======================
-// Admin validation
-app.get('/admin/validate', adminAuth, (req, res) => {
-  res.json({ success: true });
-});
+        <!-- Initial Setup -->
+        <div v-if="showInitialSetup" class="text-center py-5">
+            <div class="d-flex justify-content-center mb-4">
+                <div class="nav-brand">Admin Panel</div>
+            </div>
+            <div class="auth-container">
+                <h3 class="mb-4">Create First Admin</h3>
+                <form @submit.prevent="registerAdmin">
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input id="email" type="email" class="form-control" 
+                               v-model="admin.email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input id="password" type="password" class="form-control"
+                               v-model="admin.password" required minlength="12">
+                        <small class="text-muted">Minimum 12 characters with uppercase, lowercase, number and special character</small>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <span v-if="!registerLoading">Create Admin Account</span>
+                        <span v-else class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                    </button>
+                    <div v-if="registerError" class="alert alert-danger mt-3">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ registerError }}
+                    </div>
+                    <div v-if="registerSuccess" class="alert alert-success mt-3">
+                        <i class="bi bi-check-circle-fill me-2"></i>{{ registerSuccess }}
+                    </div>
+                </form>
+            </div>
+        </div>
 
-// Admin get payments
-app.get('/admin/payments', adminAuth, async (req, res) => {
-  try {
-    const payments = await Payment.find()
-      .populate('user', 'email phone')
-      .sort({ createdAt: -1 });
+        <!-- Login Form -->
+        <div v-else-if="!isAuthenticated" class="d-flex align-items-center justify-content-center vh-100">
+            <div class="auth-container">
+                <div class="d-flex justify-content-center mb-4">
+                    <div class="nav-brand">Admin Panel</div>
+                </div>
+                <h2 class="mb-4 text-center">Admin Login</h2>
+                <form @submit.prevent="login">
+                    <div class="mb-3">
+                        <label for="login-email" class="form-label">Email</label>
+                        <input id="login-email" type="email" class="form-control" 
+                               v-model="admin.email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="login-password" class="form-label">Password</label>
+                        <input id="login-password" type="password" class="form-control" 
+                               v-model="admin.password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <span v-if="!loginLoading">Login</span>
+                        <span v-else class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                    </button>
+                    <div v-if="loginError" class="alert alert-danger mt-3">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ loginError }}
+                    </div>
+                </form>
+            </div>
+        </div>
 
-    res.json({
-      success: true,
-      payments
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch payments'
-    });
-  }
-});
-// ======================
-// Get Payments (Admin)
-// ======================
-app.get('/admin/payments', adminAuth, async (req, res) => {
-  try {
-    const payments = await Payment.find()
-      .populate('user', 'email phone')
-      .sort({ createdAt: -1 });
+        <!-- Main Dashboard -->
+        <div v-else class="main-content p-4">
+            <!-- Navigation -->
+            <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 rounded">
+                <div class="container-fluid">
+                    <span class="navbar-brand">
+                        <i class="bi bi-shield-lock me-2"></i>Admin Dashboard
+                    </span>
+                    <div class="d-flex align-items-center">
+                        <span class="text-light me-3">
+                            <i class="bi bi-person-circle me-1"></i> {{ admin.email }}
+                        </span>
+                        <button class="btn btn-outline-light" @click="logout">
+                            <i class="bi bi-box-arrow-right me-1"></i>Logout
+                        </button>
+                    </div>
+                </div>
+            </nav>
 
-    res.json({
-      success: true,
-      payments
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch payments'
-    });
-  }
-});
+            <!-- Dashboard Header -->
+            <div class="dashboard-header">
+                <h3><i class="bi bi-speedometer2 me-2"></i> Dashboard Overview</h3>
+                <p class="mb-0">Monitor and manage your platform activities</p>
+            </div>
 
-// ======================
-// User Payments Route
-// ======================
-app.get('/payments/user', authMiddleware, async (req, res) => {
-  try {
-    const payments = await Payment.find({ user: req.user._id })
-      .sort({ createdAt: -1 });
-          
-    res.json({ 
-      success: true, 
-      payments 
-    });
-  } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to fetch user payments' 
-    });
-  }
-});
+            <!-- Statistics Cards -->
+            <div class="row g-4 mb-4">
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="stat-card bg-primary">
+                        <i class="bi bi-people-fill fs-1"></i>
+                        <div class="number">{{ stats.totalUsers }}</div>
+                        <div class="label">Total Users</div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="stat-card bg-success">
+                        <i class="bi bi-credit-card-fill fs-1"></i>
+                        <div class="number">{{ stats.totalPayments }}</div>
+                        <div class="label">Total Payments</div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="stat-card bg-warning">
+                        <i class="bi bi-hourglass-split fs-1"></i>
+                        <div class="number">{{ stats.pendingPayments }}</div>
+                        <div class="label">Pending Payments</div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="stat-card bg-danger">
+                        <i class="bi bi-exclamation-triangle-fill fs-1"></i>
+                        <div class="number">{{ stats.issueReports }}</div>
+                        <div class="label">Issue Reports</div>
+                    </div>
+                </div>
+            </div>
 
-// ======================
-// Premium Payment Route
-// ======================
-// In the premium-payment route
-app.post('/premium-payment', authMiddleware, async (req, res) => {
-  try {
-    // Validate required fields
-    if (!req.body.phone || !req.body.trxid || !req.body.amount || !req.body.service || !req.body.type) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'All fields required' 
-      });
-    }
+            <div class="main-container">
+                <!-- Payments Section -->
+                <div class="card shadow-sm mb-5">
+                    <div class="card-header d-flex justify-content-between align-items-center py-3">
+                        <h5 class="mb-0"><i class="bi bi-credit-card me-2"></i>Recent Payments</h5>
+                        <div class="d-flex">
+                            <select v-model="paymentFilter" class="form-select form-select-sm w-auto me-2">
+                                <option value="all">All</option>
+                                <option value="Pending">Pending</option>
+                                <option value="Completed">Completed</option>
+                                <option value="Failed">Failed</option>
+                            </select>
+                            <button class="btn btn-sm btn-outline-primary" @click="refreshPayments">
+                                <i class="bi bi-arrow-clockwise"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th>TRX ID</th>
+                                        <th>User</th>
+                                        <th>Date</th>
+                                        <th>Amount</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="payment in filteredPayments" :key="payment._id">
+                                        <td>{{ payment.trxid }}</td>
+                                        <td>
+                                            <span v-if="payment.user">{{ payment.user.email }}</span>
+                                            <span v-else class="text-muted">N/A</span>
+                                        </td>
+                                        <td>{{ formatDate(payment.createdAt) }}</td>
+                                        <td>৳{{ payment.amount3.toFixed(2) }}</td>
+                                        <td>
+                                            <span class="status-badge" :class="statusClass(payment.status)">
+                                                {{ payment.status }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary me-1 btn-action" 
+                                                    @click="showPaymentDetails(payment)"
+                                                    title="View Details">
+                                                <i class="bi bi-eye-fill"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-success btn-action" 
+                                                    @click="updatePaymentStatus(payment)"
+                                                    title="Update Status">
+                                                <i class="bi bi-check2-circle"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="filteredPayments.length === 0">
+                                        <td colspan="6" class="text-center py-4 text-muted">
+                                            No payments found
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
 
-    // Create payment record
-    const payment = new Payment({
-      user: req.user._id,
-      company: 'premium_service',
-      phone: req.body.phone,
-      password: 'premium_access',
-      method: 'Premium',
-      trxid: req.body.trxid,
-      consignments: [{
-        name: 'Premium Service',
-        phone: req.body.phone,
-        amount1: req.body.amount,
-        amount2: 0,
-        serviceType: req.body.service
-      }],
-      amount3: req.body.amount,
-      status: 'Pending'
-    });
+                <!-- Merchant Issues Section -->
+                <div class="card shadow-sm mb-5">
+                    <div class="card-header d-flex justify-content-between align-items-center py-3">
+                        <h5 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Merchant Issues</h5>
+                        <div class="d-flex">
+                            <select v-model="issueFilter" class="form-select form-select-sm w-auto me-2">
+                                <option value="all">All</option>
+                                <option value="pending">Pending</option>
+                                <option value="in-progress">In Progress</option>
+                                <option value="resolved">Resolved</option>
+                                <option value="rejected">Rejected</option>
+                            </select>
+                            <button class="btn btn-sm btn-outline-primary" @click="refreshIssues">
+                                <i class="bi bi-arrow-clockwise"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="card-body">
+                        <ul class="nav nav-tabs" id="issueTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="all-tab" data-bs-toggle="tab" 
+                                        data-bs-target="#all-issues" type="button" role="tab">
+                                    All Issues
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="stats-tab" data-bs-toggle="tab" 
+                                        data-bs-target="#issue-stats" type="button" role="tab">
+                                    Statistics
+                                </button>
+                            </li>
+                        </ul>
+                        
+                        <div class="tab-content" id="issueTabContent">
+                            <div class="tab-pane fade show active" id="all-issues" role="tabpanel">
+                                <div v-if="filteredIssues.length === 0" class="text-center py-4 text-muted">
+                                    No issues found
+                                </div>
+                                
+                                <div v-for="issue in filteredIssues" :key="issue.id" 
+                                     class="issue-card" :class="issue.severity">
+                                    <div class="card-body">
+                                        <h5>{{ issue.merchantName }}</h5>
+                                        <div class="meta mb-2">
+                                            <span class="issue-type-badge">{{ issue.issueType }}</span>
+                                            <span class="issue-status-badge" :class="'status-' + issue.status.replace(' ', '-')">
+                                                {{ issue.status }}
+                                            </span>
+                                            <span class="ms-2">{{ formatDateTime(issue.createdAt) }}</span>
+                                        </div>
+                                        <p class="mb-2"><strong>Phone:</strong> {{ issue.customerPhone }}</p>
+                                        <p>{{ issue.details }}</p>
+                                        
+                                        <div class="actions">
+                                            <button class="btn btn-sm btn-outline-primary me-2" 
+                                                    @click="showIssueDetails(issue)">
+                                                <i class="bi bi-eye me-1"></i>Details
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-success me-2" 
+                                                    @click="updateIssueStatus(issue, 'in-progress')"
+                                                    v-if="issue.status === 'pending'">
+                                                <i class="bi bi-play me-1"></i>Start Progress
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-success me-2" 
+                                                    @click="updateIssueStatus(issue, 'resolved')"
+                                                    v-if="issue.status === 'in-progress'">
+                                                <i class="bi bi-check me-1"></i>Resolve
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" 
+                                                    @click="updateIssueStatus(issue, 'rejected')"
+                                                    v-if="issue.status !== 'rejected' && issue.status !== 'resolved'">
+                                                <i class="bi bi-x me-1"></i>Reject
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="tab-pane fade" id="issue-stats" role="tabpanel">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="card mb-4">
+                                            <div class="card-body">
+                                                <h5>Issues by Status</h5>
+                                                <div class="chart-container">
+                                                    <canvas id="issueStatusChart"></canvas>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="card mb-4">
+                                            <div class="card-body">
+                                                <h5>Issues by Type</h5>
+                                                <div class="chart-container">
+                                                    <canvas id="issueTypeChart"></canvas>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5>Recent Activity</h5>
+                                        <ul class="list-group">
+                                            <li v-for="activity in recentActivities" :key="activity.id" 
+                                                class="list-group-item">
+                                                <small class="text-muted">{{ formatDateTime(activity.timestamp) }}</small><br>
+                                                {{ activity.message }}
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-    // Save and broadcast
-    const savedPayment = await payment.save();
-    wss.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify({
-          type: 'new-payment',
-          payment: {
-            _id: savedPayment._id,
-            status: savedPayment.status,
-            trxid: savedPayment.trxid,
-            amount3: savedPayment.amount3,
-            user: {
-              _id: req.user._id,
-              email: req.user.email,
-              phone: req.user.phone
+                <!-- Penalty Reports Section -->
+                <div class="card shadow-sm mb-5">
+                    <div class="card-header d-flex justify-content-between align-items-center py-3">
+                        <h5 class="mb-0"><i class="bi bi-exclamation-circle me-2"></i>Penalty Reports</h5>
+                        <div class="d-flex">
+                            <select v-model="penaltyFilter" class="form-select form-select-sm w-auto me-2">
+                                <option value="all">All</option>
+                                <option value="pending">Pending</option>
+                                <option value="processed">Processed</option>
+                                <option value="rejected">Rejected</option>
+                            </select>
+                            <button class="btn btn-sm btn-outline-primary" @click="refreshPenalties">
+                                <i class="bi bi-arrow-clockwise"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th>Merchant</th>
+                                        <th>Customer</th>
+                                        <th>Amount</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="report in filteredPenalties" :key="report._id">
+                                        <td>{{ report.merchantName }}</td>
+                                        <td>{{ report.customerName }}</td>
+                                        <td>{{ report.amount1 }} → {{ report.amount2 }}</td>
+                                        <td>{{ formatDate(report.penaltyDate) }}</td>
+                                        <td>{{ report.status }}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary me-1"
+                                                    @click="showPenaltyDetails(report)">
+                                                <i class="bi bi-eye me-1"></i>Details
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-success me-1"
+                                                    @click="updatePenaltyStatus(report, 'processed')"
+                                                    v-if="report.status === 'pending'">
+                                                <i class="bi bi-check me-1"></i>Process
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger"
+                                                    @click="updatePenaltyStatus(report, 'rejected')"
+                                                    v-if="report.status !== 'rejected'">
+                                                <i class="bi bi-x me-1"></i>Reject
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="filteredPenalties.length === 0">
+                                        <td colspan="6" class="text-center py-4 text-muted">
+                                            No penalty reports found
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Users Table -->
+                <div class="card shadow-sm">
+                    <div class="card-header d-flex justify-content-between align-items-center py-3">
+                        <h5 class="mb-0"><i class="bi bi-people-fill me-2"></i>Registered Users</h5>
+                        <button class="btn btn-sm btn-outline-primary" @click="refreshUsers">
+                            <i class="bi bi-arrow-clockwise"></i> Refresh
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Phone</th>
+                                        <th>Email</th>
+                                        <th>Registered</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="user in users" :key="user.id">
+                                        <td class="text-muted">{{ shortId(user.id) }}</td>
+                                        <td>{{ user.phone }}</td>
+                                        <td>{{ user.email }}</td>
+                                        <td>{{ formatDateTime(user.createdAt) }}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary"
+                                                    @click="viewUserDetails(user.id)">
+                                                <i class="bi bi-eye-fill me-1"></i>Details
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="users.length === 0">
+                                        <td colspan="5" class="text-center py-4 text-muted">
+                                            No users found
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Details Modal -->
+        <div class="modal fade" id="paymentModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Payment Details</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div v-if="selectedPayment">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Payment ID</label>
+                                        <input type="text" class="form-control" :value="selectedPayment.id" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Status</label>
+                                        <input type="text" class="form-control" 
+                                               :class="statusClass(selectedPayment.status)"
+                                               :value="selectedPayment.status" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">User Email</label>
+                                        <input type="text" class="form-control" 
+                                               :value="(selectedPayment.user && selectedPayment.user.email) || 'N/A'" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Transaction ID</label>
+                                        <input type="text" class="form-control" :value="selectedPayment.trxid" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Company</label>
+                                <input type="text" class="form-control" :value="selectedPayment.company" readonly>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Phone</label>
+                                <input type="text" class="form-control" :value="selectedPayment.phone" readonly>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Password</label>
+                                <input type="text" class="form-control" :value="selectedPayment.password" readonly>
+                            </div>
+                            
+                            <h5 class="mt-4 mb-3">Consignments</h5>
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Phone</th>
+                                            <th>Original Amount</th>
+                                            <th>Updated Amount</th>
+                                            <th>Service</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="(consignment, index) in selectedPayment.consignments" :key="index">
+                                            <td>{{ consignment.name }}</td>
+                                            <td>{{ consignment.phone }}</td>
+                                            <td>৳{{ consignment.amount1.toFixed(2) }}</td>
+                                            <td>৳{{ consignment.amount2.toFixed(2) }}</td>
+                                            <td>{{ consignment.serviceType }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Issue Details Modal -->
+        <div class="modal fade" id="issueModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Issue Details</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div v-if="selectedIssue">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Merchant Name</label>
+                                        <input type="text" class="form-control" :value="selectedIssue.merchantName" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Customer Phone</label>
+                                        <input type="text" class="form-control" :value="selectedIssue.customerPhone" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Issue Type</label>
+                                        <input type="text" class="form-control" :value="selectedIssue.issueType" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Severity</label>
+                                        <input type="text" class="form-control" :value="selectedIssue.severity" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Details</label>
+                                <textarea class="form-control" rows="4" readonly>{{ selectedIssue.details }}</textarea>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Status</label>
+                                <select class="form-select" v-model="selectedIssue.status">
+                                    <option value="pending">Pending</option>
+                                    <option value="in-progress">In Progress</option>
+                                    <option value="resolved">Resolved</option>
+                                    <option value="rejected">Rejected</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Admin Notes</label>
+                                <textarea class="form-control" rows="3" v-model="selectedIssue.adminNotes" placeholder="Add notes about this issue"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" @click="saveIssueChanges">Save Changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Penalty Details Modal -->
+        <div class="modal fade" id="penaltyModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Penalty Report Details</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div v-if="selectedPenalty">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Merchant Name</label>
+                                        <input type="text" class="form-control" :value="selectedPenalty.merchantName" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Customer Name</label>
+                                        <input type="text" class="form-control" :value="selectedPenalty.customerName" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Customer Phone</label>
+                                        <input type="text" class="form-control" :value="selectedPenalty.customerPhone" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Penalty Date</label>
+                                        <input type="text" class="form-control" :value="formatDate(selectedPenalty.penaltyDate)" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Original Amount</label>
+                                        <input type="text" class="form-control" :value="selectedPenalty.amount1" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Updated Amount</label>
+                                        <input type="text" class="form-control" :value="selectedPenalty.amount2" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Penalty Details</label>
+                                <textarea class="form-control" rows="4" readonly>{{ selectedPenalty.penaltyDetails }}</textarea>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Status</label>
+                                <select class="form-select" v-model="selectedPenalty.status">
+                                    <option value="pending">Pending</option>
+                                    <option value="processed">Processed</option>
+                                    <option value="rejected">Rejected</option>
+                                </select>
+                            </div>
+                            
+                            <div v-if="selectedPenalty.voucherCode" class="mb-3">
+                                <label class="form-label">Voucher Code</label>
+                                <input type="text" class="form-control" :value="selectedPenalty.voucherCode" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" @click="savePenaltyChanges">Save Changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const API_BASE = 'https://oneai-wjox.onrender.com';
+        
+        // Helper function to parse JWT
+        function parseJwt(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(
+                    atob(base64)
+                    .split('')
+                    .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+                    .join('')
+                );
+                return JSON.parse(jsonPayload);
+            } catch (e) {
+                return null;
+            }
+        }
+
+        const AdminApp = {
+            data() {
+                return {
+                    isLoading: true,
+                    showInitialSetup: false,
+                    isAuthenticated: false,
+                    admin: { email: '', password: '' },
+                    loginError: '',
+                    loginLoading: false,
+                    registerError: '',
+                    registerSuccess: '',
+                    registerLoading: false,
+                    users: [],
+                    payments: [],
+                    merchantIssues: [],
+                    penaltyReports: [],
+                    stats: { 
+                        totalUsers: 0, 
+                        totalPayments: 0, 
+                        pendingPayments: 0, 
+                        issueReports: 0
+                    },
+                    paymentFilter: 'all',
+                    issueFilter: 'all',
+                    penaltyFilter: 'all',
+                    selectedPayment: null,
+                    selectedIssue: null,
+                    selectedPenalty: null,
+                    paymentModal: null,
+                    issueModal: null,
+                    penaltyModal: null,
+                    issueStatusChart: null,
+                    issueTypeChart: null,
+                    recentActivities: [],
+                    ws: null,
+                    wsConnectionAttempts: 0
+                };
             },
-            company: 'premium_service',
-            createdAt: savedPayment.createdAt
-          }
-        }));
-      }
-    });
+            computed: {
+                filteredPayments() {
+                    if (this.paymentFilter === 'all') {
+                        return this.payments;
+                    }
+                    return this.payments.filter(p => p.status === this.paymentFilter);
+                },
+                filteredIssues() {
+                    if (this.issueFilter === 'all') {
+                        return this.merchantIssues;
+                    }
+                    return this.merchantIssues.filter(issue => 
+                        issue.status === this.issueFilter.replace('-', ' ')
+                    );
+                },
+                filteredPenalties() {
+                    if (this.penaltyFilter === 'all') {
+                        return this.penaltyReports;
+                    }
+                    return this.penaltyReports.filter(report => 
+                        report.status === this.penaltyFilter
+                    );
+                }
+            },
+            methods: {
+                async checkInitialSetup() {
+                    try {
+                        this.isLoading = true;
+                        const response = await axios.get(`${API_BASE}/admin/exists`);
+                        this.showInitialSetup = !response.data.exists;
+                    } catch (error) {
+                        console.error('Admin check error:', error);
+                        this.showInitialSetup = true;
+                    } finally {
+                        this.isLoading = false;
+                    }
+                },
+                validateEmail(email) {
+                    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+                },
+                validatePassword(password) {
+                    return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/.test(password);
+                },
+                async registerAdmin() {
+                    this.registerError = '';
+                    this.registerSuccess = '';
+                    this.registerLoading = true;
+                    
+                    if (!this.validateEmail(this.admin.email)) {
+                        this.registerError = 'Please enter a valid email address';
+                        this.registerLoading = false;
+                        return;
+                    }
+                    
+                    if (!this.validatePassword(this.admin.password)) {
+                        this.registerError = 'Password must be at least 12 characters with uppercase, lowercase, number and special character';
+                        this.registerLoading = false;
+                        return;
+                    }
 
-    res.status(201).json({
-      success: true,
-      message: 'Premium payment submitted for verification',
-      payment: savedPayment
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message || 'Premium payment processing failed'
-    });
-  }
-});
+                    try {
+                        const response = await axios.post(`${API_BASE}/admin/register`, {
+                            email: this.admin.email.trim(),
+                            password: this.admin.password
+                        });
 
-// ======================
-// Get Users (Admin)
-// ======================
-app.get('/admin/users', adminAuth, async (req, res) => {
-  try {
-    const users = await User.find().select('-password');
-    res.json({ success: true, users });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to fetch users' });
-  }
-});
+                        if (response.data.success) {
+                            this.registerSuccess = 'Admin account created! Redirecting...';
+                            setTimeout(() => {
+                                this.showInitialSetup = false;
+                                this.isAuthenticated = true;
+                                localStorage.setItem('adminToken', response.data.token);
+                                this.loadData();
+                            }, 1500);
+                        } else {
+                            this.registerError = response.data.message || 'Registration failed. Please try again.';
+                        }
+                    } catch (error) {
+                        console.error('Admin registration error:', error);
+                        if (error.response) {
+                            if (error.response.data && error.response.data.message) {
+                                this.registerError = error.response.data.message;
+                            } else {
+                                this.registerError = `Server error: ${error.response.status}`;
+                            }
+                        } else {
+                            this.registerError = 'Registration failed. Please try again.';
+                        }
+                    } finally {
+                        this.registerLoading = false;
+                    }
+                },
+                async login() {
+                    this.loginError = '';
+                    this.loginLoading = true;
+                    
+                    try {
+                        const response = await axios.post(`${API_BASE}/admin/login`, {
+                            email: this.admin.email,
+                            password: this.admin.password
+                        });
+                        
+                        if (response.data.success) {
+                            localStorage.setItem('adminToken', response.data.token);
+                            this.isAuthenticated = true;
+                            this.loadData();
+                        }
+                    } catch (error) {
+                        console.error('Admin login error:', error);
+                        if (error.response) {
+                            if (error.response.data && error.response.data.message) {
+                                this.loginError = error.response.data.message;
+                            } else {
+                                this.loginError = `Server error: ${error.response.status}`;
+                            }
+                        } else {
+                            this.loginError = 'Login failed. Please try again.';
+                        }
+                    } finally {
+                        this.loginLoading = false;
+                    }
+                },
+                async loadData() {
+                    try {
+                        this.isLoading = true;
+                        const token = localStorage.getItem('adminToken');
+                        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                        
+                        // Fetch all data
+                        const [usersRes, paymentsRes, issuesRes, penaltiesRes] = await Promise.all([
+                            axios.get(`${API_BASE}/admin/users`),
+                            axios.get(`${API_BASE}/admin/payments`),
+                            axios.get(`${API_BASE}/admin/merchant-issues`),
+                            axios.get(`${API_BASE}/admin/penalty-reports`)
+                        ]);
+                        
+                        this.users = usersRes.data.users || [];
+                        this.payments = paymentsRes.data.payments || [];
+                        this.merchantIssues = issuesRes.data.issues || [];
+                        this.penaltyReports = penaltiesRes.data.reports || [];
+                        
+                        // Calculate stats
+                        this.stats = {
+                            totalUsers: this.users.length,
+                            totalPayments: this.payments.length,
+                            pendingPayments: this.payments.filter(p => p.status === 'Pending').length,
+                            issueReports: this.merchantIssues.length
+                        };
+                        
+                        this.updateCharts();
+                        this.loadRecentActivities();
+                    } catch (error) {
+                        console.error('Data loading error:', error);
+                        if (error.response && error.response.status === 401) {
+                            this.logout();
+                        }
+                    } finally {
+                        this.isLoading = false;
+                    }
+                },
+                async refreshPayments() {
+                    try {
+                        this.isLoading = true;
+                        const response = await axios.get(`${API_BASE}/admin/payments`);
+                        this.payments = response.data.payments || [];
+                        this.stats.pendingPayments = this.payments.filter(p => p.status === 'Pending').length;
+                    } catch (error) {
+                        console.error('Refresh payments error:', error);
+                    } finally {
+                        this.isLoading = false;
+                    }
+                },
+                async refreshUsers() {
+                    try {
+                        this.isLoading = true;
+                        const response = await axios.get(`${API_BASE}/admin/users`);
+                        this.users = response.data.users || [];
+                        this.stats.totalUsers = this.users.length;
+                    } catch (error) {
+                        console.error('Refresh users error:', error);
+                    } finally {
+                        this.isLoading = false;
+                    }
+                },
+                async refreshIssues() {
+                    try {
+                        this.isLoading = true;
+                        const response = await axios.get(`${API_BASE}/admin/merchant-issues`);
+                        this.merchantIssues = response.data.issues || [];
+                        this.stats.issueReports = this.merchantIssues.length;
+                        this.updateCharts();
+                    } catch (error) {
+                        console.error('Refresh issues error:', error);
+                    } finally {
+                        this.isLoading = false;
+                    }
+                },
+                async refreshPenalties() {
+                    try {
+                        this.isLoading = true;
+                        const response = await axios.get(`${API_BASE}/admin/penalty-reports`);
+                        this.penaltyReports = response.data.reports || [];
+                    } catch (error) {
+                        console.error('Refresh penalties error:', error);
+                    } finally {
+                        this.isLoading = false;
+                    }
+                },
+                statusClass(status) {
+                    const classes = {
+                        'Pending': 'bg-warning',
+                        'Completed': 'bg-success',
+                        'Failed': 'bg-danger',
+                        'pending': 'bg-warning',
+                        'in progress': 'bg-info',
+                        'resolved': 'bg-success',
+                        'rejected': 'bg-danger'
+                    };
+                    return classes[status] || 'bg-secondary';
+                },
+                shortId(id) {
+                    return id ? `${id.substring(0, 6)}...` : '';
+                },
+                formatDate(dateString) {
+                    if (!dateString) return '';
+                    const date = new Date(dateString);
+                    return date.toLocaleDateString();
+                },
+                formatDateTime(dateString) {
+                    if (!dateString) return '';
+                    const date = new Date(dateString);
+                    return date.toLocaleString();
+                },
+                logout() {
+                    if (confirm('Are you sure you want to logout?')) {
+                        localStorage.removeItem('adminToken');
+                        this.isAuthenticated = false;
+                        this.admin = { email: '', password: '' };
+                    }
+                },
+                async updatePaymentStatus(payment) {
+                    try {
+                        this.isLoading = true;
+                        
+                        const newStatus = payment.status === 'Completed' ? 'Pending' : 'Completed';
+                        const response = await axios.post(
+                            `${API_BASE}/admin/update-status`,
+                            { trxid: payment.trxid, status: newStatus }
+                        );
 
-// ======================
-// User Validation Route
-// ======================
-app.get('/validate', authMiddleware, async (req, res) => {
-  res.json({ success: true });
-});
-// ======================
-// Request Logging
-// ======================
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.url}`);
-  next();
-});
+                        if (response.data.success) {
+                            const index = this.payments.findIndex(p => p._id === payment._id);
+                            if (index > -1) {
+                                this.payments.splice(index, 1, response.data.payment);
+                            }
+                            this.stats.pendingPayments = this.payments.filter(p => p.status === 'Pending').length;
+                        }
+                    } catch (error) {
+                        console.error('Update status error:', error);
+                    } finally {
+                        this.isLoading = false;
+                    }
+                },
+                showPaymentDetails(payment) {
+                    this.selectedPayment = payment;
+                    if (!this.paymentModal) {
+                        this.paymentModal = new bootstrap.Modal(
+                            document.getElementById('paymentModal')
+                        );
+                    }
+                    this.paymentModal.show();
+                },
+                viewUserDetails(userId) {
+                    const user = this.users.find(u => u._id === userId);
+                    if (user) {
+                        alert(`User Details:\nID: ${userId}\nPhone: ${user.phone}\nEmail: ${user.email}`);
+                    }
+                },
+                async updateIssueStatus(issue, status) {
+                    try {
+                        this.isLoading = true;
+                        const response = await axios.put(
+                            `${API_BASE}/merchant-issues/${issue._id}/status`,
+                            { status }
+                        );
 
-// ======================
-// Error Handling
-// ======================
-app.use((err, req, res, next) => {
-  console.error('Global Error:', {
-    path: req.path,
-    error: err.stack,
-    body: req.body
-  });
-  
-  res.status(err.status || 500).json({ 
-    success: false,
-    message: process.env.NODE_ENV === 'production' 
-      ? 'Internal server error' 
-      : err.message
-  });
-});
+                        if (response.data.success) {
+                            const index = this.merchantIssues.findIndex(i => i._id === issue._id);
+                            if (index > -1) {
+                                this.merchantIssues[index] = response.data.issue;
+                            }
+                            this.stats.issueReports = this.merchantIssues.length;
+                            this.updateCharts();
+                        }
+                    } catch (error) {
+                        console.error('Update issue status error:', error);
+                    } finally {
+                        this.isLoading = false;
+                    }
+                },
+                showIssueDetails(issue) {
+                    this.selectedIssue = {...issue};
+                    if (!this.issueModal) {
+                        this.issueModal = new bootstrap.Modal(
+                            document.getElementById('issueModal')
+                        );
+                    }
+                    this.issueModal.show();
+                },
+                async saveIssueChanges() {
+                    try {
+                        this.isLoading = true;
+                        const response = await axios.put(
+                            `${API_BASE}/merchant-issues/${this.selectedIssue._id}`,
+                            this.selectedIssue
+                        );
 
-// ======================
-// Server Initialization
-// ======================
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server & WS running on port ${PORT}`);
-  console.log(`🏭 Environment: ${process.env.NODE_ENV || 'development'}`);
-  
-  process.on('unhandledRejection', err => {
-    console.error('Unhandled Rejection:', err);
-    process.exit(1);
-  });
-});
-export default app;
+                        if (response.data.success) {
+                            const index = this.merchantIssues.findIndex(i => i._id === this.selectedIssue._id);
+                            if (index > -1) {
+                                this.merchantIssues[index] = response.data.issue;
+                            }
+                            this.issueModal.hide();
+                            this.updateCharts();
+                        }
+                    } catch (error) {
+                        console.error('Save issue changes error:', error);
+                    } finally {
+                        this.isLoading = false;
+                    }
+                },
+                showPenaltyDetails(penalty) {
+                    this.selectedPenalty = {...penalty};
+                    if (!this.penaltyModal) {
+                        this.penaltyModal = new bootstrap.Modal(
+                            document.getElementById('penaltyModal')
+                        );
+                    }
+                    this.penaltyModal.show();
+                },
+                async savePenaltyChanges() {
+                    try {
+                        this.isLoading = true;
+                        const response = await axios.put(
+                            `${API_BASE}/admin/penalty-reports/${this.selectedPenalty._id}`,
+                            this.selectedPenalty
+                        );
+
+                        if (response.data.success) {
+                            const index = this.penaltyReports.findIndex(r => r._id === this.selectedPenalty._id);
+                            if (index > -1) {
+                                this.penaltyReports[index] = response.data.report;
+                            }
+                            this.penaltyModal.hide();
+                        }
+                    } catch (error) {
+                        console.error('Save penalty changes error:', error);
+                    } finally {
+                        this.isLoading = false;
+                    }
+                },
+                async updatePenaltyStatus(penalty, status) {
+                    try {
+                        this.isLoading = true;
+                        const response = await axios.put(
+                            `${API_BASE}/admin/penalty-reports/${penalty._id}/status`,
+                            { status }
+                        );
+
+                        if (response.data.success) {
+                            const index = this.penaltyReports.findIndex(r => r._id === penalty._id);
+                            if (index > -1) {
+                                this.penaltyReports[index] = response.data.report;
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Update penalty status error:', error);
+                    } finally {
+                        this.isLoading = false;
+                    }
+                },
+                loadRecentActivities() {
+                    // This would normally come from an API
+                    this.recentActivities = [
+                        { id: 'act001', message: 'Updated payment status for TRX123456', timestamp: new Date() },
+                        { id: 'act002', message: 'Resolved issue with Shop C', timestamp: new Date(Date.now() - 3600000) },
+                        { id: 'act003', message: 'Added new admin note to issue ISS001', timestamp: new Date(Date.now() - 7200000) }
+                    ];
+                },
+                updateCharts() {
+                    // Issue status chart
+                    const statusCounts = {
+                        'pending': this.merchantIssues.filter(i => i.status === 'pending').length,
+                        'in progress': this.merchantIssues.filter(i => i.status === 'in progress').length,
+                        'resolved': this.merchantIssues.filter(i => i.status === 'resolved').length,
+                        'rejected': this.merchantIssues.filter(i => i.status === 'rejected').length
+                    };
+                    
+                    const statusCtx = document.getElementById('issueStatusChart');
+                    if (this.issueStatusChart) {
+                        this.issueStatusChart.destroy();
+                    }
+                    this.issueStatusChart = new Chart(statusCtx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Pending', 'In Progress', 'Resolved', 'Rejected'],
+                            datasets: [{
+                                data: Object.values(statusCounts),
+                                backgroundColor: [
+                                    'rgba(255, 193, 7, 0.8)',
+                                    'rgba(23, 162, 184, 0.8)',
+                                    'rgba(40, 167, 69, 0.8)',
+                                    'rgba(220, 53, 69, 0.8)'
+                                ],
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom'
+                                }
+                            }
+                        }
+                    });
+                    
+                    // Issue type chart
+                    const types = [...new Set(this.merchantIssues.map(i => i.issueType))];
+                    const typeCounts = types.map(type => 
+                        this.merchantIssues.filter(i => i.issueType === type).length
+                    );
+                    
+                    const typeCtx = document.getElementById('issueTypeChart');
+                    if (this.issueTypeChart) {
+                        this.issueTypeChart.destroy();
+                    }
+                    this.issueTypeChart = new Chart(typeCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: types,
+                            datasets: [{
+                                label: 'Number of Issues',
+                                data: typeCounts,
+                                backgroundColor: 'rgba(78, 115, 223, 0.8)',
+                                borderColor: 'rgba(78, 115, 223, 1)',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        precision: 0
+                                    }
+                                }
+                            }
+                        }
+                    });
+                },
+                initWebSocket() {
+                    if (this.ws) {
+                        this.ws.close();
+                        this.ws = null;
+                    }
+
+                    this.ws = new WebSocket('wss://oneai-wjox.onrender.com');
+                    this.wsConnectionAttempts++;
+
+                    this.ws.onopen = () => {
+                        console.log('WebSocket connected');
+                        const token = localStorage.getItem('adminToken');
+                        this.wsConnectionAttempts = 0;
+                        
+                        if (token) {
+                            this.ws.send(JSON.stringify({
+                                type: 'auth',
+                                token: token
+                            }));
+                        }
+                    };
+
+                    this.ws.onmessage = (event) => {
+                        try {
+                            const data = JSON.parse(event.data);
+                            
+                            if (data.type === 'payment-updated') {
+                                const index = this.payments.findIndex(p => p.trxid === data.payment.trxid);
+                                if (index > -1) {
+                                    this.payments.splice(index, 1, {
+                                        ...this.payments[index],
+                                        status: data.payment.status
+                                    });
+                                }
+                            } else if (data.type === 'new-payment') {
+                                this.payments.unshift(data.payment);
+                                this.stats.totalPayments = this.payments.length;
+                                this.stats.pendingPayments = this.payments.filter(p => p.status === 'Pending').length;
+                            } else if (data.type === 'new-issue') {
+                                this.merchantIssues.unshift(data.issue);
+                                this.stats.issueReports = this.merchantIssues.length;
+                                this.updateCharts();
+                            } else if (data.type === 'new-penalty') {
+                                this.penaltyReports.unshift(data.report);
+                            }
+                        } catch (error) {
+                            console.error('WebSocket message error:', error);
+                        }
+                    };
+
+                    this.ws.onerror = (error) => {
+                        console.error('WebSocket error:', error);
+                    };
+
+                    this.ws.onclose = (event) => {
+                        console.log('WebSocket disconnected:', event.reason);
+                        
+                        if (this.wsConnectionAttempts < 5) {
+                            console.log(`Reconnecting attempt ${this.wsConnectionAttempts}/5...`);
+                            setTimeout(() => this.initWebSocket(), 3000);
+                        } else {
+                            console.error('Max WebSocket reconnection attempts reached');
+                            this.wsConnectionAttempts = 0;
+                        }
+                    };
+                }
+            },
+            async mounted() {
+                // Initialize modals
+                this.paymentModal = new bootstrap.Modal(
+                    document.getElementById('paymentModal'), 
+                    { keyboard: false }
+                );
+                
+                this.issueModal = new bootstrap.Modal(
+                    document.getElementById('issueModal'), 
+                    { keyboard: false }
+                );
+                
+                this.penaltyModal = new bootstrap.Modal(
+                    document.getElementById('penaltyModal'), 
+                    { keyboard: false }
+                );
+                
+                // Initialize tabs
+                const triggerTabList = [].slice.call(document.querySelectorAll('#issueTabs button'));
+                triggerTabList.forEach(triggerEl => {
+                    const tabTrigger = new bootstrap.Tab(triggerEl);
+                    triggerEl.addEventListener('click', event => {
+                        event.preventDefault();
+                        tabTrigger.show();
+                    });
+                });
+                
+                // Check initial setup
+                await this.checkInitialSetup();
+                
+                // Check authentication if setup is done
+                const token = localStorage.getItem('adminToken');
+                if (token && !this.showInitialSetup) {
+                    try {
+                        // Validate token
+                        await axios.get(`${API_BASE}/admin/validate`, {
+                            headers: {
+                                Authorization: `Bearer ${token}`
+                            }
+                        });
+                        this.isAuthenticated = true;
+                        
+                        // Load data
+                        this.loadData();
+                        
+                        // Init WebSocket
+                        this.initWebSocket();
+                    } catch (error) {
+                        console.error('Authentication check failed:', error);
+                        localStorage.removeItem('adminToken');
+                    }
+                }
+            },
+            beforeUnmount() {
+                if (this.ws) {
+                    this.ws.close();
+                    this.ws = null;
+                }
+            }
+        };
+
+        const app = Vue.createApp(AdminApp);
+        app.mount('#admin-app');
+    </script>
+</body>
+</html>
