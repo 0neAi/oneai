@@ -314,6 +314,46 @@
       background: rgba(220, 53, 69, 0.2);
       color: #dc3545;
     }
+     /* Confirmation message animations */
+  @keyframes slideIn {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  
+  @keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+  
+  .confirmation-message {
+    animation: slideIn 0.5s ease forwards;
+    padding: 15px;
+    border-radius: 5px;
+    margin: 15px 0;
+    display: flex;
+    align-items: center;
+  }
+  
+  .fade-out {
+    animation: fadeOut 1s ease forwards;
+  }
+  
+  .confirmation-success {
+    background-color: rgba(40, 167, 69, 0.2);
+    border: 1px solid rgba(40, 167, 69, 0.3);
+    color: #28a745;
+  }
+  
+  .confirmation-error {
+    background-color: rgba(220, 53, 69, 0.2);
+    border: 1px solid rgba(220, 53, 69, 0.3);
+    color: #dc3545;
+  }
+  
+  .confirmation-icon {
+    margin-right: 10px;
+    font-size: 1.2rem;
+  }
   </style>
 </head>
 <body class="is-preload">
@@ -392,6 +432,8 @@
       <div id="reports-container"></div>
     </div>
   </section>
+    <!-- Add this container for confirmation messages -->
+<div id="confirmation-container" style="position: fixed; top: 20px; right: 20px; z-index: 9999;"></div>
     <!-- Penalty Support Section -->
     <section class="section">
       <h2 class="section-title"><i class="fas fa-exclamation-triangle"></i> পেনাল্টি সাপোর্ট</h2>
@@ -804,7 +846,133 @@
       }
     });
   </script>
-  
+  <script>
+  // Function to send WhatsApp message
+  function sendWhatsAppMessage(formName, formData) {
+    let message = `New ${formName} Submission:\n\n`;
+    
+    for (const [key, value] of Object.entries(formData)) {
+      if (key !== 'issueType' && key !== 'details') {
+        message += `${key.replace(/([A-Z])/g, ' $1').toUpperCase()}: ${value}\n`;
+      }
+    }
+    
+    if (formData.issueType) {
+      message += `\nISSUE TYPE: ${formData.issueType}`;
+    }
+    
+    if (formData.details) {
+      message += `\n\nDETAILS:\n${formData.details}`;
+    }
+    
+    const whatsappUrl = `https://wa.me/8801568760780?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  }
+
+  // Function to show confirmation message
+  function showConfirmation(message, isSuccess = true) {
+    const container = document.getElementById('confirmation-container');
+    const messageDiv = document.createElement('div');
+    
+    messageDiv.className = `confirmation-message ${isSuccess ? 'confirmation-success' : 'confirmation-error'}`;
+    messageDiv.innerHTML = `
+      <i class="fas ${isSuccess ? 'fa-check-circle' : 'fa-exclamation-circle'} confirmation-icon"></i>
+      ${message}
+    `;
+    
+    container.appendChild(messageDiv);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+      messageDiv.classList.add('fade-out');
+      setTimeout(() => messageDiv.remove(), 1000);
+    }, 5000);
+  }
+
+  // Enhanced issue report form submission
+  document.getElementById('issue-report-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    loadingOverlay.style.display = 'flex';
+    
+    const formData = {
+      merchantName: document.getElementById('issue-merchant-name').value,
+      merchantPhone: document.getElementById('issue-merchant-phone').value,
+      issueType: document.getElementById('issue-type').value,
+      details: document.getElementById('issue-details').value
+    };
+    
+    try {
+      const response = await fetch('https://oneai-wjox.onrender.com/api/merchant-issues', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+
+      if (!response.ok) throw new Error('সার্ভার থেকে রেসপন্স পেতে সমস্যা হয়েছে');
+      
+      // Send WhatsApp notification
+      sendWhatsAppMessage('Merchant Issue Report', formData);
+      
+      // Show success message
+      showConfirmation('আপনার ইস্যু রিপোর্ট সফলভাবে জমা হয়েছে!');
+      
+      // Clear form
+      document.getElementById('issue-report-form').reset();
+      
+      // Reload reports
+      const reports = await loadUserReports(formData.merchantPhone);
+      displayUserReports(reports);
+    } catch (error) {
+      showConfirmation(`রিপোর্ট জমা দিতে ব্যর্থ: ${error.message}`, false);
+    } finally {
+      loadingOverlay.style.display = 'none';
+    }
+  });
+
+  // Enhanced penalty report form submission
+  document.getElementById('penalty-report-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    loadingOverlay.style.display = 'flex';
+    
+    const formData = {
+      merchantName: document.getElementById('merchant-name').value,
+      customerName: document.getElementById('customer-name').value,
+      customerPhone: document.getElementById('customer-phone').value,
+      penaltyDate: document.getElementById('penalty-date').value,
+      amount1: document.getElementById('amount1').value,
+      amount2: document.getElementById('amount2').value,
+      penaltyDetails: document.getElementById('penalty-details').value
+    };
+    
+    try {
+      const response = await fetch('https://oneai-wjox.onrender.com/api/penalty-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+
+      if (!response.ok) throw new Error('সার্ভার থেকে রেসপন্স পেতে সমস্যা হয়েছে');
+      
+      // Send WhatsApp notification
+      sendWhatsAppMessage('Penalty Report', formData);
+      
+      // Show voucher
+      const voucherCode = generateVoucherCode();
+      document.getElementById('voucher-code').textContent = voucherCode;
+      document.getElementById('voucher-container').style.display = 'block';
+      
+      // Show success message
+      showConfirmation('আপনার পেনাল্টি রিপোর্ট সফলভাবে জমা হয়েছে!');
+      
+      // Clear form
+      document.getElementById('penalty-report-form').reset();
+    } catch (error) {
+      showConfirmation(`রিপোর্ট জমা দিতে ব্যর্থ: ${error.message}`, false);
+    } finally {
+      loadingOverlay.style.display = 'none';
+    }
+  });
+</script>
   <!-- Include scripts -->
   <script src="./assets/js/hackeranimation.js"></script>
   <script src="./assets/js/main.js"></script>
