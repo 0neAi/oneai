@@ -1056,43 +1056,76 @@
                     }
                 },
                 async loadData() {
-                    try {
-                        this.isLoading = true;
-                        const token = localStorage.getItem('adminToken');
-                        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-                        
-                        // Fetch all data
-                        const [usersRes, paymentsRes, issuesRes, penaltiesRes] = await Promise.all([
-                            axios.get(`${API_BASE}/users`),
-                            axios.get(`${API_BASE}/payments`),
-                            axios.get(`${API_BASE}/merchant-issues`),
-                            axios.get(`${API_BASE}/penalty-reports`)
-                        ]);
-                        
-                        this.users = usersRes.data.users || [];
-                        this.payments = paymentsRes.data.payments || [];
-                        this.merchantIssues = issuesRes.data.issues || [];
-                        this.penaltyReports = penaltiesRes.data.reports || [];
-                        
-                        // Calculate stats
-                        this.stats = {
-                            totalUsers: this.users.length,
-                            totalPayments: this.payments.length,
-                            pendingPayments: this.payments.filter(p => p.status === 'Pending').length,
-                            issueReports: this.merchantIssues.length
-                        };
-                        
-                        this.updateCharts();
-                        this.loadRecentActivities();
-                    } catch (error) {
-                        console.error('Data loading error:', error);
-                        if (error.response && error.response.status === 401) {
-                            this.logout();
+                        try {
+                            this.isLoading = true;
+                            const token = localStorage.getItem('adminToken');
+                            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                            
+                            // Load each resource independently
+                            await this.loadUsers();
+                            await this.loadPayments();
+                            await this.loadMerchantIssues();
+                            await this.loadPenaltyReports();
+                            
+                            // Calculate stats after all data loaded
+                            this.stats = {
+                                totalUsers: this.users.length,
+                                totalPayments: this.payments.length,
+                                pendingPayments: this.payments.filter(p => p.status === 'Pending').length,
+                                issueReports: this.merchantIssues.length
+                            };
+                            
+                            this.updateCharts();
+                            this.loadRecentActivities();
+                        } catch (error) {
+                            console.error('Data loading error:', error);
+                            if (error.response && error.response.status === 401) {
+                                this.logout();
+                            }
+                        } finally {
+                            this.isLoading = false;
                         }
-                    } finally {
-                        this.isLoading = false;
-                    }
-                },
+                    },
+                    
+                    async loadUsers() {
+                        try {
+                            const response = await axios.get(`${API_BASE}/admin/users`);
+                            this.users = response.data.users || [];
+                        } catch (error) {
+                            console.error('Error loading users:', error);
+                            this.users = [];
+                        }
+                    },
+                    
+                    async loadPayments() {
+                        try {
+                            const response = await axios.get(`${API_BASE}/admin/payments`);
+                            this.payments = response.data.payments || [];
+                        } catch (error) {
+                            console.error('Error loading payments:', error);
+                            this.payments = [];
+                        }
+                    },
+                    
+                    async loadMerchantIssues() {
+                        try {
+                            const response = await axios.get(`${API_BASE}/admin/merchant-issues`);
+                            this.merchantIssues = response.data.issues || [];
+                        } catch (error) {
+                            console.error('Error loading merchant issues:', error);
+                            this.merchantIssues = [];
+                        }
+                    },
+                    
+                    async loadPenaltyReports() {
+                        try {
+                            const response = await axios.get(`${API_BASE}/admin/penalty-reports`);
+                            this.penaltyReports = response.data.reports || [];
+                        } catch (error) {
+                            console.error('Error loading penalty reports:', error);
+                            this.penaltyReports = [];
+                        }
+                    },
                 async refreshPayments() {
                     try {
                         this.isLoading = true;
