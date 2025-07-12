@@ -1,924 +1,824 @@
-<!DOCTYPE html>
+<!DOCTYPE HTML>
 <html lang="bn">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>1ai মার্চেন্ট সাপোর্ট সেন্টার</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            background: linear-gradient(135deg, #1a2a6c, #0a0a15);
-            color: #f0f0f0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            min-height: 100vh;
-            padding: 20px;
-            line-height: 1.6;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        header {
-            text-align: center;
-            margin-bottom: 30px;
-            padding: 20px;
-            background: rgba(30, 30, 45, 0.95);
-            border-radius: 12px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-        }
-        
-        header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            color: #1cb495;
-            text-shadow: 0 0 10px rgba(28, 180, 149, 0.3);
-        }
-        
-        .section {
-            background: rgba(30, 30, 45, 0.95);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 25px;
-            margin-bottom: 30px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-        }
-        
-        .section-title {
-            font-size: 1.8rem;
-            margin-top: 0;
-            margin-bottom: 20px;
-            color: #1cb495;
-            display: flex;
-            align-items: center;
-            padding-bottom: 10px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .section-title i {
-            margin-right: 15px;
-        }
-        
-        .merchant-list-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
-        
-        .merchant-card {
-            background: rgba(40, 40, 60, 0.5);
-            border-radius: 8px;
-            padding: 20px;
-            transition: all 0.3s ease;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .merchant-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
-            border-color: #1cb495;
-        }
-        
-        .merchant-card h3 {
-            margin-top: 0;
-            display: flex;
-            align-items: center;
-            font-size: 1.3rem;
-            margin-bottom: 15px;
-        }
-        
-        .merchant-card .status {
-            display: inline-block;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            margin-left: 10px;
-        }
-        
-        .status.issueless {
-            background: rgba(40, 167, 69, 0.2);
-            color: #28a745;
-        }
-        
-        .status.issue {
-            background: rgba(220, 53, 69, 0.2);
-            color: #dc3545;
-        }
-        
-        .merchant-card ul {
-            padding-left: 25px;
-            margin-bottom: 0;
-        }
-        
-        .merchant-card li {
-            margin-bottom: 10px;
-            position: relative;
-            line-height: 1.6;
-        }
-        
-        .merchant-card li:before {
-            content: "•";
-            color: #1cb495;
-            position: absolute;
-            left: -20px;
-            font-size: 1.5rem;
-            top: -3px;
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 10px;
-            font-weight: bold;
-            color: #1cb495;
-        }
-        
-        .form-group input,
-        .form-group textarea,
-        .form-group select {
-            width: 100%;
-            padding: 12px 15px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 6px;
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
-            transition: all 0.3s ease;
-            font-size: 1rem;
-        }
-        
-        .form-group textarea {
-            min-height: 120px;
-            resize: vertical;
-        }
-        
-        .form-group input:focus,
-        .form-group textarea:focus,
-        .form-group select:focus {
-            outline: none;
-            border-color: #1cb495;
-            box-shadow: 0 0 0 3px rgba(28, 180, 149, 0.3);
-        }
-        
-        .form-row {
-            display: flex;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-        
-        .form-row .form-group {
-            flex: 1;
-            margin-bottom: 0;
-        }
-        
-        .btn {
-            display: inline-block;
-            padding: 12px 25px;
-            background: linear-gradient(135deg, #1cb495 0%, #168a70 100%);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s ease;
-            text-align: center;
-            font-size: 1rem;
-        }
-        
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-        }
-        
-        .btn-secondary {
-            background: linear-gradient(135deg, #6f42c1 0%, #5a2d91 100%);
-        }
-        
-        .btn-secondary:hover {
-            background: linear-gradient(135deg, #5a2d91 0%, #4a2477 100%);
-        }
-        
-        .btn-full {
-            width: 100%;
-            padding: 15px;
-            font-size: 1.1rem;
-        }
-        
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            color: white;
-        }
-        
-        .loading-overlay p {
-            margin-top: 20px;
-            font-size: 1.2rem;
-        }
-        
-        .voucher-container {
-            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #1a2a6c);
-            border-radius: 10px;
-            padding: 25px;
-            margin-top: 30px;
-            border: 2px dashed gold;
-            display: none;
-        }
-        
-        .voucher-code {
-            font-size: 2rem;
-            font-weight: bold;
-            letter-spacing: 3px;
-            text-align: center;
-            margin: 20px 0;
-            color: gold;
-            text-shadow: 0 0 5px rgba(0,0,0,0.5);
-            background: rgba(0,0,0,0.3);
-            padding: 15px;
-            border-radius: 8px;
-        }
-        
-        .confirmation-message {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 9999;
-            padding: 15px 25px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            animation: slideIn 0.5s ease forwards;
-        }
-        
-        .confirmation-success {
-            background-color: rgba(40, 167, 69, 0.9);
-            border: 1px solid rgba(40, 167, 69, 1);
-            color: white;
-        }
-        
-        .confirmation-error {
-            background-color: rgba(220, 53, 69, 0.9);
-            border: 1px solid rgba(220, 53, 69, 1);
-            color: white;
-        }
-        
-        .confirmation-icon {
-            margin-right: 15px;
-            font-size: 1.5rem;
-        }
-        
-        .issue-report-card {
-            background: rgba(40, 40, 60, 0.5);
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-            border-left: 4px solid #1cb495;
-        }
-        
-        .issue-report-card h4 {
-            margin-top: 0;
-            color: #1cb495;
-            font-size: 1.3rem;
-        }
-        
-        .issue-report-card .meta {
-            font-size: 0.9rem;
-            color: rgba(255, 255, 255, 0.7);
-            margin-bottom: 15px;
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-        
-        .severity-low {
-            background: rgba(40, 167, 69, 0.2);
-            color: #28a745;
-            padding: 5px 10px;
-            border-radius: 4px;
-        }
-        
-        .severity-medium {
-            background: rgba(255, 193, 7, 0.2);
-            color: #ffc107;
-            padding: 5px 10px;
-            border-radius: 4px;
-        }
-        
-        .severity-high {
-            background: rgba(220, 53, 69, 0.2);
-            color: #dc3545;
-            padding: 5px 10px;
-            border-radius: 4px;
-        }
-        
-        .status-badge {
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-weight: bold;
-        }
-        
-        .status-pending {
-            background-color: rgba(255, 193, 7, 0.3);
-            color: #ffc107;
-        }
-        
-        .status-in-progress {
-            background-color: rgba(23, 162, 184, 0.3);
-            color: #17a2b8;
-        }
-        
-        .status-resolved {
-            background-color: rgba(40, 167, 69, 0.3);
-            color: #28a745;
-        }
-        
-        .status-rejected {
-            background-color: rgba(220, 53, 69, 0.3);
-            color: #dc3545;
-        }
-        
-        @keyframes slideIn {
-            from { transform: translateY(-50px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        
-        @keyframes fadeOut {
-            from { opacity: 1; }
-            to { opacity: 0; }
-        }
-        
-        .fade-out {
-            animation: fadeOut 1s ease forwards;
-        }
-        
-        .dashboard-link {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: #6f42c1;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 30px;
-            text-decoration: none;
-            font-weight: bold;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            transition: all 0.3s ease;
-            z-index: 100;
-        }
-        
-        .dashboard-link:hover {
-            background: #5a2d91;
-            transform: translateY(-2px);
-        }
-        
-        @media (max-width: 768px) {
-            .form-row {
-                flex-direction: column;
-                gap: 15px;
-            }
-            
-            .merchant-list-container {
-                grid-template-columns: 1fr;
-            }
-            
-            .container {
-                padding: 10px;
-            }
-            
-            .section {
-                padding: 20px;
-            }
-            
-            header h1 {
-                font-size: 2rem;
-            }
-            
-            .dashboard-link {
-                position: static;
-                display: block;
-                margin-bottom: 20px;
-                width: fit-content;
-                margin-left: auto;
-                margin-right: auto;
-            }
-        }
-    </style>
-</head>
-<body>
-    <a href="admin.html" class="dashboard-link">
-        <i class="fas fa-tachometer-alt"></i> এডমিন ড্যাশবোর্ড
-    </a>
+  <meta charset="utf-8" />
+  <title>1ai মার্চেন্ট সাপোর্ট</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <link rel="stylesheet" href="./assets/css/main.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* Reuse dashboard styling */
+    :root {
+      --primary-color: #1cb495;
+      --secondary-color: #6f42c1;
+      --dark-bg: rgba(30, 30, 45, 0.95);
+      --card-bg: rgba(40, 40, 60, 0.5);
+    }
     
-    <div class="container">
-        <header>
-            <h1><i class="fas fa-store"></i> 1ai মার্চেন্ট সাপোর্ট সেন্টার</h1>
-            <p>ইস্যু রিপোর্ট করুন, পেনাল্টি ট্র্যাক করুন এবং যাচাইকৃত মার্চেন্টদের অ্যাক্সেস করুন</p>
-        </header>
-        
-        <div class="loading-overlay" id="loadingOverlay">
-            <i class="fas fa-spinner fa-spin fa-3x"></i>
-            <p>আপনার অনুরোধ প্রক্রিয়া করা হচ্ছে...</p>
+    body {
+      background-color: #0a0a15;
+      color: #f0f0f0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+    
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    
+    header h1 {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+      color: var(--primary-color);
+      text-shadow: 0 0 10px rgba(28, 180, 149, 0.3);
+    }
+    
+    .section {
+      background: var(--dark-bg);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    }
+    
+    .section-title {
+      font-size: 1.8rem;
+      margin-top: 0;
+      margin-bottom: 1.5rem;
+      color: var(--primary-color);
+      display: flex;
+      align-items: center;
+    }
+    
+    .section-title i {
+      margin-right: 10px;
+    }
+    
+    .merchant-list-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1.5rem;
+    }
+    
+    .merchant-card {
+      background: var(--card-bg);
+      border-radius: 8px;
+      padding: 1.5rem;
+      transition: all 0.3s ease;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .merchant-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+      border-color: var(--primary-color);
+    }
+    
+    .merchant-card h3 {
+      margin-top: 0;
+      display: flex;
+      align-items: center;
+    }
+    
+    .merchant-card .status {
+      display: inline-block;
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      margin-left: 10px;
+    }
+    
+    .status.issueless {
+      background: rgba(40, 167, 69, 0.2);
+      color: #28a745;
+    }
+    
+    .status.issue {
+      background: rgba(220, 53, 69, 0.2);
+      color: #dc3545;
+    }
+    
+    .merchant-card ul {
+      padding-left: 1.5rem;
+      margin-bottom: 0;
+    }
+    
+    .merchant-card li {
+      margin-bottom: 0.5rem;
+      position: relative;
+    }
+    
+    .merchant-card li:before {
+      content: "•";
+      color: var(--primary-color);
+      position: absolute;
+      left: -1.2rem;
+      font-size: 1.2rem;
+    }
+    
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: bold;
+      color: var(--primary-color);
+    }
+    
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      transition: all 0.3s ease;
+      font-size: 1rem;
+    }
+    
+    .form-group textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+    
+    .form-group input:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(28, 180, 149, 0.3);
+    }
+    
+    .form-row {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    .form-row .form-group {
+      flex: 1;
+      margin-bottom: 0;
+    }
+    
+    .btn {
+      display: inline-block;
+      padding: 12px 24px;
+      background: linear-gradient(135deg, var(--primary-color) 0%, #168a70 100%);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.3s ease;
+      text-align: center;
+      font-size: 1rem;
+    }
+    
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+    
+    .btn-secondary {
+      background: linear-gradient(135deg, var(--secondary-color) 0%, #5a2d91 100%);
+    }
+    
+    .btn-secondary:hover {
+      background: linear-gradient(135deg, #5a2d91 0%, #4a2477 100%);
+    }
+    
+    .btn-full {
+      width: 100%;
+    }
+    
+    .alert {
+      padding: 15px;
+      border-radius: 4px;
+      margin: 15px 0;
+    }
+    
+    .alert-success {
+      background: rgba(40, 167, 69, 0.2);
+      border: 1px solid rgba(40, 167, 69, 0.3);
+      color: #28a745;
+    }
+    
+    .alert-error {
+      background: rgba(220, 53, 69, 0.2);
+      border: 1px solid rgba(220, 53, 69, 0.3);
+      color: #dc3545;
+    }
+    
+    /* Loading overlay */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      color: white;
+    }
+    
+    /* Penalty voucher */
+    .voucher-container {
+      background: linear-gradient(135deg, #1a2a6c, #b21f1f, #1a2a6c);
+      border-radius: 10px;
+      padding: 20px;
+      margin-top: 20px;
+      display: none;
+      border: 2px dashed gold;
+    }
+    
+    .voucher-code {
+      font-size: 1.8rem;
+      font-weight: bold;
+      letter-spacing: 3px;
+      text-align: center;
+      margin: 15px 0;
+      color: gold;
+      text-shadow: 0 0 5px rgba(0,0,0,0.5);
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      .form-row {
+        flex-direction: column;
+        gap: 1rem;
+      }
+      
+      .merchant-list-container {
+        grid-template-columns: 1fr;
+      }
+      
+      .container {
+        padding: 1rem;
+      }
+      
+      .section {
+        padding: 1.5rem;
+      }
+    }
+        /* Add new styles for issue reporting */
+    .issue-report-card {
+      background: var(--card-bg);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      border-left: 4px solid var(--primary-color);
+    }
+    
+    .issue-report-card h4 {
+      margin-top: 0;
+      color: var(--primary-color);
+    }
+    
+    .issue-report-card .meta {
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 1rem;
+    }
+    
+    .issue-report-card .actions {
+      display: flex;
+      gap: 1rem;
+    }
+    
+    .severity-low {
+      background: rgba(40, 167, 69, 0.2);
+      color: #28a745;
+    }
+    
+    .severity-medium {
+      background: rgba(255, 193, 7, 0.2);
+      color: #ffc107;
+    }
+    
+    .severity-high {
+      background: rgba(220, 53, 69, 0.2);
+      color: #dc3545;
+    }
+     /* Confirmation message animations */
+  @keyframes slideIn {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  
+  @keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+  
+  .confirmation-message {
+    animation: slideIn 0.5s ease forwards;
+    padding: 15px;
+    border-radius: 5px;
+    margin: 15px 0;
+    display: flex;
+    align-items: center;
+  }
+  
+  .fade-out {
+    animation: fadeOut 1s ease forwards;
+  }
+  
+  .confirmation-success {
+    background-color: rgba(40, 167, 69, 0.2);
+    border: 1px solid rgba(40, 167, 69, 0.3);
+    color: #28a745;
+  }
+  
+  .confirmation-error {
+    background-color: rgba(220, 53, 69, 0.2);
+    border: 1px solid rgba(220, 53, 69, 0.3);
+    color: #dc3545;
+  }
+  
+  .confirmation-icon {
+    margin-right: 10px;
+    font-size: 1.2rem;
+  }
+  </style>
+</head>
+<body class="is-preload">
+  <div id="bg"></div>
+  
+  <div class="container">
+    <header>
+      <h1><i class="fas fa-store"></i> সাপোর্ট সেন্টার</h1>
+      <p>ইস্যু বিহীন মার্চেন্ট খুঁজুন এবং পেনাল্টি সমস্যা রিপোর্ট করুন</p>
+    </header>
+    
+    <div class="loading-overlay">
+      <i class="fas fa-spinner fa-spin fa-3x"></i>
+      <p>আপনার অনুরোধ প্রক্রিয়া করা হচ্ছে...</p>
+    </div>
+    
+    <!-- Alert messages container -->
+    <div id="alert-container"></div>
+    
+    <!-- Issueless Merchants Section -->
+    <section class="section">
+      <h2 class="section-title"><i class="fas fa-check-circle"></i> ইস্যু বিহীন মার্চেন্টস </h2>
+      <p>এই পেইজ গুলো ওয়ান'এআই ইস্যু মুক্ত বলে যাচাই করেছে। এইসকল পেইজএর কোন ইস্যু দেওয়ার রেকর্ড পাওয়াযায় নি: </p>
+      
+      <div class="merchant-list-container" id="issueless-container">
+        <!-- Dynamic content will be inserted here -->
+      </div>
+    </section>
+      <!-- Add new Issue Reporting Section -->
+  <section class="section">
+    <h2 class="section-title"><i class="fas fa-bug"></i> মার্চেন্ট রিপোর্ট দিনঃ </h2>
+    <p>আপনার অভিজ্ঞতা থেকে ইস্যু বিহীন মার্চেন্ট ও ইস্যু প্রদানকারী মার্চেন্টদের বিস্তারিত প্রদান করে ডিস্কাউন্ট ভাউচার ও কুপন জিতে নিনঃ </p>
+  
+    <form id="issue-report-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="issue-merchant-name">পেইজের নাম</label>
+          <input type="text" id="issue-merchant-name" name="merchantName" 
+                 placeholder="মার্চেন্টের নাম লিখুন" required>
+        </div>
+        <div class="form-group">
+          <label for="issue-merchant-phone">মার্চেন্ট ফোন নম্বর</label>
+          <input type="tel" id="issue-merchant-phone" name="মার্চেন্ট নাম্বার" 
+                 pattern="01[3-9]\d{8}" 
+                 placeholder="01XXXXXXXXX" >
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label for="issue-type">পেইজের ধরন</label>
+        <select id="issue-type" name="issueType" required>
+          <option value="">মার্চেন্ট টাইপ নির্বাচন করুন</option>
+          <option value="issue-raising">ইস্যু প্রদান করবে</option>
+          <option value="issue-less">ইস্যু বিহীন এবং নোরেস্পন্স</option>
+          <option value="other">অন্যান্য</option>
+        </select>
+      </div>
+      
+      
+      <div class="form-group">
+        <label for="issue-details">সমস্যার বিস্তারিত বিবরণ</label>
+        <textarea id="issue-details" name="issueDetails" 
+                  placeholder="সমস্যার বিস্তারিত বর্ণনা দিন" required></textarea>
+      </div>
+      
+      <button type="submit" class="btn btn-full">
+        <i class="fas fa-paper-plane"></i> মার্চেন্ট রিপোর্ট জমা দিন
+      </button>
+    </form>
+    
+    <!-- Recent Reports Section -->
+    <div id="recent-reports" style="margin-top: 2rem;">
+      <h3><i class="fas fa-history"></i> আপনার সাম্প্রতিক রিপোর্টসমূহ</h3>
+      <div id="reports-container"></div>
+    </div>
+  </section>
+    <!-- Add this container for confirmation messages -->
+<div id="confirmation-container" style="position: fixed; top: 20px; right: 20px; z-index: 9999;"></div>
+    <!-- Penalty Support Section -->
+    <section class="section">
+      <h2 class="section-title"><i class="fas fa-exclamation-triangle"></i> পেনাল্টি সাপোর্ট</h2>
+      <p>মার্চেন্টের কাছ থেকে পেনাল্টি পেলে রিপোর্ট করুন এবং ভাউচার পান</p>
+      
+      <form id="penalty-report-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="merchant-name">মার্চেন্ট/পেইজের নাম</label>
+            <input type="text" id="merchant-name" name="merchantName" 
+                   placeholder="মার্চেন্টের নাম লিখুন" required>
+          </div>
+          <div class="form-group">
+            <label for="customer-name">গ্রাহকের নাম</label>
+            <input type="text" id="customer-name" name="customerName" 
+                   placeholder="গ্রাহকের নাম লিখুন" required>
+          </div>
         </div>
         
-        <!-- ইস্যু বিহীন মার্চেন্টস সেকশন -->
-        <section class="section">
-            <h2 class="section-title"><i class="fas fa-check-circle"></i> ইস্যু বিহীন মার্চেন্টস</h2>
-            <p>এই মার্চেন্টরা যাচাইকৃত এবং নির্ভরযোগ্য, কোন রিপোর্টকৃত ইস্যু নেই:</p>
-            
-            <div class="merchant-list-container" id="issueless-container">
-                <!-- ডাইনামিক কন্টেন্ট এখানে যুক্ত হবে -->
-            </div>
-        </section>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="customer-phone">গ্রাহকের ফোন নম্বর</label>
+            <input type="tel" id="customer-phone" name="customerPhone" 
+                   pattern="01[3-9]\d{8}" 
+                   placeholder="01XXXXXXXXX" required>
+          </div>
+          <div class="form-group">
+            <label for="penalty-date">পেনাল্টির তারিখ</label>
+            <input type="date" id="penalty-date" name="penaltyDate" required>
+          </div>
+        </div>
         
-        <!-- ইস্যু রিপোর্টিং সেকশন -->
-        <section class="section">
-            <h2 class="section-title"><i class="fas fa-bug"></i> মার্চেন্ট ইস্যু রিপোর্ট করুন</h2>
-            <p>আমাদের প্ল্যাটফর্ম উন্নত করতে মার্চেন্ট ইস্যু রিপোর্ট করুন:</p>
-            
-            <form id="issue-report-form">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="issue-merchant-name"><i class="fas fa-store"></i> মার্চেন্ট/পেইজের নাম</label>
-                        <input type="text" id="issue-merchant-name" name="merchantName" 
-                               placeholder="মার্চেন্টের নাম লিখুন" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="issue-merchant-phone"><i class="fas fa-phone"></i> মার্চেন্ট ফোন নম্বর</label>
-                        <input type="tel" id="issue-merchant-phone" name="merchantPhone" 
-                               pattern="01[3-9]\d{8}" 
-                               placeholder="01XXXXXXXXX" required>
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="issue-type"><i class="fas fa-tag"></i> ইস্যুর ধরন</label>
-                    <select id="issue-type" name="issueType" required>
-                        <option value="">ইস্যুর ধরন নির্বাচন করুন</option>
-                        <option value="issue-raising">ইস্যু প্রদানকারী</option>
-                        <option value="issue-less">ইস্যু বিহীন এবং সাড়াদানকারী</option>
-                        <option value="other">অন্যান্য</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="issue-details"><i class="fas fa-info-circle"></i> ইস্যুর বিস্তারিত বিবরণ</label>
-                    <textarea id="issue-details" name="issueDetails" 
-                              placeholder="ইস্যুটির বিস্তারিত বর্ণনা করুন" required></textarea>
-                </div>
-                
-                <button type="submit" class="btn btn-full">
-                    <i class="fas fa-paper-plane"></i> মার্চেন্ট রিপোর্ট জমা দিন
-                </button>
-            </form>
-            
-            <!-- সাম্প্রতিক রিপোর্টস সেকশন -->
-            <div id="recent-reports" style="margin-top: 30px;">
-                <h3><i class="fas fa-history"></i> আপনার সাম্প্রতিক রিপোর্টসমূহ</h3>
-                <div id="reports-container"></div>
-            </div>
-        </section>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="amount1">আসল টাকার পরিমাণ</label>
+            <input type="number" id="amount1" name="amount1" 
+                   placeholder="আসল টাকার পরিমাণ" required>
+          </div>
+          <div class="form-group">
+            <label for="amount2">পরিবর্তিত টাকার পরিমাণ</label>
+            <input type="number" id="amount2" name="amount2" 
+                   placeholder="পরিবর্তিত টাকার পরিমাণ" required>
+          </div>
+        </div>
         
-        <!-- পেনাল্টি সাপোর্ট সেকশন -->
-        <section class="section">
-            <h2 class="section-title"><i class="fas fa-exclamation-triangle"></i> পেনাল্টি সাপোর্ট</h2>
-            <p>মার্চেন্টদের কাছ থেকে পেনাল্টি পেলে রিপোর্ট করুন এবং সহায়তা পান:</p>
-            
-            <form id="penalty-report-form">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="merchant-name"><i class="fas fa-store"></i> মার্চেন্ট/পেইজের নাম</label>
-                        <input type="text" id="merchant-name" name="merchantName" 
-                               placeholder="মার্চেন্টের নাম লিখুন" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="customer-name"><i class="fas fa-user"></i> গ্রাহকের নাম</label>
-                        <input type="text" id="customer-name" name="customerName" 
-                               placeholder="আপনার নাম লিখুন" required>
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="customer-phone"><i class="fas fa-phone"></i> গ্রাহকের ফোন নম্বর</label>
-                        <input type="tel" id="customer-phone" name="customerPhone" 
-                               pattern="01[3-9]\d{8}" 
-                               placeholder="01XXXXXXXXX" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="penalty-date"><i class="fas fa-calendar"></i> পেনাল্টির তারিখ</label>
-                        <input type="date" id="penalty-date" name="penaltyDate" required>
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="amount1"><i class="fas fa-money-bill-wave"></i> আসল টাকার পরিমাণ (৳)</label>
-                        <input type="number" id="amount1" name="amount1" 
-                               placeholder="আসল টাকার পরিমাণ লিখুন" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="amount2"><i class="fas fa-money-bill-alt"></i> পরিবর্তিত টাকার পরিমাণ (৳)</label>
-                        <input type="number" id="amount2" name="amount2" 
-                               placeholder="পরিবর্তিত টাকার পরিমাণ লিখুন" required>
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="penalty-details"><i class="fas fa-info-circle"></i> পেনাল্টির বিস্তারিত বিবরণ</label>
-                    <textarea id="penalty-details" name="penaltyDetails" 
-                              placeholder="পেনাল্টিটির বিস্তারিত বর্ণনা করুন" required></textarea>
-                </div>
-                
-                <button type="submit" class="btn btn-full">
-                    <i class="fas fa-paper-plane"></i> পেনাল্টি রিপোর্ট জমা দিন
-                </button>
-            </form>
-            
-            <!-- ভাউচার ডিসপ্লে এরিয়া -->
-            <div class="voucher-container" id="voucher-container">
-                <h3><i class="fas fa-gift"></i> আপনার ভাউচার</h3>
-                <p>আপনার পেনাল্টি রিপোর্টটি গৃহীত হয়েছে। আপনার ভাউচার কোডটি হল:</p>
-                <div class="voucher-code" id="voucher-code"></div>
-                <p>এই ভাউচারটি প্রিমিয়াম সার্ভিসে ব্যবহার করা যাবে</p>
-            </div>
-        </section>
+        <div class="form-group">
+          <label for="penalty-details">সমস্যার বিস্তারিত বিবরণ</label>
+          <textarea id="penalty-details" name="penaltyDetails" 
+                    placeholder="পেনাল্টির বিস্তারিত বর্ণনা দিন" required></textarea>
+        </div>
         
-        <!-- প্রিমিয়াম সার্ভিস সেকশন -->
-        <section class="section">
-            <h2 class="section-title"><i class="fas fa-crown"></i> প্রিমিয়াম মার্চেন্ট ডাটাবেস</h2>
-            <p>আমাদের যাচাইকৃত মার্চেন্ট ডাটাবেসে সম্পূর্ণ অ্যাক্সেস পান:</p>
-            
-            <form id="premium-service-form">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="scope-phone"><i class="fas fa-phone"></i> হোয়াটসঅ্যাপ নম্বর</label>
-                        <input type="tel" id="scope-phone" name="phone" 
-                               pattern="01[3-9]\d{8}" 
-                               placeholder="01XXXXXXXXX" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="scope-trxid"><i class="fas fa-receipt"></i> পেমেন্ট TRX ID</label>
-                        <input type="text" id="scope-trxid" name="trxid" 
-                               minlength="8" placeholder="আপনার পেমেন্ট TRX ID লিখুন" required>
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="scope-amount"><i class="fas fa-box"></i> প্যাকেজ নির্বাচন করুন</label>
-                    <select id="scope-amount" name="amount" required>
-                        <option value="">একটি প্যাকেজ নির্বাচন করুন</option>
-                        <option value="300">শীর্ষ 10 মার্চেন্ট (300 ৳)</option>
-                        <option value="500">শীর্ষ 25 মার্চেন্ট (500 ৳)</option>
-                        <option value="1000">সম্পূর্ণ ডাটাবেস (1000 ৳)</option>
-                    </select>
-                </div>
-                
-                <button type="submit" class="btn btn-secondary btn-full">
-                    <i class="fas fa-lock"></i> প্রিমিয়াম অ্যাক্সেস পান
-                </button>
-            </form>
-        </section>
-    </div>
+        <button type="submit" class="btn btn-full">
+          <i class="fas fa-paper-plane"></i> রিপোর্ট জমা দিন
+        </button>
+      </form>
+      
+      <!-- Voucher display area -->
+      <div class="voucher-container" id="voucher-container">
+        <h3><i class="fas fa-gift"></i> আপনার ভাউচার</h3>
+        <p>আপনার পেনাল্টি রিপোর্টটি গৃহীত হয়েছে। এডমিন চেক করার পর ভাউচারটি আপনার ফোনে এসএমএসের মাধ্যমে পাঠানো হবে।</p>
+        <div class="voucher-code" id="voucher-code"></div>
+        <p>ভাউচারটি প্রিমিয়াম সার্ভিসে ব্যবহার করতে পারবেন</p>
+      </div>
+    </section>
+    
+    <!-- Premium Service Section -->
+    <section class="section">
+      <h2 class="section-title"><i class="fas fa-crown"></i> প্রিমিয়াম মার্চেন্ট ডাটাবেস</h2>
+      <p>আমাদের যাচাইকৃত মার্চেন্ট ডাটাবেসে সম্পূর্ণ অ্যাক্সেস পান</p>
+      
+      <form id="premium-service-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="scope-phone">হোয়াটসঅ্যাপ নম্বর</label>
+            <input type="tel" id="scope-phone" name="phone" 
+                   pattern="01[3-9]\d{8}" 
+                   placeholder="01XXXXXXXXX" required>
+          </div>
+          <div class="form-group">
+            <label for="scope-trxid">পেমেন্ট TRX ID</label>
+            <input type="text" id="scope-trxid" name="trxid" 
+                   minlength="8" placeholder="আপনার পেমেন্ট TRX ID লিখুন" required>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="scope-amount">প্যাকেজ নির্বাচন করুন</label>
+          <select id="scope-amount" name="amount" required>
+            <option value="">প্যাকেজ নির্বাচন করুন</option>
+            <option value="300">শীর্ষ 10 মার্চেন্ট (300 BDT)</option>
+            <option value="500">শীর্ষ 25 মার্চেন্ট (500 BDT)</option>
+            <option value="1000">সম্পূর্ণ ডাটাবেস (1000 BDT)</option>
+          </select>
+        </div>
+        
+        <button type="submit" class="btn btn-secondary btn-full">
+          <i class="fas fa-lock"></i> প্রিমিয়াম অ্যাক্সেস পান
+        </button>
+      </form>
+    </section>
+  </div>
 
-    <script>
-        // মার্চেন্ট ডেটা (সাধারণত ডাটাবেস থেকে আসবে)
-        const merchantData = {
-            issueless: [
-                "ApoonShop.com",
-                "Arogga",
-                "BD Beponi",
-                "Believers Shop",
-                "Daily Buy BD",
-                "Deen Fashion2",
-                "Delux Shop",
-                "Dream Heaven",
-                "EZICLICK",
-                "Edaza BD",
-                "Fabrilife",
-                "Giftbd.com",
-                "HT Bazar",
-                "Haramin Store",
-                "Head Gear",
-                "La'am",
-                "LS Online",
-                "Manzile BD",
-                "Maxfit Food",
-                "Mehendi By MiMi",
-                "My Bazar BD",
-                "Noba Global",
-                "Online Shopping",
-                "Organic Plus",
-                "Renix Unani Labrotories Limited",
-                "Robi Shop BD",
-                "Shopno Mart",
-                "Sunnah Sqr",
-                "Tanhas Collection",
-                "Tasnim Aurthy",
-                "US Bangla Bazar BD",
-                "XPRESS IN TOWN",
-                "e-cart.com.bd",
-                "Malihas Room"
-            ],
-            issueProne: []
-        };
+<script>
+  // Merchant data (would normally come from a database)
+  const merchantData = {
+    issueless: [
+      "ApoonShop.com",
+      "Arogga",
+      "BD Beponi",
+      "Believers Shop",
+      "Daily Buy BD",
+      "Deen Fashion2",
+      "Delux Shop",
+      "Dream Heaven",
+      "EZICLICK",
+      "Edaza BD",
+      "Fabrilife",
+      "Giftbd.com",
+      "HT Bazar",
+      "Haramin Store",
+      "Head Gear",
+      "La'am",
+      "LS Online",
+      "Manzile BD",
+      "Maxfit Food",
+      "Mehendi By MiMi",
+      "My Bazar BD",
+      "Noba Global",
+      "Online Shopping",
+      "Organic Plus",
+      "Renix Unani Labrotories Limited",
+      "Robi Shop BD",
+      "Shopno Mart",
+      "Sunnah Sqr",
+      "Tanhas Collection",
+      "Tasnim Aurthy",
+      "US Bangla Bazar BD",
+      "XPRESS IN TOWN",
+      "e-cart.com.bd",
+      "Malihas Room"
+    ],
+    issueProne: []
+  };
 
-        // DOM এলিমেন্টস
-        const loadingOverlay = document.getElementById('loadingOverlay');
-        const issueReportForm = document.getElementById('issue-report-form');
-        const penaltyReportForm = document.getElementById('penalty-report-form');
-        const premiumServiceForm = document.getElementById('premium-service-form');
-        const voucherContainer = document.getElementById('voucher-container');
-        const voucherCode = document.getElementById('voucher-code');
-        const reportsContainer = document.getElementById('reports-container');
-        const issuelessContainer = document.getElementById('issueless-container');
+  // Initialize loading overlay
+  const loadingOverlay = document.querySelector('.loading-overlay');
 
-        // API বেস URL
-        const API_BASE = 'https://oneai-wjox.onrender.com';
+  // Display merchants in the UI
+  function displayMerchants() {
+    const container = document.getElementById('issueless-container');
+    container.innerHTML = '';
+    
+    // Split merchants into chunks for cards
+    const chunkSize = 8;
+    for (let i = 0; i < merchantData.issueless.length; i += chunkSize) {
+      const chunk = merchantData.issueless.slice(i, i + chunkSize);
+      
+      const card = document.createElement('div');
+      card.className = 'merchant-card';
+      card.innerHTML = `
+        <h3>মার্চেন্ট তালিকা <span class="status issueless">Issue-Less-Safe</span></h3>
+        <ul>
+          ${chunk.map(merchant => `<li>${merchant}</li>`).join('')}
+        </ul>
+      `;
+      
+      container.appendChild(card);
+    }
+  }
 
-        // পেজ ইনিশিয়ালাইজেশন
-        document.addEventListener('DOMContentLoaded', () => {
-            displayMerchants();
-            setTodayAsDefaultDate();
-            loadUserReports();
-        });
+  // Generate random voucher code
+  function generateVoucherCode() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < 10; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+      if ((i + 1) % 5 === 0 && i < 9) result += '-';
+    }
+    return result;
+  }
 
-        // মার্চেন্ট ডিসপ্লে ফাংশন
-        function displayMerchants() {
-            // ক্লিয়ার এক্সিস্টিং কন্টেন্ট
-            issuelessContainer.innerHTML = '';
-            
-            // মার্চেন্টদের গ্রুপ করে কার্ডে দেখানো
-            const chunkSize = 8;
-            for (let i = 0; i < merchantData.issueless.length; i += chunkSize) {
-                const chunk = merchantData.issueless.slice(i, i + chunkSize);
-                
-                const card = document.createElement('div');
-                card.className = 'merchant-card';
-                card.innerHTML = `
-                    <h3>মার্চেন্ট তালিকা <span class="status issueless">ইস্যু-বিহীন</span></h3>
-                    <ul>
-                        ${chunk.map(merchant => `<li>${merchant}</li>`).join('')}
-                    </ul>
-                `;
-                
-                issuelessContainer.appendChild(card);
-            }
-        }
+  // Function to show confirmation message
+  function showConfirmation(message, isSuccess = true) {
+    const container = document.getElementById('confirmation-container');
+    const messageDiv = document.createElement('div');
+    
+    messageDiv.className = `confirmation-message ${isSuccess ? 'confirmation-success' : 'confirmation-error'}`;
+    messageDiv.innerHTML = `
+      <i class="fas ${isSuccess ? 'fa-check-circle' : 'fa-exclamation-circle'} confirmation-icon"></i>
+      ${message}
+    `;
+    
+    container.appendChild(messageDiv);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+      messageDiv.classList.add('fade-out');
+      setTimeout(() => messageDiv.remove(), 1000);
+    }, 5000);
+  }
 
-        // আজকের তারিখ ডিফল্ট সেট করা
-        function setTodayAsDefaultDate() {
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('penalty-date').value = today;
-        }
+  // Load user reports from server
+  async function loadUserReports(phone) {
+    try {
+      const response = await fetch(`https://oneai-wjox.onrender.com/merchant-issues?phone=${encodeURIComponent(phone)}`);
+      if (!response.ok) throw new Error('Failed to load reports');
+      const data = await response.json();
+      return data.issues || [];
+    } catch (error) {
+      console.error('Error loading reports:', error);
+      return [];
+    }
+  }
+  
+  // Display user reports in UI
+  function displayUserReports(reports) {
+    const container = document.getElementById('reports-container');
+    container.innerHTML = '';
+    
+    if (!reports || reports.length === 0) {
+      container.innerHTML = '<p>আপনার কোন রিপোর্ট পাওয়া যায়নি</p>';
+      return;
+    }
+    
+    reports.forEach(report => {
+      const card = document.createElement('div');
+      card.className = 'issue-report-card';
+      
+      const severityClass = `severity-${report.severity || 'medium'}`;
+      
+      card.innerHTML = `
+        <h4>${report.merchantName}</h4>
+        <div class="meta">
+          <span class=" ${severityClass}">${report.severity || 'Medium'}</span>
+          <span>${new Date(report.createdAt).toLocaleString()}</span>
+        </div>
+        <p><strong>ইস্যু:</strong> ${report.issueType}</p>
+        <p>${report.details}</p>
+        <div class="status ${report.status === 'resolved' ? 'issueless' : 'issue'}">
+          ${report.status === 'resolved' ? 'সমাধান হয়েছে' : 'প্রক্রিয়াধীন'}
+        </div>
+      `;
+      
+      container.appendChild(card);
+    });
+  }
 
-        // কনফার্মেশন মেসেজ দেখানো
-        function showConfirmation(message, isSuccess = true) {
-            const container = document.createElement('div');
-            container.className = `confirmation-message ${isSuccess ? 'confirmation-success' : 'confirmation-error'}`;
-            container.innerHTML = `
-                <i class="fas ${isSuccess ? 'fa-check-circle' : 'fa-exclamation-circle'} confirmation-icon"></i>
-                ${message}
-            `;
-            
-            document.body.appendChild(container);
-            
-            // ৫ সেকেন্ড পর অটো রিমুভ
-            setTimeout(() => {
-                container.classList.add('fade-out');
-                setTimeout(() => container.remove(), 1000);
-            }, 5000);
-        }
+  // Initialize the page
+  document.addEventListener('DOMContentLoaded', async () => {
+    displayMerchants();
+    
+    // Set today's date as default for penalty date
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('penalty-date').value = today;
+    
+    // Check for phone in URL or localStorage
+    const urlParams = new URLSearchParams(window.location.search);
+    const userPhone = urlParams.get('phone') || localStorage.getItem('userPhone');
+    
+    if (userPhone) {
+      localStorage.setItem('userPhone', userPhone);
+      const reports = await loadUserReports(userPhone);
+      displayUserReports(reports);
+    }
+  });
 
-        // র‍্যান্ডম ভাউচার কোড জেনারেট করা
-        function generateVoucherCode() {
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-            let result = '';
-            for (let i = 0; i < 10; i++) {
-                result += chars.charAt(Math.floor(Math.random() * chars.length));
-                if ((i + 1) % 5 === 0 && i < 9) result += '-';
-            }
-            return result;
-        }
+  // Merchant issue form submission
+  document.getElementById('issue-report-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    loadingOverlay.style.display = 'flex';
+    
+    const formData = {
+      merchantName: document.getElementById('issue-merchant-name').value,
+      merchantPhone: document.getElementById('issue-merchant-phone').value,
+      issueType: document.getElementById('issue-type').value,
+      details: document.getElementById('issue-details').value
+    };
+    
+    try {
+      const response = await fetch('https://oneai-wjox.onrender.com/merchant-issues', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
 
-        // হোয়াটসঅ্যাপ নোটিফিকেশন পাঠানো
-        function sendWhatsAppMessage(formName, formData) {
-            let message = `নতুন ${formName} জমা:\n\n`;
-            
-            for (const [key, value] of Object.entries(formData)) {
-                if (key !== 'issueType' && key !== 'details') {
-                    message += `${key.replace(/([A-Z])/g, ' $1').toUpperCase()}: ${value}\n`;
-                }
-            }
-            
-            if (formData.issueType) {
-                message += `\nইস্যুর ধরন: ${formData.issueType}`;
-            }
-            
-            if (formData.details) {
-                message += `\n\nবিস্তারিত:\n${formData.details}`;
-            }
-            
-            const whatsappUrl = `https://wa.me/8801568760780?text=${encodeURIComponent(message)}`;
-            window.open(whatsappUrl, '_blank');
-        }
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'সার্ভার থেকে রেসপন্স পেতে সমস্যা হয়েছে');
+      }
+      
+      // Show success message
+      showConfirmation('আপনার ইস্যু রিপোর্ট সফলভাবে জমা হয়েছে!');
+      
+      // Clear form
+      document.getElementById('issue-report-form').reset();
+      
+      // Reload reports
+      const reports = await loadUserReports(formData.merchantPhone);
+      displayUserReports(reports);
+    } catch (error) {
+      showConfirmation(`রিপোর্ট জমা দিতে ব্যর্থ: ${error.message}`, false);
+    } finally {
+      loadingOverlay.style.display = 'none';
+    }
+  });
 
-        // ইউজার রিপোর্ট লোড করা
-        async function loadUserReports() {
-            const phone = document.getElementById('issue-merchant-phone').value || 
-                          localStorage.getItem('userPhone');
-            
-            if (!phone) return;
-            
-            try {
-                loadingOverlay.style.display = 'flex';
-                const response = await fetch(`${API_BASE}/merchant-issues?phone=${encodeURIComponent(phone)}`);
-                
-                if (!response.ok) throw new Error('রিপোর্ট লোড করতে সমস্যা হয়েছে');
-                
-                const { issues } = await response.json();
-                displayUserReports(issues);
-            } catch (error) {
-                console.error('রিপোর্ট লোডে ত্রুটি:', error);
-                showConfirmation('রিপোর্ট লোড করতে ব্যর্থ হয়েছে। পরে আবার চেষ্টা করুন।', false);
-            } finally {
-                loadingOverlay.style.display = 'none';
-            }
-        }
+  // Penalty report form submission
+  document.getElementById('penalty-report-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    loadingOverlay.style.display = 'flex';
+    
+    const formData = {
+      merchantName: document.getElementById('merchant-name').value,
+      customerName: document.getElementById('customer-name').value,
+      customerPhone: document.getElementById('customer-phone').value,
+      penaltyDate: document.getElementById('penalty-date').value,
+      amount1: parseFloat(document.getElementById('amount1').value),
+      amount2: parseFloat(document.getElementById('amount2').value),
+      penaltyDetails: document.getElementById('penalty-details').value
+    };
+    
+    try {
+      const response = await fetch('https://oneai-wjox.onrender.com/penalty-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
 
-        // ইউজার রিপোর্ট ডিসপ্লে করা
-        function displayUserReports(reports) {
-            reportsContainer.innerHTML = '';
-            
-            if (!reports || reports.length === 0) {
-                reportsContainer.innerHTML = '<p>আপনার অ্যাকাউন্টে কোন রিপোর্ট পাওয়া যায়নি।</p>';
-                return;
-            }
-            
-            reports.forEach(report => {
-                const card = document.createElement('div');
-                card.className = 'issue-report-card';
-                
-                card.innerHTML = `
-                    <h4>${report.merchantName}</h4>
-                    <div class="meta">
-                        <span class="status-badge status-${report.status.replace(' ', '-')}">
-                            ${report.status}
-                        </span>
-                        <span>${new Date(report.createdAt).toLocaleString()}</span>
-                    </div>
-                    <p><strong>ইস্যুর ধরন:</strong> ${report.issueType}</p>
-                    <p>${report.details}</p>
-                `;
-                
-                reportsContainer.appendChild(card);
-            });
-        }
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'সার্ভার থেকে রেসপন্স পেতে সমস্যা হয়েছে');
+      }
+      
+      const data = await response.json();
+      
+      // Show voucher
+      document.getElementById('voucher-code').textContent = data.voucherCode;
+      document.getElementById('voucher-container').style.display = 'block';
+      
+      // Show success message
+      showConfirmation('আপনার পেনাল্টি রিপোর্ট সফলভাবে জমা হয়েছে!');
+      
+      // Clear form
+      document.getElementById('penalty-report-form').reset();
+    } catch (error) {
+      showConfirmation(`রিপোর্ট জমা দিতে ব্যর্থ: ${error.message}`, false);
+    } finally {
+      loadingOverlay.style.display = 'none';
+    }
+  });
 
-        // ইস্যু রিপোর্ট ফর্ম সাবমিশন
-        issueReportForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            loadingOverlay.style.display = 'flex';
-            
-            const formData = {
-                merchantName: document.getElementById('issue-merchant-name').value,
-                merchantPhone: document.getElementById('issue-merchant-phone').value,
-                issueType: document.getElementById('issue-type').value,
-                details: document.getElementById('issue-details').value
-            };
-            
-            try {
-                const response = await fetch(`${API_BASE}/merchant-issues`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(formData)
-                });
+  // Premium service form submission
+  document.getElementById('premium-service-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    loadingOverlay.style.display = 'flex';
+    
+    const formData = {
+      phone: document.getElementById('scope-phone').value,
+      trxid: document.getElementById('scope-trxid').value,
+      amount: document.getElementById('scope-amount').value
+    };
+    
+    try {
+      const response = await fetch('https://oneai-wjox.onrender.com/premium-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
 
-                if (!response.ok) throw new Error('সার্ভার রেসপন্স সঠিক নয়');
-                
-                // হোয়াটসঅ্যাপ নোটিফিকেশন পাঠানো
-                sendWhatsAppMessage('মার্চেন্ট ইস্যু রিপোর্ট', formData);
-                
-                // ভবিষ্যতের জন্য ফোন সেভ করা
-                localStorage.setItem('userPhone', formData.merchantPhone);
-                
-                // সাকসেস মেসেজ দেখানো
-                showConfirmation('আপনার ইস্যু রিপোর্ট সফলভাবে জমা হয়েছে!');
-                
-                // ফর্ম রিসেট করা
-                issueReportForm.reset();
-                
-                // রিপোর্ট রিলোড করা
-                await loadUserReports();
-            } catch (error) {
-                console.error('রিপোর্ট জমাদানে ত্রুটি:', error);
-                showConfirmation('রিপোর্ট জমা দিতে ব্যর্থ হয়েছে। পরে আবার চেষ্টা করুন।', false);
-            } finally {
-                loadingOverlay.style.display = 'none';
-            }
-        });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'সার্ভার থেকে রেসপন্স পেতে সমস্যা হয়েছে');
+      }
 
-        // পেনাল্টি রিপোর্ট ফর্ম সাবমিশন
-        penaltyReportForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            loadingOverlay.style.display = 'flex';
-            
-            const formData = {
-                merchantName: document.getElementById('merchant-name').value,
-                customerName: document.getElementById('customer-name').value,
-                customerPhone: document.getElementById('customer-phone').value,
-                penaltyDate: document.getElementById('penalty-date').value,
-                amount1: document.getElementById('amount1').value,
-                amount2: document.getElementById('amount2').value,
-                penaltyDetails: document.getElementById('penalty-details').value
-            };
-            
-            try {
-                const response = await fetch(`${API_BASE}/penalty-report`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(formData)
-                });
-
-                if (!response.ok) throw new Error('সার্ভার রেসপন্স সঠিক নয়');
-                
-                // হোয়াটসঅ্যাপ নোটিফিকেশন পাঠানো
-                sendWhatsAppMessage('পেনাল্টি রিপোর্ট', formData);
-                
-                // ভাউচার দেখানো
-                const voucher = generateVoucherCode();
-                voucherCode.textContent = voucher;
-                voucherContainer.style.display = 'block';
-                
-                // সাকসেস মেসেজ দেখানো
-                showConfirmation('আপনার পেনাল্টি রিপোর্ট সফলভাবে জমা হয়েছে!');
-                
-                // ফর্ম রিসেট করা
-                penaltyReportForm.reset();
-                setTodayAsDefaultDate();
-            } catch (error) {
-                console.error('পেনাল্টি রিপোর্টে ত্রুটি:', error);
-                showConfirmation('পেনাল্টি রিপোর্ট জমা দিতে ব্যর্থ হয়েছে। পরে আবার চেষ্টা করুন।', false);
-            } finally {
-                loadingOverlay.style.display = 'none';
-            }
-        });
-
-        // প্রিমিয়াম সার্ভিস ফর্ম সাবমিশন
-        premiumServiceForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            loadingOverlay.style.display = 'flex';
-            
-            const formData = {
-                phone: document.getElementById('scope-phone').value,
-                trxid: document.getElementById('scope-trxid').value,
-                amount: document.getElementById('scope-amount').value
-            };
-            
-            try {
-                const response = await fetch(`${API_BASE}/premium-payment`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(formData)
-                });
-
-                if (!response.ok) throw new Error('সার্ভার রেসপন্স সঠিক নয়');
-                
-                // ফর্ম রিসেট করা
-                premiumServiceForm.reset();
-                
-                // সাকসেস মেসেজ দেখানো
-                showConfirmation('প্রিমিয়াম সার্ভিস রিকোয়েস্ট সফলভাবে জমা হয়েছে!');
-            } catch (error) {
-                console.error('প্রিমিয়াম রিকোয়েস্টে ত্রুটি:', error);
-                showConfirmation('প্রিমিয়াম রিকোয়েস্ট প্রসেস করতে ব্যর্থ হয়েছে। পরে আবার চেষ্টা করুন।', false);
-            } finally {
-                loadingOverlay.style.display = 'none';
-            }
-        });
-    </script>
-<script src="./assets/js/hackeranimation.js"></script>
-<script src="./assets/js/main.js"></script>
-<script src="./assets/js/load-navbar.js"></script>
+      // Clear form
+      document.getElementById('premium-service-form').reset();
+      showConfirmation('প্রিমিয়াম সার্ভিস অনুরোধ সফলভাবে জমা হয়েছে!');
+    } catch (error) {
+      showConfirmation(`প্রিমিয়াম অনুরোধ ব্যর্থ: ${error.message}`, false);
+    } finally {
+      loadingOverlay.style.display = 'none';
+    }
+  });
+</script>
+  <!-- Include scripts -->
+  <script src="./assets/js/hackeranimation.js"></script>
+  <script src="./assets/js/main.js"></script>
+  <script src="./assets/js/load-navbar.js"></script>
 </body>
 </html>
