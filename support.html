@@ -783,38 +783,38 @@
     }
   });
 
-  // Premium service form submission
-  document.getElementById('premium-service-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    loadingOverlay.style.display = 'flex';
-    
-    const formData = {
-      phone: document.getElementById('scope-phone').value,
-      trxid: document.getElementById('scope-trxid').value,
-      amount: document.getElementById('scope-amount').value
-    };
-    
-    try {
-      const response = await fetch('https://oneai-wjox.onrender.com/premium-payment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
+// Change form submission endpoint
+document.getElementById('premium-service-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  loadingOverlay.style.display = 'flex';
+  
+  const formData = {
+    phone: document.getElementById('scope-phone').value,
+    trxid: document.getElementById('scope-trxid').value,
+    amount: document.getElementById('scope-amount').value
+  };
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'সার্ভার থেকে রেসপন্স পেতে সমস্যা হয়েছে');
-      }
+  try {
+    const response = await fetch('https://oneai-wjox.onrender.com/premium-service', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData)
+    });
 
-      // Clear form
-      document.getElementById('premium-service-form').reset();
-      showConfirmation('প্রিমিয়াম সার্ভিস অনুরোধ সফলভাবে জমা হয়েছে!');
-    } catch (error) {
-      showConfirmation(`প্রিমিয়াম অনুরোধ ব্যর্থ: ${error.message}`, false);
-    } finally {
-      loadingOverlay.style.display = 'none';
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to submit premium request');
     }
-  });
+
+    showConfirmation('প্রিমিয়াম সার্ভিস অনুরোধ সফলভাবে জমা হয়েছে!');
+    document.getElementById('premium-service-form').reset();
+    
+  } catch (error) {
+    showConfirmation(`প্রিমিয়াম অনুরোধ ব্যর্থ: ${error.message}`, false);
+  } finally {
+    loadingOverlay.style.display = 'none';
+  }
+});
 </script>
   <!-- Include scripts -->
   <script src="./assets/js/hackeranimation.js"></script>
