@@ -750,6 +750,87 @@
     });
   </script>
   <script>
+    // Function to send WhatsApp message
+  function sendWhatsAppMessage(formName, formData) {
+    let message = `New ${formName} Submission:\n\n`;
+    
+    for (const [key, value] of Object.entries(formData)) {
+      if (key !== 'issueType' && key !== 'details') {
+        message += `${key.replace(/([A-Z])/g, ' $1').toUpperCase()}: ${value}\n`;
+      }
+    }
+    
+    if (formData.issueType) {
+      message += `\nISSUE TYPE: ${formData.issueType}`;
+    }
+    
+    if (formData.details) {
+      message += `\n\nDETAILS:\n${formData.details}`;
+    }
+    
+    const whatsappUrl = `https://wa.me/8801568760780?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  }
+
+  // Function to show confirmation message
+  function showConfirmation(message, isSuccess = true) {
+    const container = document.getElementById('confirmation-container');
+    const messageDiv = document.createElement('div');
+    
+    messageDiv.className = `confirmation-message ${isSuccess ? 'confirmation-success' : 'confirmation-error'}`;
+    messageDiv.innerHTML = `
+      <i class="fas ${isSuccess ? 'fa-check-circle' : 'fa-exclamation-circle'} confirmation-icon"></i>
+      ${message}
+    `;
+    
+    container.appendChild(messageDiv);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+      messageDiv.classList.add('fade-out');
+      setTimeout(() => messageDiv.remove(), 1000);
+    }, 5000);
+  }
+
+  // Enhanced issue report form submission
+  document.getElementById('issue-report-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    loadingOverlay.style.display = 'flex';
+    
+    const formData = {
+      merchantName: document.getElementById('issue-merchant-name').value,
+      merchantPhone: document.getElementById('issue-merchant-phone').value,
+      issueType: document.getElementById('issue-type').value,
+      details: document.getElementById('issue-details').value
+    };
+    
+    try {
+      const response = await fetch('https://oneai-wjox.onrender.com/merchant-issues', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+
+      if (!response.ok) throw new Error('সার্ভার থেকে রেসপন্স পেতে সমস্যা হয়েছে');
+      
+      // Send WhatsApp notification
+      sendWhatsAppMessage('Merchant Issue Report', formData);
+      
+      // Show success message
+      showConfirmation('আপনার ইস্যু রিপোর্ট সফলভাবে জমা হয়েছে!');
+      
+      // Clear form
+      document.getElementById('issue-report-form').reset();
+      
+      // Reload reports
+      const reports = await loadUserReports(formData.merchantPhone);
+      displayUserReports(reports);
+    } catch (error) {
+      showConfirmation(`রিপোর্ট জমা দিতে ব্যর্থ: ${error.message}`, false);
+    } finally {
+      loadingOverlay.style.display = 'none';
+    }
+  });
   // Function to send WhatsApp message
   function sendWhatsAppMessage(formName, formData) {
     let message = `New ${formName} Submission:\n\n`;
@@ -832,40 +913,6 @@
       showConfirmation(`রিপোর্ট জমা দিতে ব্যর্থ: ${error.message}`, false);
     } finally {
       loadingOverlay.style.display = 'none';
-    }
-  });
-</script>
-<script>
-  // Handle issue report form submission
-  document.getElementById('issue-report-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    try {
-      // Submit to server
-      const response = await submitForm(
-        'issue-report-form', 
-        'https://oneai-wjox.onrender.com/merchant-issues',
-        'Your issue report submitted successfully!'
-      );
-      
-      // Prepare WhatsApp message
-      const formData = {
-        merchantName: document.getElementById('issue-merchant-name').value,
-        merchantPhone: document.getElementById('issue-merchant-phone').value,
-        issueType: document.getElementById('issue-type').value,
-        details: document.getElementById('issue-details').value
-      };
-      
-      const message = `New Issue Report:\n\nMerchant: ${formData.merchantName}\nPhone: ${formData.merchantPhone}\nIssue Type: ${formData.issueType}\nDetails:\n${formData.details}`;
-      
-      // Open WhatsApp in new tab
-      window.open(`https://wa.me/8801568760780?text=${encodeURIComponent(message)}`, '_blank');
-      
-      // Clear form
-      document.getElementById('issue-report-form').reset();
-      
-    } catch (error) {
-      console.error('Full submission error:', error);
     }
   });
 </script>
