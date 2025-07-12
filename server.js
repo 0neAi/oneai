@@ -606,11 +606,11 @@ app.post('/merchant-issues', async (req, res) => {
 
     res.status(201).json({ 
       success: true, 
-      message: 'Issue report submitted successfully',
+      message: 'Issue report submitted successfully ixx1',
       issue 
     });
   } catch (error) {
-    console.error('Issue report error:', error);
+    console.error('Issue report error ixx1:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Failed to submit issue report' 
@@ -662,14 +662,14 @@ app.post('/penalty-report', async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Penalty report submitted successfully',
+      message: 'Penalty report submitted successfully pxx1',
       voucherCode: report.voucherCode
     });
   } catch (error) {
     console.error('Penalty report error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to submit penalty report'
+      message: 'Failed to submit penalty report pxx2'
     });
   }
 });
@@ -743,7 +743,7 @@ app.put('/admin/merchant-issues/:id', adminAuth, async (req, res) => {
     );
     res.json({ success: true, issue });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to update issue' });
+    res.status(500).json({ success: false, message: 'Failed to update issue fxx1' });
   }
 });
 // Add these endpoints to server.js
@@ -826,7 +826,7 @@ app.put('/merchant-issues/:id/status', adminAuth, async (req, res) => {
     
     res.json({ success: true, issue });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to update issue' });
+    res.status(500).json({ success: false, message: 'Failed to update issue ' });
   }
 });
 
