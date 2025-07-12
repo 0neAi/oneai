@@ -578,15 +578,29 @@ ${savedPayment.consignments.map(c => `  - Service: ${c.serviceType}, Name: ${c.n
 // Merchant Issues API
 const merchantIssueSchema = new mongoose.Schema({
   merchantName: { type: String, required: true },
-  merchantPhone: { type: String, required: true },
-  issueType: { type: String, required: true },
+  merchantPhone: { 
+    type: String, 
+    required: true,
+    validate: {
+      validator: v => /^01[3-9]\d{8}$/.test(v),
+      message: props => `Invalid Bangladeshi phone number: ${props.value}`
+    }
+  },
+  issueType: {
+    type: String,
+    required: true,
+    enum: ['issue-raising', 'issue-less', 'other']
+  },
   details: { type: String, required: true },
-  status: { type: String, enum: ['pending', 'in progress', 'resolved', 'rejected'], default: 'pending' },
+  status: {
+    type: String,
+    enum: ['pending', 'in progress', 'resolved', 'rejected'],
+    default: 'pending'
+  },
   adminNotes: { type: String },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });
-
 const MerchantIssue = mongoose.model('MerchantIssue', merchantIssueSchema);
 
 const penaltyReportSchema = new mongoose.Schema({
