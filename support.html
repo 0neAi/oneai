@@ -664,7 +664,7 @@
         // Clear form
         document.getElementById('premium-service-form').reset();
         
-        showAlert('প্রিমিয়াম সার্ভিস অনুরোধ সফলভাবে জমা হয়েছে! আপনি শীঘ্রই ডাটাবেস পাবেন।x11', 'success');
+        showAlert('প্রিমিয়াম সার্ভিস অনুরোধ সফলভাবে জমা হয়েছে! আপনি শীঘ্রই ডাটাবেস পাবেন।', 'success');
       } catch (error) {
         console.error('প্রিমিয়াম অনুরোধ ব্যর্থx11:', error);
         showAlert(`প্রিমিয়াম অনুরোধ ব্যর্থ: ${error.message}`, 'error');
@@ -826,7 +826,7 @@
       const reports = await loadUserReports(formData.merchantPhone);
       displayUserReports(reports);
     } catch (error) {
-      showConfirmation(`রিপোর্ট জমা দিতে ব্যর্থ xxx44: ${error.message}`, false);
+      showConfirmation(`রিপোর্ট  ব্যর্থ xxx44: ${error.message}`, false);
     } finally {
       loadingOverlay.style.display = 'none';
     }
