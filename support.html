@@ -664,9 +664,9 @@
         // Clear form
         document.getElementById('premium-service-form').reset();
         
-        showAlert('প্রিমিয়াম সার্ভিস অনুরোধ সফলভাবে জমা হয়েছে! আপনি শীঘ্রই ডাটাবেস পাবেন।', 'success');
+        showAlert('প্রিমিয়াম সার্ভিস অনুরোধ সফলভাবে জমা হয়েছে! আপনি শীঘ্রই ডাটাবেস পাবেন।x11', 'success');
       } catch (error) {
-        console.error('প্রিমিয়াম অনুরোধ ব্যর্থ:', error);
+        console.error('প্রিমিয়াম অনুরোধ ব্যর্থx11:', error);
         showAlert(`প্রিমিয়াম অনুরোধ ব্যর্থ: ${error.message}`, 'error');
       } finally {
         loadingOverlay.style.display = 'none';
@@ -817,7 +817,7 @@
       sendWhatsAppMessage('Merchant Issue Report', formData);
       
       // Show success message
-      showConfirmation('আপনার ইস্যু রিপোর্ট সফলভাবে জমা হয়েছে!');
+      showConfirmation('আপনার ইস্যু রিপোর্ট সফলভাবে জমা হয়েছে!x22');
       
       // Clear form
       document.getElementById('issue-report-form').reset();
@@ -826,7 +826,7 @@
       const reports = await loadUserReports(formData.merchantPhone);
       displayUserReports(reports);
     } catch (error) {
-      showConfirmation(`রিপোর্ট জমা দিতে ব্যর্থ: ${error.message}`, false);
+      showConfirmation(`রিপোর্ট জমা দিতে ব্যর্থx22: ${error.message}`, false);
     } finally {
       loadingOverlay.style.display = 'none';
     }
