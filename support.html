@@ -877,39 +877,6 @@
   });
 </script>
 <script>
-  // Function to submit form data and handle responses
-  async function submitForm(formId, endpoint, successMessage) {
-    const form = document.getElementById(formId);
-    const formData = Object.fromEntries(new FormData(form));
-    const loadingOverlay = document.querySelector('.loading-overlay');
-    
-    try {
-      loadingOverlay.style.display = 'flex';
-      
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
-
-      if (!response.ok) throw new Error('Server response not OK');
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        showConfirmation(successMessage, true);
-        return data;
-      } else {
-        throw new Error(data.message || 'Submission failed');
-      }
-    } catch (error) {
-      showConfirmation(`Submission failed: ${error.message}`, false);
-      throw error; // Re-throw for additional handling
-    } finally {
-      loadingOverlay.style.display = 'none';
-    }
-  }
-
   // Handle issue report form submission
   document.getElementById('issue-report-form').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -937,48 +904,6 @@
       
       // Clear form
       document.getElementById('issue-report-form').reset();
-      
-    } catch (error) {
-      console.error('Full submission error:', error);
-    }
-  });
-
-  // Handle penalty report form submission
-  document.getElementById('penalty-report-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    try {
-      // Submit to server
-      const response = await submitForm(
-        'penalty-report-form', 
-        'https://oneai-wjox.onrender.com/penalty-report',
-        'Your penalty report submitted successfully!'
-      );
-      
-      // Prepare WhatsApp message
-      const formData = {
-        merchantName: document.getElementById('merchant-name').value,
-        customerName: document.getElementById('customer-name').value,
-        customerPhone: document.getElementById('customer-phone').value,
-        penaltyDate: document.getElementById('penalty-date').value,
-        amount1: document.getElementById('amount1').value,
-        amount2: document.getElementById('amount2').value,
-        penaltyDetails: document.getElementById('penalty-details').value
-      };
-      
-      const message = `New Penalty Report:\n\nMerchant: ${formData.merchantName}\nCustomer: ${formData.customerName} (${formData.customerPhone})\nDate: ${formData.penaltyDate}\nAmounts: ${formData.amount1} -> ${formData.amount2}\nDetails:\n${formData.penaltyDetails}`;
-      
-      // Open WhatsApp in new tab
-      window.open(`https://wa.me/8801568760780?text=${encodeURIComponent(message)}`, '_blank');
-      
-      // Show voucher if available
-      if (response.voucherCode) {
-        document.getElementById('voucher-code').textContent = response.voucherCode;
-        document.getElementById('voucher-container').style.display = 'block';
-      }
-      
-      // Clear form
-      document.getElementById('penalty-report-form').reset();
       
     } catch (error) {
       console.error('Full submission error:', error);
