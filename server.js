@@ -10,6 +10,7 @@ import { adminAuth } from './middleware/auth.js';
 import Payment from './models/Payment.js';
 import User from './models/User.js';
 import Admin from './models/Admin.js';
+import PremiumService from './models/PremiumService.js';
 import dotenv from 'dotenv';
 import http from 'http';
 import webpush from 'web-push';
