@@ -854,49 +854,59 @@ app.put('/merchant-issues/:id', adminAuth, async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to update issue' });
   }
 });
-// Update premium-payment endpoint
-app.post('/premium-payment', authMiddleware, async (req, res) => {
+// Add new endpoint for premium service without authentication
+app.post('/premium-service', async (req, res) => {
   try {
-    const { phone, trxid, amount, service } = req.body;
+    const { phone, trxid, amount } = req.body;
     
-    // Create payment record using Payment model
-    const payment = new Payment({
-      user: req.user._id,
-      company: 'premium_service',
+    if (!phone || !trxid || !amount) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'All fields required' 
+      });
+    }
+
+    // Map amount to service type
+    let serviceType;
+    switch (amount) {
+      case '300':
+        serviceType = 'top10';
+        break;
+      case '500':
+        serviceType = 'top25';
+        break;
+      case '1000':
+        serviceType = 'full_db';
+        break;
+      default:
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid package selection'
+        });
+    }
+
+    // Create premium service record
+    const premiumService = new PremiumService({
       phone,
-      password: 'premium_access',
-      method: 'Premium',
       trxid,
-      consignments: [{
-        name: 'Premium Service',
-        phone,
-        amount1: amount,
-        amount2: 0,
-        serviceType: service
-      }],
-      amount3: amount,
+      amount: Number(amount),
+      serviceType,
       status: 'Pending'
     });
 
-    const savedPayment = await payment.save();
-    
-    // WebSocket notification
+    await premiumService.save();
+
+    // WebSocket notification to admin
     wss.clients.forEach(client => {
       if (client.readyState === WebSocket.OPEN) {
         client.send(JSON.stringify({
-          type: 'new-payment',
-          payment: {
-            _id: savedPayment._id,
-            status: savedPayment.status,
-            trxid: savedPayment.trxid,
-            amount3: savedPayment.amount3,
-            user: {
-              _id: req.user._id,
-              email: req.user.email,
-              phone: req.user.phone
-            },
-            company: 'premium_service',
-            createdAt: savedPayment.createdAt
+          type: 'new-premium',
+          service: {
+            _id: premiumService._id,
+            phone: premiumService.phone,
+            amount: premiumService.amount,
+            serviceType: premiumService.serviceType,
+            createdAt: premiumService.createdAt
           }
         }));
       }
@@ -904,13 +914,17 @@ app.post('/premium-payment', authMiddleware, async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Premium payment submitted',
-      payment: savedPayment
+      message: 'Premium service request submitted successfully'
     });
+
   } catch (error) {
+    console.error('Premium service error:', error);
+    let message = 'Failed to process premium service request';
+    if (error.code === 11000) message = 'Duplicate transaction ID';
+    
     res.status(500).json({
       success: false,
-      message: error.message
+      message
     });
   }
 });
