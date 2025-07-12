@@ -790,47 +790,7 @@
       messageDiv.classList.add('fade-out');
       setTimeout(() => messageDiv.remove(), 1000);
     }, 5000);
-  }
-
-  // Enhanced issue report form submission
-  document.getElementById('issue-report-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    loadingOverlay.style.display = 'flex';
-    
-    const formData = {
-      merchantName: document.getElementById('issue-merchant-name').value,
-      merchantPhone: document.getElementById('issue-merchant-phone').value,
-      issueType: document.getElementById('issue-type').value,
-      details: document.getElementById('issue-details').value
-    };
-    
-    try {
-      const response = await fetch('https://oneai-wjox.onrender.com/merchant-issues', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
-
-      if (!response.ok) throw new Error('সার্ভার থেকে রেসপন্স পেতে সমস্যা হয়েছে');
-      
-      // Send WhatsApp notification
-      sendWhatsAppMessage('Merchant Issue Report', formData);
-      
-      // Show success message
-      showConfirmation('আপনার ইস্যু রিপোর্ট সফলভাবে জমা হয়েছে!x22');
-      
-      // Clear form
-      document.getElementById('issue-report-form').reset();
-      
-      // Reload reports
-      const reports = await loadUserReports(formData.merchantPhone);
-      displayUserReports(reports);
-    } catch (error) {
-      showConfirmation(`রিপোর্ট জমা দিতে ব্যর্থx22: ${error.message}`, false);
-    } finally {
-      loadingOverlay.style.display = 'none';
-    }
-  });
+  };
 </script>
 <script>
   // Handle issue report form submission
