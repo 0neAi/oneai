@@ -468,6 +468,7 @@
                         </tbody>
                       </table>
                     </div>
+                    </div>
                   </div>
                 </div>
                 <!-- Merchant Issues Section -->
@@ -529,49 +530,41 @@
                         </ul>
                         
                         <div class="tab-content" id="issueTabContent">
-                            <div class="tab-pane fade show active" id="all-issues" role="tabpanel">
-                                <div v-if="filteredIssues.length === 0" class="text-center py-4 text-muted">
-                                    No issues found
-                                </div>
-                                
-                                <div v-for="issue in filteredIssues" :key="issue.id" 
-                                     class="issue-card" :class="issue.severity">
-                                    <div class="card-body">
-                                        <h5>{{ issue.merchantName }}</h5>
-                                        <div class="meta mb-2">
-                                            <span class="issue-type-badge">{{ issue.issueType }}</span>
-                                            <span class="issue-status-badge" :class="'status-' + issue.status.replace(' ', '-')">
-                                                {{ issue.status }}
-                                            </span>
-                                            <span class="ms-2">{{ formatDateTime(issue.createdAt) }}</span>
-                                        </div>
-                                        <p class="mb-2"><strong>Phone:</strong> {{ issue.customerPhone }}</p>
-                                        <p>{{ issue.details }}</p>
-                                        
-                                        <div class="actions">
-                                            <button class="btn btn-sm btn-outline-primary me-2" 
-                                                    @click="showIssueDetails(issue)">
-                                                <i class="bi bi-eye me-1"></i>Details
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-success me-2" 
-                                                    @click="updateIssueStatus(issue, 'in-progress')"
-                                                    v-if="issue.status === 'pending'">
-                                                <i class="bi bi-play me-1"></i>Start Progress
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-success me-2" 
-                                                    @click="updateIssueStatus(issue, 'resolved')"
-                                                    v-if="issue.status === 'in-progress'">
-                                                <i class="bi bi-check me-1"></i>Resolve
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-danger" 
-                                                    @click="updateIssueStatus(issue, 'rejected')"
-                                                    v-if="issue.status !== 'rejected' && issue.status !== 'resolved'">
-                                                <i class="bi bi-x me-1"></i>Reject
-                                            </button>
-                                        </div>
+                           <!-- Replace the existing merchant issues display with this: -->
+                        <div class="tab-pane fade show active" id="all-issues" role="tabpanel">
+                            <div v-if="filteredIssues.length === 0" class="text-center py-4 text-muted">
+                                No issues found
+                            </div>
+                            
+                            <div v-for="issue in filteredIssues" :key="issue._id" 
+                                 class="issue-card">
+                                <div class="card-body">
+                                    <h5>{{ issue.merchantName }}</h5>
+                                    <div class="meta mb-2">
+                                        <span class="issue-type-badge">{{ issue.issueType }}</span>
+                                        <span class="issue-status-badge" :class="'status-' + issue.status.replace(' ', '-')">
+                                            {{ issue.status }}
+                                        </span>
+                                        <span class="ms-2">{{ formatDateTime(issue.createdAt) }}</span>
+                                    </div>
+                                    <p class="mb-2"><strong>Phone:</strong> {{ issue.merchantPhone }}</p>
+                                    <p>{{ issue.details }}</p>
+                                    
+                                    <div class="actions">
+                                        <select v-model="issue.status" class="form-select form-select-sm d-inline-block w-auto me-2">
+                                            <option value="pending">Pending</option>
+                                            <option value="in-progress">In Progress</option>
+                                            <option value="resolved">Resolved</option>
+                                            <option value="rejected">Rejected</option>
+                                        </select>
+                                        <button class="btn btn-sm btn-primary" 
+                                                @click="saveIssueStatus(issue)">
+                                            Save
+                                        </button>
                                     </div>
                                 </div>
                             </div>
+                        </div>
                             
                             <div class="tab-pane fade" id="issue-stats" role="tabpanel">
                                 <div class="row">
@@ -1144,6 +1137,7 @@
                             await this.loadPayments();
                             await this.loadMerchantIssues();
                             await this.loadPenaltyReports();
+                            await this.loadPremiumServices();
                             
                             // Calculate stats after all data loaded
                             this.stats = {
@@ -1417,27 +1411,6 @@
                     }
                     this.penaltyModal.show();
                 },
-                async savePenaltyChanges() {
-                    try {
-                        this.isLoading = true;
-                        const response = await axios.put(
-                            `${API_BASE}/admin/penalty-reports/${this.selectedPenalty._id}`,
-                            this.selectedPenalty
-                        );
-
-                        if (response.data.success) {
-                            const index = this.penaltyReports.findIndex(r => r._id === this.selectedPenalty._id);
-                            if (index > -1) {
-                                this.penaltyReports[index] = response.data.report;
-                            }
-                            this.penaltyModal.hide();
-                        }
-                    } catch (error) {
-                        console.error('Save penalty changes error:', error);
-                    } finally {
-                        this.isLoading = false;
-                    }
-                },
                 async savePenaltyChanges(penalty) {
                   try {
                     this.isLoading = true;
@@ -1460,6 +1433,29 @@
                     this.isLoading = false;
                   }
                 },
+                // Add this method for saving issue status
+        async saveIssueStatus(issue) {
+            try {
+                this.isLoading = true;
+                const response = await axios.put(
+                    `${API_BASE}/admin/merchant-issues/${issue._id}`,
+                    { status: issue.status }
+                );
+        
+                if (response.data.success) {
+                    const index = this.merchantIssues.findIndex(i => i._id === issue._id);
+                    if (index > -1) {
+                        this.merchantIssues[index] = response.data.issue;
+                    }
+                    showToast('Issue status updated', 'success');
+                }
+            } catch (error) {
+                console.error('Save issue status error:', error);
+                showToast('Update failed: ' + error.message, 'error');
+            } finally {
+                this.isLoading = false;
+            }
+        },
                 async updatePenaltyStatus(penalty, status) {
                     try {
                         this.isLoading = true;
@@ -1601,24 +1597,24 @@
                                 this.payments.unshift(data.payment);
                                 this.stats.totalPayments = this.payments.length;
                                 this.stats.pendingPayments = this.payments.filter(p => p.status === 'Pending').length;
-                            } else if (data.type === 'new-issue') {
+                            else if (data.type === 'new-issue') {
                                 this.merchantIssues.unshift(data.issue);
                                 this.stats.issueReports = this.merchantIssues.length;
                                 this.updateCharts();
-                            } else if (data.type === 'new-penalty') {
+                            } 
+                            else if (data.type === 'new-penalty') {
                                 this.penaltyReports.unshift(data.report);
-                            } else if (data.type === 'new-premium') {
+                            } 
+                            else if (data.type === 'new-premium') {
                                 this.premiumServices.unshift(data.service);
-                            } else if (data.type === 'premium-updated') {
+                            } 
+                            else if (data.type === 'premium-updated') {
                                 const index = this.premiumServices.findIndex(s => s._id === data.service._id);
                                 if (index > -1) {
-                                  this.premiumServices.splice(index, 1, data.service);
+                                    this.premiumServices.splice(index, 1, data.service);
                                 }
-                            } else if (data.type === 'new-issue') {
-                                this.merchantIssues.unshift(data.issue);
-                                this.stats.issueReports = this.merchantIssues.length;
-                              }
-                           } catch (error) {
+                            }
+                        } catch (error) {
                             console.error('WebSocket message error:', error);
                         }
                     };
