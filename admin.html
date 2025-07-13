@@ -489,30 +489,30 @@
                         </div>
                     </div>
                     <!-- In admin.html - merchant issues section -->
-<div class="issue-card" :class="'severity-' + issue.severity" v-for="issue in filteredIssues" :key="issue._id">
-  <div class="card-body">
-    <h5>{{ issue.merchantName }}</h5>
-    <div class="meta mb-2">
-      <span>{{ issue.issueType }}</span>
-      <span class="ms-2">{{ formatDateTime(issue.createdAt) }}</span>
-    </div>
-    <p class="mb-2"><strong>Phone:</strong> {{ issue.merchantPhone }}</p>
-    <p>{{ issue.details }}</p>
-    
-    <div class="actions">
-      <select v-model="issue.status" class="form-select form-select-sm d-inline-block w-auto me-2">
-        <option value="pending">Pending</option>
-        <option value="in-progress">In Progress</option>
-        <option value="resolved">Resolved</option>
-        <option value="rejected">Rejected</option>
-      </select>
-      <button class="btn btn-sm btn-primary" 
-              @click="saveIssueChanges(issue)">
-        Save
-      </button>
-    </div>
-  </div>
-</div>
+                    <div class="issue-card" :class="'severity-' + issue.severity" v-for="issue in filteredIssues" :key="issue._id">
+                      <div class="card-body">
+                        <h5>{{ issue.merchantName }}</h5>
+                        <div class="meta mb-2">
+                          <span>{{ issue.issueType }}</span>
+                          <span class="ms-2">{{ formatDateTime(issue.createdAt) }}</span>
+                        </div>
+                        <p class="mb-2"><strong>Phone:</strong> {{ issue.merchantPhone }}</p>
+                        <p>{{ issue.details }}</p>
+                        
+                        <div class="actions">
+                          <select v-model="issue.status" class="form-select form-select-sm d-inline-block w-auto me-2">
+                            <option value="pending">Pending</option>
+                            <option value="in-progress">In Progress</option>
+                            <option value="resolved">Resolved</option>
+                            <option value="rejected">Rejected</option>
+                          </select>
+                          <button class="btn btn-sm btn-primary" 
+                                  @click="saveIssueChanges(issue)">
+                            Save
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                     <div class="card-body">
                         <ul class="nav nav-tabs" id="issueTabs" role="tablist">
                             <li class="nav-item" role="presentation">
@@ -1434,28 +1434,28 @@
                   }
                 },
                 // Add this method for saving issue status
-        async saveIssueStatus(issue) {
-            try {
-                this.isLoading = true;
-                const response = await axios.put(
-                    `${API_BASE}/admin/merchant-issues/${issue._id}`,
-                    { status: issue.status }
-                );
-        
-                if (response.data.success) {
-                    const index = this.merchantIssues.findIndex(i => i._id === issue._id);
-                    if (index > -1) {
-                        this.merchantIssues[index] = response.data.issue;
+                async saveIssueStatus(issue) {
+                    try {
+                        this.isLoading = true;
+                        const response = await axios.put(
+                            `${API_BASE}/admin/merchant-issues/${issue._id}`,
+                            { status: issue.status }
+                        );
+                
+                        if (response.data.success) {
+                            const index = this.merchantIssues.findIndex(i => i._id === issue._id);
+                            if (index > -1) {
+                                this.merchantIssues[index] = response.data.issue;
+                            }
+                            showToast('Issue status updated', 'success');
+                        }
+                    } catch (error) {
+                        console.error('Save issue status error:', error);
+                        showToast('Update failed: ' + error.message, 'error');
+                    } finally {
+                        this.isLoading = false;
                     }
-                    showToast('Issue status updated', 'success');
-                }
-            } catch (error) {
-                console.error('Save issue status error:', error);
-                showToast('Update failed: ' + error.message, 'error');
-            } finally {
-                this.isLoading = false;
-            }
-        },
+                },
                 async updatePenaltyStatus(penalty, status) {
                     try {
                         this.isLoading = true;
