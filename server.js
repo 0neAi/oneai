@@ -855,6 +855,15 @@ app.put('/merchant-issues/:id', adminAuth, async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to update issue' });
   }
 });
+//
+app.get('/admin/premium-services', adminAuth, async (req, res) => {
+  try {
+    const services = await PremiumService.find().sort({ createdAt: -1 });
+    res.json({ success: true, services });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch premium services' });
+  }
+});
 // Add new endpoint for premium service without authentication
 app.post('/premium-service', async (req, res) => {
   try {
@@ -1087,29 +1096,41 @@ app.get('/payments', adminAuth, async (req, res) => {
 // Remove duplicate endpoint and keep only this one:
 // Admin registration - Fix this endpoint
 app.post('/admin/register', async (req, res) => {
-    try {
-        const { email, password } = req.body;
-        
-        // Validate password length
-        if (password.length < 12) {
-            return res.status(400).json({
-                success: false,
-                message: 'Password must be at least 12 characters'
-            });
-        }
-        
-        const admin = await Admin.register(email, password);
-        res.json({ 
-            success: true,
-            admin: admin.toSafeObject()
-        });
-    } catch (error) {
-        console.error('Admin registration error:', error);
-        res.status(400).json({
-            success: false,
-            message: error.message
-        });
+  try {
+    const { email, password } = req.body;
+    
+    // Check if registration is allowed
+    const adminCount = await Admin.countDocuments();
+    if (adminCount > 0) {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin registration is closed'
+      });
     }
+
+    // Create admin
+    const admin = new Admin({
+      email: email.trim().toLowerCase(),
+      password,
+      role: 'superadmin'
+    });
+
+    await admin.save();
+
+    res.json({ 
+      success: true,
+      admin: admin.toSafeObject()
+    });
+  } catch (error) {
+    console.error('Admin registration error:', error);
+    let message = 'Registration failed';
+    if (error.code === 11000) message = 'Email already exists';
+    
+    res.status(400).json({
+      success: false,
+      message
+    });
+  }
 });
 
 // Remove
