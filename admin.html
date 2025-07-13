@@ -487,7 +487,31 @@
                             </button>
                         </div>
                     </div>
-                    
+                    <!-- In admin.html - merchant issues section -->
+<div class="issue-card" :class="'severity-' + issue.severity" v-for="issue in filteredIssues" :key="issue._id">
+  <div class="card-body">
+    <h5>{{ issue.merchantName }}</h5>
+    <div class="meta mb-2">
+      <span>{{ issue.issueType }}</span>
+      <span class="ms-2">{{ formatDateTime(issue.createdAt) }}</span>
+    </div>
+    <p class="mb-2"><strong>Phone:</strong> {{ issue.merchantPhone }}</p>
+    <p>{{ issue.details }}</p>
+    
+    <div class="actions">
+      <select v-model="issue.status" class="form-select form-select-sm d-inline-block w-auto me-2">
+        <option value="pending">Pending</option>
+        <option value="in-progress">In Progress</option>
+        <option value="resolved">Resolved</option>
+        <option value="rejected">Rejected</option>
+      </select>
+      <button class="btn btn-sm btn-primary" 
+              @click="saveIssueChanges(issue)">
+        Save
+      </button>
+    </div>
+  </div>
+</div>
                     <div class="card-body">
                         <ul class="nav nav-tabs" id="issueTabs" role="tablist">
                             <li class="nav-item" role="presentation">
@@ -998,7 +1022,9 @@
                     issueTypeChart: null,
                     recentActivities: [],
                     ws: null,
-                    wsConnectionAttempts: 0
+                    wsConnectionAttempts: 0,
+                    premiumServices: [],
+                    premiumFilter: 'all'
                 };
             },
             computed: {
@@ -1007,6 +1033,10 @@
                         return this.payments;
                     }
                     return this.payments.filter(p => p.status === this.paymentFilter);
+                },
+                  filteredPremium() {
+                    if (this.premiumFilter === 'all') return this.premiumServices;
+                    return this.premiumServices.filter(s => s.status === this.premiumFilter);
                 },
                 filteredIssues() {
                     if (this.issueFilter === 'all') {
@@ -1154,7 +1184,40 @@
                             this.payments = [];
                         }
                     },
-                    
+                  async loadPremiumServices() {
+                    try {
+                      const response = await axios.get(`${API_BASE}/admin/premium-services`);
+                      this.premiumServices = response.data.services || [];
+                    } catch (error) {
+                      console.error('Error loading premium services:', error);
+                      this.premiumServices = [];
+                    }
+                  },
+                  
+                  async updatePremiumStatus(service, status) {
+                    try {
+                      this.isLoading = true;
+                      const response = await axios.put(
+                        `${API_BASE}/admin/premium-services/${service._id}/status`,
+                        { status }
+                      );
+                      
+                      if (response.data.success) {
+                        const index = this.premiumServices.findIndex(s => s._id === service._id);
+                        if (index > -1) {
+                          this.premiumServices[index] = response.data.service;
+                        }
+                      }
+                    } catch (error) {
+                      console.error('Update premium status error:', error);
+                    } finally {
+                      this.isLoading = false;
+                    }
+                  },
+                  
+                  async refreshPremiumServices() {
+                    await this.loadPremiumServices();
+                  },
                     async loadMerchantIssues() {
                         try {
                             const response = await axios.get(`${API_BASE}/admin/merchant-issues`);
@@ -1375,6 +1438,28 @@
                         this.isLoading = false;
                     }
                 },
+                async savePenaltyChanges(penalty) {
+                  try {
+                    this.isLoading = true;
+                    const response = await axios.put(
+                      `${API_BASE}/admin/penalty-reports/${penalty._id}`,
+                      penalty
+                    );
+                    
+                    if (response.data.success) {
+                      const index = this.penaltyReports.findIndex(p => p._id === penalty._id);
+                      if (index > -1) {
+                        this.penaltyReports[index] = response.data.report;
+                      }
+                      showToast('Penalty report updated successfully!', 'success');
+                    }
+                  } catch (error) {
+                    console.error('Save penalty changes error:', error);
+                    showToast('Update failed: ' + error.message, 'error');
+                  } finally {
+                    this.isLoading = false;
+                  }
+                },
                 async updatePenaltyStatus(penalty, status) {
                     try {
                         this.isLoading = true;
@@ -1522,12 +1607,21 @@
                                 this.updateCharts();
                             } else if (data.type === 'new-penalty') {
                                 this.penaltyReports.unshift(data.report);
-                            }
-                        } catch (error) {
+                            } else if (data.type === 'new-premium') {
+                                this.premiumServices.unshift(data.service);
+                            } else if (data.type === 'premium-updated') {
+                                const index = this.premiumServices.findIndex(s => s._id === data.service._id);
+                                if (index > -1) {
+                                  this.premiumServices.splice(index, 1, data.service);
+                                }
+                            } else if (data.type === 'new-issue') {
+                                this.merchantIssues.unshift(data.issue);
+                                this.stats.issueReports = this.merchantIssues.length;
+                              }
+                           } catch (error) {
                             console.error('WebSocket message error:', error);
                         }
                     };
-
                     this.ws.onerror = (error) => {
                         console.error('WebSocket error:', error);
                     };
