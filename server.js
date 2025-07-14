@@ -856,10 +856,35 @@ app.put('/merchant-issues/:id', adminAuth, async (req, res) => {
   }
 });
 //
+app.put('/admin/premium-services/:id/status', adminAuth, async (req, res) => {
+  try {
+    const { status } = req.body;
+    const validStatuses = ['Pending', 'Completed', 'Failed'];
+
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ success: false, message: 'Invalid status' });
+    }
+
+    const premiumService = await PremiumService.findByIdAndUpdate(
+      req.params.id,
+      { status, updatedAt: Date.now() },
+      { new: true }
+    );
+
+    if (!premiumService) {
+      return res.status(404).json({ success: false, message: 'Premium service not found' });
+    }
+
+    res.json({ success: true, premiumService });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to update premium service status' });
+  }
+});
+
 app.get('/admin/premium-services', adminAuth, async (req, res) => {
   try {
-    const services = await PremiumService.find().sort({ createdAt: -1 });
-    res.json({ success: true, services });
+    const premiumServices = await PremiumService.find().sort({ createdAt: -1 });
+    res.json({ success: true, premiumServices });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch premium services' });
   }
@@ -1159,26 +1184,7 @@ app.get('/admin/payments', adminAuth, async (req, res) => {
     });
   }
 });
-// ======================
-// Get Payments (Admin)
-// ======================
-app.get('/admin/payments', adminAuth, async (req, res) => {
-  try {
-    const payments = await Payment.find()
-      .populate('user', 'email phone')
-      .sort({ createdAt: -1 });
 
-    res.json({
-      success: true,
-      payments
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch payments'
-    });
-  }
-});
 
 // ======================
 // User Payments Route
