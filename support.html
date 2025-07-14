@@ -726,7 +726,8 @@
       
       // Clear form
       document.getElementById('issue-report-form').reset();
-      
+      //save report to local storage
+      localStorage.setItem('userPhone',formData.merchantPhone);
       // Reload reports
       const reports = await loadUserReports(formData.merchantPhone);
       displayUserReports(reports);
