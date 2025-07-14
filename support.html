@@ -665,7 +665,6 @@
       card.innerHTML = `
         <h4>${report.merchantName}</h4>
         <div class="meta">
-          <span class=" ${severityClass}">${report.severity || 'Medium'}</span>
           <span>${new Date(report.createdAt).toLocaleString()}</span>
         </div>
         <p><strong>ইস্যু:</strong> ${report.issueType}</p>
