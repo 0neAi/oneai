@@ -470,7 +470,7 @@
                                 </div>
                                 
                                 <div v-for="issue in filteredIssues" :key="issue.id" 
-                                     class="issue-card" :class="issue.severity">
+                                     class="issue-card">
                                     <div class="card-body">
                                         <h5>{{ issue.merchantName }}</h5>
                                         <div class="meta mb-2">
@@ -480,7 +480,7 @@
                                             </span>
                                             <span class="ms-2">{{ formatDateTime(issue.createdAt) }}</span>
                                         </div>
-                                        <p class="mb-2"><strong>Phone:</strong> {{ issue.customerPhone }}</p>
+                                        <p class="mb-2"><strong>Phone:</strong> {{ issue.merchantPhone }}</p>
                                         <p>{{ issue.details }}</p>
                                         
                                         <div class="actions">
@@ -819,8 +819,8 @@
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
-                                        <label class="form-label">Customer Phone</label>
-                                        <input type="text" class="form-control" :value="selectedIssue.customerPhone" readonly>
+                                        <label class="form-label">Merchant Phone</label>
+                                        <input type="text" class="form-control" :value="selectedIssue.merchantPhone" readonly>
                                     </div>
                                 </div>
                             </div>
@@ -830,12 +830,6 @@
                                     <div class="mb-3">
                                         <label class="form-label">Issue Type</label>
                                         <input type="text" class="form-control" :value="selectedIssue.issueType" readonly>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label class="form-label">Severity</label>
-                                        <input type="text" class="form-control" :value="selectedIssue.severity" readonly>
                                     </div>
                                 </div>
                             </div>
