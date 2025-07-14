@@ -655,6 +655,58 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Premium Payments Section -->
+                <div class="card shadow-sm mt-5">
+                    <div class="card-header d-flex justify-content-between align-items-center py-3">
+                        <h5 class="mb-0"><i class="bi bi-gem me-2"></i>Premium Payments</h5>
+                        <button class="btn btn-sm btn-outline-primary" @click="refreshPremiumPayments">
+                            <i class="bi bi-arrow-clockwise"></i> Refresh
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th>TRX ID</th>
+                                        <th>Phone</th>
+                                        <th>Amount</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="payment in premiumPayments" :key="payment._id">
+                                        <td>{{ payment.trxid }}</td>
+                                        <td>{{ payment.phone }}</td>
+                                        <td>৳{{ payment.amount.toFixed(2) }}</td>
+                                        <td>{{ formatDateTime(payment.createdAt) }}</td>
+                                        <td>
+                                            <span class="status-badge" :class="statusClass(payment.status)">
+                                                {{ payment.status }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-success" @click="updatePremiumPaymentStatus(payment, 'Completed')">
+                                                <i class="bi bi-check-circle"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" @click="updatePremiumPaymentStatus(payment, 'Failed')">
+                                                <i class="bi bi-x-circle"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="premiumPayments.length === 0">
+                                        <td colspan="6" class="text-center py-4 text-muted">
+                                            No premium payments found
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -938,6 +990,7 @@
                     payments: [],
                     merchantIssues: [],
                     penaltyReports: [],
+                    premiumPayments: [],
                     stats: { 
                         totalUsers: 0, 
                         totalPayments: 0, 
@@ -1076,6 +1129,7 @@
                             await this.loadPayments();
                             await this.loadMerchantIssues();
                             await this.loadPenaltyReports();
+                            await this.loadPremiumPayments();
                             
                             // Calculate stats after all data loaded
                             this.stats = {
@@ -1136,6 +1190,16 @@
                             this.penaltyReports = [];
                         }
                     },
+
+                    async loadPremiumPayments() {
+                        try {
+                            const response = await axios.get(`${API_BASE}/admin/premium-services`);
+                            this.premiumPayments = response.data.premiumServices || [];
+                        } catch (error) {
+                            console.error('Error loading premium payments:', error);
+                            this.premiumPayments = [];
+                        }
+                    },
                 async refreshPayments() {
                     try {
                         this.isLoading = true;
@@ -1180,6 +1244,17 @@
                         this.penaltyReports = response.data.reports || [];
                     } catch (error) {
                         console.error('Refresh penalties error:', error);
+                    } finally {
+                        this.isLoading = false;
+                    }
+                },
+
+                async refreshPremiumPayments() {
+                    try {
+                        this.isLoading = true;
+                        await this.loadPremiumPayments();
+                    } catch (error) {
+                        console.error('Refresh premium payments error:', error);
                     } finally {
                         this.isLoading = false;
                     }
@@ -1353,6 +1428,27 @@
                         }
                     } catch (error) {
                         console.error('Update penalty status error:', error);
+                    } finally {
+                        this.isLoading = false;
+                    }
+                },
+
+                async updatePremiumPaymentStatus(payment, status) {
+                    try {
+                        this.isLoading = true;
+                        const response = await axios.put(
+                            `${API_BASE}/admin/premium-services/${payment._id}/status`,
+                            { status }
+                        );
+
+                        if (response.data.success) {
+                            const index = this.premiumPayments.findIndex(p => p._id === payment._id);
+                            if (index > -1) {
+                                this.premiumPayments[index] = response.data.premiumService;
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Update premium payment status error:', error);
                     } finally {
                         this.isLoading = false;
                     }
