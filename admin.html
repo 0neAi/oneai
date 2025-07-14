@@ -596,7 +596,7 @@
                                             </button>
                                             <button class="btn btn-sm btn-outline-danger"
                                                     @click="updatePenaltyStatus(report, 'rejected')"
-                                                    v-if="report.status !== 'rejected'">
+                                                    v-if="report.status !== 'rejected' && report.status !== 'processed'">
                                                 <i class="bi bi-x me-1"></i>Reject
                                             </button>
                                         </td>
