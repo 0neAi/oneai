@@ -339,6 +339,13 @@
                     </div>
                 </div>
                 <div class="col-12 col-md-6 col-xl-3">
+                    <div class="stat-card bg-info">
+                        <i class="bi bi-cash-stack fs-1"></i>
+                        <div class="number">৳{{ totalPaymentAmount.toFixed(2) }}</div>
+                        <div class="label">Total Amount</div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3">
                     <div class="stat-card bg-warning">
                         <i class="bi bi-hourglass-split fs-1"></i>
                         <div class="number">{{ stats.pendingPayments }}</div>
@@ -975,6 +982,9 @@
                     return this.penaltyReports.filter(report => 
                         report.status === this.penaltyFilter
                     );
+                },
+                totalPaymentAmount() {
+                    return this.payments.reduce((total, payment) => total + payment.amount3, 0);
                 }
             },
             methods: {
