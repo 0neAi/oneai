@@ -674,6 +674,20 @@ app.post('/penalty-report', async (req, res) => {
     });
   }
 });
+
+app.get('/merchant-issues', async (req, res) => {
+  try {
+    const { phone } = req.query;
+    if (!phone) {
+      return res.status(400).json({ success: false, message: 'Phone number required' });
+    }
+    
+    const issues = await MerchantIssue.find({ merchantPhone: phone }).sort({ createdAt: -1 });
+    res.json({ success: true, issues });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch issues' });
+  }
+});
 // Add after existing endpoints
 app.get('/admin/admins', adminAuth, async (req, res) => {
   try {
