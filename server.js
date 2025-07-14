@@ -765,48 +765,10 @@ app.get('/admin/penalty-reports', adminAuth, async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to fetch penalty reports' });
   }
 });
-// Fix duplicate endpoint in server.js
-app.get('/merchant-issues', async (req, res) => {
-  try {
-    const { phone } = req.query;
-    if (!phone) {
-      return res.status(400).json({ success: false, message: 'Phone number required' });
-    }
-    
-    const issues = await MerchantIssue.find({ merchantPhone: phone }).sort({ createdAt: -1 });
-    res.json({ success: true, issues });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to fetch issues' });
-  }
-});
-// Create new merchant issue
-app.post('/merchant-issues', async (req, res) => {
-  try {
-    const { merchantName, merchantPhone, issueType, severity, details } = req.body;
-    
-    if (!merchantName || !merchantPhone || !issueType || !details) {
-      return res.status(400).json({ success: false, message: 'Missing required fields' });
-    }
-    
-    const issue = new MerchantIssue({
-      merchantName,
-      merchantPhone,
-      issueType,
-      severity,
-      details,
-      status: 'pending'
-    });
-    
-    const savedIssue = await issue.save();
-    
-    res.status(201).json({ success: true, issue: savedIssue });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to create issue' });
-  }
-});
+
 
 // Update issue status
-app.put('/merchant-issues/:id/status', adminAuth, async (req, res) => {
+app.put('/admin/merchant-issues/:id/status', adminAuth, async (req, res) => {
   try {
     const { status } = req.body;
     const validStatuses = ['pending', 'in progress', 'resolved', 'rejected'];
@@ -832,27 +794,28 @@ app.put('/merchant-issues/:id/status', adminAuth, async (req, res) => {
 });
 
 // Update issue details
-app.put('/merchant-issues/:id', adminAuth, async (req, res) => {
+app.put('/admin/penalty-reports/:id/status', adminAuth, async (req, res) => {
   try {
-    const { status, adminNotes } = req.body;
-    
-    const updateData = { updatedAt: Date.now() };
-    if (status) updateData.status = status;
-    if (adminNotes) updateData.adminNotes = adminNotes;
-    
-    const issue = await MerchantIssue.findByIdAndUpdate(
+    const { status } = req.body;
+    const validStatuses = ['pending', 'processed', 'rejected'];
+
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ success: false, message: 'Invalid status' });
+    }
+
+    const report = await PenaltyReport.findByIdAndUpdate(
       req.params.id,
-      updateData,
+      { status, updatedAt: Date.now() },
       { new: true }
     );
-    
-    if (!issue) {
-      return res.status(404).json({ success: false, message: 'Issue not found' });
+
+    if (!report) {
+      return res.status(404).json({ success: false, message: 'Penalty report not found' });
     }
-    
-    res.json({ success: true, issue });
+
+    res.json({ success: true, report });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to update issue' });
+    res.status(500).json({ success: false, message: 'Failed to update penalty report status' });
   }
 });
 //
