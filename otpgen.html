@@ -490,6 +490,12 @@
           </button>
         </div>
         <br>
+        <div class="form-group">
+          <label for="voucher-code">ভাউচার কোড:</label>
+          <input type="text" id="voucher-code" name="voucherCode" placeholder="Enter voucher code">
+          <button type="button" class="button" onclick="applyVoucher()">Apply Voucher</button>
+          <div id="voucher-message"></div>
+        </div>
               <div class="form-group">
         <label for="method">পেমেন্ট গেটওয়ে:</label>
         <select id="method" name="method" required onchange="updatePaymentDisplay()">
@@ -611,6 +617,10 @@
         updateFreeConsignmentDisplay();
 
         const discount = parseInt(localStorage.getItem('activeDiscount')) || 0;
+        const voucherCode = document.getElementById('voucher-code').value.trim();
+        if (voucherCode) {
+            formData.voucherCode = voucherCode;
+        }
         if (discount > 0) {
             totalCharge *= (1 - discount / 100);
         }
@@ -894,6 +904,35 @@ ${formData.consignments.map((c, index) => `
             element.closest('.consignment-group').remove();
             consignmentIndex--;
             calculateTotalCharge();
+        }
+    }
+
+    async function applyVoucher() {
+        const voucherCode = document.getElementById('voucher-code').value.trim();
+        if (!voucherCode) {
+            showMessage('Please enter a voucher code.', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch('https://oneai-wjox.onrender.com/validate-voucher', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ voucherCode })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                localStorage.setItem('activeDiscount', data.discountPercentage);
+                document.querySelector('.discount-btn').disabled = true;
+                showMessage(`Voucher applied! You got a ${data.discountPercentage}% discount.`, 'success');
+                calculateTotalCharge();
+            } else {
+                showMessage(data.message || 'Invalid or expired voucher.', 'error');
+            }
+        } catch (error) {
+            showMessage('Failed to apply voucher. Please try again.', 'error');
         }
     }
 
