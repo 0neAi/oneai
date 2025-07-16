@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
   <link rel="stylesheet" href="./assets/css/main.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
   <style>
     /* Reuse dashboard styling */
     :root {
@@ -384,14 +385,13 @@
   <div id="reports-container"></div>
   
   <!-- Unified Voucher Section -->
-  <div class="voucher-container" id="voucher-container">
-    <h3><i class="fas fa-gift"></i> আপনার ভাউচার</h3>
-    <p id="voucher-message">আপনার রিপোর্টটি গৃহীত হয়েছে। এডমিন চেক করার পর ভাউচারটি আপনার ফোনে এসএমএসের মাধ্যমে পাঠানো হবে।</p>
-    <div class="voucher-code" id="voucher-code">প্রসেসিং</div>
-    <p>ভাউচারটি প্রিমিয়াম সার্ভিসে ব্যবহার করতে পারবেন</p>
-    <div id="voucher-countdown" style="font-size: 0.9rem; color: #ccc; text-align: center; margin-top: 10px;"></div>
-    <button type="button" class="btn" onclick="checkAllVouchers()">ভাউচার স্ট্যাটাস চেক করুন</button>
-  </div>
+  <div class="voucher-container" id="voucher-container" style="display: none;">
+  <h3><i class="fas fa-gift"></i> আপনার ভাউচার</h3>
+  <p id="voucher-message">আপনার রিপোর্টটি গৃহীত হয়েছে। এডমিন চেক করার পর ভাউচারটি আপনার ফোনে এসএমএসের মাধ্যমে পাঠানো হবে।</p>
+  <div class="voucher-code" id="voucher-code">প্রসেসিং</div>
+  <p>ভাউচারটি প্রিমিয়াম সার্ভিসে ব্যবহার করতে পারবেন</p>
+  <button type="button" class="btn" onclick="checkAllVouchers()">ভাউচার স্ট্যাটাস চেক করুন</button>
+</div>
 </section>
     
     <!-- Issueless Merchants Section -->
