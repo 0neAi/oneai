@@ -744,6 +744,27 @@ app.get('/penalty-report-status', async (req, res) => {
         res.status(500).json({ success: false, message: 'Failed to check status' });
     }
 });
+
+// Add this endpoint to fetch both types of reports
+app.get('/user-reports/:phone', async (req, res) => {
+  try {
+    const phone = req.params.phone;
+    const [issues, penalties] = await Promise.all([
+      MerchantIssue.find({ merchantPhone: phone }),
+      PenaltyReport.find({ customerPhone: phone })
+    ]);
+    
+    res.json({
+      success: true,
+      reports: {
+        issues: issues,
+        penalties: penalties
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to load reports' });
+  }
+});
 // Add after existing endpoints
 app.get('/admin/admins', adminAuth, async (req, res) => {
   try {
