@@ -177,6 +177,35 @@
 
   })();
 
+// Function to save voucher to localStorage
+function saveVoucherToStorage(voucherCode, type) {
+  const voucherData = {
+    code: voucherCode,
+    type: type,
+    timestamp: Date.now()
+  };
+  localStorage.setItem('voucherData', JSON.stringify(voucherData));
+}
+
+// Function to load voucher from localStorage
+function loadVoucherFromStorage() {
+  const voucherData = JSON.parse(localStorage.getItem('voucherData'));
+  if (voucherData) {
+    const voucherContainer = document.getElementById('voucher-container');
+    const voucherCodeElement = document.getElementById('voucher-code');
+    
+    voucherCodeElement.textContent = voucherData.code;
+    voucherContainer.style.display = 'block';
+    
+    // Update message based on voucher type
+    const message = voucherData.type === 'issue' 
+      ? 'আপনার ইস্যু রিপোর্টের ভাউচার তৈরি হয়েছে!' 
+      : 'আপনার পেনাল্টি রিপোর্টের ভাউচার তৈরি হয়েছে!';
+    
+    document.getElementById('voucher-message').textContent = message;
+  }
+}
+
 // Updated displayUserReports function
 function displayUserReports(reports) {
   const container = document.getElementById('reports-container');
