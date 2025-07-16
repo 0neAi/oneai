@@ -838,29 +838,30 @@ app.get('/admin/penalty-reports', adminAuth, async (req, res) => {
 
 
 // Update issue status
-app.put('/admin/merchant-issues/:id/status', adminAuth, async (req, res) => {
-  try {
-    const { status } = req.body;
-    const validStatuses = ['pending', 'in progress', 'resolved', 'rejected'];
-    
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({ success: false, message: 'Invalid status' });
+app.post('/admin/issue-reports/:id/approve', adminAuth, async (req, res) => {
+    try {
+        const issue = await MerchantIssue.findById(req.params.id);
+        if (!issue) {
+            return res.status(404).json({ success: false, message: 'Issue not found' });
+        }
+
+        const voucherCode = `ONEAI-39-${issue._id.toString().slice(-4)}`;
+        const voucher = new Voucher({
+            code: voucherCode,
+            discountPercentage: 39,
+            report: issue._id,
+            reportModel: 'MerchantIssue'
+        });
+        await voucher.save();
+
+        issue.status = 'resolved';
+        issue.voucherCode = voucherCode;
+        await issue.save();
+
+        res.json({ success: true, issue });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to approve issue' });
     }
-    
-    const issue = await MerchantIssue.findByIdAndUpdate(
-      req.params.id,
-      { status, updatedAt: Date.now() },
-      { new: true }
-    );
-    
-    if (!issue) {
-      return res.status(404).json({ success: false, message: 'Issue not found' });
-    }
-    
-    res.json({ success: true, issue });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to update issue ' });
-  }
 });
 
 // Update issue details
