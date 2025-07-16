@@ -636,63 +636,7 @@
     }, 300000);
   }
 
-  async function checkIssueStatus(phone) {
-    if (!phone) {
-        phone = document.getElementById('issue-merchant-phone').value;
-    }
-    if (!phone) {
-        showConfirmation('Please enter your phone number to check the status.', false);
-        return;
-    }
-    try {
-        const response = await fetch(`https://oneai-wjox.onrender.com/merchant-issue-status?phone=${phone}`);
-        const data = await response.json();
-        if (response.ok) {
-            if (data.voucherCode) {
-                document.getElementById('issue-voucher-code').textContent = data.voucherCode;
-                document.getElementById('issue-voucher-container').style.display = 'block';
-                if (voucherCheckInterval) {
-                  clearInterval(voucherCheckInterval);
-                }
-            } else {
-                showConfirmation('Your report is still being processed.', true);
-            }
-        } else {
-            showConfirmation(data.message, false);
-        }
-    } catch (error) {
-        showConfirmation('Failed to check status. Please try again.', false);
-    }
-  }
-
-  async function checkIssueStatus(phone) {
-    if (!phone) {
-        phone = document.getElementById('issue-merchant-phone').value;
-    }
-    if (!phone) {
-        showConfirmation('Please enter your phone number to check the status.', false);
-        return;
-    }
-    try {
-        const response = await fetch(`https://oneai-wjox.onrender.com/merchant-issue-status?phone=${phone}`);
-        const data = await response.json();
-        if (response.ok) {
-            if (data.voucherCode) {
-                document.getElementById('issue-voucher-code').textContent = data.voucherCode;
-                document.getElementById('issue-voucher-container').style.display = 'block';
-                if (voucherCheckInterval) {
-                  clearInterval(voucherCheckInterval);
-                }
-            } else {
-                showConfirmation('Your report is still being processed.', true);
-            }
-        } else {
-            showConfirmation(data.message, false);
-        }
-    } catch (error) {
-        showConfirmation('Failed to check status. Please try again.', false);
-    }
-  }
+  
 
   async function checkPenaltyStatus(phone) {
     if (!phone) {
@@ -831,9 +775,13 @@
         throw new Error(errorData.message || 'সার্ভার থেকে রেসপন্স পেতে সমস্যা হয়েছে');
       }
       
+      await response.json();
+
       // Show success message
       showConfirmation('আপনার ইস্যু রিপোর্ট সফলভাবে জমা হয়েছে!');
       
+      document.getElementById('issue-voucher-container').style.display = 'block';
+
       // Clear form
       document.getElementById('issue-report-form').reset();
       //save report to local storage
@@ -876,15 +824,13 @@
         throw new Error(errorData.message || 'সার্ভার থেকে রেসপন্স পেতে সমস্যা হয়েছে');
       }
       
-      const data = await response.json();
+      await response.json();
 
-      // Show voucher
-      if (data.voucherCode) {
-        document.getElementById('voucher-code').textContent = data.voucherCode;
-        document.getElementById('voucher-container').style.display = 'block';
-      } else {
-        startVoucherCheck('penalty', formData.customerPhone);
-      }
+      // Show voucher container with "Processing" message
+      document.getElementById('voucher-container').style.display = 'block';
+      document.getElementById('voucher-code').textContent = 'প্রসেসিং';
+      startVoucherCheck('penalty', formData.customerPhone);
+
 
       // Show success message
       showConfirmation('আপনার পেনাল্টি রিপোর্ট সফলভাবে জমা হয়েছে!');
