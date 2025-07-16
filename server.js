@@ -717,32 +717,42 @@ app.get('/merchant-issues', async (req, res) => {
   }
 });
 
+// Merchant issue status endpoint
 app.get('/merchant-issue-status', async (req, res) => {
-    try {
-        const { phone } = req.query;
-        const issue = await MerchantIssue.findOne({ merchantPhone: phone, status: 'resolved' });
-        if (issue && issue.voucherCode) {
-            res.json({ success: true, voucherCode: issue.voucherCode });
-        } else {
-            res.status(404).json({ success: false, message: 'Report not processed yet' });
-        }
-    } catch (error) {
-        res.status(500).json({ success: false, message: 'Failed to check status' });
+  try {
+    const { phone } = req.query;
+    const issue = await MerchantIssue.findOne({
+      merchantPhone: phone,
+      status: 'resolved'
+    });
+
+    if (issue && issue.voucherCode) {
+      res.json({ success: true, voucherCode: issue.voucherCode });
+    } else {
+      res.status(404).json({ success: false, message: 'Report not processed yet' });
     }
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to check status' });
+  }
 });
 
+// Penalty report status endpoint
 app.get('/penalty-report-status', async (req, res) => {
-    try {
-        const { phone } = req.query;
-        const report = await PenaltyReport.findOne({ customerPhone: phone, status: 'processed' });
-        if (report && report.voucherCode) {
-            res.json({ success: true, voucherCode: report.voucherCode });
-        } else {
-            res.status(404).json({ success: false, message: 'Report not processed yet' });
-        }
-    } catch (error) {
-        res.status(500).json({ success: false, message: 'Failed to check status' });
+  try {
+    const { phone } = req.query;
+    const report = await PenaltyReport.findOne({
+      customerPhone: phone,
+      status: 'processed'
+    });
+
+    if (report && report.voucherCode) {
+      res.json({ success: true, voucherCode: report.voucherCode });
+    } else {
+      res.status(404).json({ success: false, message: 'Report not processed yet' });
     }
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to check status' });
+  }
 });
 
 // Add this endpoint to fetch both types of reports
