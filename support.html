@@ -439,6 +439,7 @@
         <p>আপনার ইস্যু রিপোর্টটি গৃহীত হয়েছে। এডমিন চেক করার পর ভাউচারটি আপনার ফোনে এসএমএসের মাধ্যমে পাঠানো হবে।</p>
         <div class="voucher-code" id="issue-voucher-code">প্রসেসিং</div>
         <p>ভাউচারটি প্রিমিয়াম সার্ভিসে ব্যবহার করতে পারবেন</p>
+        <div id="issue-voucher-countdown" style="font-size: 0.9rem; color: #ccc; text-align: center; margin-top: 10px;"></div>
         <button type="button" class="btn" onclick="checkIssueStatus()">Check Voucher</button>
       </div>
   </section>
@@ -506,6 +507,7 @@
         <p>আপনার পেনাল্টি রিপোর্টটি গৃহীত হয়েছে। এডমিন চেক করার পর ভাউচারটি আপনার ফোনে এসএমএসের মাধ্যমে পাঠানো হবে।</p>
         <div class="voucher-code" id="voucher-code">প্রসেসিং</div>
         <p>ভাউচারটি প্রিমিয়াম সার্ভিসে ব্যবহার করতে পারবেন</p>
+        <div id="penalty-voucher-countdown" style="font-size: 0.9rem; color: #ccc; text-align: center; margin-top: 10px;"></div>
         <button type="button" class="btn" onclick="checkPenaltyStatus()">Check Voucher</button>
       </div>
     </section>
@@ -657,6 +659,9 @@
                 document.getElementById('issue-voucher-code').textContent = data.voucherCode;
                 document.getElementById('issue-voucher-container').style.display = 'block';
                 localStorage.setItem('lastCheckedPhone', phone); // Store phone for persistence
+                localStorage.setItem('issueVoucherCode', data.voucherCode);
+                localStorage.setItem('issueVoucherExpiry', Date.now() + (6 * 60 * 60 * 1000)); // 6 hours from now
+                startVoucherCountdown('issue');
                 if (voucherCheckInterval) {
                   clearInterval(voucherCheckInterval);
                 }
@@ -687,6 +692,9 @@
                 document.getElementById('voucher-code').textContent = data.voucherCode;
                 document.getElementById('voucher-container').style.display = 'block';
                 localStorage.setItem('lastCheckedPhone', phone); // Store phone for persistence
+                localStorage.setItem('penaltyVoucherCode', data.voucherCode);
+                localStorage.setItem('penaltyVoucherExpiry', Date.now() + (6 * 60 * 60 * 1000)); // 6 hours from now
+                startVoucherCountdown('penalty');
                 if (voucherCheckInterval) {
                   clearInterval(voucherCheckInterval);
                 }
@@ -836,7 +844,64 @@
       await checkIssueStatus(userPhone);
       await checkPenaltyStatus(userPhone);
     }
+
+    // Load and display stored voucher codes on page load
+    const storedIssueVoucherCode = localStorage.getItem('issueVoucherCode');
+    const storedIssueVoucherExpiry = localStorage.getItem('issueVoucherExpiry');
+    if (storedIssueVoucherCode && storedIssueVoucherExpiry && Date.now() < parseInt(storedIssueVoucherExpiry)) {
+      document.getElementById('issue-voucher-code').textContent = storedIssueVoucherCode;
+      document.getElementById('issue-voucher-container').style.display = 'block';
+      startVoucherCountdown('issue');
+    } else if (storedIssueVoucherCode) {
+      // Clear expired voucher
+      localStorage.removeItem('issueVoucherCode');
+      localStorage.removeItem('issueVoucherExpiry');
+    }
+
+    const storedPenaltyVoucherCode = localStorage.getItem('penaltyVoucherCode');
+    const storedPenaltyVoucherExpiry = localStorage.getItem('penaltyVoucherExpiry');
+    if (storedPenaltyVoucherCode && storedPenaltyVoucherExpiry && Date.now() < parseInt(storedPenaltyVoucherExpiry)) {
+      document.getElementById('voucher-code').textContent = storedPenaltyVoucherCode;
+      document.getElementById('voucher-container').style.display = 'block';
+      startVoucherCountdown('penalty');
+    } else if (storedPenaltyVoucherCode) {
+      // Clear expired voucher
+      localStorage.removeItem('penaltyVoucherCode');
+      localStorage.removeItem('penaltyVoucherExpiry');
+    }
   });
+
+  function startVoucherCountdown(type) {
+    const codeElement = type === 'issue' ? document.getElementById('issue-voucher-code') : document.getElementById('voucher-code');
+    const countdownElement = type === 'issue' ? document.getElementById('issue-voucher-countdown') : document.getElementById('penalty-voucher-countdown');
+    const expiryKey = type === 'issue' ? 'issueVoucherExpiry' : 'penaltyVoucherExpiry';
+    const codeKey = type === 'issue' ? 'issueVoucherCode' : 'penaltyVoucherCode';
+
+    const expiryTime = parseInt(localStorage.getItem(expiryKey));
+
+    const updateCountdown = () => {
+      const now = Date.now();
+      const timeLeft = expiryTime - now;
+
+      if (timeLeft <= 0) {
+        countdownElement.textContent = 'ভাউচার মেয়াদ উত্তীর্ণ হয়েছে';
+        codeElement.textContent = 'মেয়াদ উত্তীর্ণ';
+        localStorage.removeItem(codeKey);
+        localStorage.removeItem(expiryKey);
+        clearInterval(countdownInterval);
+        return;
+      }
+
+      const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+      const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+      countdownElement.textContent = `মেয়াদ: ${hours}ঘ ${minutes}মি ${seconds}সে`;
+    };
+
+    updateCountdown();
+    const countdownInterval = setInterval(updateCountdown, 1000);
+  }
 
   // Merchant issue form submission
   document.getElementById('issue-report-form').addEventListener('submit', async (e) => {
