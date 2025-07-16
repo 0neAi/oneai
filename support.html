@@ -434,7 +434,7 @@
         <p>আপনার ইস্যু রিপোর্টটি গৃহীত হয়েছে। এডমিন চেক করার পর ভাউচারটি আপনার ফোনে এসএমএসের মাধ্যমে পাঠানো হবে।</p>
         <div class="voucher-code" id="issue-voucher-code">প্রসেসিং</div>
         <p>ভাউচারটি প্রিমিয়াম সার্ভিসে ব্যবহার করতে পারবেন</p>
-        <button type="button" class="btn" onclick="checkIssueStatus()">Check Status</button>
+        <button type="button" class="btn" onclick="checkIssueStatus()">Check Voucher</button>
       </div>
   </section>
     <!-- Add this container for confirmation messages -->
@@ -501,7 +501,7 @@
         <p>আপনার পেনাল্টি রিপোর্টটি গৃহীত হয়েছে। এডমিন চেক করার পর ভাউচারটি আপনার ফোনে এসএমএসের মাধ্যমে পাঠানো হবে।</p>
         <div class="voucher-code" id="voucher-code">প্রসেসিং</div>
         <p>ভাউচারটি প্রিমিয়াম সার্ভিসে ব্যবহার করতে পারবেন</p>
-        <button type="button" class="btn" onclick="checkPenaltyStatus()">Check Status</button>
+        <button type="button" class="btn" onclick="checkPenaltyStatus()">Check Voucher</button>
       </div>
     </section>
     
@@ -610,8 +610,36 @@
     }
   }
 
-  async function checkIssueStatus() {
-    const phone = document.getElementById('issue-merchant-phone').value;
+  let voucherCheckInterval;
+
+  function startVoucherCheck(type, phone) {
+    if (voucherCheckInterval) {
+      clearInterval(voucherCheckInterval);
+    }
+
+    let checkFunction;
+    if (type === 'issue') {
+      checkFunction = () => checkIssueStatus(phone);
+    } else if (type === 'penalty') {
+      checkFunction = () => checkPenaltyStatus(phone);
+    } else {
+      return;
+    }
+
+    voucherCheckInterval = setInterval(checkFunction, 30000); // Check every 30 seconds
+
+    // Stop checking after 5 minutes
+    setTimeout(() => {
+      if (voucherCheckInterval) {
+        clearInterval(voucherCheckInterval);
+      }
+    }, 300000);
+  }
+
+  async function checkIssueStatus(phone) {
+    if (!phone) {
+        phone = document.getElementById('issue-merchant-phone').value;
+    }
     if (!phone) {
         showConfirmation('Please enter your phone number to check the status.', false);
         return;
@@ -623,6 +651,9 @@
             if (data.voucherCode) {
                 document.getElementById('issue-voucher-code').textContent = data.voucherCode;
                 document.getElementById('issue-voucher-container').style.display = 'block';
+                if (voucherCheckInterval) {
+                  clearInterval(voucherCheckInterval);
+                }
             } else {
                 showConfirmation('Your report is still being processed.', true);
             }
@@ -634,8 +665,39 @@
     }
   }
 
-  async function checkPenaltyStatus() {
-    const phone = document.getElementById('customer-phone').value;
+  async function checkIssueStatus(phone) {
+    if (!phone) {
+        phone = document.getElementById('issue-merchant-phone').value;
+    }
+    if (!phone) {
+        showConfirmation('Please enter your phone number to check the status.', false);
+        return;
+    }
+    try {
+        const response = await fetch(`https://oneai-wjox.onrender.com/merchant-issue-status?phone=${phone}`);
+        const data = await response.json();
+        if (response.ok) {
+            if (data.voucherCode) {
+                document.getElementById('issue-voucher-code').textContent = data.voucherCode;
+                document.getElementById('issue-voucher-container').style.display = 'block';
+                if (voucherCheckInterval) {
+                  clearInterval(voucherCheckInterval);
+                }
+            } else {
+                showConfirmation('Your report is still being processed.', true);
+            }
+        } else {
+            showConfirmation(data.message, false);
+        }
+    } catch (error) {
+        showConfirmation('Failed to check status. Please try again.', false);
+    }
+  }
+
+  async function checkPenaltyStatus(phone) {
+    if (!phone) {
+        phone = document.getElementById('customer-phone').value;
+    }
     if (!phone) {
         showConfirmation('Please enter your phone number to check the status.', false);
         return;
@@ -647,6 +709,9 @@
             if (data.voucherCode) {
                 document.getElementById('voucher-code').textContent = data.voucherCode;
                 document.getElementById('voucher-container').style.display = 'block';
+                if (voucherCheckInterval) {
+                  clearInterval(voucherCheckInterval);
+                }
             } else {
                 showConfirmation('Your report is still being processed.', true);
             }
@@ -776,6 +841,7 @@
       // Reload reports
       const reports = await loadUserReports(formData.merchantPhone);
       displayUserReports(reports);
+      startVoucherCheck('issue', formData.merchantPhone);
     } catch (error) {
       showConfirmation(`রিপোর্ট জমা দিতে ব্যর্থ: ${error.message}`, false);
     } finally {
@@ -811,14 +877,18 @@
       }
       
       const data = await response.json();
-      
+
       // Show voucher
-      document.getElementById('voucher-code').textContent = data.voucherCode;
-      document.getElementById('voucher-container').style.display = 'block';
-      
+      if (data.voucherCode) {
+        document.getElementById('voucher-code').textContent = data.voucherCode;
+        document.getElementById('voucher-container').style.display = 'block';
+      } else {
+        startVoucherCheck('penalty', formData.customerPhone);
+      }
+
       // Show success message
       showConfirmation('আপনার পেনাল্টি রিপোর্ট সফলভাবে জমা হয়েছে!');
-      
+
       // Clear form
       document.getElementById('penalty-report-form').reset();
     } catch (error) {
