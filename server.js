@@ -424,6 +424,18 @@ app.post('/payment', authMiddleware, async (req, res) => {
       amount3 *= (1 - discount / 100);
     }
 
+    const { voucherCode } = req.body;
+    if (voucherCode) {
+        const voucher = await Voucher.findOne({ code: voucherCode, isUsed: false });
+        if (voucher) {
+            amount3 *= (1 - voucher.discountPercentage / 100);
+            voucher.isUsed = true;
+            await voucher.save();
+        } else {
+            return res.status(400).json({ success: false, message: 'Invalid or expired voucher' });
+        }
+    }
+
     // Validate final amount
     if (amount3 < 0 || amount3 > 30000) {
       return res.status(400).json({
@@ -566,6 +578,23 @@ const penaltyReportSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 const PenaltyReport = mongoose.model('PenaltyReport', penaltyReportSchema);
+
+const voucherSchema = new mongoose.Schema({
+    code: { type: String, required: true, unique: true },
+    discountPercentage: { type: Number, required: true },
+    isUsed: { type: Boolean, default: false },
+    report: {
+        type: mongoose.Schema.Types.ObjectId,
+        refPath: 'reportModel'
+    },
+    reportModel: {
+        type: String,
+        required: true,
+        enum: ['MerchantIssue', 'PenaltyReport']
+    }
+}, { timestamps: true });
+
+const Voucher = mongoose.model('Voucher', voucherSchema);
 
 // Merchant Issues API
 app.post('/merchant-issues', async (req, res) => {
@@ -831,6 +860,74 @@ app.put('/admin/penalty-reports/:id/status', adminAuth, async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to update penalty report status' });
   }
+});
+
+app.post('/admin/issue-reports/:id/approve', adminAuth, async (req, res) => {
+    try {
+        const issue = await MerchantIssue.findById(req.params.id);
+        if (!issue) {
+            return res.status(404).json({ success: false, message: 'Issue not found' });
+        }
+
+        const voucherCode = `ISSUE-${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
+        const voucher = new Voucher({
+            code: voucherCode,
+            discountPercentage: 39,
+            report: issue._id,
+            reportModel: 'MerchantIssue'
+        });
+        await voucher.save();
+
+        issue.status = 'resolved';
+        issue.voucherCode = voucherCode;
+        await issue.save();
+
+        res.json({ success: true, issue });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to approve issue' });
+    }
+});
+
+app.post('/admin/penalty-reports/:id/process', adminAuth, async (req, res) => {
+    try {
+        const { discountPercentage } = req.body;
+        const report = await PenaltyReport.findById(req.params.id);
+        if (!report) {
+            return res.status(404).json({ success: false, message: 'Penalty report not found' });
+        }
+
+        const voucherCode = `PENALTY-${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
+        const voucher = new Voucher({
+            code: voucherCode,
+            discountPercentage,
+            report: report._id,
+            reportModel: 'PenaltyReport'
+        });
+        await voucher.save();
+
+        report.status = 'processed';
+        report.voucherCode = voucherCode;
+        await report.save();
+
+        res.json({ success: true, report });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to process penalty report' });
+    }
+});
+
+app.post('/validate-voucher', async (req, res) => {
+    try {
+        const { voucherCode } = req.body;
+        const voucher = await Voucher.findOne({ code: voucherCode, isUsed: false });
+
+        if (!voucher) {
+            return res.status(404).json({ success: false, message: 'Invalid or expired voucher' });
+        }
+
+        res.json({ success: true, discountPercentage: voucher.discountPercentage });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to validate voucher' });
+    }
 });
 //
 app.put('/admin/premium-services/:id/status', adminAuth, async (req, res) => {
