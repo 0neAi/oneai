@@ -372,6 +372,10 @@
     
     <!-- Alert messages container -->
     <div id="alert-container"></div>
+
+    <button type="button" class="btn btn-full" onclick="checkAllVouchers()" style="margin-bottom: 20px;">
+      <i class="fas fa-search"></i> সকল ভাউচার স্ট্যাটাস চেক করুন
+    </button>
     
     <!-- Issueless Merchants Section -->
     <section class="section">
@@ -636,7 +640,35 @@
     }, 300000);
   }
 
-  
+  async function checkIssueStatus(phone) {
+    if (!phone) {
+        phone = document.getElementById('issue-merchant-phone').value;
+    }
+    if (!phone) {
+        showConfirmation('Please enter your phone number to check the status.', false);
+        return;
+    }
+    try {
+        const response = await fetch(`https://oneai-wjox.onrender.com/merchant-issue-status?phone=${phone}`);
+        const data = await response.json();
+        if (response.ok) {
+            if (data.voucherCode) {
+                document.getElementById('issue-voucher-code').textContent = data.voucherCode;
+                document.getElementById('issue-voucher-container').style.display = 'block';
+                localStorage.setItem('lastCheckedPhone', phone); // Store phone for persistence
+                if (voucherCheckInterval) {
+                  clearInterval(voucherCheckInterval);
+                }
+            } else {
+                showConfirmation('Your report is still being processed.', true);
+            }
+        } else {
+            showConfirmation(data.message, false);
+        }
+    } catch (error) {
+        showConfirmation('Failed to check status. Please try again.', false);
+    }
+  }
 
   async function checkPenaltyStatus(phone) {
     if (!phone) {
@@ -653,6 +685,7 @@
             if (data.voucherCode) {
                 document.getElementById('voucher-code').textContent = data.voucherCode;
                 document.getElementById('voucher-container').style.display = 'block';
+                localStorage.setItem('lastCheckedPhone', phone); // Store phone for persistence
                 if (voucherCheckInterval) {
                   clearInterval(voucherCheckInterval);
                 }
@@ -732,6 +765,30 @@
     });
   }
 
+  // New function to check all voucher statuses
+  async function checkAllVouchers() {
+    let phone = localStorage.getItem('lastCheckedPhone');
+    if (!phone) {
+      phone = prompt("Please enter your phone number to check voucher statuses:");
+      if (!phone) {
+        showConfirmation("Phone number is required to check voucher statuses.", false);
+        return;
+      }
+      localStorage.setItem('lastCheckedPhone', phone);
+    }
+
+    loadingOverlay.style.display = 'flex';
+    try {
+      await checkIssueStatus(phone);
+      await checkPenaltyStatus(phone);
+      showConfirmation("Voucher statuses checked.", true);
+    } catch (error) {
+      showConfirmation(`Failed to check all voucher statuses: ${error.message}`, false);
+    } finally {
+      loadingOverlay.style.display = 'none';
+    }
+  }
+
   // Initialize the page
   document.addEventListener('DOMContentLoaded', async () => {
     displayMerchants();
@@ -742,12 +799,15 @@
     
     // Check for phone in URL or localStorage
     const urlParams = new URLSearchParams(window.location.search);
-    const userPhone = urlParams.get('phone') || localStorage.getItem('userPhone');
+    const userPhone = urlParams.get('phone') || localStorage.getItem('lastCheckedPhone');
     
     if (userPhone) {
-      localStorage.setItem('userPhone', userPhone);
+      localStorage.setItem('lastCheckedPhone', userPhone);
       const reports = await loadUserReports(userPhone);
       displayUserReports(reports);
+      // Automatically check voucher status on page load if phone is available
+      await checkIssueStatus(userPhone);
+      await checkPenaltyStatus(userPhone);
     }
   });
 
@@ -781,11 +841,12 @@
       showConfirmation('আপনার ইস্যু রিপোর্ট সফলভাবে জমা হয়েছে!');
       
       document.getElementById('issue-voucher-container').style.display = 'block';
+      document.getElementById('issue-voucher-code').textContent = 'প্রসেসিং'; // Set to processing initially
 
       // Clear form
       document.getElementById('issue-report-form').reset();
       //save report to local storage
-      localStorage.setItem('userPhone',formData.merchantPhone);
+      localStorage.setItem('lastCheckedPhone',formData.merchantPhone);
       // Reload reports
       const reports = await loadUserReports(formData.merchantPhone);
       displayUserReports(reports);
