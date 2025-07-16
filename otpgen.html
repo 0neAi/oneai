@@ -616,11 +616,7 @@
         // Update the display after processing all consignments
         updateFreeConsignmentDisplay();
 
-        const discount = parseInt(localStorage.getItem('activeDiscount')) || 0;
-        const voucherCode = document.getElementById('voucher-code').value.trim();
-        if (voucherCode) {
-            formData.voucherCode = voucherCode;
-        }
+        const discount = parseInt(document.getElementById('discount-text').textContent) || 0;
         if (discount > 0) {
             totalCharge *= (1 - discount / 100);
         }
@@ -782,6 +778,10 @@
         });
 
         // Apply discount
+        const voucherCode = document.getElementById('voucher-code').value.trim();
+        if (voucherCode) {
+            formData.voucherCode = voucherCode;
+        }
         if (formData.discount > 0) {
             totalCharge *= (1 - formData.discount / 100);
         }
@@ -924,7 +924,7 @@ ${formData.consignments.map((c, index) => `
             const data = await response.json();
 
             if (response.ok) {
-                localStorage.setItem('activeDiscount', data.discountPercentage);
+                document.getElementById('discount-text').textContent = `${data.discountPercentage}%`;
                 document.querySelector('.discount-btn').disabled = true;
                 showMessage(`Voucher applied! You got a ${data.discountPercentage}% discount.`, 'success');
                 calculateTotalCharge();
