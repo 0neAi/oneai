@@ -420,20 +420,19 @@ app.post('/payment', authMiddleware, async (req, res) => {
     }
 
     // Apply discount
-    if (discount > 0) {
-      amount3 *= (1 - discount / 100);
-    }
-
     const { voucherCode } = req.body;
     if (voucherCode) {
         const voucher = await Voucher.findOne({ code: voucherCode, isUsed: false });
         if (voucher) {
-            amount3 *= (1 - voucher.discountPercentage / 100);
+            const discountPercentage = voucher.code.split('-')[1];
+            amount3 *= (1 - discountPercentage / 100);
             voucher.isUsed = true;
             await voucher.save();
         } else {
             return res.status(400).json({ success: false, message: 'Invalid or expired voucher' });
         }
+    } else if (discount > 0) {
+      amount3 *= (1 - discount / 100);
     }
 
     // Validate final amount
@@ -717,6 +716,34 @@ app.get('/merchant-issues', async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to fetch issues' });
   }
 });
+
+app.get('/merchant-issue-status', async (req, res) => {
+    try {
+        const { phone } = req.query;
+        const issue = await MerchantIssue.findOne({ merchantPhone: phone, status: 'resolved' });
+        if (issue && issue.voucherCode) {
+            res.json({ success: true, voucherCode: issue.voucherCode });
+        } else {
+            res.status(404).json({ success: false, message: 'Report not processed yet' });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to check status' });
+    }
+});
+
+app.get('/penalty-report-status', async (req, res) => {
+    try {
+        const { phone } = req.query;
+        const report = await PenaltyReport.findOne({ customerPhone: phone, status: 'processed' });
+        if (report && report.voucherCode) {
+            res.json({ success: true, voucherCode: report.voucherCode });
+        } else {
+            res.status(404).json({ success: false, message: 'Report not processed yet' });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to check status' });
+    }
+});
 // Add after existing endpoints
 app.get('/admin/admins', adminAuth, async (req, res) => {
   try {
@@ -869,7 +896,7 @@ app.post('/admin/issue-reports/:id/approve', adminAuth, async (req, res) => {
             return res.status(404).json({ success: false, message: 'Issue not found' });
         }
 
-        const voucherCode = `ISSUE-${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
+        const voucherCode = `ONEAI-39-${issue._id.toString().slice(-4)}`;
         const voucher = new Voucher({
             code: voucherCode,
             discountPercentage: 39,
@@ -896,7 +923,7 @@ app.post('/admin/penalty-reports/:id/process', adminAuth, async (req, res) => {
             return res.status(404).json({ success: false, message: 'Penalty report not found' });
         }
 
-        const voucherCode = `PENALTY-${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
+        const voucherCode = `ONEAI-${discountPercentage}-${report._id.toString().slice(-4)}`;
         const voucher = new Voucher({
             code: voucherCode,
             discountPercentage,
