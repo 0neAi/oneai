@@ -849,9 +849,9 @@
                                 </select>
                             </div>
                             
-                            <div class="mb-3">
-                                <label class="form-label">Admin Notes</label>
-                                <textarea class="form-control" rows="3" v-model="selectedIssue.adminNotes" placeholder="Add notes about this issue"></textarea>
+                            <div v-if="selectedIssue.voucherCode" class="mb-3">
+                                <label class="form-label">Voucher Code</label>
+                                <input type="text" class="form-control" :value="selectedIssue.voucherCode" readonly>
                             </div>
                         </div>
                     </div>
