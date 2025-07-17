@@ -853,6 +853,10 @@
                                 <label class="form-label">Voucher Code</label>
                                 <input type="text" class="form-control" :value="selectedIssue.voucherCode" readonly>
                             </div>
+                            <div v-if="selectedIssue.voucherCode" class="mb-3">
+                                <label class="form-label">Discount Percentage</label>
+                                <input type="text" class="form-control" :value="selectedIssue.discountPercentage + '%'" readonly>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">
