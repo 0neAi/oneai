@@ -732,22 +732,30 @@
   // Display merchants in the UI
   function displayMerchants() {
     const container = document.getElementById('issueless-container');
+    if (!container) {
+      console.error('Error: #issueless-container not found.');
+      return;
+    }
     container.innerHTML = '';
     
     const chunkSize = 8;
-    for (let i = 0; i < merchantData.issueless.length; i += chunkSize) {
-      const chunk = merchantData.issueless.slice(i, i + chunkSize);
-      
-      const card = document.createElement('div');
-      card.className = 'merchant-card';
-      card.innerHTML = `
-        <h3>মার্চেন্ট তালিকা <span class="status issueless">Issue-Less-Safe</span></h3>
-        <ul>
-          ${chunk.map(merchant => `<li>${merchant}</li>`).join('')}
-        </ul>
-      `;
-      
-      container.appendChild(card);
+    if (merchantData.issueless && merchantData.issueless.length > 0) {
+      for (let i = 0; i < merchantData.issueless.length; i += chunkSize) {
+        const chunk = merchantData.issueless.slice(i, i + chunkSize);
+        
+        const card = document.createElement('div');
+        card.className = 'merchant-card';
+        card.innerHTML = `
+          <h3>মার্চেন্ট তালিকা <span class="status issueless">Issue-Less-Safe</span></h3>
+          <ul>
+            ${chunk.map(merchant => `<li>${merchant}</li>`).join('')}
+          </ul>
+        `;
+        
+        container.appendChild(card);
+      }
+    } else {
+      container.innerHTML = '<p>কোন ইস্যু বিহীন মার্চেন্ট পাওয়া যায়নি।</p>';
     }
   }
 
@@ -1054,7 +1062,7 @@ Details: ${formData.penaltyDetails}
         showConfirmation(data.message || 'রিপোর্ট জমা দিতে সমস্যা হয়েছে', false);
       }
     } catch (error) {
-      showConfirmation('নেটওয়ার্ক সমস্যা হয়েছে, আবার চেষ্টা করুন', false);
+      showConfirmation('নেটওয়ার্ক ত্রুটি হয়েছে, আবার চেষ্টা করুন', false);
     } finally {
       loadingOverlay.style.display = 'none';
     }
