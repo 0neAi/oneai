@@ -14,9 +14,6 @@
       --secondary-color: #6f42c1;
       --dark-bg: rgba(30, 30, 45, 0.95);
       --card-bg: rgba(40, 40, 60, 0.5);
-      --success-color: #28a745;
-      --warning-color: #ffc107;
-      --danger-color: #dc3545;
     }
     
     body {
@@ -237,85 +234,17 @@
       justify-content: center;
       align-items: center;
       z-index: 9999;
+      color: white;
     }
     
-    /* Confirmation message animations */
-    @keyframes slideIn {
-      from { transform: translateY(20px); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
-    }
-    
-    @keyframes fadeOut {
-      from { opacity: 1; }
-      to { opacity: 0; }
-    }
-    
-    .confirmation-message {
-      animation: slideIn 0.5s ease forwards;
-      padding: 15px;
-      border-radius: 5px;
-      margin: 15px 0;
-      display: flex;
-      align-items: center;
-    }
-    
-    .fade-out {
-      animation: fadeOut 1s ease forwards;
-    }
-    
-    .confirmation-success {
-      background-color: rgba(40, 167, 69, 0.2);
-      border: 1px solid rgba(40, 167, 69, 0.3);
-      color: #28a745;
-    }
-    
-    .confirmation-error {
-      background-color: rgba(220, 53, 69, 0.2);
-      border: 1px solid rgba(220, 53, 69, 0.3);
-      color: #dc3545;
-    }
-    
-    .confirmation-icon {
-      margin-right: 10px;
-      font-size: 1.2rem;
-    }
-    
-    /* Voucher styles */
+    /* Penalty voucher */
     .voucher-container {
       background: linear-gradient(135deg, #1a2a6c, #b21f1f, #1a2a6c);
       border-radius: 10px;
       padding: 20px;
       margin-top: 20px;
+      display: none;
       border: 2px dashed gold;
-    }
-    
-    .voucher-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 15px;
-    }
-    
-    .voucher-header h3 {
-      margin: 0;
-      color: gold;
-    }
-    
-    .voucher-type {
-      padding: 5px 10px;
-      border-radius: 20px;
-      font-size: 0.85rem;
-      font-weight: bold;
-    }
-    
-    .voucher-type.issue {
-      background-color: rgba(28, 180, 149, 0.2);
-      color: var(--primary-color);
-    }
-    
-    .voucher-type.penalty {
-      background-color: rgba(111, 66, 193, 0.2);
-      color: var(--secondary-color);
     }
     
     .voucher-code {
@@ -326,106 +255,6 @@
       margin: 15px 0;
       color: gold;
       text-shadow: 0 0 5px rgba(0,0,0,0.5);
-    }
-    
-    .voucher-details {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 10px;
-    }
-    
-    .voucher-discount {
-      font-weight: bold;
-      color: #ffcc00;
-    }
-    
-    .voucher-date {
-      font-size: 0.9rem;
-      color: #ccc;
-    }
-    
-    .voucher-message {
-      margin-bottom: 15px;
-      text-align: center;
-    }
-    
-    .voucher-countdown {
-      font-size: 0.9rem;
-      color: #ccc;
-      text-align: center;
-      margin-top: 10px;
-    }
-    
-    /* Report card styles */
-    .report-card {
-      background: var(--card-bg);
-      border-radius: 8px;
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
-      border-left: 4px solid var(--primary-color);
-    }
-    
-    .report-card.penalty {
-      border-left-color: var(--secondary-color);
-    }
-    
-    .report-card h4 {
-      margin-top: 0;
-      color: var(--primary-color);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    
-    .report-card.penalty h4 {
-      color: var(--secondary-color);
-    }
-    
-    .report-card .meta {
-      font-size: 0.85rem;
-      color: rgba(255, 255, 255, 0.7);
-      margin-bottom: 1rem;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-    
-    .report-card .status {
-      padding: 0.3rem 0.8rem;
-      border-radius: 20px;
-      font-size: 0.85rem;
-    }
-    
-    .status-pending {
-      background: rgba(255, 193, 7, 0.2);
-      color: var(--warning-color);
-    }
-    
-    .status-in-progress {
-      background: rgba(23, 162, 184, 0.2);
-      color: #17a2b8;
-    }
-    
-    .status-resolved {
-      background: rgba(40, 167, 69, 0.2);
-      color: var(--success-color);
-    }
-    
-    .status-rejected {
-      background: rgba(220, 53, 69, 0.2);
-      color: var(--danger-color);
-    }
-    
-    .report-card .actions {
-      display: flex;
-      gap: 1rem;
-      margin-top: 1rem;
-    }
-    
-    .no-vouchers {
-      text-align: center;
-      padding: 20px;
-      color: rgba(255, 255, 255, 0.5);
     }
     
     /* Responsive adjustments */
@@ -446,18 +275,86 @@
       .section {
         padding: 1.5rem;
       }
-      
-      .voucher-details {
-        flex-direction: column;
-        gap: 10px;
-      }
-      
-      .voucher-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-      }
     }
+        /* Add new styles for issue reporting */
+    .issue-report-card {
+      background: var(--card-bg);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      border-left: 4px solid var(--primary-color);
+    }
+    
+    .issue-report-card h4 {
+      margin-top: 0;
+      color: var(--primary-color);
+    }
+    
+    .issue-report-card .meta {
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 1rem;
+    }
+    
+    .issue-report-card .actions {
+      display: flex;
+      gap: 1rem;
+    }
+    
+    .severity-low {
+      background: rgba(40, 167, 69, 0.2);
+      color: #28a745;
+    }
+    
+    .severity-medium {
+      background: rgba(255, 193, 7, 0.2);
+      color: #ffc107;
+    }
+    
+    .severity-high {
+      background: rgba(220, 53, 69, 0.2);
+      color: #dc3545;
+    }
+     /* Confirmation message animations */
+  @keyframes slideIn {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  
+  @keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+  
+  .confirmation-message {
+    animation: slideIn 0.5s ease forwards;
+    padding: 15px;
+    border-radius: 5px;
+    margin: 15px 0;
+    display: flex;
+    align-items: center;
+  }
+  
+  .fade-out {
+    animation: fadeOut 1s ease forwards;
+  }
+  
+  .confirmation-success {
+    background-color: rgba(40, 167, 69, 0.2);
+    border: 1px solid rgba(40, 167, 69, 0.3);
+    color: #28a745;
+  }
+  
+  .confirmation-error {
+    background-color: rgba(220, 53, 69, 0.2);
+    border: 1px solid rgba(220, 53, 69, 0.3);
+    color: #dc3545;
+  }
+  
+  .confirmation-icon {
+    margin-right: 10px;
+    font-size: 1.2rem;
+  }
   </style>
 </head>
 <body class="is-preload">
@@ -477,22 +374,20 @@
     <!-- Alert messages container -->
     <div id="alert-container"></div>
 
-    <button type="button" class="btn btn-full" onclick="loadUserReports()" style="margin-bottom: 20px;">
-      <i class="fas fa-sync-alt"></i> আমার রিপোর্ট এবং ভাউচার আপডেট করুন
+    <button type="button" class="btn btn-full" onclick="checkAllVouchers()" style="margin-bottom: 20px;">
+      <i class="fas fa-search"></i> সকল ভাউচার স্ট্যাটাস চেক করুন
     </button>
 
-    <!-- Reports and Vouchers Section -->
-    <section class="section">
-      <h2 class="section-title"><i class="fas fa-history"></i> আপনার রিপোর্ট এবং ভাউচার</h2>
-      
-      <div id="reports-container">
-        <!-- Reports will be loaded here dynamically -->
-      </div>
-      
-      <div id="vouchers-container">
-        <!-- Vouchers will be loaded here dynamically -->
-      </div>
-    </section>
+<!-- Unified Reports and Voucher Section -->
+<section class="section">
+  <h2 class="section-title"><i class="fas fa-history"></i> আপনার সাম্প্রতিক রিপোর্টসমূহ</h2>
+  
+  <div id="reports-container"></div>
+  
+  <!-- Unified Voucher Section -->
+  
+    
+</section>
     
     <!-- Issueless Merchants Section -->
     <section class="section">
@@ -545,6 +440,12 @@
         </button>
       </form>
     </section>
+    
+    <!-- Recent Reports Section -->
+    <div id="recent-reports" class="section" style="margin-top: 2rem;">
+      <h2 class="section-title"><i class="fas fa-history"></i> আপনার সাম্প্রতিক রিপোর্টসমূহ</h2>
+      <div id="reports-container"></div>
+    </div>
     
     <!-- Confirmation messages container -->
     <div id="confirmation-container" style="position: fixed; top: 20px; right: 20px; z-index: 9999;"></div>
@@ -685,6 +586,122 @@
     }
   }
 
+  // Function to show voucher
+  function showVoucher(type, code = 'প্রসেসিং', message = 'আপনার রিপোর্টটি গৃহীত হয়েছে') {
+    const container = document.getElementById('voucher-container');
+    const codeElement = document.getElementById('voucher-code');
+    const messageElement = document.getElementById('voucher-message');
+    
+    messageElement.textContent = message;
+    codeElement.textContent = code;
+    container.style.display = 'block';
+    
+    // Store voucher data with expiration (6 hours)
+    const voucherData = {
+      type,
+      code,
+      expiry: Date.now() + (6 * 60 * 60 * 1000)
+    };
+    
+    localStorage.setItem('activeVoucher', JSON.stringify(voucherData));
+    
+    // Start countdown timer
+    startVoucherCountdown();
+  }
+
+  // Start voucher countdown timer
+  function startVoucherCountdown() {
+    const savedVoucher = localStorage.getItem('activeVoucher');
+    if (!savedVoucher) return;
+    
+    const voucher = JSON.parse(savedVoucher);
+    const countdownElement = document.getElementById('voucher-countdown');
+    
+    const updateCountdown = () => {
+      const now = Date.now();
+      const timeLeft = voucher.expiry - now;
+      
+      if (timeLeft <= 0) {
+        countdownElement.textContent = 'ভাউচার মেয়াদ উত্তীর্ণ হয়েছে';
+        localStorage.removeItem('activeVoucher');
+        return;
+      }
+      
+      const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+      const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+      
+      countdownElement.textContent = `মেয়াদ: ${hours}ঘ ${minutes}মি ${seconds}সে`;
+    };
+    
+    updateCountdown();
+    const timer = setInterval(updateCountdown, 1000);
+  }
+
+  // Start voucher status check
+  function startVoucherCheck(type, phone) {
+    if (voucherCheckInterval) clearInterval(voucherCheckInterval);
+    
+    const checkFunction = type === 'issue' ? 
+      () => checkIssueStatus(phone) : 
+      () => checkPenaltyStatus(phone);
+    
+    voucherCheckInterval = setInterval(checkFunction, 30000);
+    setTimeout(() => clearInterval(voucherCheckInterval), 300000);
+  }
+
+  // Check issue status
+  async function checkIssueStatus(phone) {
+    if (!phone) {
+      phone = document.getElementById('issue-merchant-phone').value;
+      if (!phone) {
+        showConfirmation('ভাউচার স্ট্যাটাস চেক করতে ফোন নম্বর দিন', false);
+        return;
+      }
+    }
+    
+    try {
+      const response = await fetch(`https://oneai-wjox.onrender.com/merchant-issue-status?phone=${phone}`);
+      const data = await response.json();
+      
+      if (response.ok && data.voucherCode) {
+        showVoucher('issue', data.voucherCode, 'আপনার ইস্যু ভাউচার প্রস্তুত!');
+        localStorage.setItem('lastCheckedPhone', phone);
+        if (voucherCheckInterval) clearInterval(voucherCheckInterval);
+      } else {
+        showConfirmation('আপনার রিপোর্টটি এখনও প্রক্রিয়াধীন', true);
+      }
+    } catch (error) {
+      showConfirmation('স্ট্যাটাস চেক করতে ব্যর্থ, আবার চেষ্টা করুন', false);
+    }
+  }
+
+  // Check penalty status
+  async function checkPenaltyStatus(phone) {
+    if (!phone) {
+      phone = document.getElementById('customer-phone').value;
+      if (!phone) {
+        showConfirmation('ভাউচার স্ট্যাটাস চেক করতে ফোন নম্বর দিন', false);
+        return;
+      }
+    }
+    
+    try {
+      const response = await fetch(`https://oneai-wjox.onrender.com/penalty-report-status?phone=${phone}`);
+      const data = await response.json();
+      
+      if (response.ok && data.voucherCode) {
+        showVoucher('penalty', data.voucherCode, 'আপনার পেনাল্টি ভাউচার প্রস্তুত!');
+        localStorage.setItem('lastCheckedPhone', phone);
+        if (voucherCheckInterval) clearInterval(voucherCheckInterval);
+      } else {
+        showConfirmation('আপনার রিপোর্টটি এখনও প্রক্রিয়াধীন', true);
+      }
+    } catch (error) {
+      showConfirmation('স্ট্যাটাস চেক করতে ব্যর্থ, আবার চেষ্টা করুন', false);
+    }
+  }
+
   // Show confirmation message
   function showConfirmation(message, isSuccess = true) {
     const container = document.getElementById('confirmation-container');
@@ -705,183 +722,151 @@
     }, 5000);
   }
 
-  // Format date to readable string
-  function formatDate(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('bn-BD', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  }
-
-  // Format date with time
-  function formatDateTime(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleString('bn-BD', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  }
-
-  // Load user reports and vouchers
-  async function loadUserReports() {
-    let phone = localStorage.getItem('lastCheckedPhone');
-    if (!phone) {
-      phone = prompt("আপনার রিপোর্ট দেখতে আপনার ফোন নম্বর দিন:");
-      if (!phone) return;
-      localStorage.setItem('lastCheckedPhone', phone);
-    }
-    
-    loadingOverlay.style.display = 'flex';
+  // Load user reports
+  async function loadAllUserReports(phone) {
+    let allReports = [];
     try {
-      // Fetch user reports
-      const reportsResponse = await fetch(`https://oneai-wjox.onrender.com/user-reports/${phone}`);
-      const reportsData = await reportsResponse.json();
-      
-      if (reportsResponse.ok) {
-        displayUserReports(reportsData.reports);
-        displayVouchers(reportsData.reports);
-      } else {
-        showConfirmation(reportsData.message || 'রিপোর্ট লোড করতে সমস্যা হয়েছে', false);
-      }
+        const response = await fetch(`https://oneai-wjox.onrender.com/user-reports/${encodeURIComponent(phone)}`);
+        if (response.ok) {
+            const data = await response.json();
+            if (data.reports) {
+                allReports = allReports.concat(data.reports.issues.map(issue => ({ ...issue, type: 'merchant-issue' })));
+                allReports = allReports.concat(data.reports.penalties.map(report => ({ ...report, type: 'penalty-report' })));
+            }
+        }
     } catch (error) {
-      showConfirmation('নেটওয়ার্ক ত্রুটি হয়েছে, আবার চেষ্টা করুন', false);
-    } finally {
-      loadingOverlay.style.display = 'none';
+        console.error('Error loading user reports:', error);
     }
-  }
 
+    allReports.sort((a, b) => new Date(b.createdAt || b.penaltyDate) - new Date(a.createdAt || a.penaltyDate));
+    return allReports;
+  }
+  
   // Display user reports
   function displayUserReports(reports) {
     const container = document.getElementById('reports-container');
     container.innerHTML = '';
     
-    if ((!reports.issues || reports.issues.length === 0) && 
-        (!reports.penalties || reports.penalties.length === 0)) {
-      container.innerHTML = '<p class="no-vouchers">আপনার কোন রিপোর্ট পাওয়া যায়নি</p>';
+    if (!reports || reports.length === 0) {
+      container.innerHTML = '<p>আপনার কোন রিপোর্ট পাওয়া যায়নি</p>';
+      document.getElementById('recent-reports').style.display = 'none';
       return;
     }
-    
-    // Display merchant issues
-    if (reports.issues && reports.issues.length > 0) {
-      container.innerHTML += '<h3>মার্চেন্ট ইস্যু রিপোর্ট</h3>';
-      reports.issues.forEach(issue => {
-        const card = createReportCard(issue, 'issue');
-        container.appendChild(card);
-      });
-    }
-    
-    // Display penalty reports
-    if (reports.penalties && reports.penalties.length > 0) {
-      container.innerHTML += '<h3>পেনাল্টি রিপোর্ট</h3>';
-      reports.penalties.forEach(report => {
-        const card = createReportCard(report, 'penalty');
-        container.appendChild(card);
-      });
-    }
-  }
 
-  // Create report card
-  function createReportCard(report, type) {
-    const card = document.createElement('div');
-    card.className = `report-card ${type === 'penalty' ? 'penalty' : ''}`;
+    document.getElementById('recent-reports').style.display = 'block';
     
-    const statusClass = `status-${report.status.replace(' ', '-')}`;
-    const reportType = type === 'issue' ? 'মার্চেন্ট ইস্যু' : 'পেনাল্টি রিপোর্ট';
-    
-    card.innerHTML = `
-      <h4>${reportType} 
-        <span class="status ${statusClass}">${report.status}</span>
-      </h4>
-      <div class="meta">
-        <span><i class="fas fa-calendar"></i> ${formatDateTime(report.createdAt || report.penaltyDate)}</span>
-        <span><i class="fas fa-user"></i> ${report.merchantName || report.customerName}</span>
-        <span><i class="fas fa-phone"></i> ${report.merchantPhone || report.customerPhone}</span>
-      </div>
-      <p><strong>বিস্তারিত:</strong> ${report.details || report.penaltyDetails}</p>
-    `;
-    
-    return card;
-  }
-
-  // Display vouchers
-  function displayVouchers(reports) {
-    const container = document.getElementById('vouchers-container');
-    container.innerHTML = '';
-    
-    // Collect all vouchers
-    let vouchers = [];
-    
-    // Add merchant issue vouchers
-    if (reports.issues) {
-      reports.issues
-        .filter(issue => issue.status === 'resolved' && issue.voucherCode)
-        .forEach(issue => {
-          vouchers.push({
-            code: issue.voucherCode,
-            discount: '39%',
-            type: 'issue',
-            date: issue.updatedAt || issue.createdAt,
-            merchant: issue.merchantName
-          });
-        });
-    }
-    
-    // Add penalty report vouchers
-    if (reports.penalties) {
-      reports.penalties
-        .filter(report => report.status === 'processed' && report.voucherCode)
-        .forEach(report => {
-          vouchers.push({
-            code: report.voucherCode,
-            discount: report.discountPercentage ? `${report.discountPercentage}%` : 'ভ্যারিয়েবল',
-            type: 'penalty',
-            date: report.updatedAt || report.createdAt,
-            merchant: report.merchantName
-          });
-        });
-    }
-    
-    // Display vouchers
-    if (vouchers.length === 0) {
-      container.innerHTML = '<p class="no-vouchers">কোন ভাউচার পাওয়া যায়নি</p>';
-      return;
-    }
-    
-    container.innerHTML = '<h3>আপনার ভাউচারসমূহ</h3>';
-    
-    vouchers.forEach(voucher => {
-      const voucherElement = document.createElement('div');
-      voucherElement.className = 'voucher-container';
+    reports.forEach(report => {
+      const card = document.createElement('div');
+      card.className = 'issue-report-card';
       
-      voucherElement.innerHTML = `
-        <div class="voucher-header">
-          <h3><i class="fas fa-gift"></i> ${voucher.type === 'issue' ? 'মার্চেন্ট ইস্যু ভাউচার' : 'পেনাল্টি ভাউচার'}</h3>
-          <span class="voucher-type ${voucher.type}">${voucher.type === 'issue' ? 'ইস্যু' : 'পেনাল্টি'}</span>
+      const statusText = report.status === 'resolved' || report.status === 'processed' ? 'সমাধান হয়েছে' : 'প্রক্রিয়াধীন';
+      const statusClass = report.status === 'resolved' || report.status === 'processed' ? 'issueless' : 'issue';
+
+      let detailsHtml = '';
+      if (report.type === 'merchant-issue') {
+        detailsHtml = `
+          <p><strong>মার্চেন্ট নাম:</strong> ${report.merchantName}</p>
+          <p><strong>মার্চেন্ট ফোন:</strong> ${report.merchantPhone}</p>
+          <p><strong>ইস্যুর ধরন:</strong> ${report.issueType}</p>
+          <p><strong>বিস্তারিত:</strong> ${report.details}</p>
+        `;
+      } else if (report.type === 'penalty-report') {
+        detailsHtml = `
+          <p><strong>মার্চেন্ট নাম:</strong> ${report.merchantName}</p>
+          <p><strong>গ্রাহকের নাম:</strong> ${report.customerName}</p>
+          <p><strong>গ্রাহকের ফোন:</strong> ${report.customerPhone}</p>
+          <p><strong>পেনাল্টির তারিখ:</strong> ${new Date(report.penaltyDate).toLocaleDateString()}</p>
+          <p><strong>আসল টাকার পরিমাণ:</strong> ${report.amount1}</p>
+          <p><strong>পরিবর্তিত টাকার পরিমাণ:</strong> ${report.amount2}</p>
+          <p><strong>বিস্তারিত:</strong> ${report.penaltyDetails}</p>
+        `;
+      }
+
+      let voucherHtml = '';
+      if (report.voucherCode) {
+        voucherHtml = `<p><strong>ভাউচার কোড:</strong> <span class="voucher-code-inline">${report.voucherCode}</span></p>`;
+      }
+      
+      card.innerHTML = `
+        <h4>${report.type === 'merchant-issue' ? 'মার্চেন্ট ইস্যু' : 'পেনাল্টি রিপোর্ট'}</h4>
+        <div class="meta">
+          <span>${new Date(report.createdAt || report.penaltyDate).toLocaleString()}</span>
         </div>
-        <div class="voucher-message">${voucher.type === 'issue' ? 
-          'আপনার ইস্যু রিপোর্টের জন্য ভাউচার' : 
-          'আপনার পেনাল্টি রিপোর্টের জন্য ভাউচার'}</div>
-        <div class="voucher-code">${voucher.code}</div>
-        <div class="voucher-details">
-          <div class="voucher-discount"><i class="fas fa-tag"></i> ডিসকাউন্ট: ${voucher.discount}</div>
-          <div class="voucher-date"><i class="fas fa-calendar"></i> ${formatDate(voucher.date)}</div>
+        ${detailsHtml}
+        ${voucherHtml}
+        <div class="status ${statusClass}">
+          ${statusText}
         </div>
-        <p>ভাউচারটি প্রিমিয়াম সার্ভিসে ব্যবহার করতে পারবেন</p>
-        <div class="voucher-countdown" id="countdown-${voucher.code}"></div>
       `;
       
-      container.appendChild(voucherElement);
+      container.appendChild(card);
     });
   }
 
-  // Submit merchant issue report
-  async function submitMerchantIssue(event) {
-    event.preventDefault();
+  // Check all vouchers
+  async function checkAllVouchers() {
+    let phone = localStorage.getItem('lastCheckedPhone');
+    if (!phone) {
+      phone = prompt("ভাউচার স্ট্যাটাস চেক করতে আপনার ফোন নম্বর দিন:");
+      if (!phone) {
+        showConfirmation("ফোন নম্বর প্রয়োজন", false);
+        return;
+      }
+      localStorage.setItem('lastCheckedPhone', phone);
+    }
+
+    loadingOverlay.style.display = 'flex';
+    try {
+      const reports = await loadAllUserReports(phone);
+      displayUserReports(reports);
+
+      const voucherContainer = document.getElementById('voucher-container');
+      const voucherCodeElement = document.getElementById('voucher-code');
+      const voucherMessageElement = document.getElementById('voucher-message');
+
+      const resolvedReports = reports.filter(r => r.voucherCode);
+
+      if (resolvedReports.length > 0) {
+        voucherContainer.style.display = 'block';
+        voucherMessageElement.textContent = 'আপনার ভাউচারসমূহ:';
+        voucherCodeElement.innerHTML = resolvedReports.map(r => `
+          <div class="single-voucher-display">
+            <strong>${r.type === 'merchant-issue' ? 'মার্চেন্ট ইস্যু' : 'পেনাল্টি রিপোর্ট'}:</strong> ${r.voucherCode}
+            <p class="voucher-details">${r.details || r.penaltyDetails}</p>
+          </div>
+        `).join('');
+      } else {
+        voucherContainer.style.display = 'none';
+      }
+
+      showConfirmation("সমস্ত ভাউচার স্ট্যাটাস এবং রিপোর্ট চেক করা হয়েছে", true);
+    } catch (error) {
+      showConfirmation(`ভাউচার চেক করতে ব্যর্থ: ${error.message}`, false);
+    } finally {
+      loadingOverlay.style.display = 'none';
+    }
+  }
+
+  // Initialize the page
+  document.addEventListener('DOMContentLoaded', async () => {
+    displayMerchants();
+    
+    document.getElementById('penalty-date').value = new Date().toISOString().split('T')[0];
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const userPhone = urlParams.get('phone') || localStorage.getItem('lastCheckedPhone');
+    
+    if (userPhone) {
+      localStorage.setItem('lastCheckedPhone', userPhone);
+      const reports = await loadAllUserReports(userPhone);
+      displayUserReports(reports);
+      checkAllVouchers(); // Check vouchers on page load if phone is available
+    }
+  });
+
+  // Merchant issue form submission
+  document.getElementById('issue-report-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
     loadingOverlay.style.display = 'flex';
     
     const formData = {
@@ -894,32 +879,34 @@
     try {
       const response = await fetch('https://oneai-wjox.onrender.com/merchant-issues', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
-      
-      const data = await response.json();
-      
-      if (response.ok) {
-        showConfirmation('আপনার ইস্যু রিপোর্ট সফলভাবে জমা হয়েছে!');
-        document.getElementById('issue-report-form').reset();
-        localStorage.setItem('lastCheckedPhone', formData.merchantPhone);
-        loadUserReports();
-      } else {
-        showConfirmation(data.message || 'রিপোর্ট জমা দিতে সমস্যা হয়েছে', false);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'সার্ভার থেকে রেসপন্স পেতে সমস্যা হয়েছে');
       }
+      
+      await response.json();
+
+      showConfirmation('আপনার ইস্যু রিপোর্ট সফলভাবে জমা হয়েছে!');
+      document.getElementById('issue-report-form').reset();
+      localStorage.setItem('lastCheckedPhone', formData.merchantPhone);
+      
+      const reports = await loadAllUserReports(formData.merchantPhone);
+      displayUserReports(reports);
+      checkAllVouchers(); // Re-check all vouchers after submission
     } catch (error) {
-      showConfirmation('নেটওয়ার্ক ত্রুটি হয়েছে, আবার চেষ্টা করুন', false);
+      showConfirmation(`রিপোর্ট জমা দিতে ব্যর্থ: ${error.message}`, false);
     } finally {
       loadingOverlay.style.display = 'none';
     }
-  }
+  });
 
-  // Submit penalty report
-  async function submitPenaltyReport(event) {
-    event.preventDefault();
+  // Penalty report form submission
+  document.getElementById('penalty-report-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
     loadingOverlay.style.display = 'flex';
     
     const formData = {
@@ -935,32 +922,31 @@
     try {
       const response = await fetch('https://oneai-wjox.onrender.com/penalty-report', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
-      
-      const data = await response.json();
-      
-      if (response.ok) {
-        showConfirmation('আপনার পেনাল্টি রিপোর্ট সফলভাবে জমা হয়েছে!');
-        document.getElementById('penalty-report-form').reset();
-        localStorage.setItem('lastCheckedPhone', formData.customerPhone);
-        loadUserReports();
-      } else {
-        showConfirmation(data.message || 'রিপোর্ট জমা দিতে সমস্যা হয়েছে', false);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'সার্ভার থেকে রেসপন্স পেতে সমস্যা হয়েছে');
       }
+      
+      await response.json();
+
+      showConfirmation('আপনার পেনাল্টি রিপোর্ট সফলভাবে জমা হয়েছে!');
+      document.getElementById('penalty-report-form').reset();
+      localStorage.setItem('lastCheckedPhone', formData.customerPhone);
+      checkAllVouchers(); // Re-check all vouchers after submission
     } catch (error) {
-      showConfirmation('নেটওয়ার্ক ত্রুটি হয়েছে, আবার চেষ্টা করুন', false);
+      showConfirmation(`রিপোর্ট জমা দিতে ব্যর্থ: ${error.message}`, false);
     } finally {
       loadingOverlay.style.display = 'none';
     }
-  }
+  });
 
-  // Submit premium service request
-  async function submitPremiumService(event) {
-    event.preventDefault();
+  // Premium service form
+  document.getElementById('premium-service-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
     loadingOverlay.style.display = 'flex';
     
     const formData = {
@@ -972,44 +958,22 @@
     try {
       const response = await fetch('https://oneai-wjox.onrender.com/premium-service', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
-      
-      const data = await response.json();
-      
-      if (response.ok) {
-        showConfirmation('প্রিমিয়াম সার্ভিস অনুরোধ সফলভাবে জমা হয়েছে!');
-        document.getElementById('premium-service-form').reset();
-      } else {
-        showConfirmation(data.message || 'অনুরোধ জমা দিতে সমস্যা হয়েছে', false);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to submit premium request');
       }
+      
+      showConfirmation('প্রিমিয়াম সার্ভিস অনুরোধ সফলভাবে জমা হয়েছে!');
+      document.getElementById('premium-service-form').reset();
     } catch (error) {
-      showConfirmation('নেটওয়ার্ক ত্রুটি হয়েছে, আবার চেষ্টা করুন', false);
+      showConfirmation(`প্রিমিয়াম অনুরোধ ব্যর্থ: ${error.message}`, false);
     } finally {
       loadingOverlay.style.display = 'none';
     }
-  }
-
-  // Initialize the page
-  document.addEventListener('DOMContentLoaded', async () => {
-    displayMerchants();
-    
-    // Set today's date as default for penalty date
-    document.getElementById('penalty-date').value = new Date().toISOString().split('T')[0];
-    
-    // Load user reports if phone exists
-    const userPhone = localStorage.getItem('lastCheckedPhone');
-    if (userPhone) {
-      await loadUserReports();
-    }
-    
-    // Attach form submit handlers
-    document.getElementById('issue-report-form').addEventListener('submit', submitMerchantIssue);
-    document.getElementById('penalty-report-form').addEventListener('submit', submitPenaltyReport);
-    document.getElementById('premium-service-form').addEventListener('submit', submitPremiumService);
   });
 </script>
   <!-- Include scripts -->
