@@ -584,6 +584,7 @@ const voucherSchema = new mongoose.Schema({
     code: { type: String, required: true, unique: true },
     discountPercentage: { type: Number, required: true },
     isUsed: { type: Boolean, default: false },
+    validUntil: { type: Date, required: false }, // Added validUntil
     report: {
         type: mongoose.Schema.Types.ObjectId,
         refPath: 'reportModel'
@@ -591,7 +592,7 @@ const voucherSchema = new mongoose.Schema({
     reportModel: {
         type: String,
         required: true,
-        enum: ['MerchantIssue', 'PenaltyReport']
+        enum: ['MerchantIssue', 'PenaltyReport', 'PremiumService'] // Added PremiumService
     }
 }, { timestamps: true });
 
@@ -1004,10 +1005,53 @@ app.get('/admin/premium-services', adminAuth, async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to fetch premium services' });
   }
 });
+
+app.post('/admin/generate-premium-voucher', adminAuth, async (req, res) => {
+  try {
+    const { discountPercentage, validity } = req.body;
+
+    let validUntil = null;
+    const now = new Date();
+
+    switch (validity) {
+      case '15d':
+        validUntil = new Date(now.setDate(now.getDate() + 15));
+        break;
+      case '1m':
+        validUntil = new Date(now.setMonth(now.getMonth() + 1));
+        break;
+      case '3m':
+        validUntil = new Date(now.setMonth(now.getMonth() + 3));
+        break;
+      case 'lifetime':
+        validUntil = new Date(9999, 11, 31); // Far future date for lifetime
+        break;
+      default:
+        return res.status(400).json({ success: false, message: 'Invalid validity period' });
+    }
+
+    const voucherCode = `PREMIUM-${discountPercentage}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+
+    const voucher = new Voucher({
+      code: voucherCode,
+      discountPercentage,
+      isUsed: false,
+      validUntil,
+      reportModel: 'PremiumService' // Using PremiumService as a placeholder for reportModel
+    });
+    await voucher.save();
+
+    res.status(201).json({ success: true, voucherCode, discountPercentage, validUntil });
+  } catch (error) {
+    console.error('Error generating premium voucher:', error);
+    res.status(500).json({ success: false, message: 'Failed to generate premium voucher' });
+  }
+});
+
 // Add new endpoint for premium service without authentication
 app.post('/premium-service', async (req, res) => {
   try {
-    const { phone, trxid, amount } = req.body;
+    const { phone, trxid, amount, voucherCode } = req.body;
     
     if (!phone || !trxid || !amount) {
       return res.status(400).json({ 
@@ -1016,22 +1060,51 @@ app.post('/premium-service', async (req, res) => {
       });
     }
 
-    // Map amount to service type
     let serviceType;
-    switch (amount) {
-      case '300':
-        serviceType = 'top10';
+    let validUntil = null;
+    const now = new Date();
+    let discountApplied = 0;
+
+    if (voucherCode) {
+      const voucher = await Voucher.findOne({ code: voucherCode, isUsed: false, reportModel: 'PremiumService' });
+      if (voucher) {
+        if (voucher.validUntil && voucher.validUntil < now) {
+          return res.status(400).json({ success: false, message: 'Voucher has expired' });
+        }
+        discountApplied = voucher.discountPercentage;
+        voucher.isUsed = true;
+        await voucher.save();
+      } else {
+        return res.status(400).json({ success: false, message: 'Invalid or used premium voucher' });
+      }
+    }
+
+    let finalAmount = Number(amount);
+    if (discountApplied > 0) {
+      finalAmount *= (1 - discountApplied / 100);
+    }
+
+    switch (finalAmount) {
+      case 500:
+        serviceType = '15day_15merchant';
+        validUntil = new Date(now.setDate(now.getDate() + 15));
         break;
-      case '500':
-        serviceType = 'top25';
+      case 1000:
+        serviceType = '1month_30merchant';
+        validUntil = new Date(now.setMonth(now.getMonth() + 1));
         break;
-      case '1000':
-        serviceType = 'full_db';
+      case 2000:
+        serviceType = '3month_full_db';
+        validUntil = new Date(now.setMonth(now.getMonth() + 3));
+        break;
+      case 5000:
+        serviceType = 'lifetime_full_db';
+        validUntil = new Date(9999, 11, 31); // Far future date for lifetime
         break;
       default:
         return res.status(400).json({
           success: false,
-          message: 'Invalid package selection'
+          message: 'Invalid package selection or amount after discount'
         });
     }
 
@@ -1041,7 +1114,8 @@ app.post('/premium-service', async (req, res) => {
       trxid,
       amount: Number(amount),
       serviceType,
-      status: 'Pending'
+      status: 'Pending',
+      validUntil
     });
 
     await premiumService.save();
