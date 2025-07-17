@@ -782,7 +782,7 @@ app.get('/user-reports/:phone', async (req, res) => {
 
 app.get('/vouchers/:phone', async (req, res) => {
     try {
-        const vouchers = await Voucher.find({ phone: req.params.phone, isUsed: false });
+        const vouchers = await Voucher.find({ phone: req.params.phone });
         res.json({ success: true, vouchers });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Failed to fetch vouchers' });
