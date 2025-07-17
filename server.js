@@ -19,7 +19,7 @@ import { fileURLToPath } from 'url'
 
 dotenv.config();
 
-// VAPID key
+// VAPID keys
 const vapidKeys = {
     publicKey: process.env.VAPID_PUBLIC_KEY,
     privateKey: process.env.VAPID_PRIVATE_KEY
@@ -1006,6 +1006,15 @@ app.get('/admin/premium-services', adminAuth, async (req, res) => {
   }
 });
 
+app.get('/premium-services/:phone', async (req, res) => {
+    try {
+        const services = await PremiumService.find({ phone: req.params.phone }).sort({ createdAt: -1 });
+        res.json({ success: true, services });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to fetch premium services' });
+    }
+});
+
 app.post('/admin/generate-premium-voucher', adminAuth, async (req, res) => {
   try {
     const { discountPercentage, validity } = req.body;
@@ -1268,6 +1277,33 @@ app.get('/admin/check-registration', async (req, res) => {
       message: 'Error checking registration status' 
     });
   }
+});
+
+app.post('/admin/premium-payments/:id/process', adminAuth, async (req, res) => {
+    try {
+        const { discountPercentage } = req.body;
+        const premiumService = await PremiumService.findById(req.params.id);
+        if (!premiumService) {
+            return res.status(404).json({ success: false, message: 'Premium service not found' });
+        }
+
+        const voucherCode = `PREMIUM-${discountPercentage}-${premiumService._id.toString().slice(-4)}`;
+        const voucher = new Voucher({
+            code: voucherCode,
+            discountPercentage,
+            report: premiumService._id,
+            reportModel: 'PremiumService'
+        });
+        await voucher.save();
+
+        premiumService.status = 'Completed';
+        premiumService.voucherCode = voucherCode;
+        await premiumService.save();
+
+        res.json({ success: true, premiumService });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to process premium payment' });
+    }
 });
 // Admin exists check
 app.get('/admin/exists', async (req, res) => {
