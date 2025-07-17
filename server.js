@@ -1276,10 +1276,30 @@ app.get('/admin/check-registration', async (req, res) => {
 
 app.post('/admin/premium-payments/:id/process', adminAuth, async (req, res) => {
     try {
-        const { discountPercentage } = req.body;
+        const { discountPercentage, validity } = req.body;
         const premiumService = await PremiumService.findById(req.params.id);
         if (!premiumService) {
             return res.status(404).json({ success: false, message: 'Premium service not found' });
+        }
+
+        let validUntil = null;
+        const now = new Date();
+
+        switch (validity) {
+          case '15d':
+            validUntil = new Date(now.setDate(now.getDate() + 15));
+            break;
+          case '1m':
+            validUntil = new Date(now.setMonth(now.getMonth() + 1));
+            break;
+          case '3m':
+            validUntil = new Date(now.setMonth(now.getMonth() + 3));
+            break;
+          case 'lifetime':
+            validUntil = new Date(9999, 11, 31); // Far future date for lifetime
+            break;
+          default:
+            return res.status(400).json({ success: false, message: 'Invalid validity period' });
         }
 
         const voucherCode = `PREMIUM-${discountPercentage}-${premiumService._id.toString().slice(-4)}`;
@@ -1287,6 +1307,8 @@ app.post('/admin/premium-payments/:id/process', adminAuth, async (req, res) => {
             phone: premiumService.phone,
             code: voucherCode,
             discountPercentage,
+            isUsed: false,
+            validUntil,
             report: premiumService._id,
             reportModel: 'PremiumService'
         });
