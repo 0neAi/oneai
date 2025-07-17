@@ -394,6 +394,12 @@
 <a href="support.html" class="button icon solid fa-crown scope-btn">
   <span>প্রিমিয়াম_বোনাসঃ ইস্যুবিহীন পেইজ গুলোর লিষ্ট দেখুন এখুনি!</span>
 </a>
+
+<div id="premium-voucher-status-display" style="margin-top: 20px; padding: 15px; background: rgba(28, 180, 149, 0.1); border-radius: 8px; display: none;">
+  <p style="color: #1cb495; font-weight: bold; margin-bottom: 5px;"><i class="fas fa-star"></i> প্রিমিয়াম ভাউচার স্ট্যাটাস:</p>
+  <p id="premium-voucher-code-otpgen" style="font-size: 1.1em; margin-bottom: 5px;"></p>
+  <p id="premium-voucher-status-otpgen" style="font-size: 0.9em; color: #ccc;"></p>
+</div>
     <h3>INPUT DATA</h3>
     <div id="discount-display" class="discount-banner">
       <i class="fas fa-tag"></i>
@@ -1097,6 +1103,30 @@ ${formData.consignments.map((c, index) => `
                 originalHandleSuccess(data, formData);
                 clearSavedFormData();
             };
+        }
+
+        // Premium Voucher Status Display
+        const premiumVoucher = localStorage.getItem('premiumVoucher');
+        const premiumVoucherDisplay = document.getElementById('premium-voucher-status-display');
+        const premiumVoucherCode = document.getElementById('premium-voucher-code-otpgen');
+        const premiumVoucherStatus = document.getElementById('premium-voucher-status-otpgen');
+
+        if (premiumVoucher) {
+            const voucherData = JSON.parse(premiumVoucher);
+            const now = new Date().getTime();
+
+            if (voucherData.expiry > now) {
+                premiumVoucherCode.textContent = `কোড: ${voucherData.code}`;
+                premiumVoucherStatus.textContent = 'স্ট্যাটাস: সক্রিয়';
+                premiumVoucherDisplay.style.display = 'block';
+            } else {
+                premiumVoucherCode.textContent = `কোড: ${voucherData.code}`;
+                premiumVoucherStatus.textContent = 'স্ট্যাটাস: মেয়াদ উত্তীর্ণ';
+                premiumVoucherDisplay.style.display = 'block';
+                localStorage.removeItem('premiumVoucher'); // Clear expired voucher
+            }
+        } else {
+            premiumVoucherDisplay.style.display = 'none';
         }
     });
   </script>
