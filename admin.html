@@ -1046,6 +1046,15 @@
                                 <label for="premium-discount-percentage" class="form-label">Discount Percentage</label>
                                 <input type="number" class="form-control" id="premium-discount-percentage" v-model.number="premiumDiscountPercentage" min="0" max="100">
                             </div>
+                            <div class="mb-3">
+                                <label for="premium-validity-modal" class="form-label">Validity Period</label>
+                                <select class="form-select" id="premium-validity-modal" v-model="premiumValidity">
+                                    <option value="15d">15 Days</option>
+                                    <option value="1m">1 Month</option>
+                                    <option value="3m">3 Months</option>
+                                    <option value="lifetime">Lifetime</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -1117,6 +1126,7 @@
                     discountPercentage: 10,
                     issueDiscountPercentage: 10,
                     premiumDiscountPercentage: 0,
+                    premiumValidity: '15d',
                     manualPremiumDiscountPercentage: 0,
                     manualPremiumValidity: '15d',
                     generatingPremiumVoucher: false,
@@ -1622,7 +1632,8 @@
                     try {
                         this.isLoading = true;
                         const response = await axios.post(`${API_BASE}/admin/premium-payments/${this.selectedPremiumPayment._id}/process`, {
-                            discountPercentage: this.premiumDiscountPercentage
+                            discountPercentage: this.premiumDiscountPercentage,
+                            validity: this.premiumValidity
                         });
                         if (response.data.success) {
                             const index = this.premiumPayments.findIndex(p => p._id === this.selectedPremiumPayment._id);
