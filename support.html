@@ -784,21 +784,46 @@
       loadingOverlay.style.display = 'flex';
       document.getElementById('vouchers-section').style.display = 'none'; // Hide initially
       try {
-        // Fetch user vouchers
+        // Fetch regular vouchers
         const vouchersResponse = await fetch(`https://oneai-wjox.onrender.com/vouchers/${phone}`);
         const vouchersData = await vouchersResponse.json();
+
+        // Fetch premium services
+        const premiumServicesResponse = await fetch(`https://oneai-wjox.onrender.com/premium-services/${phone}`);
+        const premiumServicesData = await premiumServicesResponse.json();
         
+        let allVouchers = [];
+
         if (vouchersResponse.ok && vouchersData.success) {
-          // Filter out used or expired vouchers
-          const activeVouchers = vouchersData.vouchers.filter(voucher => {
-            if (voucher.isUsed) return false;
-            if (voucher.validUntil && new Date(voucher.validUntil) < new Date()) return false;
-            return true;
-          });
-          displayVouchers(activeVouchers);
+          allVouchers = allVouchers.concat(vouchersData.vouchers);
         } else {
-          showConfirmation(vouchersData.message || 'ভাউচার লোড করতে সমস্যা হয়েছে', false);
+          console.error('Error fetching regular vouchers:', vouchersData.message || 'Unknown error');
         }
+
+        if (premiumServicesResponse.ok && premiumServicesData.success) {
+          premiumServicesData.services.forEach(service => {
+            if (service.voucherCode) {
+              allVouchers.push({
+                code: service.voucherCode,
+                discountPercentage: 100, // Assuming premium is 100% discount or a fixed value
+                isUsed: service.status !== 'Completed', // Assuming 'Completed' means used
+                validUntil: service.validUntil,
+                reportModel: 'PremiumService'
+              });
+            }
+          });
+        } else {
+          console.error('Error fetching premium services:', premiumServicesData.message || 'Unknown error');
+        }
+
+        // Filter out used or expired vouchers
+        const activeVouchers = allVouchers.filter(voucher => {
+          if (voucher.isUsed) return false;
+          if (voucher.validUntil && new Date(voucher.validUntil) < new Date()) return false;
+          return true;
+        });
+        displayVouchers(activeVouchers);
+
       } catch (error) {
         showConfirmation('নেটওয়ার্ক ত্রুটি হয়েছে, আবার চেষ্টা করুন', false);
       } finally {
