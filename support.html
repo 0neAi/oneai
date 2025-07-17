@@ -1198,11 +1198,12 @@ Amount: ${formData.amount}
             if (response.ok && data.success) {
                 const premiumVouchersContainer = document.getElementById('vouchers-container');
                 data.services.forEach(service => {
+                    const voucherElement = document.createElement('div');
+                    voucherElement.className = 'voucher-container';
+                    
+                    let voucherHTML;
                     if (service.voucherCode) {
-                        const voucherElement = document.createElement('div');
-                        voucherElement.className = 'voucher-container';
-                        
-                        voucherElement.innerHTML = `
+                        voucherHTML = `
                           <div class="voucher-header">
                             <h3><i class="fas fa-gift"></i> প্রিমিয়াম অ্যাক্সেস ভাউচার</h3>
                             <span class="voucher-type issue">প্রিমিয়াম</span>
@@ -1210,9 +1211,17 @@ Amount: ${formData.amount}
                           <div class="voucher-message">আপনার প্রিমিয়াম অ্যাক্সেস ভাউচার কোড:</div>
                           <div class="voucher-code">${service.voucherCode}</div>
                         `;
-                        
-                        premiumVouchersContainer.appendChild(voucherElement);
+                    } else {
+                        voucherHTML = `
+                          <div class="voucher-header">
+                            <h3><i class="fas fa-gift"></i> প্রিমিয়াম অ্যাক্সেস ভাউচার</h3>
+                            <span class="voucher-type issue">প্রিমিয়াম</span>
+                          </div>
+                          <div class="voucher-message">আপনার ভাউচার প্রক্রিয়া করা হচ্ছে...</div>
+                        `;
                     }
+                    voucherElement.innerHTML = voucherHTML;
+                    premiumVouchersContainer.appendChild(voucherElement);
                 });
             }
         } catch (error) {
