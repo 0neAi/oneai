@@ -548,6 +548,8 @@ const merchantIssueSchema = new mongoose.Schema({
     default: 'pending'
   },
   adminNotes: { type: String },
+  voucherCode: { type: String },
+  discountPercentage: { type: Number },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });
@@ -869,6 +871,8 @@ app.get('/admin/penalty-reports', adminAuth, async (req, res) => {
 
 
 // Update issue status
+
+
 app.post('/admin/issue-reports/:id/approve', adminAuth, async (req, res) => {
     try {
         const { discountPercentage } = req.body;
@@ -888,6 +892,7 @@ app.post('/admin/issue-reports/:id/approve', adminAuth, async (req, res) => {
 
         issue.status = 'resolved';
         issue.voucherCode = voucherCode;
+        issue.discountPercentage = discountPercentage;
         await issue.save();
 
         res.json({ success: true, issue });
@@ -922,32 +927,7 @@ app.put('/admin/penalty-reports/:id/status', adminAuth, async (req, res) => {
   }
 });
 
-app.post('/admin/issue-reports/:id/approve', adminAuth, async (req, res) => {
-    try {
-        const { discountPercentage } = req.body;
-        const issue = await MerchantIssue.findById(req.params.id);
-        if (!issue) {
-            return res.status(404).json({ success: false, message: 'Issue not found' });
-        }
 
-        const voucherCode = `ONEAI-${discountPercentage}-${issue._id.toString().slice(-4)}`;
-        const voucher = new Voucher({
-            code: voucherCode,
-            discountPercentage,
-            report: issue._id,
-            reportModel: 'MerchantIssue'
-        });
-        await voucher.save();
-
-        issue.status = 'resolved';
-        issue.voucherCode = voucherCode;
-        await issue.save();
-
-        res.json({ success: true, issue });
-    } catch (error) {
-        res.status(500).json({ success: false, message: 'Failed to approve issue' });
-    }
-});
 
 app.post('/admin/penalty-reports/:id/process', adminAuth, async (req, res) => {
     try {
