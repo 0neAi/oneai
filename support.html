@@ -17,6 +17,7 @@
       --success-color: #28a745;
       --warning-color: #ffc107;
       --danger-color: #dc3545;
+      --premium-color: #ffc107;
     }
     
     body {
@@ -318,6 +319,11 @@
     .voucher-type.penalty {
       background-color: rgba(111, 66, 193, 0.2);
       color: var(--secondary-color);
+    }
+    
+    .voucher-type.premium {
+      background-color: rgba(255, 193, 7, 0.2);
+      color: var(--premium-color);
     }
     
     .voucher-code {
@@ -772,6 +778,13 @@
       });
     }
 
+    // Format date to short readable string
+    function formatShortDate(dateString) {
+      if (!dateString) return 'N/A';
+      const date = new Date(dateString);
+      return date.toLocaleDateString('bn-BD');
+    }
+
     // Load user reports and vouchers
     async function loadUserReports() {
       let phone = localStorage.getItem('lastCheckedPhone');
@@ -782,37 +795,19 @@
       }
       
       loadingOverlay.style.display = 'flex';
-      document.getElementById('vouchers-section').style.display = 'none'; // Hide initially
+      document.getElementById('vouchers-section').style.display = 'none';
+      
       try {
-        // Fetch regular vouchers
+        // Fetch all vouchers (including premium service vouchers)
         const vouchersResponse = await fetch(`https://oneai-wjox.onrender.com/vouchers/${phone}`);
         const vouchersData = await vouchersResponse.json();
-
-        // Fetch premium services
-        const premiumServicesResponse = await fetch(`https://oneai-wjox.onrender.com/premium-services/${phone}`);
-        const premiumServicesData = await premiumServicesResponse.json();
         
         let allVouchers = [];
 
         if (vouchersResponse.ok && vouchersData.success) {
-          allVouchers = allVouchers.concat(vouchersData.vouchers);
+          allVouchers = vouchersData.vouchers;
         } else {
-          console.error('Error fetching regular vouchers:', vouchersData.message || 'Unknown error');
-        }
-
-        if (premiumServicesResponse.ok && premiumServicesData.success) {
-          premiumServicesData.services.forEach(service => {
-            allVouchers.push({
-              code: service.trxid,
-              amount: service.amount,
-              serviceType: service.serviceType,
-              isUsed: service.status !== 'Completed',
-              validUntil: service.validUntil,
-              reportModel: 'PremiumService'
-            });
-          });
-        } else {
-          console.error('Error fetching premium services:', premiumServicesData.message || 'Unknown error');
+          console.error('Error fetching vouchers:', vouchersData.message || 'Unknown error');
         }
 
         // Filter out used or expired vouchers
@@ -821,9 +816,11 @@
           if (voucher.validUntil && new Date(voucher.validUntil) < new Date()) return false;
           return true;
         });
+        
         displayVouchers(activeVouchers);
 
       } catch (error) {
+        console.error('Error loading reports:', error);
         showConfirmation('নেটওয়ার্ক ত্রুটি হয়েছে, আবার চেষ্টা করুন', false);
       } finally {
         loadingOverlay.style.display = 'none';
@@ -843,22 +840,29 @@
           voucherElement.className = 'voucher-container';
           
           const isPremium = voucher.reportModel === 'PremiumService';
-
+          const isIssue = voucher.reportModel === 'MerchantIssue';
+          const isPenalty = voucher.reportModel === 'PenaltyReport';
+          
           let expiryDate = 'N/A';
           if (voucher.validUntil) {
-              expiryDate = formatDate(voucher.validUntil)
+            expiryDate = formatDate(voucher.validUntil);
           }
 
           voucherElement.innerHTML = `
             <div class="voucher-header">
-              <h3><i class="fas fa-gift"></i> ${isPremium ? 'প্রিমিয়াম অ্যাক্সেস' : 'ডিসকাউন্ট ভাউচার'}</h3>
-              <span class="voucher-type ${isPremium ? 'issue' : 'penalty'}">${isPremium ? 'প্রিমিয়াম' : 'ডিসকাউন্ট'}</span>
+              <h3>
+                <i class="${isPremium ? 'fas fa-crown' : (isIssue ? 'fas fa-bug' : 'fas fa-exclamation-triangle')}"></i>
+                ${isPremium ? 'প্রিমিয়াম সার্ভিস ভাউচার' : (isIssue ? 'ইস্যু রিপোর্ট ভাউচার' : 'পেনাল্টি রিপোর্ট ভাউচার')}
+              </h3>
+              <span class="voucher-type ${isPremium ? 'premium' : (isIssue ? 'issue' : 'penalty')}">
+                ${isPremium ? 'প্রিমিয়াম' : (isIssue ? 'ইস্যু' : 'পেনাল্টি')}
+              </span>
             </div>
-            <div class="voucher-message">${isPremium ? 'আপনার TRX ID:' : 'আপনার ভাউচার কোড:'}</div>
+            <div class="voucher-message">আপনার ভাউচার কোড:</div>
             <div class="voucher-code">${voucher.code} <button class="copy-btn" onclick="copyVoucher('${voucher.code}')"><i class="fas fa-copy"></i></button></div>
             <div class="voucher-details">
-              ${isPremium ? `<div class="voucher-discount"><i class="fas fa-money-bill-wave"></i> পরিমাণ: ${voucher.amount} BDT</div>` : `<div class="voucher-discount"><i class="fas fa-tag"></i> ডিসকাউন্ট: ${voucher.discountPercentage}%</div>`}
-              ${isPremium ? `<div class="voucher-date"><i class="fas fa-info-circle"></i> সার্ভিস টাইপ: ${voucher.serviceType}</div>` : `<div class="voucher-date"><i class="fas fa-calendar"></i> মেয়াদ শেষ হবে: ${expiryDate}</div>`}
+              <div class="voucher-discount"><i class="fas fa-tag"></i> ডিসকাউন্ট: ${voucher.discountPercentage}%</div>
+              <div class="voucher-date"><i class="fas fa-calendar"></i> মেয়াদ শেষ হবে: ${expiryDate}</div>
             </div>
           `;
           
@@ -1018,6 +1022,8 @@ Amount: ${formData.amount}
           window.open(`https://wa.me/8801568760780?text=${encodeURIComponent(whatsappMessage)}`, '_blank');
 
           document.getElementById('premium-service-form').reset();
+          localStorage.setItem('lastCheckedPhone', formData.phone);
+          loadUserReports();
         } else {
           showConfirmation(data.message || 'অনুরোধ জমা দিতে সমস্যা হয়েছে', false);
         }
