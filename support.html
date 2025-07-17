@@ -803,11 +803,12 @@
         const vouchersData = await vouchersResponse.json();
         
         let allVouchers = [];
-
-        if (vouchersResponse.ok && vouchersData.success) {
+        if (vouchersResponse.ok && vouchersData.success && Array.isArray(vouchersData.vouchers)) {
           allVouchers = vouchersData.vouchers;
+          console.log('Fetched vouchers data:', vouchersData);
+          console.log('All vouchers before filtering:', allVouchers);
         } else {
-          console.error('Error fetching vouchers:', vouchersData.message || 'Unknown error');
+          console.error('Error fetching vouchers or vouchers data is not an array:', vouchersData.message || 'Unknown error', vouchersData);
         }
 
         // Filter out used or expired vouchers
@@ -816,6 +817,8 @@
           if (voucher.validUntil && new Date(voucher.validUntil) < new Date()) return false;
           return true;
         });
+        
+        console.log('Active vouchers after filtering:', activeVouchers);
         
         displayVouchers(activeVouchers);
 
@@ -832,10 +835,15 @@
       const container = document.getElementById('vouchers-container');
       container.innerHTML = '';
       
+      console.log('displayVouchers called with:', vouchers);
+      
       if (vouchers.length === 0) {
         container.innerHTML = '<p class="no-vouchers">কোন ভাউচার পাওয়া যায়নি</p>';
+        console.log('No vouchers to display.');
       } else {
-        vouchers.forEach(voucher => {
+        console.log(`Attempting to display ${vouchers.length} vouchers.`);
+        vouchers.forEach((voucher, index) => {
+          console.log(`Processing voucher ${index}:`, voucher);
           const voucherElement = document.createElement('div');
           voucherElement.className = 'voucher-container';
           
