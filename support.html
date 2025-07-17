@@ -532,14 +532,9 @@
       <i class="fas fa-sync-alt"></i> আমার রিপোর্ট এবং ভাউচার আপডেট করুন
     </button>
 
-    <!-- Reports and Vouchers Section -->
-    <section class="section" id="user-reports-vouchers-section" style="display: none;">
-      <h2 class="section-title"><i class="fas fa-history"></i> আপনার রিপোর্ট এবং ভাউচার</h2>
-      
-      <div id="reports-container">
-        <!-- Reports will be loaded here dynamically -->
-      </div>
-      
+    <!-- Vouchers Section -->
+    <section class="section" id="vouchers-section" style="display: none;">
+      <h2 class="section-title"><i class="fas fa-ticket-alt"></i> আপনার ভাউচার</h2>
       <div id="vouchers-container">
         <!-- Vouchers will be loaded here dynamically -->
       </div>
@@ -662,20 +657,6 @@
       <h2 class="section-title"><i class="fas fa-crown"></i> প্রিমিয়াম মার্চেন্ট ডাটাবেস</h2>
       <p>আমাদের যাচাইকৃত মার্চেন্ট ডাটাবেসে সম্পূর্ণ অ্যাক্সেস পান</p>
       
-      <div id="premium-voucher-display" class="voucher-container" style="display: none;">
-        <div class="voucher-header">
-          <h3><i class="fas fa-gift"></i> প্রিমিয়াম অ্যাক্সেস ভাউচার</h3>
-          <span class="voucher-type issue">প্রিমিয়াম</span>
-        </div>
-        <div class="voucher-message">আপনার প্রিমিয়াম অ্যাক্সেস ভাউচার কোড:</div>
-        <div class="voucher-code" id="premium-voucher-code"></div>
-        <div class="voucher-details">
-          <div class="voucher-discount"><i class="fas fa-tag"></i> স্ট্যাটাস: <span id="premium-voucher-status"></span></div>
-          <div class="voucher-date"><i class="fas fa-calendar"></i> মেয়াদ শেষ হবে: <span id="premium-voucher-expiry"></span></div>
-        </div>
-        <div class="voucher-countdown" id="premium-voucher-countdown"></div>
-      </div>
-
       <form id="premium-service-form">
         <div class="form-row">
           <div class="form-group">
@@ -727,7 +708,6 @@
 
     // Initialize loading overlay
     const loadingOverlay = document.querySelector('.loading-overlay');
-    let voucherCheckInterval;
 
     // Display merchants in the UI
     function displayMerchants() {
@@ -789,18 +769,6 @@
       });
     }
 
-    // Format date with time
-    function formatDateTime(dateString) {
-      const date = new Date(dateString);
-      return date.toLocaleString('bn-BD', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    }
-
     // Load user reports and vouchers
     async function loadUserReports() {
       let phone = localStorage.getItem('lastCheckedPhone');
@@ -811,17 +779,16 @@
       }
       
       loadingOverlay.style.display = 'flex';
-      document.getElementById('user-reports-vouchers-section').style.display = 'none'; // Hide initially
+      document.getElementById('vouchers-section').style.display = 'none'; // Hide initially
       try {
-        // Fetch user reports
-        const reportsResponse = await fetch(`https://oneai-wjox.onrender.com/user-reports/${phone}`);
-        const reportsData = await reportsResponse.json();
+        // Fetch user vouchers
+        const vouchersResponse = await fetch(`https://oneai-wjox.onrender.com/vouchers/${phone}`);
+        const vouchersData = await vouchersResponse.json();
         
-        if (reportsResponse.ok) {
-          displayUserReports(reportsData.reports);
-          displayVouchers(reportsData.reports);
+        if (vouchersResponse.ok) {
+          displayVouchers(vouchersData.vouchers);
         } else {
-          showConfirmation(reportsData.message || 'রিপোর্ট লোড করতে সমস্যা হয়েছে', false);
+          showConfirmation(vouchersData.message || 'ভাউচার লোড করতে সমস্যা হয়েছে', false);
         }
       } catch (error) {
         showConfirmation('নেটওয়ার্ক ত্রুটি হয়েছে, আবার চেষ্টা করুন', false);
@@ -830,137 +797,59 @@
       }
     }
 
-    // Display user reports
-    function displayUserReports(reports) {
-      const container = document.getElementById('reports-container');
-      container.innerHTML = '';
-      
-      let hasReports = false;
-
-      // Display merchant issues
-      if (reports.issues && reports.issues.length > 0) {
-        container.innerHTML += '<h3>মার্চেন্ট ইস্যু রিপোর্ট</h3>';
-        reports.issues.forEach(issue => {
-          const card = createReportCard(issue, 'issue');
-          container.appendChild(card);
-        });
-        hasReports = true;
-      }
-      
-      // Display penalty reports
-      if (reports.penalties && reports.penalties.length > 0) {
-        container.innerHTML += '<h3>পেনাল্টি রিপোর্ট</h3>';
-        reports.penalties.forEach(report => {
-          const card = createReportCard(report, 'penalty');
-          container.appendChild(card);
-        });
-        hasReports = true;
-      }
-
-      if (!hasReports) {
-        container.innerHTML = '<p class="no-vouchers">আপনার কোন রিপোর্ট পাওয়া যায়নি</p>';
-      }
-
-      // Show the section if there are any reports or vouchers
-      if (hasReports || document.getElementById('vouchers-container').children.length > 0) {
-        document.getElementById('user-reports-vouchers-section').style.display = 'block';
-      }
-    }
-
-    // Create report card
-    function createReportCard(report, type) {
-      const card = document.createElement('div');
-      card.className = `report-card ${type === 'penalty' ? 'penalty' : ''}`;
-      
-      const statusClass = `status-${report.status.replace(' ', '-')}`;
-      const reportType = type === 'issue' ? 'মার্চেন্ট ইস্যু' : 'পেনাল্টি রিপোর্ট';
-      
-      card.innerHTML = `
-        <h4>${reportType} 
-          <span class="status ${statusClass}">${report.status}</span>
-        </h4>
-        <div class="meta">
-          <span><i class="fas fa-calendar"></i> ${formatDateTime(report.createdAt || report.penaltyDate)}</span>
-          <span><i class="fas fa-user"></i> ${report.merchantName || report.customerName}</span>
-          <span><i class="fas fa-phone"></i> ${report.merchantPhone || report.customerPhone}</span>
-        </div>
-        <p><strong>বিস্তারিত:</strong> ${report.details || report.penaltyDetails}</p>
-      `;
-      
-      return card;
-    }
-
     // Display vouchers
-    function displayVouchers(reports) {
+    function displayVouchers(vouchers) {
       const container = document.getElementById('vouchers-container');
       container.innerHTML = '';
       
-      // Collect all vouchers
-      let vouchers = [];
-      
-      // Add merchant issue vouchers
-      if (reports.issues) {
-        reports.issues
-          .filter(issue => issue.status === 'resolved' && issue.voucherCode)
-          .forEach(issue => {
-            vouchers.push({
-              code: issue.voucherCode,
-              discount: issue.discountPercentage ? `${issue.discountPercentage}%` : 'N/A',
-              type: 'issue',
-              date: issue.updatedAt || issue.createdAt,
-              merchant: issue.merchantName
-            });
-          });
-      }
-      
-      // Add penalty report vouchers
-      if (reports.penalties) {
-        reports.penalties
-          .filter(report => report.status === 'processed' && report.voucherCode)
-          .forEach(report => {
-            vouchers.push({
-              code: report.voucherCode,
-              discount: report.discountPercentage ? `${report.discountPercentage}%` : 'ভ্যারিয়েবল',
-              type: 'penalty',
-              date: report.updatedAt || report.createdAt,
-              merchant: report.merchantName
-            });
-          });
-      }
-      
-      // Display vouchers
       if (vouchers.length === 0) {
         container.innerHTML = '<p class="no-vouchers">কোন ভাউচার পাওয়া যায়নি</p>';
       } else {
-        container.innerHTML = '<h3>আপনার ভাউচারসমূহ</h3>';
         vouchers.forEach(voucher => {
           const voucherElement = document.createElement('div');
           voucherElement.className = 'voucher-container';
           
+          const isPremium = voucher.reportModel === 'PremiumService';
+          const expiryTime = isPremium ? 5 * 60 * 1000 : 10 * 60 * 1000;
+          const expiryTimestamp = new Date(voucher.createdAt).getTime() + expiryTime;
+
+          let countdownInterval = setInterval(() => {
+            const now = new Date().getTime();
+            const distance = expiryTimestamp - now;
+
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            const countdownElement = voucherElement.querySelector('.voucher-countdown');
+
+            if (distance < 0) {
+              clearInterval(countdownInterval);
+              voucherElement.style.display = 'none';
+            } else {
+              countdownElement.innerHTML = `মেয়াদ শেষ হবে: ${minutes}মিনিট ${seconds}সেকেন্ড`;
+            }
+          }, 1000);
+
           voucherElement.innerHTML = `
             <div class="voucher-header">
-              <h3><i class="fas fa-gift"></i> ${voucher.type === 'issue' ? 'মার্চেন্ট ইস্যু ভাউচার' : 'পেনাল্টি ভাউচার'}</h3>
-              <span class="voucher-type ${voucher.type}">${voucher.type === 'issue' ? 'ইস্যু' : 'পেনাল্টি'}</span>
+              <h3><i class="fas fa-gift"></i> ${isPremium ? 'প্রিমিয়াম অ্যাক্সেস ভাউচার' : 'ডিসকাউন্ট ভাউচার'}</h3>
+              <span class="voucher-type ${isPremium ? 'issue' : 'penalty'}">${isPremium ? 'প্রিমিয়াম' : 'ডিসকাউন্ট'}</span>
             </div>
-            <div class="voucher-message">${voucher.type === 'issue' ? 
-              'আপনার ইস্যু রিপোর্টের জন্য ভাউচার' : 
-              'আপনার পেনাল্টি রিপোর্টের জন্য ভাউচার'}</div>
+            <div class="voucher-message">আপনার ভাউচার কোড:</div>
             <div class="voucher-code">${voucher.code}</div>
             <div class="voucher-details">
-              <div class="voucher-discount"><i class="fas fa-tag"></i> ডিসকাউন্ট: ${voucher.discount}</div>
-              <div class="voucher-date"><i class="fas fa-calendar"></i> ${formatDate(voucher.date)}</div>
+              <div class="voucher-discount"><i class="fas fa-tag"></i> ডিসকাউন্ট: ${voucher.discountPercentage}%</div>
+              <div class="voucher-date"><i class="fas fa-calendar"></i> ${formatDate(voucher.createdAt)}</div>
             </div>
-            <p>ভাউচারটি প্রিমিয়াম সার্ভিসে ব্যবহার করতে পারবেন</p>
-            <div class="voucher-countdown" id="countdown-${voucher.code}"></div>
+            <div class="voucher-countdown"></div>
           `;
           
           container.appendChild(voucherElement);
         });
       }
 
-      // Show the section if there are any reports or vouchers
-      if (vouchers.length > 0 || document.getElementById('reports-container').children.length > 0) {
-        document.getElementById('user-reports-vouchers-section').style.display = 'block';
+      if (vouchers.length > 0) {
+        document.getElementById('vouchers-section').style.display = 'block';
       }
     }
 
@@ -1103,13 +992,6 @@ Amount: ${formData.amount}
           window.open(`https://wa.me/8801568760780?text=${encodeURIComponent(whatsappMessage)}`, '_blank');
 
           document.getElementById('premium-service-form').reset();
-          
-          // Store voucher with 6-hour expiry
-          const expiryTime = new Date().getTime() + (6 * 60 * 60 * 1000); // 6 hours from now
-          savePremiumVoucher(data.voucherCode, expiryTime);
-          updatePremiumVoucherCountdown();
-          premiumVoucherCountdownInterval = setInterval(updatePremiumVoucherCountdown, 1000);
-
         } else {
           showConfirmation(data.message || 'অনুরোধ জমা দিতে সমস্যা হয়েছে', false);
         }
@@ -1118,42 +1000,6 @@ Amount: ${formData.amount}
       } finally {
         loadingOverlay.style.display = 'none';
       }
-    }
-
-    let premiumVoucherCountdownInterval;
-
-    function savePremiumVoucher(code, expiry) {
-        localStorage.setItem('premiumVoucherCode', code);
-        localStorage.setItem('premiumVoucherExpiry', expiry);
-    }
-
-    function updatePremiumVoucherCountdown() {
-        const expiry = localStorage.getItem('premiumVoucherExpiry');
-        if (!expiry) return;
-
-        const now = new Date().getTime();
-        const distance = expiry - now;
-
-        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-        const countdownElement = document.getElementById('premium-voucher-countdown');
-        const voucherDisplay = document.getElementById('premium-voucher-display');
-
-        if (distance < 0) {
-            clearInterval(premiumVoucherCountdownInterval);
-            countdownElement.innerHTML = "মেয়াদ শেষ";
-            localStorage.removeItem('premiumVoucherCode');
-            localStorage.removeItem('premiumVoucherExpiry');
-            voucherDisplay.style.display = 'none';
-        } else {
-            document.getElementById('premium-voucher-code').textContent = localStorage.getItem('premiumVoucherCode');
-            document.getElementById('premium-voucher-status').textContent = "সক্রিয়";
-            document.getElementById('premium-voucher-expiry').textContent = new Date(parseInt(expiry)).toLocaleTimeString();
-            countdownElement.innerHTML = `মেয়াদ শেষ হবে: ${hours}ঘন্টা ${minutes}মিনিট ${seconds}সেকেন্ড`;
-            voucherDisplay.style.display = 'block';
-        }
     }
 
     // Event listeners
@@ -1179,55 +1025,7 @@ Amount: ${formData.amount}
       if (localStorage.getItem('lastCheckedPhone')) {
         loadUserReports();
       }
-
-      // Initialize voucher countdown
-      updatePremiumVoucherCountdown();
-      premiumVoucherCountdownInterval = setInterval(updatePremiumVoucherCountdown, 1000);
-
-      loadPremiumVouchers();
     });
-
-    async function loadPremiumVouchers() {
-        let phone = localStorage.getItem('lastCheckedPhone');
-        if (!phone) return;
-
-        try {
-            const response = await fetch(`https://oneai-wjox.onrender.com/premium-services/${phone}`);
-            const data = await response.json();
-
-            if (response.ok && data.success) {
-                const premiumVouchersContainer = document.getElementById('vouchers-container');
-                data.services.forEach(service => {
-                    const voucherElement = document.createElement('div');
-                    voucherElement.className = 'voucher-container';
-                    
-                    let voucherHTML;
-                    if (service.voucherCode) {
-                        voucherHTML = `
-                          <div class="voucher-header">
-                            <h3><i class="fas fa-gift"></i> প্রিমিয়াম অ্যাক্সেস ভাউচার</h3>
-                            <span class="voucher-type issue">প্রিমিয়াম</span>
-                          </div>
-                          <div class="voucher-message">আপনার প্রিমিয়াম অ্যাক্সেস ভাউচার কোড:</div>
-                          <div class="voucher-code">${service.voucherCode}</div>
-                        `;
-                    } else {
-                        voucherHTML = `
-                          <div class="voucher-header">
-                            <h3><i class="fas fa-gift"></i> প্রিমিয়াম অ্যাক্সেস ভাউচার</h3>
-                            <span class="voucher-type issue">প্রিমিয়াম</span>
-                          </div>
-                          <div class="voucher-message">আপনার ভাউচার প্রক্রিয়া করা হচ্ছে...</div>
-                        `;
-                    }
-                    voucherElement.innerHTML = voucherHTML;
-                    premiumVouchersContainer.appendChild(voucherElement);
-                });
-            }
-        } catch (error) {
-            console.error('Error loading premium vouchers:', error);
-        }
-    }
   </script>
   
   <!-- Include scripts -->
