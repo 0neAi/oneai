@@ -1072,26 +1072,8 @@ app.post('/premium-service', async (req, res) => {
     let serviceType;
     let validUntil = null;
     const now = new Date();
-    let discountApplied = 0;
-
-    if (voucherCode) {
-      const voucher = await Voucher.findOne({ code: voucherCode, isUsed: false, reportModel: 'PremiumService' });
-      if (voucher) {
-        if (voucher.validUntil && voucher.validUntil < now) {
-          return res.status(400).json({ success: false, message: 'Voucher has expired' });
-        }
-        discountApplied = voucher.discountPercentage;
-        voucher.isUsed = true;
-        await voucher.save();
-      } else {
-        return res.status(400).json({ success: false, message: 'Invalid or used premium voucher' });
-      }
-    }
 
     let finalAmount = Number(amount);
-    if (discountApplied > 0) {
-      finalAmount *= (1 - discountApplied / 100);
-    }
 
     switch (finalAmount) {
       case 500:
