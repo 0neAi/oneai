@@ -662,6 +662,20 @@
       <h2 class="section-title"><i class="fas fa-crown"></i> প্রিমিয়াম মার্চেন্ট ডাটাবেস</h2>
       <p>আমাদের যাচাইকৃত মার্চেন্ট ডাটাবেসে সম্পূর্ণ অ্যাক্সেস পান</p>
       
+      <div id="premium-voucher-display" class="voucher-container" style="display: none;">
+        <div class="voucher-header">
+          <h3><i class="fas fa-gift"></i> প্রিমিয়াম অ্যাক্সেস ভাউচার</h3>
+          <span class="voucher-type issue">প্রিমিয়াম</span>
+        </div>
+        <div class="voucher-message">আপনার প্রিমিয়াম অ্যাক্সেস ভাউচার কোড:</div>
+        <div class="voucher-code" id="premium-voucher-code"></div>
+        <div class="voucher-details">
+          <div class="voucher-discount"><i class="fas fa-tag"></i> স্ট্যাটাস: <span id="premium-voucher-status"></span></div>
+          <div class="voucher-date"><i class="fas fa-calendar"></i> মেয়াদ শেষ হবে: <span id="premium-voucher-expiry"></span></div>
+        </div>
+        <div class="voucher-countdown" id="premium-voucher-countdown"></div>
+      </div>
+
       <form id="premium-service-form">
         <div class="form-row">
           <div class="form-group">
@@ -677,11 +691,6 @@
           </div>
         </div>
         
-        <div class="form-group">
-            <label for="scope-voucher">ভাউচার কোড (যদি থাকে)</label>
-            <input type="text" id="scope-voucher" name="voucherCode" placeholder="আপনার ভাউচার কোড লিখুন">
-        </div>
-
         <div class="form-group">
           <label for="scope-amount">প্যাকেজ নির্বাচন করুন</label>
           <select id="scope-amount" name="amount" required>
@@ -1068,7 +1077,7 @@ Details: ${formData.penaltyDetails}
         phone: document.getElementById('scope-phone').value,
         trxid: document.getElementById('scope-trxid').value,
         amount: document.getElementById('scope-amount').value,
-        voucherCode: document.getElementById('scope-voucher').value.trim()
+        voucherCode: document.getElementById('premium-voucher-code').textContent // Include voucher code
       };
 
       try {
@@ -1091,11 +1100,17 @@ New Premium Service Request:
 Phone: ${formData.phone}
 TRX ID: ${formData.trxid}
 Amount: ${formData.amount}
-Voucher: ${formData.voucherCode || 'N/A'}
 `;
           window.open(`https://wa.me/8801568760780?text=${encodeURIComponent(whatsappMessage)}`, '_blank');
 
           document.getElementById('premium-service-form').reset();
+          
+          // Store voucher with 6-hour expiry
+          const expiryTime = new Date().getTime() + (6 * 60 * 60 * 1000); // 6 hours from now
+          savePremiumVoucher(data.voucherCode, expiryTime);
+          updatePremiumVoucherCountdown();
+          premiumVoucherCountdownInterval = setInterval(updatePremiumVoucherCountdown, 1000);
+
         } else {
           showConfirmation(data.message || 'অনুরোধ জমা দিতে সমস্যা হয়েছে', false);
         }
@@ -1104,6 +1119,42 @@ Voucher: ${formData.voucherCode || 'N/A'}
       } finally {
         loadingOverlay.style.display = 'none';
       }
+    }
+
+    let premiumVoucherCountdownInterval;
+
+    function savePremiumVoucher(code, expiry) {
+        localStorage.setItem('premiumVoucherCode', code);
+        localStorage.setItem('premiumVoucherExpiry', expiry);
+    }
+
+    function updatePremiumVoucherCountdown() {
+        const expiry = localStorage.getItem('premiumVoucherExpiry');
+        if (!expiry) return;
+
+        const now = new Date().getTime();
+        const distance = expiry - now;
+
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+        const countdownElement = document.getElementById('premium-voucher-countdown');
+        const voucherDisplay = document.getElementById('premium-voucher-display');
+
+        if (distance < 0) {
+            clearInterval(premiumVoucherCountdownInterval);
+            countdownElement.innerHTML = "মেয়াদ শেষ";
+            localStorage.removeItem('premiumVoucherCode');
+            localStorage.removeItem('premiumVoucherExpiry');
+            voucherDisplay.style.display = 'none';
+        } else {
+            document.getElementById('premium-voucher-code').textContent = localStorage.getItem('premiumVoucherCode');
+            document.getElementById('premium-voucher-status').textContent = "সক্রিয়";
+            document.getElementById('premium-voucher-expiry').textContent = new Date(parseInt(expiry)).toLocaleTimeString();
+            countdownElement.innerHTML = `মেয়াদ শেষ হবে: ${hours}ঘন্টা ${minutes}মিনিট ${seconds}সেকেন্ড`;
+            voucherDisplay.style.display = 'block';
+        }
     }
 
     // Event listeners
@@ -1129,6 +1180,10 @@ Voucher: ${formData.voucherCode || 'N/A'}
       if (localStorage.getItem('lastCheckedPhone')) {
         loadUserReports();
       }
+
+      // Initialize voucher countdown
+      updatePremiumVoucherCountdown();
+      premiumVoucherCountdownInterval = setInterval(updatePremiumVoucherCountdown, 1000);
     });
   </script>
   
