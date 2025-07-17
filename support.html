@@ -788,8 +788,14 @@
         const vouchersResponse = await fetch(`https://oneai-wjox.onrender.com/vouchers/${phone}`);
         const vouchersData = await vouchersResponse.json();
         
-        if (vouchersResponse.ok) {
-          displayVouchers(vouchersData.vouchers);
+        if (vouchersResponse.ok && vouchersData.success) {
+          // Filter out used or expired vouchers
+          const activeVouchers = vouchersData.vouchers.filter(voucher => {
+            if (voucher.isUsed) return false;
+            if (voucher.validUntil && new Date(voucher.validUntil) < new Date()) return false;
+            return true;
+          });
+          displayVouchers(activeVouchers);
         } else {
           showConfirmation(vouchersData.message || 'ভাউচার লোড করতে সমস্যা হয়েছে', false);
         }
