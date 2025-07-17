@@ -177,7 +177,9 @@
     }
     
     .btn {
-      display: inline-block;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       padding: 12px 24px;
       background: linear-gradient(135deg, var(--primary-color) 0%, #168a70 100%);
       color: white;
@@ -482,7 +484,7 @@
     </button>
 
     <!-- Reports and Vouchers Section -->
-    <section class="section">
+    <section class="section" id="user-reports-vouchers-section" style="display: none;">
       <h2 class="section-title"><i class="fas fa-history"></i> আপনার রিপোর্ট এবং ভাউচার</h2>
       
       <div id="reports-container">
@@ -751,6 +753,7 @@
     }
     
     loadingOverlay.style.display = 'flex';
+    document.getElementById('user-reports-vouchers-section').style.display = 'none'; // Hide initially
     try {
       // Fetch user reports
       const reportsResponse = await fetch(`https://oneai-wjox.onrender.com/user-reports/${phone}`);
@@ -774,12 +777,8 @@
     const container = document.getElementById('reports-container');
     container.innerHTML = '';
     
-    if ((!reports.issues || reports.issues.length === 0) && 
-        (!reports.penalties || reports.penalties.length === 0)) {
-      container.innerHTML = '<p class="no-vouchers">আপনার কোন রিপোর্ট পাওয়া যায়নি</p>';
-      return;
-    }
-    
+    let hasReports = false;
+
     // Display merchant issues
     if (reports.issues && reports.issues.length > 0) {
       container.innerHTML += '<h3>মার্চেন্ট ইস্যু রিপোর্ট</h3>';
@@ -787,6 +786,7 @@
         const card = createReportCard(issue, 'issue');
         container.appendChild(card);
       });
+      hasReports = true;
     }
     
     // Display penalty reports
@@ -796,6 +796,16 @@
         const card = createReportCard(report, 'penalty');
         container.appendChild(card);
       });
+      hasReports = true;
+    }
+
+    if (!hasReports) {
+      container.innerHTML = '<p class="no-vouchers">আপনার কোন রিপোর্ট পাওয়া যায়নি</p>';
+    }
+
+    // Show the section if there are any reports or vouchers
+    if (hasReports || document.getElementById('vouchers-container').children.length > 0) {
+      document.getElementById('user-reports-vouchers-section').style.display = 'block';
     }
   }
 
@@ -863,34 +873,37 @@
     // Display vouchers
     if (vouchers.length === 0) {
       container.innerHTML = '<p class="no-vouchers">কোন ভাউচার পাওয়া যায়নি</p>';
-      return;
+    } else {
+      container.innerHTML = '<h3>আপনার ভাউচারসমূহ</h3>';
+      vouchers.forEach(voucher => {
+        const voucherElement = document.createElement('div');
+        voucherElement.className = 'voucher-container';
+        
+        voucherElement.innerHTML = `
+          <div class="voucher-header">
+            <h3><i class="fas fa-gift"></i> ${voucher.type === 'issue' ? 'মার্চেন্ট ইস্যু ভাউচার' : 'পেনাল্টি ভাউচার'}</h3>
+            <span class="voucher-type ${voucher.type}">${voucher.type === 'issue' ? 'ইস্যু' : 'পেনাল্টি'}</span>
+          </div>
+          <div class="voucher-message">${voucher.type === 'issue' ? 
+            'আপনার ইস্যু রিপোর্টের জন্য ভাউচার' : 
+            'আপনার পেনাল্টি রিপোর্টের জন্য ভাউচার'}</div>
+          <div class="voucher-code">${voucher.code}</div>
+          <div class="voucher-details">
+            <div class="voucher-discount"><i class="fas fa-tag"></i> ডিসকাউন্ট: ${voucher.discount}</div>
+            <div class="voucher-date"><i class="fas fa-calendar"></i> ${formatDate(voucher.date)}</div>
+          </div>
+          <p>ভাউচারটি প্রিমিয়াম সার্ভিসে ব্যবহার করতে পারবেন</p>
+          <div class="voucher-countdown" id="countdown-${voucher.code}"></div>
+        `;
+        
+        container.appendChild(voucherElement);
+      });
     }
-    
-    container.innerHTML = '<h3>আপনার ভাউচারসমূহ</h3>';
-    
-    vouchers.forEach(voucher => {
-      const voucherElement = document.createElement('div');
-      voucherElement.className = 'voucher-container';
-      
-      voucherElement.innerHTML = `
-        <div class="voucher-header">
-          <h3><i class="fas fa-gift"></i> ${voucher.type === 'issue' ? 'মার্চেন্ট ইস্যু ভাউচার' : 'পেনাল্টি ভাউচার'}</h3>
-          <span class="voucher-type ${voucher.type}">${voucher.type === 'issue' ? 'ইস্যু' : 'পেনাল্টি'}</span>
-        </div>
-        <div class="voucher-message">${voucher.type === 'issue' ? 
-          'আপনার ইস্যু রিপোর্টের জন্য ভাউচার' : 
-          'আপনার পেনাল্টি রিপোর্টের জন্য ভাউচার'}</div>
-        <div class="voucher-code">${voucher.code}</div>
-        <div class="voucher-details">
-          <div class="voucher-discount"><i class="fas fa-tag"></i> ডিসকাউন্ট: ${voucher.discount}</div>
-          <div class="voucher-date"><i class="fas fa-calendar"></i> ${formatDate(voucher.date)}</div>
-        </div>
-        <p>ভাউচারটি প্রিমিয়াম সার্ভিসে ব্যবহার করতে পারবেন</p>
-        <div class="voucher-countdown" id="countdown-${voucher.code}"></div>
-      `;
-      
-      container.appendChild(voucherElement);
-    });
+
+    // Show the section if there are any reports or vouchers
+    if (vouchers.length > 0 || document.getElementById('reports-container').children.length > 0) {
+      document.getElementById('user-reports-vouchers-section').style.display = 'block';
+    }
   }
 
   // Submit merchant issue report
@@ -918,6 +931,17 @@
       
       if (response.ok) {
         showConfirmation('আপনার ইস্যু রিপোর্ট সফলভাবে জমা হয়েছে!');
+        
+        const whatsappMessage = `
+New Merchant Issue Report:
+-------------------------
+Page Name: ${formData.merchantName}
+Merchant Phone: ${formData.merchantPhone}
+Page Type: ${formData.issueType}
+Details: ${formData.details}
+`;
+        window.open(`https://wa.me/8801568760780?text=${encodeURIComponent(whatsappMessage)}`, '_blank');
+
         document.getElementById('issue-report-form').reset();
         localStorage.setItem('lastCheckedPhone', formData.merchantPhone);
         loadUserReports();
@@ -959,6 +983,20 @@
       
       if (response.ok) {
         showConfirmation('আপনার পেনাল্টি রিপোর্ট সফলভাবে জমা হয়েছে!');
+
+        const whatsappMessage = `
+New Penalty Report:
+-------------------
+Merchant Name: ${formData.merchantName}
+Customer Name: ${formData.customerName}
+Customer Phone: ${formData.customerPhone}
+Penalty Date: ${formData.penaltyDate}
+Original Amount: ${formData.amount1}
+Changed Amount: ${formData.amount2}
+Details: ${formData.penaltyDetails}
+`;
+        window.open(`https://wa.me/8801568760780?text=${encodeURIComponent(whatsappMessage)}`, '_blank');
+
         document.getElementById('penalty-report-form').reset();
         localStorage.setItem('lastCheckedPhone', formData.customerPhone);
         loadUserReports();
@@ -1084,6 +1122,16 @@
       
       if (response.ok) {
         showConfirmation('প্রিমিয়াম সার্ভিস অনুরোধ সফলভাবে জমা হয়েছে!');
+        
+        const whatsappMessage = `
+New Premium Service Request:
+----------------------------
+Phone: ${formData.phone}
+TRX ID: ${formData.trxid}
+Amount: ${formData.amount}
+`;
+        window.open(`https://wa.me/8801568760780?text=${encodeURIComponent(whatsappMessage)}`, '_blank');
+
         document.getElementById('premium-service-form').reset();
         
         // Store voucher with 6-hour expiry
