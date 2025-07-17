@@ -871,15 +871,16 @@ app.get('/admin/penalty-reports', adminAuth, async (req, res) => {
 // Update issue status
 app.post('/admin/issue-reports/:id/approve', adminAuth, async (req, res) => {
     try {
+        const { discountPercentage } = req.body;
         const issue = await MerchantIssue.findById(req.params.id);
         if (!issue) {
             return res.status(404).json({ success: false, message: 'Issue not found' });
         }
 
-        const voucherCode = `ONEAI-39-${issue._id.toString().slice(-4)}`;
+        const voucherCode = `ONEAI-${discountPercentage}-${issue._id.toString().slice(-4)}`;
         const voucher = new Voucher({
             code: voucherCode,
-            discountPercentage: 39,
+            discountPercentage,
             report: issue._id,
             reportModel: 'MerchantIssue'
         });
@@ -923,15 +924,16 @@ app.put('/admin/penalty-reports/:id/status', adminAuth, async (req, res) => {
 
 app.post('/admin/issue-reports/:id/approve', adminAuth, async (req, res) => {
     try {
+        const { discountPercentage } = req.body;
         const issue = await MerchantIssue.findById(req.params.id);
         if (!issue) {
             return res.status(404).json({ success: false, message: 'Issue not found' });
         }
 
-        const voucherCode = `ONEAI-39-${issue._id.toString().slice(-4)}`;
+        const voucherCode = `ONEAI-${discountPercentage}-${issue._id.toString().slice(-4)}`;
         const voucher = new Voucher({
             code: voucherCode,
-            discountPercentage: 39,
+            discountPercentage,
             report: issue._id,
             reportModel: 'MerchantIssue'
         });
