@@ -581,6 +581,7 @@ const penaltyReportSchema = new mongoose.Schema({
 const PenaltyReport = mongoose.model('PenaltyReport', penaltyReportSchema);
 
 const voucherSchema = new mongoose.Schema({
+    phone: { type: String, required: true },
     code: { type: String, required: true, unique: true },
     discountPercentage: { type: Number, required: true },
     isUsed: { type: Boolean, default: false },
@@ -778,6 +779,15 @@ app.get('/user-reports/:phone', async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to load reports' });
   }
 });
+
+app.get('/vouchers/:phone', async (req, res) => {
+    try {
+        const vouchers = await Voucher.find({ phone: req.params.phone, isUsed: false });
+        res.json({ success: true, vouchers });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to fetch vouchers' });
+    }
+});
 // Add after existing endpoints
 app.get('/admin/admins', adminAuth, async (req, res) => {
   try {
@@ -884,6 +894,7 @@ app.post('/admin/issue-reports/:id/approve', adminAuth, async (req, res) => {
 
         const voucherCode = `ONEAI-${discountPercentage}-${issue._id.toString().slice(-4)}`;
         const voucher = new Voucher({
+            phone: issue.merchantPhone,
             code: voucherCode,
             discountPercentage,
             report: issue._id,
@@ -940,6 +951,7 @@ app.post('/admin/penalty-reports/:id/process', adminAuth, async (req, res) => {
 
         const voucherCode = `ONEAI-${discountPercentage}-${report._id.toString().slice(-4)}`;
         const voucher = new Voucher({
+            phone: report.customerPhone,
             code: voucherCode,
             discountPercentage,
             report: report._id,
@@ -1017,7 +1029,7 @@ app.get('/premium-services/:phone', async (req, res) => {
 
 app.post('/admin/generate-premium-voucher', adminAuth, async (req, res) => {
   try {
-    const { discountPercentage, validity } = req.body;
+    const { phone, discountPercentage, validity } = req.body;
 
     let validUntil = null;
     const now = new Date();
@@ -1042,6 +1054,7 @@ app.post('/admin/generate-premium-voucher', adminAuth, async (req, res) => {
     const voucherCode = `PREMIUM-${discountPercentage}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
 
     const voucher = new Voucher({
+      phone,
       code: voucherCode,
       discountPercentage,
       isUsed: false,
@@ -1271,6 +1284,7 @@ app.post('/admin/premium-payments/:id/process', adminAuth, async (req, res) => {
 
         const voucherCode = `PREMIUM-${discountPercentage}-${premiumService._id.toString().slice(-4)}`;
         const voucher = new Voucher({
+            phone: premiumService.phone,
             code: voucherCode,
             discountPercentage,
             report: premiumService._id,
