@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <style>
-    /* Reuse dashboard stylin */
+    /* Reuse dashboard styling */
     :root {
       --primary-color: #1cb495;
       --secondary-color: #6f42c1;
@@ -351,11 +351,14 @@
       text-align: center;
     }
     
-    .voucher-countdown {
-      font-size: 0.9rem;
-      color: #ccc;
-      text-align: center;
-      margin-top: 10px;
+    .copy-btn {
+        background: none;
+        border: 1px solid gold;
+        color: gold;
+        padding: 5px 10px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-left: 10px;
     }
     
     /* Report card styles */
@@ -810,25 +813,11 @@
           voucherElement.className = 'voucher-container';
           
           const isPremium = voucher.reportModel === 'PremiumService';
-          const expiryTime = isPremium ? 5 * 60 * 1000 : 10 * 60 * 1000;
-          const expiryTimestamp = new Date(voucher.createdAt).getTime() + expiryTime;
 
-          let countdownInterval = setInterval(() => {
-            const now = new Date().getTime();
-            const distance = expiryTimestamp - now;
-
-            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-            const countdownElement = voucherElement.querySelector('.voucher-countdown');
-
-            if (distance < 0) {
-              clearInterval(countdownInterval);
-              voucherElement.style.display = 'none';
-            } else {
-              countdownElement.innerHTML = `মেয়াদ শেষ হবে: ${minutes}মিনিট ${seconds}সেকেন্ড`;
-            }
-          }, 1000);
+          let expiryDate = 'N/A';
+          if (voucher.validUntil) {
+              expiryDate = formatDate(voucher.validUntil)
+          }
 
           voucherElement.innerHTML = `
             <div class="voucher-header">
@@ -836,12 +825,11 @@
               <span class="voucher-type ${isPremium ? 'issue' : 'penalty'}">${isPremium ? 'প্রিমিয়াম' : 'ডিসকাউন্ট'}</span>
             </div>
             <div class="voucher-message">আপনার ভাউচার কোড:</div>
-            <div class="voucher-code">${voucher.code}</div>
+            <div class="voucher-code">${voucher.code} <button class="copy-btn" onclick="copyVoucher('${voucher.code}')"><i class="fas fa-copy"></i></button></div>
             <div class="voucher-details">
               <div class="voucher-discount"><i class="fas fa-tag"></i> ডিসকাউন্ট: ${voucher.discountPercentage}%</div>
-              <div class="voucher-date"><i class="fas fa-calendar"></i> ${formatDate(voucher.createdAt)}</div>
+              <div class="voucher-date"><i class="fas fa-calendar"></i> মেয়াদ শেষ হবে: ${expiryDate}</div>
             </div>
-            <div class="voucher-countdown"></div>
           `;
           
           container.appendChild(voucherElement);
@@ -851,6 +839,14 @@
       if (vouchers.length > 0) {
         document.getElementById('vouchers-section').style.display = 'block';
       }
+    }
+
+    function copyVoucher(code) {
+        navigator.clipboard.writeText(code).then(() => {
+            showConfirmation('ভাউচার কোড কপি করা হয়েছে!');
+        }, () => {
+            showConfirmation('ভাউচার কোড কপি করতে সমস্যা হয়েছে', false);
+        });
     }
 
     // Submit merchant issue report
