@@ -432,32 +432,81 @@
     
     /* Responsive adjustments */
     @media (max-width: 768px) {
+      body {
+        font-size: 0.95rem;
+      }
+      .container {
+        padding: 1rem;
+      }
+      header h1 {
+        font-size: 2rem;
+      }
+      .section {
+        padding: 1.5rem;
+      }
+      .section-title {
+        font-size: 1.5rem;
+      }
       .form-row {
         flex-direction: column;
         gap: 1rem;
       }
-      
       .merchant-list-container {
         grid-template-columns: 1fr;
       }
-      
-      .container {
+      .merchant-card {
         padding: 1rem;
       }
-      
-      .section {
-        padding: 1.5rem;
+      .merchant-card h3 {
+        font-size: 1.1rem;
       }
-      
-      .voucher-details {
-        flex-direction: column;
-        gap: 10px;
-      }
-      
+      .voucher-details,
       .voucher-header {
         flex-direction: column;
         align-items: flex-start;
         gap: 10px;
+      }
+      .voucher-code {
+        font-size: 1.5rem;
+      }
+      .btn {
+        padding: 10px 20px;
+        font-size: 0.9rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      body {
+        font-size: 0.9rem;
+      }
+      header h1 {
+        font-size: 1.8rem;
+      }
+      .section {
+        padding: 1rem;
+      }
+      .section-title {
+        font-size: 1.3rem;
+      }
+      .form-group input,
+      .form-group textarea,
+      .form-group select {
+        padding: 10px;
+        font-size: 0.9rem;
+      }
+      .voucher-code {
+        font-size: 1.2rem;
+      }
+      .voucher-type {
+        font-size: 0.75rem;
+      }
+      .voucher-discount,
+      .voucher-date {
+        font-size: 0.8rem;
+      }
+      .btn {
+        padding: 8px 15px;
+        font-size: 0.85rem;
       }
     }
   </style>
@@ -646,9 +695,10 @@
           <label for="scope-amount">প্যাকেজ নির্বাচন করুন</label>
           <select id="scope-amount" name="amount" required>
             <option value="">প্যাকেজ নির্বাচন করুন</option>
-            <option value="300">শীর্ষ 10 মার্চেন্ট (300 BDT)</option>
-            <option value="500">শীর্ষ 25 মার্চেন্ট (500 BDT)</option>
-            <option value="1000">সম্পূর্ণ ডাটাবেস (1000 BDT)</option>
+            <option value="500">15 দিন + 15 মার্চেন্ট (500 BDT)</option>
+            <option value="1000">1 মাস + 30 মার্চেন্ট (1000 BDT)</option>
+            <option value="2000">3 মাস + সম্পূর্ণ ডাটাবেস (2000 BDT)</option>
+            <option value="5000">লাইফটাইম + সম্পূর্ণ ডাটাবেস (5000 BDT)</option>
           </select>
         </div>
         
@@ -1010,93 +1060,7 @@ Details: ${formData.penaltyDetails}
     }
   }
 
-  // Submit premium service request
-  async function submitPremiumService(event) {
-    event.preventDefault();
-    loadingOverlay.style.display = 'flex';
-    
-    const formData = {
-      phone: document.getElementById('scope-phone').value,
-      trxid: document.getElementById('scope-trxid').value,
-      amount: document.getElementById('scope-amount').value
-    };
-
-    try {
-      const response = await fetch('https://oneai-wjox.onrender.com/premium-service', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(formData)
-      });
-      
-      const data = await response.json();
-      
-      if (response.ok) {
-        showConfirmation('প্রিমিয়াম সার্ভিস অনুরোধ সফলভাবে জমা হয়েছে!');
-        document.getElementById('premium-service-form').reset();
-      } else {
-        showConfirmation(data.message || 'অনুরোধ জমা দিতে সমস্যা হয়েছে', false);
-      }
-    } catch (error) {
-      showConfirmation('নেটওয়ার্ক ত্রুটি হয়েছে, আবার চেষ্টা করুন', false);
-    } finally {
-      loadingOverlay.style.display = 'none';
-    }
-  }
-
-  // Initialize the page
-  let premiumVoucherCountdownInterval;
-
-  // Function to save premium voucher to localStorage
-  function savePremiumVoucher(code, expiry) {
-    localStorage.setItem('premiumVoucher', JSON.stringify({ code, expiry }));
-  }
-
-  // Function to get premium voucher from localStorage
-  function getPremiumVoucher() {
-    const voucher = localStorage.getItem('premiumVoucher');
-    return voucher ? JSON.parse(voucher) : null;
-  }
-
-  // Function to remove premium voucher from localStorage
-  function removePremiumVoucher() {
-    localStorage.removeItem('premiumVoucher');
-  }
-
-  // Function to update the premium voucher countdown
-  function updatePremiumVoucherCountdown() {
-    const voucher = getPremiumVoucher();
-    const displayDiv = document.getElementById('premium-voucher-display');
-    const countdownDiv = document.getElementById('premium-voucher-countdown');
-    const codeDiv = document.getElementById('premium-voucher-code');
-    const expiryDiv = document.getElementById('premium-voucher-expiry');
-    const statusDiv = document.getElementById('premium-voucher-status');
-
-    if (voucher) {
-      const now = new Date().getTime();
-      const timeLeft = voucher.expiry - now;
-
-      if (timeLeft > 0) {
-        const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
-
-        codeDiv.textContent = voucher.code;
-        expiryDiv.textContent = new Date(voucher.expiry).toLocaleString('bn-BD');
-        statusDiv.textContent = 'সক্রিয়';
-        countdownDiv.textContent = `মেয়াদ শেষ হতে বাকি: ${hours}ঘ ${minutes}মি ${seconds}সে`;
-        displayDiv.style.display = 'block';
-      } else {
-        clearInterval(premiumVoucherCountdownInterval);
-        removePremiumVoucher();
-        displayDiv.style.display = 'none';
-        showConfirmation('আপনার প্রিমিয়াম ভাউচারের মেয়াদ শেষ হয়ে গেছে।', false);
-      }
-    } else {
-      displayDiv.style.display = 'none';
-    }
-  }
+  
 
   // Submit premium service request
   async function submitPremiumService(event) {
@@ -1106,7 +1070,8 @@ Details: ${formData.penaltyDetails}
     const formData = {
       phone: document.getElementById('scope-phone').value,
       trxid: document.getElementById('scope-trxid').value,
-      amount: document.getElementById('scope-amount').value
+      amount: document.getElementById('scope-amount').value,
+      voucherCode: document.getElementById('premium-voucher-code').textContent // Include voucher code
     };
 
     try {
@@ -1149,29 +1114,6 @@ Amount: ${formData.amount}
       loadingOverlay.style.display = 'none';
     }
   }
-
-  // Initialize the page
-  document.addEventListener('DOMContentLoaded', async () => {
-    displayMerchants();
-    
-    // Set today's date as default for penalty date
-    document.getElementById('penalty-date').value = new Date().toISOString().split('T')[0];
-    
-    // Load user reports if phone exists
-    const userPhone = localStorage.getItem('lastCheckedPhone');
-    if (userPhone) {
-      await loadUserReports();
-    }
-    
-    // Check and update premium voucher on load
-    updatePremiumVoucherCountdown();
-    premiumVoucherCountdownInterval = setInterval(updatePremiumVoucherCountdown, 1000);
-
-    // Attach form submit handlers
-    document.getElementById('issue-report-form').addEventListener('submit', submitMerchantIssue);
-    document.getElementById('penalty-report-form').addEventListener('submit', submitPenaltyReport);
-    document.getElementById('premium-service-form').addEventListener('submit', submitPremiumService);
-  });
 </script>
   <!-- Include scripts -->
   <script src="./assets/js/hackeranimation.js"></script>
