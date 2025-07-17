@@ -37,7 +37,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // ======================
-// Environment Validation
+// Environment Validati
 // ======================
 if (!process.env.MONGODB_URI || !process.env.JWT_SECRET) {
   console.error('❌ Missing required environment variables');
