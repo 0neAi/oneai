@@ -593,14 +593,23 @@
             const amount1 = parseFloat(group.querySelector('.amount1').value) || 0;
             const amount2 = parseFloat(group.querySelector('.amount2').value) || 0;
             
-            if (serviceType === 'pricecng' || serviceType === 'partial') {
+            if (serviceType === 'pricecng') {
                 if (amount1 > 0 && amount2 < amount1) {
                     totalCharge += (amount1 - amount2) / 2;
                 }
-            } 
+            }
+            else if (serviceType === 'partial') {
+                totalCharge += 15;
+            }
             else if (serviceType === 'drto') {
-                if (amount2 < 40) {
-                    totalCharge += 40;
+                if (amount2 > 99) {
+                    totalCharge += 10;
+                } else if (amount2 > 51) {
+                    totalCharge += 15;
+                } else if (amount2 > 1) {
+                    totalCharge += 25;
+                } else if (amount2 === 0) {
+                    totalCharge += 10;
                 }
             }
             else if (serviceType === 'delivery') {
@@ -761,7 +770,7 @@
             }
 
             // Service-specific validation
-            if (serviceType === 'pricecng' || serviceType === 'partial') {
+            if (serviceType === 'pricecng') {
                 if (!validateAmount(consignment.amount1) || 
                     !validateAmount(consignment.amount2)) {
                     throw new Error(`Consignment ${index + 1} has invalid amounts`);
@@ -771,12 +780,21 @@
                 }
                 totalCharge += (consignment.amount1 - consignment.amount2) / 2;
             } 
+            else if (serviceType === 'partial') {
+                totalCharge += 15;
+            }
             else if (serviceType === 'drto') {
                 if (consignment.amount2 > 0 && !validateAmount(consignment.amount2)) {
                     throw new Error(`Consignment ${index + 1} has invalid amount`);
                 }
-                if (consignment.amount2 < 40) {
-                    totalCharge += 40;
+                if (consignment.amount2 > 99) {
+                    totalCharge += 10;
+                } else if (consignment.amount2 > 51) {
+                    totalCharge += 15;
+                } else if (consignment.amount2 > 1) {
+                    totalCharge += 25;
+                } else if (consignment.amount2 === 0) {
+                    totalCharge += 10;
                 }
             }
 
