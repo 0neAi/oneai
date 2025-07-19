@@ -716,6 +716,10 @@
                     <div class="card-body">
                         <form @submit.prevent="generatePremiumVoucher">
                             <div class="mb-3">
+                                <label for="manual-premium-phone" class="form-label">Phone Number</label>
+                                <input type="text" class="form-control" id="manual-premium-phone" v-model="manualPremiumPhoneNumber" placeholder="Enter phone number" required>
+                            </div>
+                            <div class="mb-3">
                                 <label for="premium-discount-percentage" class="form-label">Discount Percentage</label>
                                 <input type="number" class="form-control" id="premium-discount-percentage" v-model.number="manualPremiumDiscountPercentage" min="0" max="100">
                             </div>
@@ -1129,6 +1133,7 @@
                     premiumValidity: '15d',
                     manualPremiumDiscountPercentage: 0,
                     manualPremiumValidity: '15d',
+                    manualPremiumPhoneNumber: '',
                     generatingPremiumVoucher: false,
                     premiumVoucherMessage: '',
                     premiumVoucherSuccess: false,
@@ -1675,6 +1680,7 @@
                     this.premiumVoucherSuccess = false;
                     try {
                         const response = await axios.post(`${API_BASE}/admin/generate-premium-voucher`, {
+                            phone: this.manualPremiumPhoneNumber,
                             discountPercentage: this.manualPremiumDiscountPercentage,
                             validity: this.manualPremiumValidity
                         });
