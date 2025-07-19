@@ -788,19 +788,46 @@
                                 </div>
                             </div>
                             
-                            <div class="mb-3">
-                                <label class="form-label">Company</label>
-                                <input type="text" class="form-control" :value="selectedPayment.company" readonly>
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label">Company</label>
+                                        <input type="text" class="form-control" :value="selectedPayment.company" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label">Phone</label>
+                                        <input type="text" class="form-control" :value="selectedPayment.phone" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label">Password</label>
+                                        <input type="text" class="form-control" :value="selectedPayment.password" readonly>
+                                    </div>
+                                </div>
                             </div>
-                            
-                            <div class="mb-3">
-                                <label class="form-label">Phone</label>
-                                <input type="text" class="form-control" :value="selectedPayment.phone" readonly>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label class="form-label">Password</label>
-                                <input type="text" class="form-control" :value="selectedPayment.password" readonly>
+
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label">Server Charge</label>
+                                        <input type="text" class="form-control" :value="selectedPayment.amount3.toFixed(2)" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label">Discounted Amount</label>
+                                        <input type="text" class="form-control" :value="(selectedPayment.amount3 * (1 - selectedPayment.discount / 100)).toFixed(2)" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label">Discount Percentage</label>
+                                        <input type="text" class="form-control" :value="selectedPayment.discount + '%'" readonly>
+                                    </div>
+                                </div>
                             </div>
                             
                             <h5 class="mt-4 mb-3">Consignments</h5>
