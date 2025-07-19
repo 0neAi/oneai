@@ -558,6 +558,16 @@
         <!-- Dynamic content will be inserted here -->
       </div>
     </section>
+
+    <!-- Issue Prone Merchants Section -->
+    <section class="section">
+      <h2 class="section-title" style="color: var(--danger-color);"><i class="fas fa-exclamation-triangle"></i> ইস্যু প্রবণ মার্চেন্টস</h2>
+      <p style="color: var(--warning-color);">এই পেইজ গুলো ওয়ান'এআই দ্বারা ইস্যু প্রবণ হিসেবে যাচাই করা হয়েছে। এইসকল পেইজের বিরুদ্ধে ইস্যু দেওয়ার রেকর্ড পাওয়া গিয়েছে। পূর্ববর্তী রেকর্ড থেকে যাচাই করে ওয়ান এআই এই পেইজ গুলোকে ইস্যু প্রবণ হিসেবে ডিটেক্ট করেছে।</p>
+      
+      <div class="merchant-list-container" id="issue-prone-container">
+        <!-- Dynamic content will be inserted here -->
+      </div>
+    </section>
     
     <!-- Issue Reporting Section -->
     <section class="section">
@@ -607,7 +617,7 @@
     <!-- Penalty Support Section -->
     <section class="section">
       <h2 class="section-title"><i class="fas fa-exclamation-triangle"></i> পেনাল্টি সাপোর্ট</h2>
-      <p>মার্চেন্টের কাছ থেকে পেনাল্টি পেলে রিপোর্ট করুন এবং ভাউচার পান</p>
+      <p>মার্চেন্টের কাছ থেকে পেনাল্টি পেলে রিপোর্ট করুন এবং ভাউচার পান। যথাযথ বিস্তারিত ও হেল্পলাইনে সরবারহ করার মাধ্যমে ডিসকাউন্ট ভাউচার প্রাপ্তি নিশ্চিত করুন। </p>
       
       <form id="penalty-report-form">
         <div class="form-row">
@@ -631,7 +641,7 @@
                    placeholder="01XXXXXXXXX" required>
           </div>
           <div class="form-group">
-            <label for="penalty-date">পেনাল্টির তারিখ</label>
+            <label for="penalty-date">মার্ক করার তারিখ</label>
             <input type="date" id="penalty-date" name="penaltyDate" required>
           </div>
         </div>
@@ -663,8 +673,8 @@
     
     <!-- Premium Service Section -->
     <section class="section">
-      <h2 class="section-title"><i class="fas fa-crown"></i> প্রিমিয়াম মার্চেন্ট ডাটাবেস</h2>
-      <p>আমাদের যাচাইকৃত মার্চেন্ট ডাটাবেসে সম্পূর্ণ অ্যাক্সেস পান</p>
+      <h2 class="section-title"><i class="fas fa-crown"></i> প্রিমিয়াম এক্সেস ও মার্চেন্ট ডাটাবেস</h2>
+      <p>আমাদের সকল প্রিমিয়াম সার্ভিস ও যাচাইকৃত মার্চেন্ট ডাটাবেসে সম্পূর্ণ অ্যাক্সেস পান</p>
       
       <form id="premium-service-form">
         <div class="form-row">
@@ -712,7 +722,7 @@
         "Sunnah Sqr", "Tanhas Collection", "Tasnim Aurthy", "US Bangla Bazar BD",
         "XPRESS IN TOWN", "e-cart.com.bd", "Malihas Room"
       ],
-      issueProne: [ "BD Beponi" ]
+      issueProne: ["BD Beponi"]
     };
 
     // Initialize loading overlay
@@ -720,31 +730,49 @@
 
     // Display merchants in the UI
     function displayMerchants() {
-      const container = document.getElementById('issueless-container');
-      if (!container) {
-        console.error('Error: #issueless-container not found.');
-        return;
-      }
-      container.innerHTML = '';
-      
-      const chunkSize = 8;
-      if (merchantData.issueless && merchantData.issueless.length > 0) {
-        for (let i = 0; i < merchantData.issueless.length; i += chunkSize) {
-          const chunk = merchantData.issueless.slice(i, i + chunkSize);
-          
-          const card = document.createElement('div');
-          card.className = 'merchant-card';
-          card.innerHTML = `
-            <h3>মার্চেন্ট তালিকা <span class="status issueless">Issue-Less-Safe</span></h3>
-            <ul>
-              ${chunk.map(merchant => `<li>${merchant}</li>`).join('')}
-            </ul>
-          `;
-          
-          container.appendChild(card);
+      const issuelessContainer = document.getElementById('issueless-container');
+      if (issuelessContainer) {
+        issuelessContainer.innerHTML = '';
+        const chunkSize = 8;
+        if (merchantData.issueless && merchantData.issueless.length > 0) {
+          for (let i = 0; i < merchantData.issueless.length; i += chunkSize) {
+            const chunk = merchantData.issueless.slice(i, i + chunkSize);
+            const card = document.createElement('div');
+            card.className = 'merchant-card';
+            card.innerHTML = `
+              <h3>মার্চেন্ট তালিকা <span class="status issueless">Issue-Less-Safe</span></h3>
+              <ul>
+                ${chunk.map(merchant => `<li>${merchant}</li>`).join('')}
+              </ul>
+            `;
+            issuelessContainer.appendChild(card);
+          }
+        } else {
+          issuelessContainer.innerHTML = '<p>কোন ইস্যু বিহীন মার্চেন্ট পাওয়া যায়নি।</p>';
         }
-      } else {
-        container.innerHTML = '<p>কোন ইস্যু বিহীন মার্চেন্ট পাওয়া যায়নি।</p>';
+      }
+
+      const issueProneContainer = document.getElementById('issue-prone-container');
+      if (issueProneContainer) {
+        issueProneContainer.innerHTML = '';
+        const chunkSize = 8;
+        if (merchantData.issueProne && merchantData.issueProne.length > 0) {
+          for (let i = 0; i < merchantData.issueProne.length; i += chunkSize) {
+            const chunk = merchantData.issueProne.slice(i, i + chunkSize);
+            const card = document.createElement('div');
+            card.className = 'merchant-card';
+            card.style.border = '1px solid var(--danger-color)';
+            card.innerHTML = `
+              <h3 style="color: var(--danger-color);">ঝুঁকিপূর্ণ মার্চেন্ট <span class="status issue">High-Risk</span></h3>
+              <ul>
+                ${chunk.map(merchant => `<li>${merchant}</li>`).join('')}
+              </ul>
+            `;
+            issueProneContainer.appendChild(card);
+          }
+        } else {
+          issueProneContainer.innerHTML = '<p>কোন ইস্যু প্রবণ মার্চেন্ট পাওয়া যায়নি।</p>';
+        }
       }
     }
 
