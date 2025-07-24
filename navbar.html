@@ -1,1 +1,21 @@
 
+<nav>
+    <ul>
+        <li><a href="dashboard.html">Dashboard</a></li>
+        <li><a href="profile.html">Profile</a></li>
+        <li><a href="#" id="logout-btn">Logout</a></li>
+    </ul>
+</nav>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', ()_=> {
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('userID');
+            window.location.href = 'index.html';
+        });
+    }
+});
+</script>
