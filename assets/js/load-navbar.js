@@ -12,6 +12,7 @@
       </div>
       <div class="nav-links">
         <a href="./dashboard.html" class="icon solid fa-home"><span>Dashboard</span></a>
+        <a href="./profile.html" class="icon solid fa-user"><span>Profile</span></a>
         <a href="./otpgen.html" class="icon solid fa-key"><span>OTP Generator</span></a>
         <button class="icon solid fa-tag discount-btn" onclick="window.showDiscountWheel()">
           <span>Get Discount</span>
