@@ -363,6 +363,11 @@
                     <input type="password" id="password" placeholder="৮ ডিজিটের পাসওয়ার্ড" required minlength="8">
                 </div>
                 
+                <div class="form-group">
+                    <label for="referralCode"><i class="fas fa-user-plus"></i> রেফারেল কোড</label>
+                    <input type="text" id="referralCode" placeholder="রেফারেল কোড দিন" required>
+                </div>
+                
                 <button type="submit">Register | রেজিস্ট্রেশন করুন</button>
                 
                 <a href="index.html" class="login-btn">
@@ -371,6 +376,11 @@
             </form>
             
             <div id="message" class="auth-message"></div>
+            
+            <div id="loading-container" style="display: none;">
+                <div class="loading-animation"></div>
+                <p id="loading-message"></p>
+            </div>
         </div>
         <div class="features">
             <h3>Why Choose 1AI?</h3>
