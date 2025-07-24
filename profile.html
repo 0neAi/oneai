@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>1AI - User Profile</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="./assets/css/main.css">
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <div class="container">
+        <div class="profile-container">
+            <h2>User Profile</h2>
+            <div class="profile-info">
+                <p><strong>Referral Code:</strong> <span id="referralCode"></span></p>
+                <p><strong>Total Referrals:</strong> <span id="referralCount"></span></p>
+                <p><strong>Referral Bonus Status:</strong> <span id="referralBonusStatus"></span></p>
+                <p><strong>Referral Bonus:</strong> <span id="referralBonus"></span></p>
+            </div>
+
+            <h3>Your Referrals</h3>
+            <ul id="referralList"></ul>
+        </div>
+    </div>
+
+    <script src="./assets/js/load-navbar.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const token = localStorage.getItem('authToken');
+            const userID = localStorage.getItem('userID');
+
+            if (!token || !userID) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            try {
+                const response = await fetch(`https://oneai-wjox.onrender.com/users/${userID}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'X-User-ID': userID
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch user profile');
+                }
+
+                const data = await response.json();
+                const user = data.user;
+
+                document.getElementById('referralCode').textContent = user.referralCode;
+                document.getElementById('referralCount').textContent = user.referrals.length;
+                document.getElementById('referralBonusStatus').textContent = user.referralBonusStatus;
+                document.getElementById('referralBonus').textContent = user.referralBonus;
+
+                const referralList = document.getElementById('referralList');
+                user.referrals.forEach(referral => {
+                    const li = document.createElement('li');
+                    li.textContent = `User ID: ${referral}`;
+                    referralList.appendChild(li);
+                });
+
+            } catch (error) {
+                console.error('Error fetching profile:', error);
+                alert('Failed to load your profile. Please try again.');
+            }
+        });
+    </script>
+</body>
+</html>
