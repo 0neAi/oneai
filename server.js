@@ -253,22 +253,20 @@ app.get('/status', (req, res) => res.json({
 // ======================
 app.post('/register', async (req, res) => {
   try {
-    // Fix: Use new variable for normalized email
-    const { phone, email: rawEmail, password } = req.body;
+    const { phone, email: rawEmail, password, referralCode } = req.body;
     const email = rawEmail.toLowerCase().trim();
-        // Add password validation
+
+    if (!phone || !email || !password || !referralCode) {
+      return res.status(400).json({ success: false, message: 'All fields are required' });
+    }
+
     if (password.length < 8) {
       return res.status(400).json({
         success: false,
         message: 'Password must be at least 8 characters'
       });
     }
-    
-    if (!phone || !email || !password) {
-      return res.status(400).json({ success: false, message: 'All fields required' });
-    }
 
-    // Add phone duplicate check
     if (await User.findOne({ phone })) {
       return res.status(409).json({ success: false, message: 'Phone number already exists' });
     }
@@ -277,26 +275,31 @@ app.post('/register', async (req, res) => {
       return res.status(409).json({ success: false, message: 'Email already exists' });
     }
 
+    const referrer = await User.findOne({ referralCode });
+    if (!referrer) {
+      return res.status(400).json({ success: false, message: 'Invalid referral code' });
+    }
+
     const user = new User({
       phone,
       email,
-      password
+      password,
+      referredBy: referrer._id,
+      isAdminApproved: false,
     });
+
+    // Generate a unique referral code
+    user.referralCode = `${user.phone.slice(-4)}${Date.now().toString(36).slice(-4)}`;
 
     await user.save();
 
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '3h' });
-
     res.status(201).json({
       success: true,
-      message: 'Registration successful',
-      userID: user._id,
-      token,
-      expiresIn: Date.now() + 3 * 60 * 60 * 1000
+      message: 'Registration successful. Please wait for admin approval.',
     });
 
   } catch (error) {
-     message = process.env.NODE_ENV === 'production'
+    let message = process.env.NODE_ENV === 'production'
       ? 'Registration failed'
       : error.message;
     res.status(500).json({ success: false, message });
@@ -452,6 +455,22 @@ app.post('/payment', authMiddleware, async (req, res) => {
     });
 
     const savedPayment = await payment.save();
+
+    // Check for referral bonus
+    const user = await User.findById(req.user._id);
+    if (user.referredBy) {
+      const referrer = await User.findById(user.referredBy);
+      if (referrer) {
+        const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+        const paymentCount = await Payment.countDocuments({ user: user._id, createdAt: { $gte: startOfMonth } });
+
+        if (paymentCount === 5) {
+          referrer.referralBonus += 100; // Example bonus amount
+          referrer.referralBonusStatus = 'eligible';
+          await referrer.save();
+        }
+      }
+    }
 
     // Prepare WhatsApp message
     const whatsappMessage = `
@@ -837,6 +856,48 @@ app.put('/admin/users/:id', adminAuth, async (req, res) => {
     res.json({ success: true, user });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to update user' });
+  }
+});
+
+app.post('/admin/users/:id/approve', adminAuth, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    user.isAdminApproved = true;
+    await user.save();
+
+    const referrer = await User.findById(user.referredBy);
+    if (referrer) {
+      referrer.referrals.push(user._id);
+      await referrer.save();
+
+      const voucherCode = `REFERRAL-75-${user._id.toString().slice(-4)}`;
+      const voucher = new Voucher({
+        phone: referrer.phone,
+        code: voucherCode,
+        discountPercentage: 75,
+        report: user._id,
+        reportModel: 'User'
+      });
+      await voucher.save();
+
+      const wss = req.app.get('wss');
+      wss.clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify({
+            type: 'new-referral',
+            message: `You have a new referral! You have received a 75% discount voucher.`
+          }));
+        }
+      });
+    }
+
+    res.json({ success: true, message: 'User approved successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to approve user' });
   }
 });
 
@@ -1527,6 +1588,18 @@ app.get('/admin/users', adminAuth, async (req, res) => {
     res.json({ success: true, users });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch users' });
+  }
+});
+
+app.get('/users/:id', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).populate('referrals', 'phone email');
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    res.json({ success: true, user });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch user' });
   }
 });
 
