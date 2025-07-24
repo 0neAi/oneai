@@ -21,6 +21,31 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
     minlength: [8, 'Password must be at least 8 characters']
+  },
+  referralCode: {
+    type: String,
+    unique: true
+  },
+  referredBy: {
+    type: String,
+    required: false
+  },
+  isAdminApproved: {
+    type: Boolean,
+    default: false
+  },
+  referrals: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
+  referralBonus: {
+    type: Number,
+    default: 0
+  },
+  referralBonusStatus: {
+    type: String,
+    enum: ['pending', 'eligible', 'claimed'],
+    default: 'pending'
   }
 }, {
   timestamps: true
