@@ -1106,6 +1106,15 @@ app.post('/admin/generate-premium-voucher', adminAuth, async (req, res) => {
     const now = new Date();
 
     switch (validity) {
+      case '1d':
+        validUntil = new Date(now.setDate(now.getDate() + 1));
+        break;
+      case '2d':
+        validUntil = new Date(now.setDate(now.getDate() + 2));
+        break;
+      case '3d':
+        validUntil = new Date(now.setDate(now.getDate() + 3));
+        break;
       case '15d':
         validUntil = new Date(now.setDate(now.getDate() + 15));
         break;
@@ -1378,6 +1387,15 @@ app.post('/admin/premium-payments/:id/process', adminAuth, async (req, res) => {
         const now = new Date();
 
         switch (validity) {
+          case '1d':
+            validUntil = new Date(now.setDate(now.getDate() + 1));
+            break;
+          case '2d':
+            validUntil = new Date(now.setDate(now.getDate() + 2));
+            break;
+          case '3d':
+            validUntil = new Date(now.setDate(now.getDate() + 3));
+            break;
           case '15d':
             validUntil = new Date(now.setDate(now.getDate() + 15));
             break;
@@ -1613,22 +1631,48 @@ app.post('/premium-payment', authMiddleware, async (req, res) => {
 // ======================
 // Get Users (Admin)
 // ======================
-app.get('/admin/users', adminAuth, async (req, res) => {
+app.get('/admin/users/:id/details', adminAuth, async (req, res) => {
   try {
-    const users = await User.find().populate('referredBy', 'name').select('-password');
-    const usersWithStats = await Promise.all(users.map(async (user) => {
-      const payments = await Payment.find({ user: user._id });
-      const totalPayments = payments.length;
-      const totalAmount = payments.reduce((acc, payment) => acc + payment.amount3, 0);
-      return {
+    const user = await User.findById(req.params.id)
+      .populate('referredBy', 'name email')
+      .populate('referrals', 'name email')
+      .select('-password');
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const payments = await Payment.find({ user: user._id, status: 'Completed' }).sort({ createdAt: -1 });
+    const totalPayments = payments.length;
+    const totalAmount = payments.reduce((acc, payment) => acc + payment.amount3, 0);
+
+    let monthlyCommission = 0;
+    if (user.referrals && user.referrals.length > 0) {
+      const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+      for (const referredUser of user.referrals) {
+        const referredUserPayments = await Payment.find({
+          user: referredUser._id,
+          createdAt: { $gte: startOfMonth },
+          status: 'Completed'
+        });
+        const totalReferredUserPayments = referredUserPayments.reduce((acc, payment) => acc + payment.amount3, 0);
+        monthlyCommission += totalReferredUserPayments * (referredUser.referralCommissionPercentage / 100);
+      }
+    }
+
+    res.json({
+      success: true,
+      user: {
         ...user.toObject(),
+        payments,
         totalPayments,
-        totalAmount
-      };
-    }));
-    res.json({ success: true, users: usersWithStats });
+        totalAmount,
+        monthlyCommission
+      }
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to fetch users' });
+    console.error('Error fetching user details:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch user details' });
   }
 });
 
@@ -1639,7 +1683,17 @@ app.get('/admin/user-payments/:email', adminAuth, async (req, res) => {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
 
-        const payments = await Payment.find({ user: user._id }).sort({ createdAt: -1 });
+        const { startDate, endDate } = req.query;
+        let query = { user: user._id, status: 'Completed' };
+
+        if (startDate) {
+            query.createdAt = { ...query.createdAt, $gte: new Date(startDate) };
+        }
+        if (endDate) {
+            query.createdAt = { ...query.createdAt, $lte: new Date(endDate) };
+        }
+
+        const payments = await Payment.find(query).sort({ createdAt: -1 });
         const totalAmount = payments.reduce((acc, payment) => acc + payment.amount3, 0);
 
         res.json({
@@ -1683,7 +1737,8 @@ app.get('/users/:id/monthly-commission', authMiddleware, async (req, res) => {
         for (const referredUser of user.referrals) {
             const payments = await Payment.find({
                 user: referredUser._id,
-                createdAt: { $gte: startOfMonth }
+                createdAt: { $gte: startOfMonth },
+                status: 'Completed'
             });
             const totalReferredUserPayments = payments.reduce((acc, payment) => acc + payment.amount3, 0);
             totalCommission += totalReferredUserPayments * (referredUser.referralCommissionPercentage / 100);
