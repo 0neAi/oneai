@@ -19,7 +19,7 @@ import { fileURLToPath } from 'url'
 
 dotenv.config();
 
-// VAPID keys,
+// VAPID keys
 const vapidKeys = {
     publicKey: process.env.VAPID_PUBLIC_KEY,
     privateKey: process.env.VAPID_PRIVATE_KEY
@@ -885,7 +885,7 @@ app.post('/admin/users/:id/approve', adminAuth, async (req, res) => {
       await referrer.save();
     }
 
-    res.json({ success: true, user });
+    res.json({ success: true, user: user.toObject() });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to approve user' });
   }
@@ -914,7 +914,7 @@ app.post('/admin/users/:id/generate-referral-code', adminAuth, async (req, res) 
     user.referralCode = `${user.phone.slice(-4)}${Date.now().toString(36).slice(-4)}`;
     await user.save();
 
-    res.json({ success: true, user });
+    res.json({ success: true, user: user.toObject() });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to generate referral code' });
   }
