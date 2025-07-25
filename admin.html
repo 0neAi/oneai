@@ -1199,7 +1199,19 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <p>Set the referral commission percentage for the referrer of this user.</p>
+                        <p>Set the referral commission percentage and update user details for this user.</p>
+                        <div class="mb-3">
+                            <label for="approve-name" class="form-label">Name</label>
+                            <input type="text" class="form-control" id="approve-name" v-model="selectedUser.name">
+                        </div>
+                        <div class="mb-3">
+                            <label for="approve-zilla" class="form-label">Zilla</label>
+                            <input type="text" class="form-control" id="approve-zilla" v-model="selectedUser.zilla">
+                        </div>
+                        <div class="mb-3">
+                            <label for="approve-officeLocation" class="form-label">Office Location</label>
+                            <input type="text" class="form-control" id="approve-officeLocation" v-model="selectedUser.officeLocation">
+                        </div>
                         <div class="mb-3">
                             <label for="commission-percentage" class="form-label">Commission Percentage</label>
                             <input type="number" class="form-control" id="commission-percentage" v-model.number="commissionPercentage" min="0" max="100">
@@ -1668,7 +1680,7 @@
                     }
                 },
                 showApproveUserModal(user) {
-                    this.selectedUser = user;
+                    this.selectedUser = { ...user }; // Create a copy to avoid direct mutation
                     if (!this.approveUserModal) {
                         this.approveUserModal = new bootstrap.Modal(
                             document.getElementById('approveUserModal')
@@ -1680,7 +1692,10 @@
                     try {
                         this.isLoading = true;
                         const response = await axios.post(`${API_BASE}/admin/users/${this.selectedUser._id}/approve`, {
-                            commissionPercentage: this.commissionPercentage
+                            commissionPercentage: this.commissionPercentage,
+                            name: this.selectedUser.name,
+                            zilla: this.selectedUser.zilla,
+                            officeLocation: this.selectedUser.officeLocation
                         });
                         if (response.data.success) {
                             const index = this.users.findIndex(u => u._id === this.selectedUser._id);
