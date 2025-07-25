@@ -1688,9 +1688,13 @@
                                 this.users.splice(index, 1, response.data.user);
                             }
                             this.approveUserModal.hide();
+                            alert('User approved and commission set successfully!'); // Success message
+                        } else {
+                            alert(response.data.message || 'Failed to approve user.'); // Error message
                         }
                     } catch (error) {
                         console.error('Approve user error:', error);
+                        alert('Error approving user.'); // Generic error
                     } finally {
                         this.isLoading = false;
                     }
@@ -1704,9 +1708,13 @@
                             if (index > -1) {
                                 this.users.splice(index, 1, response.data.user);
                             }
+                            alert('Referral code generated successfully!'); // Success message
+                        } else {
+                            alert(response.data.message || 'Failed to generate referral code.'); // Error message
                         }
                     } catch (error) {
                         console.error('Generate referral code error:', error);
+                        alert('Error generating referral code.'); // Generic error
                     } finally {
                         this.isLoading = false;
                     }
