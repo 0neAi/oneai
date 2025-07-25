@@ -736,6 +736,8 @@
                     <div class="card-body">
                         <div class="input-group mb-3">
                             <input type="text" class="form-control" placeholder="Enter user email" v-model="userEmailQuery">
+                            <input type="date" class="form-control" v-model="paymentStartDate">
+                            <input type="date" class="form-control" v-model="paymentEndDate">
                             <button class="btn btn-primary" type="button" @click="calculateUserPayments">Calculate</button>
                         </div>
                         <div v-if="userPaymentData">
@@ -783,6 +785,9 @@
                             <div class="mb-3">
                                 <label for="premium-validity" class="form-label">Validity Period</label>
                                 <select class="form-select" id="premium-validity" v-model="manualPremiumValidity">
+                                    <option value="1d">1 Day</option>
+                                    <option value="2d">2 Days</option>
+                                    <option value="3d">3 Days</option>
                                     <option value="15d">15 Days</option>
                                     <option value="1m">1 Month</option>
                                     <option value="3m">3 Months</option>
@@ -1119,6 +1124,72 @@
             </div>
         </div>
 
+        <!-- User Details Modal -->
+        <div class="modal fade" id="userDetailsModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">User Details: {{ selectedUserDetail ? selectedUserDetail.name : '' }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div v-if="selectedUserDetail">
+                            <h6>Personal Information</h6>
+                            <p><strong>Name:</strong> {{ selectedUserDetail.name }}</p>
+                            <p><strong>Email:</strong> {{ selectedUserDetail.email }}</p>
+                            <p><strong>Phone:</strong> {{ selectedUserDetail.phone }}</p>
+                            <p><strong>Zilla:</strong> {{ selectedUserDetail.zilla }}</p>
+                            <p><strong>Office Location:</strong> {{ selectedUserDetail.officeLocation }}</p>
+                            <p><strong>Referral Code:</strong> {{ selectedUserDetail.referralCode }}</p>
+                            <p><strong>Admin Approved:</strong> {{ selectedUserDetail.isAdminApproved ? 'Yes' : 'No' }}</p>
+                            <p><strong>Registered On:</strong> {{ formatDateTime(selectedUserDetail.createdAt) }}</p>
+
+                            <h6 class="mt-4">Referral Information</h6>
+                            <p v-if="selectedUserDetail.referredBy">
+                                <strong>Referred By:</strong> {{ selectedUserDetail.referredBy.name }} ({{ selectedUserDetail.referredBy.email }})
+                            </p>
+                            <p v-else>Not referred by anyone.</p>
+                            <p><strong>Referral Commission Percentage:</strong> {{ selectedUserDetail.referralCommissionPercentage }}%</p>
+                            <p><strong>Total Referrals:</strong> {{ selectedUserDetail.referrals ? selectedUserDetail.referrals.length : 0 }}</p>
+                            <p v-if="selectedUserDetail.monthlyCommission !== undefined">
+                                <strong>Monthly Commission (This Month):</strong> ৳{{ selectedUserDetail.monthlyCommission.toFixed(2) }}
+                            </p>
+
+                            <h6 class="mt-4">Payments</h6>
+                            <div v-if="selectedUserDetail.payments && selectedUserDetail.payments.length > 0">
+                                <p><strong>Total Payments (Completed):</strong> {{ selectedUserDetail.totalPayments }}</p>
+                                <p><strong>Total Amount (Completed):</strong> ৳{{ selectedUserDetail.totalAmount.toFixed(2) }}</p>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>TRX ID</th>
+                                                <th>Amount</th>
+                                                <th>Status</th>
+                                                <th>Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="payment in selectedUserDetail.payments" :key="payment._id">
+                                                <td>{{ payment.trxid }}</td>
+                                                <td>৳{{ payment.amount3.toFixed(2) }}</td>
+                                                <td>{{ payment.status }}</td>
+                                                <td>{{ formatDateTime(payment.createdAt) }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <p v-else>No payments found for this user.</p>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Approve User Modal -->
         <div class="modal fade" id="approveUserModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog">
@@ -1160,6 +1231,9 @@
                             <div class="mb-3">
                                 <label for="premium-validity-modal" class="form-label">Validity Period</label>
                                 <select class="form-select" id="premium-validity-modal" v-model="premiumValidity">
+                                    <option value="1d">1 Day</option>
+                                    <option value="2d">2 Days</option>
+                                    <option value="3d">3 Days</option>
                                     <option value="15d">15 Days</option>
                                     <option value="1m">1 Month</option>
                                     <option value="3m">3 Months</option>
@@ -1236,6 +1310,8 @@
                     processPremiumModal: null,
                     approveUserModal: null,
                     commissionPercentage: 5,
+                    selectedUserDetail: null,
+                    userDetailsModal: null
                     discountPercentage: 10,
                     issueDiscountPercentage: 10,
                     premiumDiscountPercentage: 0,
@@ -1253,7 +1329,9 @@
                     wsConnectionAttempts: 0,
                     userEmailQuery: '',
                     userPaymentData: null,
-                    userPaymentError: ''
+                    userPaymentError: '',
+                    paymentStartDate: '',
+                    paymentEndDate: ''
                 };
             },
             computed: {
@@ -1280,7 +1358,7 @@
                     );
                 },
                 totalPaymentAmount() {
-                    return this.payments.reduce((total, payment) => total + payment.amount3, 0);
+                    return this.payments.filter(p => p.status === 'Completed').reduce((total, payment) => total + payment.amount3, 0);
                 }
             },
             methods: {
@@ -1573,10 +1651,19 @@
                     }
                     this.paymentModal.show();
                 },
-                viewUserDetails(userId) {
-                    const user = this.users.find(u => u._id === userId);
-                    if (user) {
-                        alert(`User Details:\nID: ${userId}\nPhone: ${user.phone}\nEmail: ${user.email}`);
+                async viewUserDetails(userId) {
+                    try {
+                        this.isLoading = true;
+                        const response = await axios.get(`${API_BASE}/admin/users/${userId}/details`);
+                        if (response.data.success) {
+                            this.selectedUserDetail = response.data.user;
+                            this.userDetailsModal.show();
+                        }
+                    } catch (error) {
+                        console.error('Error fetching user details:', error);
+                        alert('Failed to load user details.');
+                    } finally {
+                        this.isLoading = false;
                     }
                 },
                 showApproveUserModal(user) {
@@ -2019,7 +2106,12 @@
                     }
                     try {
                         this.isLoading = true;
-                        const response = await axios.get(`${API_BASE}/admin/user-payments/${this.userEmailQuery}`);
+                        const params = {
+                            email: this.userEmailQuery,
+                            startDate: this.paymentStartDate,
+                            endDate: this.paymentEndDate
+                        };
+                        const response = await axios.get(`${API_BASE}/admin/user-payments/${this.userEmailQuery}`, { params });
                         this.userPaymentData = response.data;
                     } catch (error) {
                         this.userPaymentError = (error.response && error.response.data && error.response.data.message) || 'Could not fetch user payment data.';
@@ -2057,6 +2149,11 @@
 
                 this.processPremiumModal = new bootstrap.Modal(
                     document.getElementById('processPremiumModal'),
+                    { keyboard: false }
+                );
+
+                this.userDetailsModal = new bootstrap.Modal(
+                    document.getElementById('userDetailsModal'),
                     { keyboard: false }
                 );
                 
