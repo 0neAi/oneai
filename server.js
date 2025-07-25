@@ -19,7 +19,7 @@ import { fileURLToPath } from 'url'
 
 dotenv.config();
 
-// VAPID keys
+// VAPID keys,
 const vapidKeys = {
     publicKey: process.env.VAPID_PUBLIC_KEY,
     privateKey: process.env.VAPID_PRIVATE_KEY
