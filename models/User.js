@@ -2,6 +2,10 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
 
 const userSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: [true, 'Name is required'],
+  },
   phone: {
     type: String,
     required: [true, 'Phone number is required'],
@@ -15,7 +19,15 @@ const userSchema = new mongoose.Schema({
     unique: true,
     lowercase: true,
     trim: true,
-    match: [/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/, 'Invalid email format']
+    match: [/^["\w-\."]+@([\w-"]+\.)+[\w-"]{2,4}$/, 'Invalid email format']
+  },
+  zilla: {
+    type: String,
+    required: [true, 'Zilla is required'],
+  },
+  officeLocation: {
+    type: String,
+    required: [true, 'Office location is required'],
   },
   password: {
     type: String,
@@ -27,8 +39,8 @@ const userSchema = new mongoose.Schema({
     unique: true
   },
   referredBy: {
-    type: String,
-    required: false
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   },
   isAdminApproved: {
     type: Boolean,
@@ -46,6 +58,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ['pending', 'eligible', 'claimed'],
     default: 'pending'
+  },
+  referralCommissionPercentage: {
+    type: Number,
+    default: 0
   }
 }, {
   timestamps: true
@@ -63,7 +79,7 @@ userSchema.pre('save', async function(next) {
   }
 });
 
-// Add password comparison method.
+// Add password comparison method
 userSchema.methods.comparePassword = async function(candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
 };
