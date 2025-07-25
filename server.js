@@ -1652,14 +1652,18 @@ app.get('/admin/users', adminAuth, async (req, res) => {
 
 app.get('/admin/users/:id/details', adminAuth, async (req, res) => {
   try {
+    console.log(`Fetching details for user ID: ${req.params.id}`);
     const user = await User.findById(req.params.id)
       .populate('referredBy', 'name email')
       .populate('referrals', 'name email')
       .select('-password');
 
     if (!user) {
+      console.log(`User with ID ${req.params.id} not found.`);
       return res.status(404).json({ success: false, message: 'User not found' });
     }
+
+    console.log('User found:', user.email);
 
     const payments = await Payment.find({ user: user._id, status: 'Completed' }).sort({ createdAt: -1 });
     const totalPayments = payments.length;
@@ -1680,6 +1684,8 @@ app.get('/admin/users/:id/details', adminAuth, async (req, res) => {
       }
     }
 
+    console.log('Sending user details:', { userId: user._id, totalPayments, totalAmount, monthlyCommission });
+
     res.json({
       success: true,
       user: {
@@ -1691,7 +1697,7 @@ app.get('/admin/users/:id/details', adminAuth, async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching user details:', error);
+    console.error('Error fetching user details for ID', req.params.id, ':', error);
     res.status(500).json({ success: false, message: 'Failed to fetch user details' });
   }
 });
