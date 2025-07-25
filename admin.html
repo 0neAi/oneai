@@ -1706,7 +1706,6 @@
                             alert('User approved and commission set successfully!'); // Success message
                         } else {
                             alert(response.data.message || 'Failed to approve user.'); // Error message
-                        console.error('Full error response:', error.response);
                         }
                     } catch (error) {
                         console.error('Approve user error:', error);
