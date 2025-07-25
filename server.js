@@ -1631,6 +1631,25 @@ app.post('/premium-payment', authMiddleware, async (req, res) => {
 // ======================
 // Get Users (Admin)
 // ======================
+app.get('/admin/users', adminAuth, async (req, res) => {
+  try {
+    const users = await User.find().populate('referredBy', 'name').select('-password');
+    const usersWithStats = await Promise.all(users.map(async (user) => {
+      const payments = await Payment.find({ user: user._id, status: 'Completed' });
+      const totalPayments = payments.length;
+      const totalAmount = payments.reduce((acc, payment) => acc + payment.amount3, 0);
+      return {
+        ...user.toObject(),
+        totalPayments,
+        totalAmount
+      };
+    }));
+    res.json({ success: true, users: usersWithStats });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch users' });
+  }
+});
+
 app.get('/admin/users/:id/details', adminAuth, async (req, res) => {
   try {
     const user = await User.findById(req.params.id)
