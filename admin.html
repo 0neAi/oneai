@@ -1200,21 +1200,23 @@
                     </div>
                     <div class="modal-body">
                         <p>Set the referral commission percentage and update user details for this user.</p>
-                        <div class="mb-3">
-                            <label for="approve-name" class="form-label">Name</label>
-                            <input type="text" class="form-control" id="approve-name" v-model="selectedUser.name">
-                        </div>
-                        <div class="mb-3">
-                            <label for="approve-zilla" class="form-label">Zilla</label>
-                            <input type="text" class="form-control" id="approve-zilla" v-model="selectedUser.zilla">
-                        </div>
-                        <div class="mb-3">
-                            <label for="approve-officeLocation" class="form-label">Office Location</label>
-                            <input type="text" class="form-control" id="approve-officeLocation" v-model="selectedUser.officeLocation">
-                        </div>
-                        <div class="mb-3">
-                            <label for="commission-percentage" class="form-label">Commission Percentage</label>
-                            <input type="number" class="form-control" id="commission-percentage" v-model.number="commissionPercentage" min="0" max="100">
+                        <div v-if="selectedUser">
+                            <div class="mb-3">
+                                <label for="approve-name" class="form-label">Name</label>
+                                <input type="text" class="form-control" id="approve-name" v-model="selectedUser.name">
+                            </div>
+                            <div class="mb-3">
+                                <label for="approve-zilla" class="form-label">Zilla</label>
+                                <input type="text" class="form-control" id="approve-zilla" v-model="selectedUser.zilla">
+                            </div>
+                            <div class="mb-3">
+                                <label for="approve-officeLocation" class="form-label">Office Location</label>
+                                <input type="text" class="form-control" id="approve-officeLocation" v-model="selectedUser.officeLocation">
+                            </div>
+                            <div class="mb-3">
+                                <label for="commission-percentage" class="form-label">Commission Percentage</label>
+                                <input type="number" class="form-control" id="commission-percentage" v-model.number="commissionPercentage" min="0" max="100">
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">
