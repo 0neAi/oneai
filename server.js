@@ -870,19 +870,33 @@ app.put('/admin/users/:id', adminAuth, async (req, res) => {
 app.post('/admin/users/:id/approve', adminAuth, async (req, res) => {
   try {
     const { commissionPercentage } = req.body;
+    console.log(`Attempting to approve user ID: ${req.params.id} with commission: ${commissionPercentage}%`);
+
     const user = await User.findById(req.params.id);
     if (!user) {
+      console.log(`User with ID ${req.params.id} not found for approval.`);
       return res.status(404).json({ success: false, message: 'User not found' });
     }
+    console.log('Found user:', user.email);
 
     user.isAdminApproved = true;
     user.referralCommissionPercentage = commissionPercentage;
     await user.save();
+    console.log('User updated and saved:', user.email);
 
     const referrer = await User.findById(user.referredBy);
     if (referrer) {
-      referrer.referrals.push(user._id);
-      await referrer.save();
+      console.log('Found referrer:', referrer.email);
+      // Check if the referred user is already in the referrer's list to prevent duplicates
+      if (!referrer.referrals.includes(user._id)) {
+        referrer.referrals.push(user._id);
+        await referrer.save();
+        console.log('Referrer updated and saved.');
+      } else {
+        console.log('User already in referrer's list.');
+      }
+    } else {
+      console.log('No referrer found for user.');
     }
 
     res.json({ success: true, user: user.toObject() });
