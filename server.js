@@ -917,21 +917,29 @@ app.delete('/admin/users/:id', adminAuth, async (req, res) => {
 
 app.post('/admin/users/:id/generate-referral-code', adminAuth, async (req, res) => {
   try {
+    console.log(`Attempting to generate referral code for user ID: ${req.params.id}`);
     const user = await User.findById(req.params.id);
     if (!user) {
+      console.log(`User with ID ${req.params.id} not found for referral code generation.`);
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
+    console.log('User found:', user.email, 'Current referral code:', user.referralCode);
+
     if (user.referralCode) {
+      console.log('User already has a referral code.');
       return res.status(400).json({ success: false, message: 'User already has a referral code' });
     }
 
     user.referralCode = `${user.phone.slice(-4)}${Date.now().toString(36).slice(-4)}`;
+    console.log('New referral code generated:', user.referralCode);
     await user.save();
+    console.log('User saved with new referral code.');
 
     res.json({ success: true, user: user.toObject() });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to generate referral code' });
+    console.error('Error generating referral code for ID', req.params.id, ':', error);
+    res.status(500).json({ success: false, message: error.message || 'Failed to generate referral code' });
   }
 });
 
