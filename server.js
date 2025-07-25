@@ -253,10 +253,10 @@ app.get('/status', (req, res) => res.json({
 // ======================
 app.post('/register', async (req, res) => {
   try {
-    const { phone, email: rawEmail, password, referralCode } = req.body;
+    const { name, phone, email: rawEmail, zilla, officeLocation, password, referralCode } = req.body;
     const email = rawEmail.toLowerCase().trim();
 
-    if (!phone || !email || !password || !referralCode) {
+    if (!name || !phone || !email || !zilla || !officeLocation || !password || !referralCode) {
       return res.status(400).json({ success: false, message: 'All fields are required' });
     }
 
@@ -281,8 +281,11 @@ app.post('/register', async (req, res) => {
     }
 
     const user = new User({
+      name,
       phone,
       email,
+      zilla,
+      officeLocation,
       password,
       referredBy: referrer._id,
       isAdminApproved: false,
@@ -461,13 +464,18 @@ app.post('/payment', authMiddleware, async (req, res) => {
     if (user.referredBy) {
       const referrer = await User.findById(user.referredBy);
       if (referrer) {
-        const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-        const paymentCount = await Payment.countDocuments({ user: user._id, createdAt: { $gte: startOfMonth } });
+        const paymentCount = await Payment.countDocuments({ user: user._id, status: 'Completed' });
 
-        if (paymentCount === 5) {
-          referrer.referralBonus += 100; // Example bonus amount
-          referrer.referralBonusStatus = 'eligible';
-          await referrer.save();
+        if (paymentCount === 1) {
+          const voucherCode = `REFERRAL-100-${user._id.toString().slice(-4)}`;
+          const voucher = new Voucher({
+            phone: referrer.phone,
+            code: voucherCode,
+            discountPercentage: 100,
+            report: user._id,
+            reportModel: 'User'
+          });
+          await voucher.save();
         }
       }
     }
@@ -861,41 +869,23 @@ app.put('/admin/users/:id', adminAuth, async (req, res) => {
 
 app.post('/admin/users/:id/approve', adminAuth, async (req, res) => {
   try {
+    const { commissionPercentage } = req.body;
     const user = await User.findById(req.params.id);
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
     user.isAdminApproved = true;
+    user.referralCommissionPercentage = commissionPercentage;
     await user.save();
 
     const referrer = await User.findById(user.referredBy);
     if (referrer) {
       referrer.referrals.push(user._id);
       await referrer.save();
-
-      const voucherCode = `REFERRAL-75-${user._id.toString().slice(-4)}`;
-      const voucher = new Voucher({
-        phone: referrer.phone,
-        code: voucherCode,
-        discountPercentage: 75,
-        report: user._id,
-        reportModel: 'User'
-      });
-      await voucher.save();
-
-      const wss = req.app.get('wss');
-      wss.clients.forEach(client => {
-        if (client.readyState === WebSocket.OPEN) {
-          client.send(JSON.stringify({
-            type: 'new-referral',
-            message: `You have a new referral! You have received a 75% discount voucher.`
-          }));
-        }
-      });
     }
 
-    res.json({ success: true, message: 'User approved successfully' });
+    res.json({ success: true, user });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to approve user' });
   }
@@ -907,6 +897,26 @@ app.delete('/admin/users/:id', adminAuth, async (req, res) => {
     res.json({ success: true, message: 'User deleted' });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to delete user' });
+  }
+});
+
+app.post('/admin/users/:id/generate-referral-code', adminAuth, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    if (user.referralCode) {
+      return res.status(400).json({ success: false, message: 'User already has a referral code' });
+    }
+
+    user.referralCode = `${user.phone.slice(-4)}${Date.now().toString(36).slice(-4)}`;
+    await user.save();
+
+    res.json({ success: true, user });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to generate referral code' });
   }
 });
 
@@ -1255,6 +1265,27 @@ app.post('/admin/update-status', adminAuth, async (req, res) => {
       return res.status(404).json({ success: false, message: 'Payment not found' });
     }
 
+    if (status === 'Completed') {
+        const user = await User.findById(payment.user);
+        if (user && user.referredBy) {
+            const paymentCount = await Payment.countDocuments({ user: user._id, status: 'Completed' });
+            if (paymentCount === 1) {
+                const referrer = await User.findById(user.referredBy);
+                if (referrer) {
+                    const voucherCode = `REFERRAL-100-${user._id.toString().slice(-4)}`;
+                    const voucher = new Voucher({
+                        phone: referrer.phone,
+                        code: voucherCode,
+                        discountPercentage: 100,
+                        report: user._id,
+                        reportModel: 'User'
+                    });
+                    await voucher.save();
+                }
+            }
+        }
+    }
+
     // If the status is completed, send a push notification
     if (status === 'Completed' && payment.user.pushSubscription) {
         const payload = JSON.stringify({
@@ -1584,11 +1615,47 @@ app.post('/premium-payment', authMiddleware, async (req, res) => {
 // ======================
 app.get('/admin/users', adminAuth, async (req, res) => {
   try {
-    const users = await User.find().select('-password');
-    res.json({ success: true, users });
+    const users = await User.find().populate('referredBy', 'name').select('-password');
+    const usersWithStats = await Promise.all(users.map(async (user) => {
+      const payments = await Payment.find({ user: user._id });
+      const totalPayments = payments.length;
+      const totalAmount = payments.reduce((acc, payment) => acc + payment.amount3, 0);
+      return {
+        ...user.toObject(),
+        totalPayments,
+        totalAmount
+      };
+    }));
+    res.json({ success: true, users: usersWithStats });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch users' });
   }
+});
+
+app.get('/admin/user-payments/:email', adminAuth, async (req, res) => {
+    try {
+        const user = await User.findOne({ email: req.params.email });
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        const payments = await Payment.find({ user: user._id }).sort({ createdAt: -1 });
+        const totalAmount = payments.reduce((acc, payment) => acc + payment.amount3, 0);
+
+        res.json({
+            success: true,
+            user: {
+                _id: user._id,
+                email: user.email,
+                name: user.name
+            },
+            payments,
+            totalAmount,
+            totalPayments: payments.length
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to fetch user payments' });
+    }
 });
 
 app.get('/users/:id', authMiddleware, async (req, res) => {
@@ -1601,6 +1668,31 @@ app.get('/users/:id', authMiddleware, async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch user' });
   }
+});
+
+app.get('/users/:id/monthly-commission', authMiddleware, async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id).populate('referrals');
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+        let totalCommission = 0;
+
+        for (const referredUser of user.referrals) {
+            const payments = await Payment.find({
+                user: referredUser._id,
+                createdAt: { $gte: startOfMonth }
+            });
+            const totalReferredUserPayments = payments.reduce((acc, payment) => acc + payment.amount3, 0);
+            totalCommission += totalReferredUserPayments * (referredUser.referralCommissionPercentage / 100);
+        }
+
+        res.json({ success: true, monthlyCommission: totalCommission });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to calculate monthly commission' });
+    }
 });
 
 // ======================
