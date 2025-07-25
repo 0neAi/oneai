@@ -2183,6 +2183,7 @@
                 // Check authentication if setup is done
                 const token = localStorage.getItem('adminToken');
                 if (token && !this.showInitialSetup) {
+                    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
                     try {
                         // Validate token
                         await axios.get(`${API_BASE}/admin/validate`);
