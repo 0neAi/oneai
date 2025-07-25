@@ -398,7 +398,7 @@
                                             <span v-if="payment.user">{{ payment.user.email }}</span>
                                             <span v-else class="text-muted">N/A</span>
                                         </td>
-                                        <td>{{ formatDate(payment.createdAt) }}</td>
+                                        <td>{{ formatDateTime(payment.createdAt) }}</td>
                                         <td>৳{{ payment.amount3.toFixed(2) }}</td>
                                         <td>
                                             <span class="status-badge" :class="statusClass(payment.status)">
@@ -411,10 +411,15 @@
                                                     title="View Details">
                                                 <i class="bi bi-eye-fill"></i>
                                             </button>
-                                            <button class="btn btn-sm btn-outline-success btn-action" 
-                                                    @click="updatePaymentStatus(payment)"
-                                                    title="Update Status">
+                                            <button v-if="payment.status === 'Pending'" class="btn btn-sm btn-outline-success btn-action me-1" 
+                                                    @click="approvePayment(payment)"
+                                                    title="Approve Payment">
                                                 <i class="bi bi-check2-circle"></i>
+                                            </button>
+                                            <button v-if="payment.status === 'Pending'" class="btn btn-sm btn-outline-danger btn-action" 
+                                                    @click="rejectPayment(payment)"
+                                                    title="Reject Payment">
+                                                <i class="bi bi-x-circle"></i>
                                             </button>
                                         </td>
                                     </tr>
@@ -628,6 +633,10 @@
                                         <th>ID</th>
                                         <th>Phone</th>
                                         <th>Email</th>
+                                        <th>Referral Code</th>
+                                        <th>Referred By</th>
+                                        <th>Total Payments</th>
+                                        <th>Total Amount</th>
                                         <th>Registered</th>
                                         <th>Actions</th>
                                     </tr>
@@ -637,11 +646,22 @@
                                         <td class="text-muted">{{ shortId(user.id) }}</td>
                                         <td>{{ user.phone }}</td>
                                         <td>{{ user.email }}</td>
+                                        <td>
+                                            <span v-if="user.referralCode">{{ user.referralCode }}</span>
+                                            <button v-else class="btn btn-sm btn-outline-success" @click="generateReferralCode(user)">
+                                                Generate
+                                            </button>
+                                        </td>
+                                        <td>{{ user.referredBy ? user.referredBy.name : 'N/A' }}</td>
+                                        <td>{{ user.totalPayments }}</td>
+                                        <td>৳{{ user.totalAmount.toFixed(2) }}</td>
                                         <td>{{ formatDateTime(user.createdAt) }}</td>
                                         <td>
-                                            <button class="btn btn-sm btn-outline-primary"
-                                                    @click="viewUserDetails(user.id)">
+                                            <button class="btn btn-sm btn-outline-primary me-1" @click="viewUserDetails(user.id)">
                                                 <i class="bi bi-eye-fill me-1"></i>Details
+                                            </button>
+                                            <button v-if="!user.isAdminApproved" class="btn btn-sm btn-outline-success" @click="showApproveUserModal(user)">
+                                                Approve
                                             </button>
                                         </td>
                                     </tr>
@@ -704,6 +724,43 @@
                                     </tr>
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User Payment Calculator -->
+                <div class="card shadow-sm mt-5">
+                    <div class="card-header d-flex justify-content-between align-items-center py-3">
+                        <h5 class="mb-0"><i class="bi bi-calculator me-2"></i>User Payment Calculator</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control" placeholder="Enter user email" v-model="userEmailQuery">
+                            <button class="btn btn-primary" type="button" @click="calculateUserPayments">Calculate</button>
+                        </div>
+                        <div v-if="userPaymentData">
+                            <h5>Payment details for {{ userPaymentData.user.email }}</h5>
+                            <p><strong>Total Amount:</strong> ৳{{ userPaymentData.totalAmount.toFixed(2) }}</p>
+                            <p><strong>Total Payments:</strong> {{ userPaymentData.totalPayments }}</p>
+                            <table class="table table-sm table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Amount</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="payment in userPaymentData.payments" :key="payment._id">
+                                        <td>{{ formatDateTime(payment.createdAt) }}</td>
+                                        <td>৳{{ payment.amount3.toFixed(2) }}</td>
+                                        <td>{{ payment.status }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div v-if="userPaymentError" class="alert alert-danger mt-3">
+                            {{ userPaymentError }}
                         </div>
                     </div>
                 </div>
@@ -1062,6 +1119,29 @@
             </div>
         </div>
 
+        <!-- Approve User Modal -->
+        <div class="modal fade" id="approveUserModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Approve User & Set Commission</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Set the referral commission percentage for the referrer of this user.</p>
+                        <div class="mb-3">
+                            <label for="commission-percentage" class="form-label">Commission Percentage</label>
+                            <input type="number" class="form-control" id="commission-percentage" v-model.number="commissionPercentage" min="0" max="100">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" @click="approveUser">Approve User</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Process Premium Payment Modal -->
         <div class="modal fade" id="processPremiumModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog">
@@ -1154,6 +1234,8 @@
                     processPenaltyModal: null,
                     approveIssueModal: null,
                     processPremiumModal: null,
+                    approveUserModal: null,
+                    commissionPercentage: 5,
                     discountPercentage: 10,
                     issueDiscountPercentage: 10,
                     premiumDiscountPercentage: 0,
@@ -1168,7 +1250,10 @@
                     issueTypeChart: null,
                     recentActivities: [],
                     ws: null,
-                    wsConnectionAttempts: 0
+                    wsConnectionAttempts: 0,
+                    userEmailQuery: '',
+                    userPaymentData: null,
+                    userPaymentError: ''
                 };
             },
             computed: {
@@ -1449,14 +1534,21 @@
                         this.admin = { email: '', password: '' };
                     }
                 },
-                async updatePaymentStatus(payment) {
+                async approvePayment(payment) {
+                    await this.updatePaymentStatus(payment, 'Completed');
+                },
+
+                async rejectPayment(payment) {
+                    await this.updatePaymentStatus(payment, 'Failed');
+                },
+
+                async updatePaymentStatus(payment, status) {
                     try {
                         this.isLoading = true;
                         
-                        const newStatus = payment.status === 'Completed' ? 'Pending' : 'Completed';
                         const response = await axios.post(
                             `${API_BASE}/admin/update-status`,
-                            { trxid: payment.trxid, status: newStatus }
+                            { trxid: payment.trxid, status: status }
                         );
 
                         if (response.data.success) {
@@ -1485,6 +1577,50 @@
                     const user = this.users.find(u => u._id === userId);
                     if (user) {
                         alert(`User Details:\nID: ${userId}\nPhone: ${user.phone}\nEmail: ${user.email}`);
+                    }
+                },
+                showApproveUserModal(user) {
+                    this.selectedUser = user;
+                    if (!this.approveUserModal) {
+                        this.approveUserModal = new bootstrap.Modal(
+                            document.getElementById('approveUserModal')
+                        );
+                    }
+                    this.approveUserModal.show();
+                },
+                async approveUser() {
+                    try {
+                        this.isLoading = true;
+                        const response = await axios.post(`${API_BASE}/admin/users/${this.selectedUser._id}/approve`, {
+                            commissionPercentage: this.commissionPercentage
+                        });
+                        if (response.data.success) {
+                            const index = this.users.findIndex(u => u._id === this.selectedUser._id);
+                            if (index > -1) {
+                                this.users.splice(index, 1, response.data.user);
+                            }
+                            this.approveUserModal.hide();
+                        }
+                    } catch (error) {
+                        console.error('Approve user error:', error);
+                    } finally {
+                        this.isLoading = false;
+                    }
+                },
+                async generateReferralCode(user) {
+                    try {
+                        this.isLoading = true;
+                        const response = await axios.post(`${API_BASE}/admin/users/${user._id}/generate-referral-code`);
+                        if (response.data.success) {
+                            const index = this.users.findIndex(u => u._id === user._id);
+                            if (index > -1) {
+                                this.users.splice(index, 1, response.data.user);
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Generate referral code error:', error);
+                    } finally {
+                        this.isLoading = false;
                     }
                 },
                 async updateIssueStatus(issue, status) {
@@ -1873,6 +2009,23 @@
                             this.wsConnectionAttempts = 0;
                         }
                     };
+                },
+                async calculateUserPayments() {
+                    this.userPaymentData = null;
+                    this.userPaymentError = '';
+                    if (!this.userEmailQuery) {
+                        this.userPaymentError = 'Please enter a user email.';
+                        return;
+                    }
+                    try {
+                        this.isLoading = true;
+                        const response = await axios.get(`${API_BASE}/admin/user-payments/${this.userEmailQuery}`);
+                        this.userPaymentData = response.data;
+                    } catch (error) {
+                        this.userPaymentError = (error.response && error.response.data && error.response.data.message) || 'Could not fetch user payment data.';
+                    } finally {
+                        this.isLoading = false;
+                    }
                 }
             },
             async mounted() {
