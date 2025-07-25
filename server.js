@@ -869,7 +869,7 @@ app.put('/admin/users/:id', adminAuth, async (req, res) => {
 
 app.post('/admin/users/:id/approve', adminAuth, async (req, res) => {
   try {
-    const { commissionPercentage } = req.body;
+    const { commissionPercentage, name, zilla, officeLocation } = req.body;
     console.log(`Attempting to approve user ID: ${req.params.id} with commission: ${commissionPercentage}%`);
 
     const user = await User.findById(req.params.id);
@@ -881,6 +881,9 @@ app.post('/admin/users/:id/approve', adminAuth, async (req, res) => {
 
     user.isAdminApproved = true;
     user.referralCommissionPercentage = commissionPercentage;
+    user.name = name;
+    user.zilla = zilla;
+    user.officeLocation = officeLocation;
     await user.save();
     console.log('User updated and saved:', user.email);
 
