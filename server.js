@@ -1675,7 +1675,8 @@ app.get('/admin/users/:id/details', adminAuth, async (req, res) => {
           status: 'Completed'
         });
         const totalReferredUserPayments = referredUserPayments.reduce((acc, payment) => acc + payment.amount3, 0);
-        monthlyCommission += totalReferredUserPayments * (referredUser.referralCommissionPercentage / 100);
+        const commissionPercentage = typeof referredUser.referralCommissionPercentage === 'number' ? referredUser.referralCommissionPercentage : 0;
+        monthlyCommission += totalReferredUserPayments * (commissionPercentage / 100);
       }
     }
 
