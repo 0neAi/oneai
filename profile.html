@@ -1,28 +1,216 @@
-<!DOCTYPE html>
+<!DOCTYPE HTML>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>1AI - User Profile</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="./assets/css/main.css">
+    <style>
+        /* Mobile-first responsive enhancements */
+        @media screen and (max-width: 736px) {
+            .referral-table table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+            .referral-table thead, .referral-table tbody, .referral-table th, .referral-table td, .referral-table tr {
+                display: block;
+            }
+            .referral-table thead tr {
+                position: absolute;
+                top: -9999px;
+                left: -9999px;
+            }
+            .referral-table tr {
+                border: 1px solid #eee;
+                margin-bottom: 10px;
+            }
+            .referral-table td {
+                border: none;
+                border-bottom: 1px solid #eee;
+                position: relative;
+                padding-left: 50%;
+                text-align: right;
+            }
+            .referral-table td:before {
+                position: absolute;
+                top: 6px;
+                left: 6px;
+                width: 45%;
+                padding-right: 10px;
+                white-space: nowrap;
+                text-align: left;
+                font-weight: bold;
+            }
+            .referral-table td:nth-of-type(1):before { content: "User ID"; }
+            .referral-table td:nth-of-type(2):before { content: "Phone"; }
+            .referral-table td:nth-of-type(3):before { content: "Email"; }
+            
+            .dashboard-stats {
+                flex-direction: column;
+            }
+        }
+        
+        @media screen and (min-width: 737px) {
+            .dashboard-stats {
+                flex-direction: row;
+            }
+        }
+        
+        .dashboard-header {
+            background: linear-gradient(135deg, #4e73df, #2a4cb2);
+            color: white;
+            border-radius: 0.35rem;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .dashboard-stats {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            flex: 1;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .stat-card h3 {
+            margin-top: 0;
+            color: #6c757d;
+            font-size: 1rem;
+        }
+        
+        .stat-card .value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #343a40;
+        }
+        
+        .referral-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .referral-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .referral-table th, .referral-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+        }
+        
+        .referral-table th {
+            background-color: #f2f2f2;
+        }
+
+        .voucher-section {
+            margin-top: 2rem;
+        }
+
+        .voucher-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .voucher-card {
+            background: linear-gradient(135deg, #6f42c1, #4e73df);
+            color: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .voucher-card::before {
+            content: '';
+            position: absolute;
+            top: -50px;
+            left: -50px;
+            width: 150px;
+            height: 150px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+        }
+
+        .voucher-card h4 {
+            margin-top: 0;
+            font-size: 1.5rem;
+        }
+
+        .voucher-code {
+            background: rgba(255,255,255,0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            display: inline-block;
+            margin-top: 1rem;
+        }
+    </style>
 </head>
 <body>
     <div id="navbar-container"></div>
 
     <div class="container">
-        <div class="profile-container">
-            <h2>User Profile</h2>
-            <div class="profile-info">
-                <p><strong>Referral Code:</strong> <span id="referralCode"></span></p>
-                <p><strong>Total Referrals:</strong> <span id="referralCount"></span></p>
-                <p><strong>Referral Bonus Status:</strong> <span id="referralBonusStatus"></span></p>
-                <p><strong>Referral Bonus:</strong> <span id="referralBonus"></span></p>
-            </div>
+        <header class="dashboard-header">
+            <h1>User Profile</h1>
+            <p>Welcome, <span id="userName"></span>!</p>
+        </header>
 
-            <h3>Your Referrals</h3>
-            <ul id="referralList"></ul>
+        <div class="dashboard-stats">
+            <div class="stat-card">
+                <h3><i class="fas fa-users"></i> Total Referrals</h3>
+                <div class="value" id="referralCount">0</div>
+            </div>
+            <div class="stat-card">
+                <h3><i class="fas fa-trophy"></i> Referral Bonus</h3>
+                <div class="value" id="referralBonus">0</div>
+            </div>
+            <div class="stat-card">
+                <h3><i class="fas fa-hourglass-half"></i> Bonus Status</h3>
+                <div class="value" id="referralBonusStatus">pending</div>
+            </div>
+            <div class="stat-card">
+                <h3><i class="fas fa-money-bill-wave"></i> Monthly Commission</h3>
+                <div class="value" id="monthlyCommission">৳0.00</div>
+            </div>
         </div>
+
+        <section class="voucher-section" id="voucher-section" style="display: none;">
+            <h2>Your Vouchers</h2>
+            <div id="voucher-list" class="voucher-list"></div>
+        </section>
+
+        <section class="referral-section">
+            <h2>Your Referrals</h2>
+            <div class="referral-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>User ID</th>
+                            <th>Phone</th>
+                            <th>Email</th>
+                        </tr>
+                    </thead>
+                    <tbody id="referralList">
+                        <!-- Dynamic content will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
     </div>
 
     <script src="./assets/js/load-navbar.js"></script>
@@ -51,17 +239,62 @@
                 const data = await response.json();
                 const user = data.user;
 
-                document.getElementById('referralCode').textContent = user.referralCode;
+                document.getElementById('userName').textContent = user.name;
                 document.getElementById('referralCount').textContent = user.referrals.length;
-                document.getElementById('referralBonusStatus').textContent = user.referralBonusStatus;
                 document.getElementById('referralBonus').textContent = user.referralBonus;
+                document.getElementById('referralBonusStatus').textContent = user.referralBonusStatus;
 
                 const referralList = document.getElementById('referralList');
+                referralList.innerHTML = ''; // Clear existing content
                 user.referrals.forEach(referral => {
-                    const li = document.createElement('li');
-                    li.textContent = `User ID: ${referral}`;
-                    referralList.appendChild(li);
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${referral._id}</td>
+                        <td>${referral.phone}</td>
+                        <td>${referral.email}</td>
+                    `;
+                    referralList.appendChild(tr);
                 });
+
+                // Fetch and display vouchers
+                const voucherResponse = await fetch(`https://oneai-wjox.onrender.com/vouchers/${user.phone}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'X-User-ID': userID
+                    }
+                });
+
+                if (voucherResponse.ok) {
+                    const voucherData = await voucherResponse.json();
+                    const vouchers = voucherData.vouchers.filter(v => !v.isUsed);
+                    if (vouchers.length > 0) {
+                        document.getElementById('voucher-section').style.display = 'block';
+                        const voucherList = document.getElementById('voucher-list');
+                        vouchers.forEach(voucher => {
+                            const voucherCard = document.createElement('div');
+                            voucherCard.className = 'voucher-card';
+                            voucherCard.innerHTML = `
+                                <h4>${voucher.discountPercentage}% Discount</h4>
+                                <p>Use this code at checkout:</p>
+                                <div class="voucher-code">${voucher.code}</div>
+                            `;
+                            voucherList.appendChild(voucherCard);
+                        });
+                    }
+                }
+
+            // Fetch and display monthly commission
+                const commissionResponse = await fetch(`https://oneai-wjox.onrender.com/users/${userID}/monthly-commission`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'X-User-ID': userID
+                    }
+                });
+
+                if (commissionResponse.ok) {
+                    const commissionData = await commissionResponse.json();
+                    document.getElementById('monthlyCommission').textContent = `৳${commissionData.monthlyCommission.toFixed(2)}`;
+                }
 
             } catch (error) {
                 console.error('Error fetching profile:', error);
