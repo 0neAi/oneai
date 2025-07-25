@@ -887,7 +887,8 @@ app.post('/admin/users/:id/approve', adminAuth, async (req, res) => {
 
     res.json({ success: true, user: user.toObject() });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to approve user' });
+    console.error('Error approving user:', error);
+    res.status(500).json({ success: false, message: error.message || 'Failed to approve user' });
   }
 });
 
