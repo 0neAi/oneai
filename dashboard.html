@@ -478,8 +478,13 @@
           });
 
           if (!validateResponse.ok) {
-            localStorage.clear(); // Clear local storage on invalid token
-            window.location.href = 'index.html';
+            const errorData = await validateResponse.json();
+            if (errorData.message === 'Authentication failed: User not approved') {
+                window.location.href = 'waiting-for-approval.html';
+            } else {
+                localStorage.clear(); // Clear local storage on invalid token or other errors
+                window.location.href = 'index.html';
+            }
             return;
           }
 
@@ -490,15 +495,8 @@
             }
           });
 
-          if (userResponse.ok) {
-            const data = await userResponse.json();
-            if (!data.user.isApproved) {
-              window.location.href = 'waiting-for-approval.html';
-            }
-          } else if (userResponse.status === 403) {
-            window.location.href = 'waiting-for-approval.html';
-          } else {
-            localStorage.clear(); // Clear local storage for other non-403 errors
+          if (!userResponse.ok) {
+            localStorage.clear(); // Clear local storage for other non-ok responses
             window.location.href = 'index.html';
           }
         } catch (error) {
