@@ -224,6 +224,11 @@ const authMiddleware = async (req, res, next) => {
       console.error('Auth Error: User not found in DB', { userID });
       return res.status(401).json({ success: false, message: 'Authentication failed: User not found' });
     }
+
+    if (!user.isApproved) {
+      console.error('Auth Error: User not approved', { userID });
+      return res.status(403).json({ success: false, message: 'Authentication failed: User not approved' });
+    }
     
     req.user = user;
     next();
@@ -934,7 +939,7 @@ app.post('/admin/users/:id/approve', adminAuth, async (req, res) => {
         await referrer.save();
         console.log('Referrer updated and saved.');
       } else {
-        console.log('User already in referrers list.');
+        console.log('User already in referrer's list.');
       }
     } else {
       console.log('No referrer found for user.');
@@ -1833,7 +1838,7 @@ app.get('/admin/user-payments/:email', adminAuth, async (req, res) => {
 
 app.get('/users/:id', authMiddleware, async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).populate('referrals', 'phone email');
+    const user = await User.findById(req.params.id).populate('referrals', 'phone email').select('+referralBonus +referralBonusStatus +strikeCount +strikeStars +lastPaymentDate +lastStrikeCollectionDate +hasPendingBonusVoucher');
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
