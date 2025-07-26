@@ -1695,19 +1695,31 @@ app.post('/premium-payment', authMiddleware, async (req, res) => {
 // ======================
 app.get('/admin/users', adminAuth, async (req, res) => {
   try {
+    console.log('Fetching all users for admin panel...');
     const users = await User.find().populate('referredBy', 'name').select('-password');
+    console.log(`Found ${users.length} users.`);
+
     const usersWithStats = await Promise.all(users.map(async (user) => {
-      const payments = await Payment.find({ user: user._id, status: 'Completed' });
-      const totalPayments = payments.length;
-      const totalAmount = payments.reduce((acc, payment) => acc + payment.amount3, 0);
-      return {
-        ...user.toObject({ virtuals: true }),
-        totalPayments,
-        totalAmount
-      };
+      try {
+        console.log(`Processing user: ${user._id} - ${user.email}`);
+        const payments = await Payment.find({ user: user._id, status: 'Completed' });
+        const totalPayments = payments.length;
+        const totalAmount = payments.reduce((acc, payment) => acc + payment.amount3, 0);
+        console.log(`User ${user._id} stats: Payments=${totalPayments}, Amount=${totalAmount}`);
+        return {
+          ...user.toObject({ virtuals: true }),
+          totalPayments,
+          totalAmount
+        };
+      } catch (userStatsError) {
+        console.error(`Error processing stats for user ${user._id}:`, userStatsError);
+        // Return user object without stats if there's an error, to avoid breaking the whole list
+        return user.toObject({ virtuals: true });
+      }
     }));
     res.json({ success: true, users: usersWithStats });
   } catch (error) {
+    console.error('Error in /admin/users route:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch users' });
   }
 });
