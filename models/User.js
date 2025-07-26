@@ -34,35 +34,16 @@ const userSchema = new mongoose.Schema({
     required: true,
     minlength: [8, 'Password must be at least 8 characters']
   },
-  referralCode: {
-    type: String,
-    unique: true
-  },
-  referredBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  },
-  isAdminApproved: {
-    type: Boolean,
-    default: false
-  },
-  referrals: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  }],
-  referralBonus: {
-    type: Number,
-    default: 0
-  },
-  referralBonusStatus: {
-    type: String,
-    enum: ['pending', 'eligible', 'claimed'],
-    default: 'pending'
-  },
-  referralCommissionPercentage: {
-    type: Number,
-    default: 0
-  }
+  referralCode: { type: String, unique: true, sparse: true },
+  referralCommissionPercentage: { type: Number, default: 0 },
+  strikeCount: { type: Number, default: 0 },
+  strikeStars: { type: Number, default: 0 },
+  lastPaymentDate: { type: Date },
+  lastStrikeCollectionDate: { type: Date },
+  hasPendingBonusVoucher: { type: Boolean, default: false },
+  pushSubscription: { type: Object },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
 }, {
   timestamps: true
 });
