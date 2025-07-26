@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <title>0NEAi Dashboard</title>
-    <link rel="icon" href="./images/logo.png" type="image/png">   
+    <link rel="icon" href="./images/logo.png" type="image/png">
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -459,6 +459,38 @@
     </style>
 </head>
 <body>
+    <script>
+      (async () => {
+        const authToken = localStorage.getItem('authToken');
+        const userID = localStorage.getItem('userID');
+
+        if (!authToken || !userID) {
+          window.location.href = 'index.html';
+          return;
+        }
+
+        try {
+          const response = await fetch(`https://oneai-wjox.onrender.com/users/${userID}`, {
+            headers: {
+              'Authorization': `Bearer ${authToken}`,
+              'X-User-ID': userID
+            }
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            if (!data.user.isApproved) {
+              window.location.href = 'waiting-for-approval.html';
+            }
+          } else {
+            window.location.href = 'index.html';
+          }
+        } catch (error) {
+          console.error('Error checking user approval status:', error);
+          window.location.href = 'index.html';
+        }
+      })();
+    </script>
     <div class="loading-overlay">
         <i class="fas fa-spinner fa-spin fa-3x"></i>
         <p>Loading your payment data...</p>
