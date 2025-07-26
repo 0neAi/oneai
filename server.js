@@ -19,7 +19,7 @@ import { fileURLToPath } from 'url'
 
 dotenv.config();
 
-// VAPID key
+// VAPID keys
 const vapidKeys = {
     publicKey: process.env.VAPID_PUBLIC_KEY,
     privateKey: process.env.VAPID_PRIVATE_KEY
@@ -135,6 +135,10 @@ wss.on('connection', (ws, req) => {
   ws.on('message', async (message) => {
     try {
       const data = JSON.parse(message);
+
+      if (data.type === 'register') {
+        ws.userID = data.userID;
+      }
       
       if (data.type === 'adminStatusUpdate') {
         const decoded = jwt.verify(data.token, process.env.JWT_SECRET);
@@ -286,7 +290,7 @@ app.post('/register', async (req, res) => {
       officeLocation,
       password,
       referredBy: referrer._id,
-      isAdminApproved: false,
+      isApproved: !referralCode, // Not approved if referral code is used
     });
 
     // Generate a unique referral code
@@ -297,6 +301,7 @@ app.post('/register', async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Registration successful. Please wait for admin approval.',
+      userID: user._id,
     });
 
   } catch (error) {
@@ -329,6 +334,13 @@ app.post('/login', async (req, res) => {
       return res.status(401).json({ 
         success: false, 
         message: 'Invalid Password' 
+      });
+    }
+
+    if (!user.isApproved) {
+      return res.status(401).json({
+        success: false,
+        message: 'Your account is pending admin approval.'
       });
     }
 
@@ -905,7 +917,7 @@ app.post('/admin/users/:id/approve', adminAuth, async (req, res) => {
     }
     console.log('Found user:', user.email);
 
-    user.isAdminApproved = true;
+    user.isApproved = true;
     user.referralCommissionPercentage = commissionPercentage;
     user.name = name;
     user.zilla = zilla;
@@ -922,11 +934,18 @@ app.post('/admin/users/:id/approve', adminAuth, async (req, res) => {
         await referrer.save();
         console.log('Referrer updated and saved.');
       } else {
-        console.log('User already in referrers list.');
+        console.log('User already in referrer's list.');
       }
     } else {
       console.log('No referrer found for user.');
     }
+
+    // Send WebSocket message to the approved user
+    wss.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN && client.userID === user._id.toString()) {
+        client.send(JSON.stringify({ type: 'account-approved', userID: user._id }));
+      }
+    });
 
     res.json({ success: true, user: user.toObject({ virtuals: true }) });
   } catch (error) {
