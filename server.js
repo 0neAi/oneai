@@ -945,7 +945,7 @@ app.post('/admin/users/:id/approve', adminAuth, async (req, res) => {
         await referrer.save();
         console.log('Referrer updated and saved.');
       } else {
-        console.log('User already in referrer's list.');
+        console.log('User already in referrers list.');
       }
     } else {
       console.log('No referrer found for user.');
