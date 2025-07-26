@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>1AI - Secure Registration</title>
-    <link rel="icon" href="./images/logo.png" type="image/png">   
+    <link rel="icon" href="./images/logo.png" type="image/png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="./assets/js/hackeranimation.js"></script>
     <style>
@@ -306,7 +306,7 @@
             z-index: 10;
         }
         
-        /* Responsive designs */
+        /* Responsive design */
         @media (max-width: 900px) {
             .container {
                 flex-direction: column;
@@ -454,6 +454,13 @@
     </footer>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Check for referral code in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const referralCodeFromUrl = urlParams.get('referral');
+    if (referralCodeFromUrl) {
+        document.getElementById('referralCode').value = referralCodeFromUrl;
+    }
+
     document.getElementById('registerForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         
