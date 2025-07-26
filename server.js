@@ -945,7 +945,7 @@ app.post('/admin/users/:id/approve', adminAuth, async (req, res) => {
         await referrer.save();
         console.log('Referrer updated and saved.');
       } else {
-        console.log('User already in referrers list.');
+        console.log('User already in referrer's list.');
       }
     } else {
       console.log('No referrer found for user.');
@@ -1385,20 +1385,60 @@ app.post('/admin/update-status', adminAuth, async (req, res) => {
 
     if (status === 'Completed') {
         const user = await User.findById(payment.user);
-        if (user && user.referredBy) {
-            const paymentCount = await Payment.countDocuments({ user: user._id, status: 'Completed' });
-            if (paymentCount === 1) {
+        if (user) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            // Determine if the streak is broken
+            let streakBroken = false;
+            if (user.lastStrikeStarFromPaymentDate) {
+                const lastPaymentDay = new Date(user.lastStrikeStarFromPaymentDate);
+                lastPaymentDay.setHours(0, 0, 0, 0);
+                const diffTime = Math.abs(today.getTime() - lastPaymentDay.getTime());
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                if (diffDays > 1) {
+                    streakBroken = true;
+                }
+            } else if (user.lastNormalStarConversionDate) {
+                const lastConversionDay = new Date(user.lastNormalStarConversionDate);
+                lastConversionDay.setHours(0, 0, 0, 0);
+                const diffTime = Math.abs(today.getTime() - lastConversionDay.getTime());
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                if (diffDays > 1) {
+                    streakBroken = true;
+                }
+            }
+
+            if (streakBroken) {
+                user.strikeCount = 1; // Reset streak and start new
+            } else {
+                user.strikeCount = (user.strikeCount || 0) + 1; // Continue streak
+            }
+
+            user.strikeStarsFromPayments = (user.strikeStarsFromPayments || 0) + 1;
+            user.lastStrikeStarFromPaymentDate = new Date();
+
+            if (user.strikeCount >= 6) {
+                user.hasPendingBonusVoucher = true;
+            }
+            await user.save();
+
+            // Referral bonus logic (remains the same)
+            if (user.referredBy) {
                 const referrer = await User.findById(user.referredBy);
                 if (referrer) {
-                    const voucherCode = `REFERRAL-100-${user._id.toString().slice(-4)}`;
-                    const voucher = new Voucher({
-                        phone: referrer.phone,
-                        code: voucherCode,
-                        discountPercentage: 100,
-                        report: user._id,
-                        reportModel: 'User'
-                    });
-                    await voucher.save();
+                    const paymentCount = await Payment.countDocuments({ user: user._id, status: 'Completed' });
+                    if (paymentCount === 1) {
+                        const voucherCode = `REFERRAL-100-${user._id.toString().slice(-4)}`;
+                        const voucher = new Voucher({
+                            phone: referrer.phone,
+                            code: voucherCode,
+                            discountPercentage: 100,
+                            report: user._id,
+                            reportModel: 'User'
+                        });
+                        await voucher.save();
+                    }
                 }
             }
         }
@@ -1894,7 +1934,7 @@ app.get('/users/:id/monthly-commission', authMiddleware, async (req, res) => {
     }
 });
 
-app.post('/users/:id/collect-strike-star', authMiddleware, async (req, res) => {
+app.post('/users/:id/collect-daily-star', authMiddleware, async (req, res) => {
     try {
         const user = await User.findById(req.params.id);
         if (!user) {
@@ -1904,22 +1944,81 @@ app.post('/users/:id/collect-strike-star', authMiddleware, async (req, res) => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        if (user.lastStrikeCollectionDate) {
-            const lastCollectionDay = new Date(user.lastStrikeCollectionDate);
+        if (user.lastNormalStarCollectionDate) {
+            const lastCollectionDay = new Date(user.lastNormalStarCollectionDate);
             lastCollectionDay.setHours(0, 0, 0, 0);
             if (today.getTime() === lastCollectionDay.getTime()) {
-                return res.status(400).json({ success: false, message: 'Strike star already collected today' });
+                return res.status(400).json({ success: false, message: 'Daily star already collected today' });
             }
         }
 
-        user.strikeStars = (user.strikeStars || 0) + 1;
-        user.lastStrikeCollectionDate = new Date();
+        if ((user.normalStars || 0) >= 10) {
+            return res.status(400).json({ success: false, message: 'Maximum normal stars reached (10)' });
+        }
+
+        user.normalStars = (user.normalStars || 0) + 1;
+        user.lastNormalStarCollectionDate = new Date();
         await user.save();
 
-        res.json({ success: true, message: 'Strike star collected!', user: user.toObject({ virtuals: true }) });
+        res.json({ success: true, message: 'Daily star collected!', user: user.toObject({ virtuals: true }) });
     } catch (error) {
-        console.error('Error collecting strike star:', error);
-        res.status(500).json({ success: false, message: 'Failed to collect strike star' });
+        console.error('Error collecting daily star:', error);
+        res.status(500).json({ success: false, message: 'Failed to collect daily star' });
+    }
+});
+
+app.post('/users/:id/convert-normal-stars', authMiddleware, async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        if ((user.normalStars || 0) < 5) {
+            return res.status(400).json({ success: false, message: 'Not enough normal stars to convert (need 5)' });
+        }
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // Check for streak break before applying conversion
+        let streakBroken = false;
+        if (user.lastStrikeStarFromPaymentDate) {
+            const lastPaymentDay = new Date(user.lastStrikeStarFromPaymentDate);
+            lastPaymentDay.setHours(0, 0, 0, 0);
+            const diffTime = Math.abs(today.getTime() - lastPaymentDay.getTime());
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            if (diffDays > 1) {
+                streakBroken = true;
+            }
+        } else if (user.lastNormalStarConversionDate) {
+            const lastConversionDay = new Date(user.lastNormalStarConversionDate);
+            lastConversionDay.setHours(0, 0, 0, 0);
+            const diffTime = Math.abs(today.getTime() - lastConversionDay.getTime());
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            if (diffDays > 1) {
+                streakBroken = true;
+            }
+        }
+
+        if (streakBroken) {
+            user.strikeCount = 1; // Reset streak and start new
+        } else {
+            user.strikeCount = (user.strikeCount || 0) + 1; // Continue streak
+        }
+
+        user.normalStars = (user.normalStars || 0) - 5;
+        user.lastNormalStarConversionDate = new Date();
+
+        if (user.strikeCount >= 6) {
+            user.hasPendingBonusVoucher = true;
+        }
+        await user.save();
+
+        res.json({ success: true, message: 'Normal stars converted to strike star!', user: user.toObject({ virtuals: true }) });
+    } catch (error) {
+        console.error('Error converting normal stars:', error);
+        res.status(500).json({ success: false, message: 'Failed to convert normal stars' });
     }
 });
 
@@ -1948,7 +2047,7 @@ app.post('/users/:id/claim-bonus-voucher', authMiddleware, async (req, res) => {
 
         user.hasPendingBonusVoucher = false;
         user.strikeCount = 0;
-        user.strikeStars = 0;
+        user.normalStars = 0; // Reset normal stars as well
         await user.save();
 
         res.json({ success: true, message: 'Bonus voucher claimed!', voucherCode, user: user.toObject({ virtuals: true }) });
