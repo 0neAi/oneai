@@ -659,7 +659,7 @@
                                 </thead>
                                 <tbody>
                                     <tr v-for="user in users" :key="user.id">
-                                        <td class="text-muted">{{ shortId(user.id) }}</td>
+                                        <td class="text-muted">{{ shortId(user._id) }}</td>
                                         <td>{{ user.phone }}</td>
                                         <td>{{ user.email }}</td>
                                         <td>
@@ -670,13 +670,13 @@
                                         </td>
                                         <td>{{ user.referredBy ? user.referredBy.name : 'N/A' }}</td>
                                         <td>{{ user.totalPayments }}</td>
-                                        <td>৳{{ user.totalAmount.toFixed(2) }}</td>
+                                        <td>৳{{ user.totalAmount ? user.totalAmount.toFixed(2) : '0.00' }}</td>
                                         <td>{{ formatDateTime(user.createdAt) }}</td>
                                         <td>
                                             <button class="btn btn-sm btn-outline-primary me-1" @click="viewUserDetails(user._id)">
                                                 <i class="bi bi-eye-fill me-1"></i>Details
                                             </button>
-                                            <button v-if="!user.isAdminApproved" class="btn btn-sm btn-outline-success" @click="showApproveUserModal(user)">
+                                            <button v-if="!user.isApproved" class="btn btn-sm btn-outline-success" @click="showApproveUserModal(user)">
                                                 Approve
                                             </button>
                                             <button class="btn btn-sm btn-outline-danger ms-2" 
@@ -1162,7 +1162,7 @@
                             <p><strong>Zilla:</strong> {{ selectedUserDetail.zilla }}</p>
                             <p><strong>Office Location:</strong> {{ selectedUserDetail.officeLocation }}</p>
                             <p><strong>Referral Code:</strong> {{ selectedUserDetail.referralCode }}</p>
-                            <p><strong>Admin Approved:</strong> {{ selectedUserDetail.isAdminApproved ? 'Yes' : 'No' }}</p>
+                            <p><strong>Admin Approved:</strong> {{ selectedUserDetail.isApproved ? 'Yes' : 'No' }}</p>
                             <p><strong>Registered On:</strong> {{ formatDateTime(selectedUserDetail.createdAt) }}</p>
 
                             <h6 class="mt-4">Referral Information</h6>
@@ -1466,7 +1466,6 @@
                         if (response.data.success) {
                             localStorage.setItem('adminToken', response.data.token);
                             this.isAuthenticated = true;
-                            this.loadData();
                         }
                     } catch (error) {
                         this.loginError = (error.response && error.response.data && error.response.data.message) 
@@ -1713,8 +1712,8 @@
                     this.approveUserModal.show();
                 },
                 async approveUser() {
+                    this.isLoading = true;
                     try {
-                        this.isLoading = true;
                         const response = await axios.post(`${API_BASE}/admin/users/${this.selectedUser._id}/approve`, {
                             commissionPercentage: this.commissionPercentage,
                             name: this.selectedUser.name,
@@ -1739,8 +1738,8 @@
                     }
                 },
                 async generateReferralCode(user) {
+                    this.isLoading = true;
                     try {
-                        this.isLoading = true;
                         const response = await axios.post(`${API_BASE}/admin/users/${user._id}/generate-referral-code`);
                         if (response.data.success) {
                             const index = this.users.findIndex(u => u._id === user._id);
