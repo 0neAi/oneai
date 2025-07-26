@@ -343,8 +343,9 @@ app.post('/login', async (req, res) => {
     }
 
     if (!user.isApproved) {
-      return res.status(401).json({
-        success: false,
+      return res.status(200).json({
+        success: true,
+        isApproved: false,
         message: 'Your account is pending admin approval.'
       });
     }
@@ -355,6 +356,7 @@ app.post('/login', async (req, res) => {
 
     res.json({
       success: true,
+      isApproved: true,
       token,
       userID: user._id,
       expiresIn: Date.now() + 3 * 60 * 60 * 1000
