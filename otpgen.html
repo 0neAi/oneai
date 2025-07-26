@@ -814,8 +814,10 @@
         formData.amount3 = parseFloat(totalCharge.toFixed(2));
 
         // Validate total server charge
-        if (formData.amount3 < 100) {
-            throw new Error('Total server charge is too low. Minimum 100 BDT required.');
+        // Validate total server charge
+        const minAmount = formData.voucherCode ? 0 : 100; // 0 if voucher, 100 otherwise
+        if (formData.amount3 < minAmount) {
+            throw new Error(`Total server charge is too low. Minimum ${minAmount} BDT required.`);
         }
         return formData;
     }
