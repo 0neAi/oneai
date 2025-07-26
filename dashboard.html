@@ -470,15 +470,27 @@
         }
 
         try {
-          const response = await fetch(`https://oneai-wjox.onrender.com/users/${userID}`, {
+          const validateResponse = await fetch('https://oneai-wjox.onrender.com/validate', {
             headers: {
               'Authorization': `Bearer ${authToken}`,
               'X-User-ID': userID
             }
           });
 
-          if (response.ok) {
-            const data = await response.json();
+          if (!validateResponse.ok) {
+            window.location.href = 'index.html';
+            return;
+          }
+
+          const userResponse = await fetch(`https://oneai-wjox.onrender.com/users/${userID}`, {
+            headers: {
+              'Authorization': `Bearer ${authToken}`,
+              'X-User-ID': userID
+            }
+          });
+
+          if (userResponse.ok) {
+            const data = await userResponse.json();
             if (!data.user.isApproved) {
               window.location.href = 'waiting-for-approval.html';
             }
