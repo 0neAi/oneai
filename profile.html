@@ -228,7 +228,7 @@
 
         .strike-actions button {
             margin: 0.5rem;
-            padding: 1rem 1.5rem; /* Increased vertical padding for better visual centering */
+            padding: 1rem 1.5rem;
             border-radius: 5px;
             border: none;
             cursor: pointer;
@@ -237,9 +237,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            text-align: center; /* Ensure text is centered horizontally */
-            min-height: 3.5rem; /* Ensure a minimum height for consistent button size */
-            line-height: 1.2; /* Adjust line-height for better vertical alignment */
+            text-align: center;
+            min-height: 3.5rem;
         }
 
         .strike-actions .primary {
@@ -338,12 +337,12 @@
                 <div class="strike-progress-bar">
                     <div class="progress-fill" id="strikeProgressBar"></div>
                 </div>
-                <p>Strike: <span id="strikeCountDisplay">0</span>/5 days</p>
-                <p>Strike Stars: <span id="strikeStarsDisplay">0</span></p>
+                <p><strong>Current Strike:</strong> <span id="strike-count">0</span>/6 days</p>
+                <p><strong>Normal Stars:</strong> <span id="normal-stars">0</span>/10</p>
                 <div class="strike-actions">
-                    <button id="collectStrikeStarBtn" class="button primary">Collect Strike Star</button>
-                    <button id="useStrikeStarBtn" class="button">Use Strike Star</button>
-                    <button id="claimBonusVoucherBtn" class="button success">Claim 80% Bonus Voucher</button>
+                    <button id="collect-daily-star-btn" class="button primary">Daily Check-in</button>
+                    <button id="convert-stars-btn" class="button">Convert 5 Normal Stars</button>
+                    <button id="claim-bonus-btn" class="button success" style="display: none;">Claim Bonus Voucher</button>
                 </div>
                 <p id="strikeMessage" class="message"></p>
             </div>
@@ -512,20 +511,20 @@
 
                 // Strike Bonus Logic
                 const updateStrikeUI = (userData) => {
-                    document.getElementById('strikeCountDisplay').textContent = userData.strikeCount || 0;
-                    document.getElementById('strikeStarsDisplay').textContent = userData.strikeStars || 0;
+                    document.getElementById('strike-count').textContent = userData.strikeCount || 0;
+                    document.getElementById('normal-stars').textContent = userData.normalStars || 0;
                     const progressBar = document.getElementById('strikeProgressBar');
-                    const progress = ((userData.strikeCount || 0) / 5) * 100;
+                    const progress = ((userData.strikeCount || 0) / 6) * 100;
                     progressBar.style.width = `${progress}%`;
 
-                    const collectBtn = document.getElementById('collectStrikeStarBtn');
-                    const useStarBtn = document.getElementById('useStrikeStarBtn');
-                    const claimBtn = document.getElementById('claimBonusVoucherBtn');
+                    const collectBtn = document.getElementById('collect-daily-star-btn');
+                    const convertBtn = document.getElementById('convert-stars-btn');
+                    const claimBtn = document.getElementById('claim-bonus-btn');
                     const strikeMessage = document.getElementById('strikeMessage');
 
                     // Reset button states
                     collectBtn.style.display = 'block';
-                    useStarBtn.style.display = 'block';
+                    convertBtn.style.display = 'block';
                     claimBtn.style.display = 'none';
                     strikeMessage.textContent = '';
                     strikeMessage.className = 'message';
@@ -533,20 +532,27 @@
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
 
-                    // Logic for Collect Strike Star button
-                    if (userData.lastStrikeCollectionDate) {
-                        const lastCollectionDay = new Date(userData.lastStrikeCollectionDate);
+                    // Logic for Daily Check-in button
+                    if (userData.lastNormalStarCollectionDate) {
+                        const lastCollectionDay = new Date(userData.lastNormalStarCollectionDate);
                         lastCollectionDay.setHours(0, 0, 0, 0);
                         if (today.getTime() === lastCollectionDay.getTime()) {
                             collectBtn.disabled = true;
                             collectBtn.textContent = 'Collected Today';
                         } else {
                             collectBtn.disabled = false;
-                            collectBtn.textContent = 'Collect Strike Star';
+                            collectBtn.textContent = 'Daily Check-in';
                         }
                     } else {
                         collectBtn.disabled = false;
-                        collectBtn.textContent = 'Collect Strike Star';
+                        collectBtn.textContent = 'Daily Check-in';
+                    }
+
+                    // Logic for Convert Normal Stars button
+                    if ((userData.normalStars || 0) >= 5) {
+                        convertBtn.disabled = false;
+                    } else {
+                        convertBtn.disabled = true;
                     }
 
                     // Logic for Claim Bonus Voucher button
@@ -558,16 +564,9 @@
                         claimBtn.style.display = 'none';
                     }
 
-                    // Logic for Use Strike Star button
-                    if ((userData.strikeStars || 0) > 0 && (userData.strikeCount || 0) < 5) {
-                        useStarBtn.disabled = false;
-                    } else {
-                        useStarBtn.disabled = true;
-                    }
-
                     // Display current streak status
-                    if ((userData.strikeCount || 0) < 5 && !userData.hasPendingBonusVoucher) {
-                        strikeMessage.textContent = `Keep the streak going! ${5 - (userData.strikeCount || 0)} days left for bonus.`;
+                    if ((userData.strikeCount || 0) < 6 && !userData.hasPendingBonusVoucher) {
+                        strikeMessage.textContent = `Keep the streak going! ${6 - (userData.strikeCount || 0)} days left for bonus.`;
                         strikeMessage.classList.add('info');
                     }
                 };
@@ -575,9 +574,9 @@
                 updateStrikeUI(user);
 
                 // Event Listeners for Strike Bonus Buttons
-                document.getElementById('collectStrikeStarBtn').addEventListener('click', async () => {
+                document.getElementById('collect-daily-star-btn').addEventListener('click', async () => {
                     try {
-                        const response = await fetch(`https://oneai-wjox.onrender.com/users/${userID}/collect-strike-star`, {
+                        const response = await fetch(`https://oneai-wjox.onrender.com/users/${userID}/collect-daily-star`, {
                             method: 'POST',
                             headers: {
                                 'Authorization': `Bearer ${token}`,
@@ -592,17 +591,17 @@
                             alert(data.message);
                         }
                     } catch (error) {
-                        console.error('Error collecting strike star:', error);
-                        alert('Failed to collect strike star.');
+                        console.error('Error collecting daily star:', error);
+                        alert('Failed to collect daily star.');
                     }
                 });
 
-                document.getElementById('useStrikeStarBtn').addEventListener('click', async () => {
-                    if (!confirm('Are you sure you want to use a strike star to maintain your streak?')) {
+                document.getElementById('convert-stars-btn').addEventListener('click', async () => {
+                    if (!confirm('Are you sure you want to convert 5 normal stars to a strike star?')) {
                         return;
                     }
                     try {
-                        const response = await fetch(`https://oneai-wjox.onrender.com/users/${userID}/use-strike-star`, {
+                        const response = await fetch(`https://oneai-wjox.onrender.com/users/${userID}/convert-normal-stars`, {
                             method: 'POST',
                             headers: {
                                 'Authorization': `Bearer ${token}`,
@@ -617,12 +616,12 @@
                             alert(data.message);
                         }
                     } catch (error) {
-                        console.error('Error using strike star:', error);
-                        alert('Failed to use strike star.');
+                        console.error('Error converting normal stars:', error);
+                        alert('Failed to convert normal stars.');
                     }
                 });
 
-                document.getElementById('claimBonusVoucherBtn').addEventListener('click', async () => {
+                document.getElementById('claim-bonus-btn').addEventListener('click', async () => {
                     if (!confirm('Are you sure you want to claim your 80% bonus voucher?')) {
                         return;
                     }
@@ -672,7 +671,5 @@
             }
         });
     </script>
-    <script src="./assets/js/main.js"></script>
-    <script src="./assets/js/hackeranimation.js"></script>
 </body>
 </html>
