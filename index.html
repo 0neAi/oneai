@@ -464,11 +464,22 @@
                 localStorage.setItem('authToken', data.token);
                 localStorage.setItem('tokenExp', data.expiresIn);
                 
-                // Redirect to dashboard
-                setTimeout(() => {
-                    LoadingAnimation.stop();
-                    window.location.href = 'dashboard.html';
-                }, 1000);
+                // Check admin approval status
+                if (data.isAdminApproved === false) {
+                    LoadingAnimation.update(100, "Account not approved!");
+                    LoadingAnimation.setTerminalMessage("> Redirecting to approval waiting page...");
+                    setTimeout(() => {
+                        LoadingAnimation.stop();
+                        window.location.href = 'waiting-for-approval.html';
+                    }, 1000);
+                } else {
+                    LoadingAnimation.update(100, "Login successful!");
+                    LoadingAnimation.setTerminalMessage("> Redirecting to dashboard...");
+                    setTimeout(() => {
+                        LoadingAnimation.stop();
+                        window.location.href = 'dashboard.html';
+                    }, 1000);
+                }
 
             } catch (error) {
                 LoadingAnimation.stop();
