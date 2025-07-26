@@ -194,6 +194,8 @@ const authMiddleware = async (req, res, next) => {
     const token = req.header('Authorization')?.replace('Bearer ', '');
     const userID = req.header('X-User-ID');
 
+    console.log('AuthMiddleware: Received token:', token ? 'Exists' : 'Missing', 'UserID:', userID);
+
     if (!token) {
       console.error('Auth Error: Missing token');
       return res.status(401).json({ success: false, message: 'Authentication failed: Token missing' });
@@ -206,6 +208,7 @@ const authMiddleware = async (req, res, next) => {
     let decoded;
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET);
+      console.log('AuthMiddleware: JWT decoded successfully for userId:', decoded.userId);
     } catch (jwtError) {
       console.error('Auth Error: JWT verification failed', jwtError.message);
       const message = jwtError.name === 'TokenExpiredError' 
@@ -231,11 +234,12 @@ const authMiddleware = async (req, res, next) => {
     }
     
     req.user = user;
+    console.log('AuthMiddleware: User authenticated and approved:', user.email);
     next();
   } catch (error) {
     console.error('Auth Error: Unexpected error', error.message);
     res.status(500).json({ success: false, message: 'Authentication failed: Internal server error' });
-  }
+  }}
 };
 
 // ======================
@@ -1840,10 +1844,23 @@ app.get('/admin/user-payments/:email', adminAuth, async (req, res) => {
 
 app.get('/users/:id', authMiddleware, async (req, res) => {
   try {
+    console.log(`Fetching user profile for ID: ${req.params.id}`);
     const user = await User.findById(req.params.id).populate('referrals', 'phone email').select('+referralBonus +referralBonusStatus +strikeCount +strikeStars +lastPaymentDate +lastStrikeCollectionDate +hasPendingBonusVoucher');
     if (!user) {
+      console.error(`User with ID ${req.params.id} not found in /users/:id endpoint.`);
       return res.status(404).json({ success: false, message: 'User not found' });
     }
+    // Ensure all expected fields are present, even if null/undefined in DB
+    const userObject = user.toObject({ virtuals: true });
+    userObject.referralBonus = userObject.referralBonus || 0;
+    userObject.referralBonusStatus = userObject.referralBonusStatus || 'N/A';
+    userObject.strikeCount = userObject.strikeCount || 0;
+    userObject.strikeStars = userObject.strikeStars || 0;
+    userObject.lastPaymentDate = userObject.lastPaymentDate || null;
+    userObject.lastStrikeCollectionDate = userObject.lastStrikeCollectionDate || null;
+    userObject.hasPendingBonusVoucher = userObject.hasPendingBonusVoucher || false;
+
+    console.log('Successfully fetched user profile:', userObject.email);
     res.json({ success: true, user: userObject });
   } catch (error) {
     console.error('Error fetching user:', error);
