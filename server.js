@@ -1806,7 +1806,7 @@ app.get('/users/:id', authMiddleware, async (req, res) => {
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
-    res.json({ success: true, user });
+    res.json({ success: true, user: user.toObject({ virtuals: true }) });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch user' });
   }
