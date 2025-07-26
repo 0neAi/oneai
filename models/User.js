@@ -34,6 +34,11 @@ const userSchema = new mongoose.Schema({
     required: true,
     minlength: [8, 'Password must be at least 8 characters']
   },
+  referredBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
+  },
   referralCode: { type: String, unique: true, sparse: true },
   referralCommissionPercentage: { type: Number, default: 0 },
   strikeCount: { type: Number, default: 0 },
