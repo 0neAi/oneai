@@ -482,10 +482,10 @@
           if (!validateResponse.ok) {
             // Existing error handling for non-OK responses
             if (validateData.message === 'Authentication failed: User not approved') {
-                window.location.href = 'waiting-for-approval.html';
+                // window.location.href = 'waiting-for-approval.html';
             } else {
                 localStorage.clear(); // Clear local storage on invalid token or other errors
-                window.location.href = 'index.html';
+                // window.location.href = 'index.html';
             }
             return;
           }
@@ -510,7 +510,7 @@
         } catch (error) {
           console.error('Error checking user approval status:', error);
           localStorage.clear(); // Clear local storage on any error during initial check 
-          window.location.href = 'index.html';
+          // window.location.href = 'index.html';
         }
       })();
     </script>
@@ -1023,7 +1023,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const userID = localStorage.getItem('userID');
         
         if (!authToken || !userID) {
-            window.location.href = 'index.html';
+            // window.location.href = 'index.html';
             return;
         }
 
@@ -1034,7 +1034,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error('Initialization error:', error);
         showError('Failed to load dashboard data');
         setTimeout(() => {
-            window.location.href = 'index.html';
+            // window.location.href = 'index.html';
         }, 3000);
     } finally {
         loadingOverlay.style.display = 'none';
