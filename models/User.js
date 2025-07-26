@@ -47,6 +47,7 @@ const userSchema = new mongoose.Schema({
   lastStrikeCollectionDate: { type: Date },
   hasPendingBonusVoucher: { type: Boolean, default: false },
   pushSubscription: { type: Object },
+  isApproved: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 }, {
