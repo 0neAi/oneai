@@ -93,10 +93,23 @@
         }
         
         .referral-section {
-            background: white;
+            background: #2a2a2a; /* Darker background for contrast */
             padding: 2rem;
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            color: #f8f8f8; /* Light text color */
+        }
+        .referral-table th, .referral-table td {
+            color: #f8f8f8; /* Ensure text in table is light */
+        }
+        .referral-table thead th {
+            background-color: #3a3a3a; /* Slightly lighter dark background for header */
+        }
+        .referral-table tr {
+            border-bottom: 1px solid #444; /* Darker border for rows */
+        }
+        .referral-table td:before {
+            color: #bbb; /* Label color for mobile view */
         }
         
         .referral-table table {
@@ -159,6 +172,119 @@
             display: inline-block;
             margin-top: 1rem;
         }
+
+        /* New styles for avatar and strike bonus */
+        .user-profile-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #2a2a2a;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+            color: #f8f8f8;
+        }
+
+        .avatar-container {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        #userAvatar {
+            border-radius: 50%;
+            border: 3px solid #1cb495;
+            background-color: #333;
+        }
+
+        #userEmailDisplay {
+            margin-top: 0.5rem;
+            font-size: 1.2rem;
+            color: #1cb495;
+        }
+
+        .strike-bonus-section {
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        .strike-progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #444;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 1rem auto;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: #1cb495;
+            width: 0%;
+            border-radius: 10px;
+            transition: width 0.5s ease-in-out;
+        }
+
+        .strike-actions button {
+            margin: 0.5rem;
+            padding: 0.8rem 1.5rem;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+
+        .strike-actions .primary {
+            background-color: #4e73df;
+            color: white;
+        }
+
+        .strike-actions .primary:hover {
+            background-color: #2a4cb2;
+        }
+
+        .strike-actions .success {
+            background-color: #1cc88a;
+            color: white;
+        }
+
+        .strike-actions .success:hover {
+            background-color: #17a2b8;
+        }
+
+        .strike-actions .button {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .strike-actions .button:hover {
+            background-color: #5a5c69;
+        }
+
+        .message {
+            margin-top: 1rem;
+            font-weight: bold;
+        }
+
+        .message.success {
+            color: #1cc88a;
+        }
+
+        .message.error {
+            color: #e74a3b;
+        }
+
+        @media screen and (max-width: 736px) {
+            .user-profile-section {
+                padding: 1rem;
+            }
+            .strike-actions button {
+                width: 100%;
+                margin: 0.5rem 0;
+            }
+        }
     </style>
 </head>
 <body>
@@ -188,6 +314,36 @@
                 <div class="value" id="monthlyCommission">৳0.00</div>
             </div>
         </div>
+
+        <section class="user-profile-section">
+            <div class="avatar-container">
+                <canvas id="userAvatar" width="100" height="100"></canvas>
+                <h3 id="userEmailDisplay"></h3>
+            </div>
+
+            <div class="strike-bonus-section">
+                <h2>Daily Payment Strike Bonus</h2>
+                <div class="strike-progress-bar">
+                    <div class="progress-fill" id="strikeProgressBar"></div>
+                </div>
+                <p>Strike: <span id="strikeCountDisplay">0</span>/5 days</p>
+                <p>Strike Stars: <span id="strikeStarsDisplay">0</span></p>
+                <div class="strike-actions">
+                    <button id="collectStrikeStarBtn" class="button primary">Collect Strike Star</button>
+                    <button id="useStrikeStarBtn" class="button">Use Strike Star</button>
+                    <button id="claimBonusVoucherBtn" class="button success">Claim 80% Bonus Voucher</button>
+                </div>
+                <p id="strikeMessage" class="message"></p>
+            </div>
+        </section>
+
+        <section class="referral-link-section">
+            <h2>Your Referral Link</h2>
+            <div class="referral-link-container">
+                <input type="text" id="referralLink" readonly>
+                <button class="copy-btn" data-target="referralLink"><i class="fas fa-copy"></i> Copy</button>
+            </div>
+        </section>
 
         <section class="voucher-section" id="voucher-section" style="display: none;">
             <h2>Your Vouchers</h2>
@@ -244,6 +400,14 @@
                 document.getElementById('referralBonus').textContent = user.referralBonus;
                 document.getElementById('referralBonusStatus').textContent = user.referralBonusStatus;
 
+                // Display referral link
+                if (user.referralCode) {
+                    const referralLink = `${window.location.origin}/signup.html?referral=${user.referralCode}`;
+                    document.getElementById('referralLink').value = referralLink;
+                } else {
+                    document.getElementById('referralLink').value = 'No referral code available';
+                }
+
                 const referralList = document.getElementById('referralList');
                 referralList.innerHTML = ''; // Clear existing content
                 user.referrals.forEach(referral => {
@@ -296,11 +460,176 @@
                     document.getElementById('monthlyCommission').textContent = `৳${commissionData.monthlyCommission.toFixed(2)}`;
                 }
 
-            } catch (error) {
-                console.error('Error fetching profile:', error);
-                alert('Failed to load your profile. Please try again.');
-            }
-        });
+                // Avatar Generation
+                const canvas = document.getElementById('userAvatar');
+                const ctx = canvas.getContext('2d');
+                const emailHash = user.email.split('').reduce((acc, char) => char.charCodeAt(0) + ((acc << 5) - acc), 0);
+                const color = `hsl(${emailHash % 360}, 70%, 50%)`;
+                const initials = user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) : user.email.substring(0, 2).toUpperCase();
+
+                ctx.fillStyle = color;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.font = 'bold 40px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = 'white';
+                ctx.fillText(initials, canvas.width / 2, canvas.height / 2);
+                document.getElementById('userEmailDisplay').textContent = user.email;
+
+                // Strike Bonus Logic
+                const updateStrikeUI = (userData) => {
+                    document.getElementById('strikeCountDisplay').textContent = userData.strikeCount || 0;
+                    document.getElementById('strikeStarsDisplay').textContent = userData.strikeStars || 0;
+                    const progressBar = document.getElementById('strikeProgressBar');
+                    const progress = ((userData.strikeCount || 0) / 5) * 100;
+                    progressBar.style.width = `${progress}%`;
+
+                    const collectBtn = document.getElementById('collectStrikeStarBtn');
+                    const useStarBtn = document.getElementById('useStrikeStarBtn');
+                    const claimBtn = document.getElementById('claimBonusVoucherBtn');
+                    const strikeMessage = document.getElementById('strikeMessage');
+
+                    // Reset button states
+                    collectBtn.style.display = 'block';
+                    useStarBtn.style.display = 'block';
+                    claimBtn.style.display = 'none';
+                    strikeMessage.textContent = '';
+                    strikeMessage.className = 'message';
+
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+
+                    // Logic for Collect Strike Star button
+                    if (userData.lastStrikeCollectionDate) {
+                        const lastCollectionDay = new Date(userData.lastStrikeCollectionDate);
+                        lastCollectionDay.setHours(0, 0, 0, 0);
+                        if (today.getTime() === lastCollectionDay.getTime()) {
+                            collectBtn.disabled = true;
+                            collectBtn.textContent = 'Collected Today';
+                        } else {
+                            collectBtn.disabled = false;
+                            collectBtn.textContent = 'Collect Strike Star';
+                        }
+                    } else {
+                        collectBtn.disabled = false;
+                        collectBtn.textContent = 'Collect Strike Star';
+                    }
+
+                    // Logic for Claim Bonus Voucher button
+                    if (userData.hasPendingBonusVoucher) {
+                        claimBtn.style.display = 'block';
+                        strikeMessage.textContent = 'You have a pending 80% bonus voucher to claim!';
+                        strikeMessage.classList.add('success');
+                    } else {
+                        claimBtn.style.display = 'none';
+                    }
+
+                    // Logic for Use Strike Star button
+                    if ((userData.strikeStars || 0) > 0 && (userData.strikeCount || 0) < 5) {
+                        useStarBtn.disabled = false;
+                    } else {
+                        useStarBtn.disabled = true;
+                    }
+
+                    // Display current streak status
+                    if ((userData.strikeCount || 0) < 5 && !userData.hasPendingBonusVoucher) {
+                        strikeMessage.textContent = `Keep the streak going! ${5 - (userData.strikeCount || 0)} days left for bonus.`;
+                        strikeMessage.classList.add('info');
+                    }
+                };
+
+                updateStrikeUI(user);
+
+                // Event Listeners for Strike Bonus Buttons
+                document.getElementById('collectStrikeStarBtn').addEventListener('click', async () => {
+                    try {
+                        const response = await fetch(`https://oneai-wjox.onrender.com/users/${userID}/collect-strike-star`, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'X-User-ID': userID
+                            }
+                        });
+                        const data = await response.json();
+                        if (data.success) {
+                            alert(data.message);
+                            updateStrikeUI(data.user);
+                        } else {
+                            alert(data.message);
+                        }
+                    } catch (error) {
+                        console.error('Error collecting strike star:', error);
+                        alert('Failed to collect strike star.');
+                    }
+                });
+
+                document.getElementById('useStrikeStarBtn').addEventListener('click', async () => {
+                    if (!confirm('Are you sure you want to use a strike star to maintain your streak?')) {
+                        return;
+                    }
+                    try {
+                        const response = await fetch(`https://oneai-wjox.onrender.com/users/${userID}/use-strike-star`, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'X-User-ID': userID
+                            }
+                        });
+                        const data = await response.json();
+                        if (data.success) {
+                            alert(data.message);
+                            updateStrikeUI(data.user);
+                        } else {
+                            alert(data.message);
+                        }
+                    } catch (error) {
+                        console.error('Error using strike star:', error);
+                        alert('Failed to use strike star.');
+                    }
+                });
+
+                document.getElementById('claimBonusVoucherBtn').addEventListener('click', async () => {
+                    if (!confirm('Are you sure you want to claim your 80% bonus voucher?')) {
+                        return;
+                    }
+                    try {
+                        const response = await fetch(`https://oneai-wjox.onrender.com/users/${userID}/claim-bonus-voucher`, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'X-User-ID': userID
+                            }
+                        });
+                        const data = await response.json();
+                        if (data.success) {
+                            alert(data.message + ' Your voucher code is: ' + data.voucherCode);
+                            updateStrikeUI(data.user);
+                            // Optionally refresh vouchers section
+                            // window.location.reload(); 
+                        } else {
+                            alert(data.message);
+                        }
+                    } catch (error) {
+                        console.error('Error claiming bonus voucher:', error);
+                        alert('Failed to claim bonus voucher.');
+                    }
+                });
+
+                // Add copy button functionality
+                document.querySelectorAll('.copy-btn').forEach(button => {
+                    button.addEventListener('click', (event) => {
+                        const targetId = event.currentTarget.dataset.target;
+                        const element = document.getElementById(targetId);
+                        if (element) {
+                            navigator.clipboard.writeText(element.value || element.textContent).then(() => {
+                                alert('Copied to clipboard!');
+                            }).catch(err => {
+                                console.error('Failed to copy: ', err);
+                                alert('Failed to copy to clipboard.');
+                            });
+                        }
+                    });
+                });
     </script>
 </body>
 </html>
