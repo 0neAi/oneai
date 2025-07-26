@@ -934,7 +934,7 @@ app.post('/admin/users/:id/approve', adminAuth, async (req, res) => {
         await referrer.save();
         console.log('Referrer updated and saved.');
       } else {
-        console.log('User already in referrers list.');
+        console.log('User already in referrer's list.');
       }
     } else {
       console.log('No referrer found for user.');
@@ -1748,7 +1748,7 @@ app.get('/admin/users/:id/details', adminAuth, async (req, res) => {
     console.log(`Fetching details for user ID: ${req.params.id}`);
     const user = await User.findById(req.params.id)
       .populate('referredBy', 'name email')
-      .populate('referrals', 'name email')
+      .populate('referrals', 'name email phone') // Added phone to the populated fields
       .select('-password');
 
     if (!user) {
