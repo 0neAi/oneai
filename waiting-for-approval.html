@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Waiting for Approval</title>
+  <link rel="stylesheet" href="assets/css/main.css">
+</head>
+<body>
+  <div id="wrapper">
+    <section id="main" class="wrapper">
+      <div class="inner">
+        <h1 class="major">Waiting for Approval</h1>
+        <p>Your account is currently pending approval from an administrator. Please check back later.</p>
+        <div class="loading-spinner"></div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const userID = localStorage.getItem('userID');
+    const authToken = localStorage.getItem('authToken');
+
+    if (!userID || !authToken) {
+      window.location.href = 'index.html';
+    }
+
+    const ws = new WebSocket('wss://oneai-wjox.onrender.com');
+
+    ws.onopen = () => {
+      console.log('WebSocket connected');
+      // Send a message to the server to identify the user
+      ws.send(JSON.stringify({ type: 'register', userID }));
+    };
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === 'account-approved' && data.userID === userID) {
+        alert('Your account has been approved! You will now be redirected to the login page.');
+        window.location.href = 'index.html';
+      }
+    };
+
+    ws.onclose = () => {
+      console.log('WebSocket disconnected');
+    };
+
+    ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    };
+  </script>
+</body>
+</html>
