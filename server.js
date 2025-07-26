@@ -239,7 +239,7 @@ const authMiddleware = async (req, res, next) => {
   } catch (error) {
     console.error('Auth Error: Unexpected error', error.message);
     res.status(500).json({ success: false, message: 'Authentication failed: Internal server error' });
-  }}
+  }
 };
 
 // ======================
@@ -945,7 +945,7 @@ app.post('/admin/users/:id/approve', adminAuth, async (req, res) => {
         await referrer.save();
         console.log('Referrer updated and saved.');
       } else {
-        console.log('User already in referrers list.');
+        console.log('User already in referrer's list.');
       }
     } else {
       console.log('No referrer found for user.');
