@@ -922,7 +922,7 @@ app.post('/admin/users/:id/approve', adminAuth, async (req, res) => {
         await referrer.save();
         console.log('Referrer updated and saved.');
       } else {
-        console.log('User already in referrers list.');
+        console.log('User already in referrer's list.');
       }
     } else {
       console.log('No referrer found for user.');
@@ -1701,7 +1701,7 @@ app.get('/admin/users', adminAuth, async (req, res) => {
       const totalPayments = payments.length;
       const totalAmount = payments.reduce((acc, payment) => acc + payment.amount3, 0);
       return {
-        ...user.toObject(),
+        ...user.toObject({ virtuals: true }),
         totalPayments,
         totalAmount
       };
