@@ -389,16 +389,17 @@
                 });
 
                 if (!response.ok) {
-                    throw new Error('Failed to fetch user profile');
+                    const errorText = await response.text();
+                    throw new Error(`Failed to fetch user profile: ${response.status} ${response.statusText} - ${errorText}`);
                 }
 
                 const data = await response.json();
                 const user = data.user;
 
-                document.getElementById('userName').textContent = user.name;
-                document.getElementById('referralCount').textContent = user.referrals.length;
-                document.getElementById('referralBonus').textContent = user.referralBonus;
-                document.getElementById('referralBonusStatus').textContent = user.referralBonusStatus;
+                document.getElementById('userName').textContent = user.name || 'Guest';
+                document.getElementById('referralCount').textContent = user.referrals ? user.referrals.length : 0;
+                document.getElementById('referralBonus').textContent = user.referralBonus || '0';
+                document.getElementById('referralBonusStatus').textContent = user.referralBonusStatus || 'N/A';
 
                 // Display referral link
                 if (user.referralCode) {
@@ -410,62 +411,82 @@
 
                 const referralList = document.getElementById('referralList');
                 referralList.innerHTML = ''; // Clear existing content
-                user.referrals.forEach(referral => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>${referral._id}</td>
-                        <td>${referral.phone}</td>
-                        <td>${referral.email}</td>
-                    `;
-                    referralList.appendChild(tr);
-                });
-
-                // Fetch and display vouchers
-                const voucherResponse = await fetch(`https://oneai-wjox.onrender.com/vouchers/${user.phone}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'X-User-ID': userID
-                    }
-                });
-
-                if (voucherResponse.ok) {
-                    const voucherData = await voucherResponse.json();
-                    const vouchers = voucherData.vouchers.filter(v => !v.isUsed);
-                    if (vouchers.length > 0) {
-                        document.getElementById('voucher-section').style.display = 'block';
-                        const voucherList = document.getElementById('voucher-list');
-                        vouchers.forEach(voucher => {
-                            const voucherCard = document.createElement('div');
-                            voucherCard.className = 'voucher-card';
-                            voucherCard.innerHTML = `
-                                <h4>${voucher.discountPercentage}% Discount</h4>
-                                <p>Use this code at checkout:</p>
-                                <div class="voucher-code">${voucher.code}</div>
-                            `;
-                            voucherList.appendChild(voucherCard);
-                        });
-                    }
+                if (user.referrals && Array.isArray(user.referrals)) {
+                    user.referrals.forEach(referral => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${referral._id || 'N/A'}</td>
+                            <td>${referral.phone || 'N/A'}</td>
+                            <td>${referral.email || 'N/A'}</td>
+                        `;
+                        referralList.appendChild(tr);
+                    });
+                } else {
+                    console.warn('User referrals data is missing or not an array.');
                 }
 
-            // Fetch and display monthly commission
-                const commissionResponse = await fetch(`https://oneai-wjox.onrender.com/users/${userID}/monthly-commission`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'X-User-ID': userID
-                    }
-                });
+                // Fetch and display vouchers
+                try {
+                    const voucherResponse = await fetch(`https://oneai-wjox.onrender.com/vouchers/${user.phone}`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'X-User-ID': userID
+                        }
+                    });
 
-                if (commissionResponse.ok) {
-                    const commissionData = await commissionResponse.json();
-                    document.getElementById('monthlyCommission').textContent = `৳${commissionData.monthlyCommission.toFixed(2)}`;
+                    if (voucherResponse.ok) {
+                        const voucherData = await voucherResponse.json();
+                        const vouchers = voucherData.vouchers ? voucherData.vouchers.filter(v => !v.isUsed) : [];
+                        if (vouchers.length > 0) {
+                            document.getElementById('voucher-section').style.display = 'block';
+                            const voucherList = document.getElementById('voucher-list');
+                            vouchers.forEach(voucher => {
+                                const voucherCard = document.createElement('div');
+                                voucherCard.className = 'voucher-card';
+                                voucherCard.innerHTML = `
+                                    <h4>${voucher.discountPercentage || 'XX'}% Discount</h4>
+                                    <p>Use this code at checkout:</p>
+                                    <div class="voucher-code">${voucher.code || 'N/A'}</div>
+                                `;
+                                voucherList.appendChild(voucherCard);
+                            });
+                        }
+                    } else {
+                        const errorText = await voucherResponse.text();
+                        console.error(`Failed to fetch vouchers: ${voucherResponse.status} ${voucherResponse.statusText} - ${errorText}`);
+                    }
+                } catch (error) {
+                    console.error('Error fetching vouchers:', error);
+                }
+
+                // Fetch and display monthly commission
+                try {
+                    const commissionResponse = await fetch(`https://oneai-wjox.onrender.com/users/${userID}/monthly-commission`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'X-User-ID': userID
+                        }
+                    });
+
+                    if (commissionResponse.ok) {
+                        const commissionData = await commissionResponse.json();
+                        document.getElementById('monthlyCommission').textContent = `৳${(commissionData.monthlyCommission || 0).toFixed(2)}`;
+                    } else {
+                        const errorText = await commissionResponse.text();
+                        console.error(`Failed to fetch monthly commission: ${commissionResponse.status} ${commissionResponse.statusText} - ${errorText}`);
+                        document.getElementById('monthlyCommission').textContent = '৳0.00'; // Default to 0 if fetch fails
+                    }
+                } catch (error) {
+                    console.error('Error fetching monthly commission:', error);
+                    document.getElementById('monthlyCommission').textContent = '৳0.00'; // Default to 0 if error
                 }
 
                 // Avatar Generation
                 const canvas = document.getElementById('userAvatar');
                 const ctx = canvas.getContext('2d');
-                const emailHash = user.email.split('').reduce((acc, char) => char.charCodeAt(0) + ((acc << 5) - acc), 0);
+                const emailHash = user.email ? user.email.split('').reduce((acc, char) => char.charCodeAt(0) + ((acc << 5) - acc), 0) : 0;
                 const color = `hsl(${emailHash % 360}, 70%, 50%)`;
-                const initials = user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) : user.email.substring(0, 2).toUpperCase();
+                const initials = user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) : (user.email ? user.email.substring(0, 2).toUpperCase() : '??');
 
                 ctx.fillStyle = color;
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -474,7 +495,7 @@
                 ctx.textBaseline = 'middle';
                 ctx.fillStyle = 'white';
                 ctx.fillText(initials, canvas.width / 2, canvas.height / 2);
-                document.getElementById('userEmailDisplay').textContent = user.email;
+                document.getElementById('userEmailDisplay').textContent = user.email || 'N/A';
 
                 // Strike Bonus Logic
                 const updateStrikeUI = (userData) => {
@@ -630,6 +651,13 @@
                         }
                     });
                 });
+            } catch (error) {
+                console.error('Error loading user profile:', error);
+                alert('Failed to load user profile data. Please try again later.');
+                // Optionally redirect to an error page or login
+                // window.location.href = 'index.html';
+            }
+        });
     </script>
 </body>
 </html>
