@@ -48,6 +48,8 @@ const userSchema = new mongoose.Schema({
   hasPendingBonusVoucher: { type: Boolean, default: false },
   pushSubscription: { type: Object },
   isApproved: { type: Boolean, default: false },
+  referralBonus: { type: Number, default: 0 },
+  referralBonusStatus: { type: String, default: 'pending' },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 }, {
