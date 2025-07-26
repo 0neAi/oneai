@@ -478,6 +478,7 @@
           });
 
           if (!validateResponse.ok) {
+            localStorage.clear(); // Clear local storage on invalid token
             window.location.href = 'index.html';
             return;
           }
@@ -494,10 +495,11 @@
             if (!data.user.isApproved) {
               window.location.href = 'waiting-for-approval.html';
             }
+          } else if (userResponse.status === 403) {
+            window.location.href = 'waiting-for-approval.html';
           } else {
-            // If user data fetch fails, log error and show message, but don't redirect
-            console.error('Failed to fetch user details for approval check.');
-            showError('Failed to load user details. Please refresh.');
+            localStorage.clear(); // Clear local storage for other non-403 errors
+            window.location.href = 'index.html';
           }
         } catch (error) {
           console.error('Error checking user approval status:', error);
