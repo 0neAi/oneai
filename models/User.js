@@ -42,9 +42,12 @@ const userSchema = new mongoose.Schema({
   referralCode: { type: String, unique: true, sparse: true },
   referralCommissionPercentage: { type: Number, default: 0 },
   strikeCount: { type: Number, default: 0 },
-  strikeStars: { type: Number, default: 0 },
+  strikeStarsFromPayments: { type: Number, default: 0 }, // Renamed from strikeStars
+  normalStars: { type: Number, default: 0, max: 10 },
   lastPaymentDate: { type: Date },
-  lastStrikeCollectionDate: { type: Date },
+  lastStrikeStarFromPaymentDate: { type: Date }, // New field to track last payment-based strike star
+  lastNormalStarCollectionDate: { type: Date }, // New field for daily check-in
+  lastNormalStarConversionDate: { type: Date }, // New field for normal star conversion
   hasPendingBonusVoucher: { type: Boolean, default: false },
   pushSubscription: { type: Object },
   isApproved: { type: Boolean, default: false },
