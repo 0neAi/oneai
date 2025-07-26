@@ -477,15 +477,23 @@
             }
           });
 
+          const validateData = await validateResponse.json(); // Parse JSON here
+
           if (!validateResponse.ok) {
-            const errorData = await validateResponse.json();
-            if (errorData.message === 'Authentication failed: User not approved') {
+            // Existing error handling for non-OK responses
+            if (validateData.message === 'Authentication failed: User not approved') {
                 window.location.href = 'waiting-for-approval.html';
             } else {
                 localStorage.clear(); // Clear local storage on invalid token or other errors
                 window.location.href = 'index.html';
             }
             return;
+          }
+
+          // New check for isAdminApproved when response is OK
+          if (validateData.isAdminApproved === false) {
+              window.location.href = 'waiting-for-approval.html';
+              return;
           }
 
           const userResponse = await fetch(`https://oneai-wjox.onrender.com/users/${userID}`, {
@@ -496,8 +504,8 @@
           });
 
           if (!userResponse.ok) {
-            localStorage.clear(); // Clear local storage for other non-ok responses
-            window.location.href = 'index.html';
+            console.error('Failed to fetch user details after successful validation.');
+            // Do not redirect or clear local storage here. The user is already authenticated and approved.
           }
         } catch (error) {
           console.error('Error checking user approval status:', error);
