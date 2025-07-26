@@ -233,34 +233,44 @@
             border: none;
             cursor: pointer;
             font-weight: bold;
-            transition: background-color 0.3s ease;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center; /* Ensure text is centered horizontally */
         }
 
         .strike-actions .primary {
-            background-color: #4e73df;
+            background: linear-gradient(45deg, #6a11cb 0%, #2575fc 100%);
             color: white;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
 
         .strike-actions .primary:hover {
-            background-color: #2a4cb2;
+            background: linear-gradient(45deg, #2575fc 0%, #6a11cb 100%);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
         }
 
         .strike-actions .success {
-            background-color: #1cc88a;
+            background: linear-gradient(45deg, #1cc88a 0%, #17a2b8 100%);
             color: white;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
 
         .strike-actions .success:hover {
-            background-color: #17a2b8;
+            background: linear-gradient(45deg, #17a2b8 0%, #1cc88a 100%);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
         }
 
         .strike-actions .button {
-            background-color: #6c757d;
+            background: linear-gradient(45deg, #6c757d 0%, #343a40 100%);
             color: white;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
 
         .strike-actions .button:hover {
-            background-color: #5a5c69;
+            background: linear-gradient(45deg, #343a40 0%, #6c757d 100%);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
         }
 
         .message {
@@ -403,7 +413,8 @@
 
                 // Display referral link
                 if (user.referralCode) {
-                    const referralLink = `${window.location.origin}/signup.html?referral=${user.referralCode}`;
+                    const baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
+                    const referralLink = `${baseUrl}signup.html?referral=${user.referralCode}`;
                     document.getElementById('referralLink').value = referralLink;
                 } else {
                     document.getElementById('referralLink').value = 'No referral code available';
