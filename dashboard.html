@@ -495,7 +495,9 @@
               window.location.href = 'waiting-for-approval.html';
             }
           } else {
-            window.location.href = 'index.html';
+            // If user data fetch fails, log error and show message, but don't redirect
+            console.error('Failed to fetch user details for approval check.');
+            showError('Failed to load user details. Please refresh.');
           }
         } catch (error) {
           console.error('Error checking user approval status:', error);
