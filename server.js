@@ -60,9 +60,7 @@ app.use(helmet({
 }));
 
 app.use(cors({
-origin: process.env.NODE_ENV === 'production'
-  ? ['https://0neai.github.io', 'https://oneai-wjox.onrender.com', 'https://0neai.github.io/oneai']
-  : '*',
+origin: ['https://0neai.github.io', 'https://oneai-wjox.onrender.com', 'https://0neai.github.io/oneai'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-User-ID'],
   credentials: true
@@ -234,7 +232,7 @@ const authMiddleware = async (req, res, next) => {
 // ======================
 // Core Routes
 // ======================
-app.options('*', cors());
+
 
 ('/', (req, res) => res.status(200).json({ 
   success: true, 
@@ -442,10 +440,11 @@ app.post('/payment', authMiddleware, async (req, res) => {
     }
 
     // Validate final amount
-    if (amount3 < 0 || amount3 > 30000) {
+    const minAmount = voucherCode ? 0 : 100; // 0 if voucher, 100 otherwise
+    if (amount3 < minAmount) {
       return res.status(400).json({
         success: false,
-        message: 'Final amount must be between 0 and 30,000'
+        message: `Final amount must be at least ${minAmount}`
       });
     }
 
@@ -459,8 +458,35 @@ app.post('/payment', authMiddleware, async (req, res) => {
 
     const savedPayment = await payment.save();
 
-    // Check for referral bonus
+    // Update user's strike bonus
     const user = await User.findById(req.user._id);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (user.lastPaymentDate) {
+      const lastPaymentDay = new Date(user.lastPaymentDate);
+      lastPaymentDay.setHours(0, 0, 0, 0);
+
+      const diffTime = Math.abs(today.getTime() - lastPaymentDay.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays === 1) { // Payment made on consecutive day
+        user.strikeCount = (user.strikeCount || 0) + 1;
+      } else if (diffDays > 1) { // Gap in payment, reset strike unless strike star is used
+        // This logic will be handled by a separate endpoint for using strike stars
+        user.strikeCount = 1; // Start new streak
+      }
+    } else {
+      user.strikeCount = 1; // First payment, start streak
+    }
+    user.lastPaymentDate = new Date();
+
+    if (user.strikeCount >= 5) {
+      user.hasPendingBonusVoucher = true;
+    }
+    await user.save();
+
+    // Check for referral bonus
     if (user.referredBy) {
       const referrer = await User.findById(user.referredBy);
       if (referrer) {
@@ -896,13 +922,13 @@ app.post('/admin/users/:id/approve', adminAuth, async (req, res) => {
         await referrer.save();
         console.log('Referrer updated and saved.');
       } else {
-        console.log('User already in referrers list.');
+        console.log('User already in referrer's list.');
       }
     } else {
       console.log('No referrer found for user.');
     }
 
-    res.json({ success: true, user: user.toObject() });
+    res.json({ success: true, user: user.toObject({ virtuals: true }) });
   } catch (error) {
     console.error('Error approving user:', error);
     res.status(500).json({ success: false, message: error.message || 'Failed to approve user' });
@@ -915,6 +941,33 @@ app.delete('/admin/users/:id', adminAuth, async (req, res) => {
     res.json({ success: true, message: 'User deleted' });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to delete user' });
+  }
+});
+
+app.delete('/admin/merchant-issues/:id', adminAuth, async (req, res) => {
+  try {
+    await MerchantIssue.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: 'Merchant issue deleted' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to delete merchant issue' });
+  }
+});
+
+app.delete('/admin/penalty-reports/:id', adminAuth, async (req, res) => {
+  try {
+    await PenaltyReport.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: 'Penalty report deleted' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to delete penalty report' });
+  }
+});
+
+app.delete('/admin/payments/:id', adminAuth, async (req, res) => {
+  try {
+    await Payment.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: 'Payment deleted' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to delete payment' });
   }
 });
 
@@ -939,7 +992,7 @@ app.post('/admin/users/:id/generate-referral-code', adminAuth, async (req, res) 
     await user.save();
     console.log('User saved with new referral code.');
 
-    res.json({ success: true, user: user.toObject() });
+    res.json({ success: true, user: user.toObject({ virtuals: true }) });
   } catch (error) {
     console.error('Error generating referral code for ID', req.params.id, ':', error);
     res.status(500).json({ success: false, message: error.message || 'Failed to generate referral code' });
@@ -1465,24 +1518,7 @@ app.get('/admin/exists', async (req, res) => {
     res.json({ exists: count > 0 });
 });
 
-// Admin login
-app.post('/admin/login', async (req, res) => {
-    try {
-        const admin = await Admin.findOne({ email: req.body.email });
-        if (!admin) return res.status(401).json({ message: 'Admin not found' });
-        
-        const valid = await admin.comparePassword(req.body.password);
-        if (!valid) return res.status(401).json({ message: 'Invalid password' });
-        
-        const token = jwt.sign({ adminId: admin._id }, process.env.JWT_SECRET, {
-            expiresIn: '1h'
-        });
-        
-        res.json({ token });
-    } catch (error) {
-        res.status(500).json({ message: 'Login failed' });
-    }
-});
+
 
 // Protected routes
 app.get('/users', adminAuth, async (req, res) => {
@@ -1799,6 +1835,117 @@ app.get('/users/:id/monthly-commission', authMiddleware, async (req, res) => {
         res.json({ success: true, monthlyCommission: totalCommission });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Failed to calculate monthly commission' });
+    }
+});
+
+app.post('/users/:id/collect-strike-star', authMiddleware, async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (user.lastStrikeCollectionDate) {
+            const lastCollectionDay = new Date(user.lastStrikeCollectionDate);
+            lastCollectionDay.setHours(0, 0, 0, 0);
+            if (today.getTime() === lastCollectionDay.getTime()) {
+                return res.status(400).json({ success: false, message: 'Strike star already collected today' });
+            }
+        }
+
+        user.strikeStars = (user.strikeStars || 0) + 1;
+        user.lastStrikeCollectionDate = new Date();
+        await user.save();
+
+        res.json({ success: true, message: 'Strike star collected!', user: user.toObject({ virtuals: true }) });
+    } catch (error) {
+        console.error('Error collecting strike star:', error);
+        res.status(500).json({ success: false, message: 'Failed to collect strike star' });
+    }
+});
+
+app.post('/users/:id/claim-bonus-voucher', authMiddleware, async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        if (!user.hasPendingBonusVoucher) {
+            return res.status(400).json({ success: false, message: 'No pending bonus voucher to claim' });
+        }
+
+        const voucherCode = `BONUS-80-${user._id.toString().slice(-4)}`;
+        const voucher = new Voucher({
+            phone: user.phone,
+            code: voucherCode,
+            discountPercentage: 80,
+            isUsed: false,
+            validUntil: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Valid for 7 days
+            report: user._id,
+            reportModel: 'User'
+        });
+        await voucher.save();
+
+        user.hasPendingBonusVoucher = false;
+        user.strikeCount = 0;
+        user.strikeStars = 0;
+        await user.save();
+
+        res.json({ success: true, message: 'Bonus voucher claimed!', voucherCode, user: user.toObject({ virtuals: true }) });
+    } catch (error) {
+        console.error('Error claiming bonus voucher:', error);
+        res.status(500).json({ success: false, message: 'Failed to claim bonus voucher' });
+    }
+});
+
+app.post('/users/:id/use-strike-star', authMiddleware, async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        if ((user.strikeStars || 0) < 1) {
+            return res.status(400).json({ success: false, message: 'No strike stars available' });
+        }
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (user.lastPaymentDate) {
+            const lastPaymentDay = new Date(user.lastPaymentDate);
+            lastPaymentDay.setHours(0, 0, 0, 0);
+
+            const diffTime = Math.abs(today.getTime() - lastPaymentDay.getTime());
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays === 1) {
+                return res.status(400).json({ success: false, message: 'Streak is already active. No need to use a strike star.' });
+            } else if (diffDays > 1) {
+                // Use strike star to bridge the gap
+                user.strikeStars -= 1;
+                user.strikeCount = (user.strikeCount || 0) + 1; // Increment streak as if payment was made
+                user.lastPaymentDate = new Date(lastPaymentDay.getTime() + (1000 * 60 * 60 * 24)); // Set last payment to yesterday
+            } else { // Same day, or future day (shouldn't happen)
+                return res.status(400).json({ success: false, message: 'Invalid state for using strike star.' });
+            }
+        } else {
+            // If no last payment date, start a streak with a star
+            user.strikeStars -= 1;
+            user.strikeCount = 1;
+            user.lastPaymentDate = new Date();
+        }
+        
+        await user.save();
+
+        res.json({ success: true, message: 'Strike star used successfully!', user: user.toObject({ virtuals: true }) });
+    } catch (error) {
+        console.error('Error using strike star:', error);
+        res.status(500).json({ success: false, message: 'Failed to use strike star' });
     }
 });
 
