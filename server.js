@@ -454,22 +454,25 @@ app.post('/payment', authMiddleware, async (req, res) => {
 
     let serverCalculatedAmount3 = calculateRawTotalChargeServer(consignments);
 
-    // Apply discount from client if provided
-    if (discount > 0) {
-        serverCalculatedAmount3 *= (1 - discount / 100);
-    }
-
-    // Apply voucher discount if provided
+    let finalDiscountPercentage = 0;
     const { voucherCode } = req.body;
+
+    // Prioritize voucher discount
     if (voucherCode) {
         const voucher = await Voucher.findOne({ code: voucherCode, isUsed: false });
         if (voucher) {
-            serverCalculatedAmount3 *= (1 - voucher.discountPercentage / 100);
+            finalDiscountPercentage = voucher.discountPercentage;
             voucher.isUsed = true;
             await voucher.save();
         } else {
             return res.status(400).json({ success: false, message: 'Invalid or expired voucher' });
         }
+    } else if (discount > 0) { // Use client-provided discount if no voucher
+        finalDiscountPercentage = discount;
+    }
+
+    if (finalDiscountPercentage > 0) {
+        serverCalculatedAmount3 *= (1 - finalDiscountPercentage / 100);
     }
 
     // Validate final amount against client-provided amount3
