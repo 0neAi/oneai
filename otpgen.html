@@ -526,8 +526,13 @@
       </div>
 
       <div class="form-actions">
-        <button type="submit" class="button primary">কনফার্ম পেমেন্ট</button>
+        <button type="submit" class="button primary" id="submit-payment-button" disabled>কনফার্ম পেমেন্ট</button>
         <button type="button" class="button" onclick="clearForm()">ক্লিয়ার ফর্ম</button>
+      </div>
+
+      <div class="form-group" style="margin-top: 1.5rem;">
+        <input type="checkbox" id="terms-checkbox" name="terms" style="margin-right: 0.5rem;">
+        <label for="terms-checkbox" style="display: inline; font-size: 0.9em; color: #ccc;">আমি উক্ত সার্ভিস গ্রহণের জন্য অনুরোধ করছি এবং এই সকল পরিবর্তনের জন্য সম্পুর্ন দায়ভার আমি গ্রহণ করছি। ওয়ান এ আই ইন্টিলিজেন্স আমার অনুরোধ কৃত পরিবর্তন সমূহের জন্য কোন ভাবেই দায়ী নয়। ভবিষ্যতে কোন ধরণের ইনকোয়েরি তে আমি আমি এর দায়ভার সম্পুর্ণ নিজে বহন করার নিশ্চয়তা দিচ্ছি।</label>
       </div>
     </form>
  <p>আপনার এপ/ওয়েবসাইট লগ আউট হলে কমপক্ষে ২৫ মিনিট লগইন করা থেকে বিরত থাকুন। অনুগ্রহ পূর্বক কিছুক্ষণ অপেক্ষা করুন পেমেন্ট সম্পন্ন হলে আপনার সার্ভিসটি স্বয়ংক্রিয় ভাবে প্রক্রিয়াকরণ শুরু হবে।</p>
@@ -1004,6 +1009,18 @@ ${formData.consignments.map((c, index) => `
 
       // Initial display update
       updatePaymentDisplay();
+
+      // Terms and Conditions Checkbox Logic
+      const termsCheckbox = document.getElementById('terms-checkbox');
+      const submitButton = document.getElementById('submit-payment-button');
+
+      // Set initial state of submit button based on checkbox
+      submitButton.disabled = !termsCheckbox.checked;
+
+      // Add event listener to toggle submit button state
+      termsCheckbox.addEventListener('change', function() {
+        submitButton.disabled = !this.checked;
+      });
     });
 
   </script>
