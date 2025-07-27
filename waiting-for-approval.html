@@ -25,34 +25,27 @@
       window.location.href = 'index.html';
     }
 
-    // Start the loading animation
-    LoadingAnimation.start('Awaiting Admin Approval...');
-
     const ws = new WebSocket('wss://oneai-wjox.onrender.com');
 
     ws.onopen = () => {
       console.log('WebSocket connected');
       ws.send(JSON.stringify({ type: 'register', userID }));
-      LoadingAnimation.setTerminalMessage('> Connection established. Listening for approval status...');
     };
 
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
       if (data.type === 'account-approved' && data.userID === userID) {
-        LoadingAnimation.showSuccessWithButton('Your account has been approved!', () => {
-          window.location.href = 'dashboard.html';
-        });
+        alert('Your account has been approved! Redirecting to dashboard...');
+        window.location.href = 'dashboard.html';
       }
     };
 
     ws.onclose = () => {
       console.log('WebSocket disconnected');
-      LoadingAnimation.setTerminalMessage('> Connection lost. Please refresh the page.');
     };
 
     ws.onerror = (error) => {
       console.error('WebSocket error:', error);
-      LoadingAnimation.setTerminalMessage('> An error occurred. Please refresh the page.');
     };
   </script>
 </body>
