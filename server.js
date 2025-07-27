@@ -410,61 +410,83 @@ app.post('/payment', authMiddleware, async (req, res) => {
     }
 
     // Validate each consignment
-    let amount3 = 0;
-    const validServiceTypes = ['pricecng', 'partial', 'drto', 'delivery', 'return'];
-    const phoneRegex = /^01[3-9]\d{8}$/;
-    
-    for (const consignment of consignments) {
-      // Validate service type
-      if (!validServiceTypes.includes(consignment.serviceType)) {
-        return res.status(400).json({
-          success: false,
-          message: `Invalid service type: ${consignment.serviceType}`
-        });
-      }
+    // Helper function to calculate raw total charge on the server side
+    function calculateRawTotalChargeServer(consignments) {
+      let rawTotalCharge = 0;
+      let freeDeliveryUsed = 0;
+      let freeReturnUsed = 0;
 
-      // Validate customer details
-      if (!consignment.name || !phoneRegex.test(consignment.phone)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid customer details'
-        });
-      }
+      for (const consignment of consignments) {
+        const amount1 = parseFloat(consignment.amount1) || 0;
+        const amount2 = parseFloat(consignment.amount2) || 0;
 
-      // Service-specific validation
-      if (consignment.serviceType === 'pricecng' || consignment.serviceType === 'partial') {
-        if (consignment.amount2 >= consignment.amount1) {
-          return res.status(400).json({
-            success: false,
-            message: 'Updated amount must be less than original amount'
-          });
+        if (consignment.serviceType === 'pricecng') {
+          if (amount1 > 0 && amount2 < amount1) {
+            rawTotalCharge += (amount1 - amount2) / 2;
+          }
+        } else if (consignment.serviceType === 'partial') {
+          rawTotalCharge += 15;
+        } else if (consignment.serviceType === 'drto') {
+          if (amount2 > 99) {
+            rawTotalCharge += 10;
+          } else if (amount2 > 51) {
+            rawTotalCharge += 15;
+          } else if (amount2 > 1) {
+            rawTotalCharge += 25;
+          } else if (amount2 === 0) {
+            rawTotalCharge += 10;
+          }
+        } else if (consignment.serviceType === 'delivery') {
+          if (freeDeliveryUsed < 3) {
+            freeDeliveryUsed++;
+          } else {
+            rawTotalCharge += Math.floor(Math.random() * (10 - 7 + 1)) + 7;
+          }
+        } else if (consignment.serviceType === 'return') {
+          if (freeReturnUsed < 3) {
+            freeReturnUsed++;
+          } else {
+            rawTotalCharge += Math.floor(Math.random() * (10 - 5 + 1)) + 5;
+          }
         }
-        amount3 += (consignment.amount1 - consignment.amount2) / 2;
-      } 
-      else if (consignment.serviceType === 'drto' && consignment.amount2 < 40) {
-        amount3 += 40;
       }
+      return rawTotalCharge;
     }
 
-    // Apply discount
+    let serverCalculatedAmount3 = calculateRawTotalChargeServer(consignments);
+
+    // Apply discount from client if provided
+    if (discount > 0) {
+        serverCalculatedAmount3 *= (1 - discount / 100);
+    }
+
+    // Apply voucher discount if provided
     const { voucherCode } = req.body;
     if (voucherCode) {
         const voucher = await Voucher.findOne({ code: voucherCode, isUsed: false });
         if (voucher) {
-            const discountPercentage = voucher.code.split('-')[1];
-            amount3 *= (1 - discountPercentage / 100);
+            serverCalculatedAmount3 *= (1 - voucher.discountPercentage / 100);
             voucher.isUsed = true;
             await voucher.save();
         } else {
             return res.status(400).json({ success: false, message: 'Invalid or expired voucher' });
         }
-    } else if (discount > 0) {
-      amount3 *= (1 - discount / 100);
     }
 
-    // Validate final amount
+    // Validate final amount against client-provided amount3
+    const clientAmount3 = parseFloat(req.body.amount3);
+    const tolerance = 0.01; // Allow for minor floating point differences
+
+    if (Math.abs(serverCalculatedAmount3 - clientAmount3) > tolerance) {
+        return res.status(400).json({
+            success: false,
+            message: 'Calculated amount mismatch. Please refresh and try again.'
+        });
+    }
+
+    // Validate final amount against minimum
     const minAmount = voucherCode ? 0 : 100; // 0 if voucher, 100 otherwise
-    if (amount3 < minAmount) {
+    if (serverCalculatedAmount3 < minAmount) {
       return res.status(400).json({
         success: false,
         message: `Final amount must be at least ${minAmount}`
@@ -475,7 +497,7 @@ app.post('/payment', authMiddleware, async (req, res) => {
     const payment = new Payment({
       user: req.user._id,
       ...req.body,
-      amount3,
+      amount3: serverCalculatedAmount3, // Use server-calculated amount
       status: 'Pending'
     });
 
