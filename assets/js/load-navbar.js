@@ -245,7 +245,7 @@
     }
 
     if (discountsUsed >= MAX_DAILY_DISCOUNTS) {
-      alert('Daily discount limit reached! You can use 2 discounts per day.');
+      alert('Daily discount limit reached! You can use 3 discounts per day.');
       return false;
     }
     return true;
@@ -277,8 +277,8 @@
     }
     
     // Recalculate total charge if on payment page
-    if (typeof calculateTotalCharge === 'function') {
-      calculateTotalCharge();
+    if (typeof updateAmount3Display === 'function') {
+      updateAmount3Display();
     }
   };
 
