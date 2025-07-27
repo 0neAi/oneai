@@ -632,8 +632,10 @@
         updateFreeConsignmentDisplay();
 
         const discount = parseInt(localStorage.getItem('activeDiscount')) || 0;
+        console.log(`[otpgen.html] calculateTotalCharge - activeDiscount: ${discount}%`);
         if (discount > 0) {
             totalCharge *= (1 - discount / 100);
+            console.log(`[otpgen.html] calculateTotalCharge - totalCharge after discount: ${totalCharge.toFixed(2)}`);
         }
 
         document.getElementById('amount3').value = totalCharge.toFixed(2);
@@ -980,9 +982,10 @@ ${formData.consignments.map((c, index) => `
       });
       
       // Initialize discount display
-      if (typeof window.updateDiscountDisplay === 'function') {
-        window.updateDiscountDisplay();
-      }
+      updateDiscountDisplay();
+      
+      // Initialize calculation
+      calculateTotalCharge();
       
       // Add real-time calculation listeners
       document.querySelectorAll('.amount1, .amount2').forEach(input => {
@@ -1150,6 +1153,7 @@ ${formData.consignments.map((c, index) => `
         }
     });
   </script>
+  <script src="./assets/js/loading-animation.js"></script>
   <script src="./assets/js/load-navbar.js"></script>
   <script src="./assets/js/main.js"></script>
   <p>1Ai এর সাথেই থাকুন ওয়ানএআই আপনার ডিজিটাল সমস্যার স্মার্ট সমাধান।</p>
