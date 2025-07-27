@@ -430,7 +430,7 @@
                     user.referrals.forEach(referral => {
                         const tr = document.createElement('tr');
                         tr.innerHTML = `
-                            <td>${referral._id || 'N/A'}</td>
+                            <td>${referral.name || 'N/A'}</td>
                             <td>${referral.phone || 'N/A'}</td>
                             <td>${referral.email || 'N/A'}</td>
                         `;
@@ -440,38 +440,22 @@
                     console.warn('User referrals data is missing or not an array.');
                 }
 
-                // Fetch and display vouchers
-                try {
-                    const voucherResponse = await fetch(`https://oneai-wjox.onrender.com/vouchers/${user.phone}`, {
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'X-User-ID': userID
-                        }
+                // Display vouchers
+                const vouchers = user.vouchers ? user.vouchers.filter(v => !v.isUsed) : [];
+                if (vouchers.length > 0) {
+                    document.getElementById('voucher-section').style.display = 'block';
+                    const voucherList = document.getElementById('voucher-list');
+                    voucherList.innerHTML = ''; // Clear existing content
+                    vouchers.forEach(voucher => {
+                        const voucherCard = document.createElement('div');
+                        voucherCard.className = 'voucher-card';
+                        voucherCard.innerHTML = `
+                            <h4>${voucher.discountPercentage || 'XX'}% Discount</h4>
+                            <p>Use this code at checkout:</p>
+                            <div class="voucher-code">${voucher.code || 'N/A'}</div>
+                        `;
+                        voucherList.appendChild(voucherCard);
                     });
-
-                    if (voucherResponse.ok) {
-                        const voucherData = await voucherResponse.json();
-                        const vouchers = voucherData.vouchers ? voucherData.vouchers.filter(v => !v.isUsed) : [];
-                        if (vouchers.length > 0) {
-                            document.getElementById('voucher-section').style.display = 'block';
-                            const voucherList = document.getElementById('voucher-list');
-                            vouchers.forEach(voucher => {
-                                const voucherCard = document.createElement('div');
-                                voucherCard.className = 'voucher-card';
-                                voucherCard.innerHTML = `
-                                    <h4>${voucher.discountPercentage || 'XX'}% Discount</h4>
-                                    <p>Use this code at checkout:</p>
-                                    <div class="voucher-code">${voucher.code || 'N/A'}</div>
-                                `;
-                                voucherList.appendChild(voucherCard);
-                            });
-                        }
-                    } else {
-                        const errorText = await voucherResponse.text();
-                        console.error(`Failed to fetch vouchers: ${voucherResponse.status} ${voucherResponse.statusText} - ${errorText}`);
-                    }
-                } catch (error) {
-                    console.error('Error fetching vouchers:', error);
                 }
 
                 // Fetch and display monthly commission
