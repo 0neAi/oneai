@@ -659,7 +659,7 @@
                                 </thead>
                                 <tbody>
                                     <tr v-for="user in users" :key="user.id">
-                                        <td class="text-muted">{{ shortId(user._id) }}</td>
+                                        <td class="text-muted">{{ user.userId }}</td>
                                         <td>{{ user.phone }}</td>
                                         <td>{{ user.email }}</td>
                                         <td>
@@ -673,14 +673,14 @@
                                         <td>৳{{ user.totalAmount ? user.totalAmount.toFixed(2) : '0.00' }}</td>
                                         <td>{{ formatDateTime(user.createdAt) }}</td>
                                         <td>
-                                            <button class="btn btn-sm btn-outline-primary me-1" @click="viewUserDetails(user._id)">
+                                            <button class="btn btn-sm btn-outline-primary me-1" @click="viewUserDetails(user.userId)">
                                                 <i class="bi bi-eye-fill me-1"></i>Details
                                             </button>
                                             <button v-if="!user.isApproved" class="btn btn-sm btn-outline-success" @click="showApproveUserModal(user)">
                                                 Approve
                                             </button>
                                             <button class="btn btn-sm btn-outline-danger ms-2" 
-                                                    @click="deleteItem('user', user._id)"
+                                                    @click="deleteItem('user', user.userId)"
                                                     title="Delete User">
                                                 <i class="bi bi-trash"></i>
                                             </button>
@@ -1714,14 +1714,14 @@
                 async approveUser() {
                     this.isLoading = true;
                     try {
-                        const response = await axios.post(`${API_BASE}/admin/users/${this.selectedUser._id}/approve`, {
+                        const response = await axios.post(`${API_BASE}/admin/users/${this.selectedUser.userId}/approve`, {
                             commissionPercentage: this.commissionPercentage,
                             name: this.selectedUser.name,
                             zilla: this.selectedUser.zilla,
                             officeLocation: this.selectedUser.officeLocation
                         });
                         if (response.data.success) {
-                            const index = this.users.findIndex(u => u._id === this.selectedUser._id);
+                            const index = this.users.findIndex(u => u.userId === this.selectedUser.userId);
                             if (index > -1) {
                                 this.users.splice(index, 1, response.data.user);
                             }
@@ -1740,9 +1740,9 @@
                 async generateReferralCode(user) {
                     this.isLoading = true;
                     try {
-                        const response = await axios.post(`${API_BASE}/admin/users/${user._id}/generate-referral-code`);
+                        const response = await axios.post(`${API_BASE}/admin/users/${user.userId}/generate-referral-code`);
                         if (response.data.success) {
-                            const index = this.users.findIndex(u => u._id === user._id);
+                            const index = this.users.findIndex(u => u.userId === user.userId);
                             if (index > -1) {
                                 this.users.splice(index, 1, response.data.user);
                             }
