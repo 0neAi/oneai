@@ -277,8 +277,8 @@
     }
     
     // Recalculate total charge if on payment page
-    if (typeof updateAmount3Display === 'function') {
-      updateAmount3Display();
+    if (window.location.pathname.includes('otpgen.html') && typeof window.calculateTotalCharge === 'function') {
+      window.calculateTotalCharge();
     }
   };
 
