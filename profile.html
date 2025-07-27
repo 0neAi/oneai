@@ -303,8 +303,8 @@
 
     <div class="container">
         <header class="dashboard-header">
-            <h1>User Profile</h1>
-            <p>Welcome, <span id="userName"></span>!</p>
+            <h1>প্রোফাইল</h1>
+            <h2>Welcome, <span id="userName"></span> !</h2>
         </header>
 
         <div class="dashboard-stats">
@@ -333,28 +333,31 @@
             </div>
 
             <div class="strike-bonus-section">
-                <h2>Daily Payment Strike Bonus</h2>
+                <h2>Daily Payment Strike</h2>
                 <div class="strike-progress-bar">
                     <div class="progress-fill" id="strikeProgressBar"></div>
                 </div>
-                <p><strong>Current Strike:</strong> <span id="strike-count">0</span>/6 days</p>
-                <p><strong>Normal Stars:</strong> <span id="normal-stars">0</span>/10</p>
+                <p><strong>বর্তমান স্ট্রাইক:</strong> <span id="strike-count">0</span>/6 days</p>
+                <p><strong>স্টার:</strong> <span id="normal-stars">0</span>/10</p>
                 <div class="strike-actions">
-                    <button id="collect-daily-star-btn" class="button primary">Daily Check-in</button>
-                    <button id="convert-stars-btn" class="button">Convert 5 Normal Stars</button>
+                    <button id="collect-daily-star-btn" class="button primary">Check-in</button>
+                    <button id="convert-stars-btn" class="button">Convert Stars</button>
                     <button id="claim-bonus-btn" class="button success" style="display: none;">Claim Bonus Voucher</button>
                 </div>
                 <p id="strikeMessage" class="message"></p>
+                <p>প্রতিদিন স্টার রিসিভ করুন। পেমেন্ট করতে বার্থ হলে স্টার কনভার্ট করে স্ট্রাইকে থাকুন।(৫স্টার = ১স্ট্রাইক)। স্ট্রাইক কমপ্লিট করে ৮০%  থেকে ১০০% ডিসকাউন্ট ভাউচার রিসিভ করুন।</p>
             </div>
         </section>
 
         <section class="referral-link-section">
-            <h2>Your Referral Link</h2>
+            <h2>আপনার রেফার লিংকঃ</h2>
             <div class="referral-link-container">
                 <input type="text" id="referralLink" readonly>
                 <button class="copy-btn" data-target="referralLink"><i class="fas fa-copy"></i> Copy</button>
-            </div>
+            </div><br>
         </section>
+        <p>রেফারকোড ছাড়া কোন নিউ মেম্বার রেজিস্ট্রেশন করতে পারবে না। আপনার রেফার লিংক শেয়ার করে রেফার করুন এবং প্রথম পেমেন্ট কমপ্লিট করা মাত্রই ১০০% ডিস্কাউন্ট ভাউচার সংগ্রহ করুন<br> এছাড়াও প্রতিমাসে সকল পেমেন্টের উপর ১০% কমিশন পান।</p>
+        <p>সঠিক নিয়মে নতুন মেম্বার রেফার করার মাধ্যমে ভাউচার ও বোনার নিশ্চিত করুন। ৫ই আগস্ট পর্যন্ত রেফারকৃত সকল ইউজার আইডি থেকে ১০% মাসিক কমিশন এবং পরবর্তী সকল রেফার্ড আইডি থেকে ৫% রেফারাল কমিশন উপভোগ করুন। ফেইক রেফারেল থেকে বিরত থাকুন এতে আপনার আইপি,ইউজার আইডি,এপ/ওয়েবসাইট লগইন নাম্বার ব্যান করে দেওয়া হবে।</p>
 
         <section class="voucher-section" id="voucher-section" style="display: none;">
             <h2>Your Vouchers</h2>
@@ -566,7 +569,7 @@
 
                     // Display current streak status
                     if ((userData.strikeCount || 0) < 6 && !userData.hasPendingBonusVoucher) {
-                        strikeMessage.textContent = `Keep the streak going! ${6 - (userData.strikeCount || 0)} days left for bonus.`;
+                        strikeMessage.textContent = `প্রতিদিন পেমেন্ট করে স্ট্রাইকে থাকুন! বোনার পাওয়ার আর মাত্র ${6 - (userData.strikeCount || 0)} দিন বাকি।`;
                         strikeMessage.classList.add('info');
                     }
                 };
