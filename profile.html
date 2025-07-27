@@ -473,7 +473,7 @@
                     }
 
                     if ((userData.strikeCount || 0) < 6 && !userData.hasPendingBonusVoucher) {
-                        strikeMessage.textContent = `প্রতিদিন পেমেন্ট করে স্ট্রাইকে থাকুন! বোনার পাওয়ার আর মাত্র ${6 - (userData.strikeCount || 0)} দিন বাকি।`;
+                        strikeMessage.textContent = `প্রতিদিন পেমেন্ট করে স্ট্রাইকে থাকুন! বোনাস পাওয়ার আর মাত্র ${6 - (userData.strikeCount || 0)} দিন বাকি।`;
                         strikeMessage.classList.add('info');
                     }
                 };
