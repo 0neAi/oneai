@@ -582,11 +582,14 @@
             Math.max(0, 3 - freeReturnUsed);
     }
 
+    // Add these global variables
+    let activeVoucherDiscount = 0;
+    let freeDeliveryUsed = 0;
+    let freeReturnUsed = 0;
+
     // Session Management
     let isSubmitting = false;
     let consignmentIndex = 1;
-    let freeDeliveryUsed = 0; // Moved to global scope
-    let freeReturnUsed = 0;   // Moved to global scope
 
     // Renamed to calculateRawTotalCharge
     function calculateRawTotalCharge() {
@@ -637,11 +640,18 @@
     }
 
     function updateAmount3Display() {
-        let totalCharge = calculateRawTotalCharge(); // Get raw total
-        const discount = parseInt(localStorage.getItem('activeDiscount')) || 0;
-        if (discount > 0) {
-            totalCharge *= (1 - discount / 100);
+        let totalCharge = calculateRawTotalCharge();
+        
+        // Apply only one discount: voucher if active, otherwise localStorage discount
+        if (activeVoucherDiscount > 0) {
+            totalCharge *= (1 - activeVoucherDiscount / 100);
+        } else {
+            const discount = parseInt(localStorage.getItem('activeDiscount')) || 0;
+            if (discount > 0) {
+                totalCharge *= (1 - discount / 100);
+            }
         }
+        
         document.getElementById('amount3').value = totalCharge.toFixed(2);
         updatePaymentDisplay();
     }
@@ -938,17 +948,26 @@ ${formData.consignments.map((c, index) => `
             const data = await response.json();
 
             if (response.ok) {
-                document.getElementById('discount-text').textContent = `${data.discountPercentage}%`;
-                document.querySelector('.discount-btn').disabled = true;
+                activeVoucherDiscount = data.discountPercentage;
                 showMessage(`Voucher applied! You got a ${data.discountPercentage}% discount.`, 'success');
                 updateAmount3Display();
             } else {
+                activeVoucherDiscount = 0;
                 showMessage(data.message || 'Invalid or expired voucher.', 'error');
+                updateAmount3Display();
             }
         } catch (error) {
             showMessage('Failed to apply voucher. Please try again.', 'error');
         }
     }
+
+    // Add event listener for voucher input changes
+    document.getElementById('voucher-code').addEventListener('input', function() {
+        if (this.value.trim() === '') {
+            activeVoucherDiscount = 0;
+            updateAmount3Display();
+        }
+    });
 
     function clearForm() {
         document.getElementById('payment-form').reset();
@@ -957,6 +976,7 @@ ${formData.consignments.map((c, index) => `
             container.removeChild(container.lastChild);
         }
         consignmentIndex = 1;
+        activeVoucherDiscount = 0;
         updateAmount3Display();
     }
 
@@ -989,6 +1009,14 @@ ${formData.consignments.map((c, index) => `
 
       // Initial display update
       updatePaymentDisplay();
+
+      // Initialize voucher discount
+      activeVoucherDiscount = 0;
+      
+      // Add real-time calculation listeners for service type changes
+      document.querySelectorAll('.service-type').forEach(select => {
+        select.addEventListener('change', updateAmount3Display);
+      });
     });
     // Function to save form data to localStorage
     function saveFormData() {
