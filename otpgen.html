@@ -631,7 +631,7 @@
         // Update the display after processing all consignments
         updateFreeConsignmentDisplay();
 
-        const discount = parseInt(document.getElementById('discount-text').textContent) || 0;
+        const discount = parseInt(localStorage.getItem('activeDiscount')) || 0;
         if (discount > 0) {
             totalCharge *= (1 - discount / 100);
         }
@@ -1003,7 +1003,8 @@ ${formData.consignments.map((c, index) => `
       updatePaymentDisplay();
     });
 
-  </script>
+  <script src="./assets/js/load-navbar.js"></script>
+  <script src="./assets/js/main.js"></script>
   <script>
     // Function to save form data to localStorage
     function saveFormData() {
@@ -1149,9 +1150,6 @@ ${formData.consignments.map((c, index) => `
             premiumVoucherDisplay.style.display = 'none';
         }
     });
-  </script>
-  <script src="./assets/js/load-navbar.js"></script>
-  <script src="./assets/js/main.js"></script>
   <p>1Ai এর সাথেই থাকুন ওয়ানএআই আপনার ডিজিটাল সমস্যার স্মার্ট সমাধান।</p>
 </body>
 </html>
