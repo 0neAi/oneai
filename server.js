@@ -192,15 +192,15 @@ app.use((req, res, next) => {
 const authMiddleware = async (req, res, next) => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
-    const userId = req.header('X-User-ID');
+    const userID = req.header('X-User-ID');
 
-    console.log('AuthMiddleware: Received token:', token ? 'Exists' : 'Missing', 'UserID:', userId);
+    console.log('AuthMiddleware: Received token:', token ? 'Exists' : 'Missing', 'UserID:', userID);
 
     if (!token) {
       console.error('Auth Error: Missing token');
       return res.status(401).json({ success: false, message: 'Authentication failed: Token missing' });
     }
-    if (!userId) {
+    if (!userID) {
       console.error('Auth Error: Missing User ID');
       return res.status(401).json({ success: false, message: 'Authentication failed: User ID missing' });
     }
@@ -217,14 +217,14 @@ const authMiddleware = async (req, res, next) => {
       return res.status(401).json({ success: false, message });
     }
 
-    if (decoded.userId !== userId) {
-      console.error('Auth Error: User ID mismatch', { decodedId: decoded.userId, headerId: userId });
+    if (decoded.userId !== userID) {
+      console.error('Auth Error: User ID mismatch', { decodedId: decoded.userId, headerId: userID });
       return res.status(401).json({ success: false, message: 'Authentication failed: User ID mismatch' });
     }
 
-    const user = await User.findOne({ userId });
+    const user = await User.findById(userID);
     if (!user) {
-      console.error('Auth Error: User not found in DB', { userId });
+      console.error('Auth Error: User not found in DB', { userID });
       return res.status(401).json({ success: false, message: 'Authentication failed: User not found' });
     }
 
@@ -310,7 +310,7 @@ app.post('/register', async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Registration successful. Please wait for admin approval.',
-      userId: user.userId,
+      userID: user._id,
     });
 
   } catch (error) {
@@ -362,7 +362,7 @@ app.post('/login', async (req, res) => {
       success: true,
       isApproved: true,
       token,
-      userId: user.userId,
+      userID: user._id,
       expiresIn: Date.now() + 3 * 60 * 60 * 1000
     });
   } catch (error) {
@@ -376,14 +376,14 @@ app.post('/login', async (req, res) => {
 
 app.post('/refresh-token', authMiddleware, async (req, res) => {
   try {
-    const token = jwt.sign({ userId: req.user.userId }, process.env.JWT_SECRET, {
+    const token = jwt.sign({ userId: req.user._id }, process.env.JWT_SECRET, {
       expiresIn: '3h',
     });
 
     res.json({
       success: true,
       token,
-      userId: req.user.userId,
+      userID: req.user._id,
       expiresIn: Date.now() + 3 * 60 * 60 * 1000,
     });
   } catch (error) {
@@ -669,7 +669,7 @@ const voucherSchema = new mongoose.Schema({
     reportModel: {
         type: String,
         required: true,
-        enum: ['MerchantIssue', 'PenaltyReport', 'PremiumService', 'User']
+        enum: ['MerchantIssue', 'PenaltyReport', 'PremiumService'] // Added PremiumService
     }
 }, { timestamps: true });
 
@@ -858,7 +858,7 @@ app.get('/user-reports/:phone', async (req, res) => {
 
 app.get('/vouchers/:phone', async (req, res) => {
     try {
-        const vouchers = await Voucher.find({ phone: req.params.phone, isUsed: false });
+        const vouchers = await Voucher.find({ phone: req.params.phone });
         res.json({ success: true, vouchers });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Failed to fetch vouchers' });
@@ -921,7 +921,7 @@ app.post('/admin/users/:id/approve', adminAuth, async (req, res) => {
     const { commissionPercentage, name, zilla, officeLocation } = req.body;
     console.log(`Attempting to approve user ID: ${req.params.id} with commission: ${commissionPercentage}%`);
 
-    const user = await User.findOne({ userId: req.params.id });
+    const user = await User.findById(req.params.id);
     if (!user) {
       console.log(`User with ID ${req.params.id} not found for approval.`);
       return res.status(404).json({ success: false, message: 'User not found' });
@@ -953,8 +953,8 @@ app.post('/admin/users/:id/approve', adminAuth, async (req, res) => {
 
     // Send WebSocket message to the approved user
     wss.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN && client.userID === user.userId.toString()) {
-        client.send(JSON.stringify({ type: 'account-approved', userID: user.userId }));
+      if (client.readyState === WebSocket.OPEN && client.userID === user._id.toString()) {
+        client.send(JSON.stringify({ type: 'account-approved', userID: user._id }));
       }
     });
 
@@ -1004,7 +1004,7 @@ app.delete('/admin/payments/:id', adminAuth, async (req, res) => {
 app.post('/admin/users/:id/generate-referral-code', adminAuth, async (req, res) => {
   try {
     console.log(`Attempting to generate referral code for user ID: ${req.params.id}`);
-    const user = await User.findOne({ userId: req.params.id });
+    const user = await User.findById(req.params.id);
     if (!user) {
       console.log(`User with ID ${req.params.id} not found for referral code generation.`);
       return res.status(404).json({ success: false, message: 'User not found' });
@@ -1766,7 +1766,7 @@ app.post('/premium-payment', authMiddleware, async (req, res) => {
 app.get('/admin/users', adminAuth, async (req, res) => {
   try {
     console.log('Fetching all users for admin panel...');
-    const users = await User.find().populate('referredBy', 'name').select('-password');
+    const users = await User.find().populate('referredBy', 'name email').select('-password');
     console.log(`Found ${users.length} users.`);
 
     const usersWithStats = await Promise.all(users.map(async (user) => {
@@ -1797,7 +1797,7 @@ app.get('/admin/users', adminAuth, async (req, res) => {
 app.get('/admin/users/:id/details', adminAuth, async (req, res) => {
   try {
     console.log(`Fetching details for user ID: ${req.params.id}`);
-    const user = await User.findOne({ userId: req.params.id })
+    const user = await User.findById(req.params.id)
       .populate('referredBy', 'name email')
       .populate('referrals', 'name email phone') // Added phone to the populated fields
       .select('-password');
@@ -1828,7 +1828,7 @@ app.get('/admin/users/:id/details', adminAuth, async (req, res) => {
       }
     }
 
-    console.log('Sending user details:', { userId: user.userId, totalPayments, totalAmount, monthlyCommission });
+    console.log('Sending user details:', { userId: user._id, totalPayments, totalAmount, monthlyCommission });
 
     res.json({
       success: true,
@@ -1885,11 +1885,12 @@ app.get('/admin/user-payments/:email', adminAuth, async (req, res) => {
 app.get('/users/:id', authMiddleware, async (req, res) => {
   try {
     console.log(`Fetching user profile for ID: ${req.params.id}`);
-    const user = await User.findOne({ userId: req.params.id }).populate('referrals', 'phone email').select('+referralBonus +referralBonusStatus +strikeCount +strikeStars +lastPaymentDate +lastStrikeCollectionDate +hasPendingBonusVoucher');
+    const user = await User.findById(req.params.id).populate('referrals', 'phone email').select('+referralBonus +referralBonusStatus +strikeCount +strikeStars +lastPaymentDate +lastStrikeCollectionDate +hasPendingBonusVoucher');
     if (!user) {
       console.error(`User with ID ${req.params.id} not found in /users/:id endpoint.`);
       return res.status(404).json({ success: false, message: 'User not found' });
     }
+    const vouchers = await Voucher.find({ phone: user.phone, isUsed: false });
     // Ensure all expected fields are present, even if null/undefined in DB
     const userObject = user.toObject({ virtuals: true });
     userObject.referralBonus = userObject.referralBonus || 0;
@@ -1899,8 +1900,6 @@ app.get('/users/:id', authMiddleware, async (req, res) => {
     userObject.lastPaymentDate = userObject.lastPaymentDate || null;
     userObject.lastStrikeCollectionDate = userObject.lastStrikeCollectionDate || null;
     userObject.hasPendingBonusVoucher = userObject.hasPendingBonusVoucher || false;
-
-    const vouchers = await Voucher.find({ phone: user.phone, isUsed: false });
     userObject.vouchers = vouchers;
 
     console.log('Successfully fetched user profile:', userObject.email);
@@ -1913,7 +1912,7 @@ app.get('/users/:id', authMiddleware, async (req, res) => {
 
 app.get('/users/:id/monthly-commission', authMiddleware, async (req, res) => {
     try {
-        const user = await User.findOne({ userId: req.params.id }).populate('referrals');
+        const user = await User.findById(req.params.id).populate('referrals');
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
@@ -1939,7 +1938,7 @@ app.get('/users/:id/monthly-commission', authMiddleware, async (req, res) => {
 
 app.post('/users/:id/collect-daily-star', authMiddleware, async (req, res) => {
     try {
-        const user = await User.findOne({ userId: req.params.id });
+        const user = await User.findById(req.params.id);
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
@@ -1972,7 +1971,7 @@ app.post('/users/:id/collect-daily-star', authMiddleware, async (req, res) => {
 
 app.post('/users/:id/convert-normal-stars', authMiddleware, async (req, res) => {
     try {
-        const user = await User.findOne({ userId: req.params.id });
+        const user = await User.findById(req.params.id);
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
@@ -2010,11 +2009,15 @@ app.post('/users/:id/convert-normal-stars', authMiddleware, async (req, res) => 
             user.strikeCount = (user.strikeCount || 0) + 1; // Continue streak
         }
 
-        user.normalStars -= 5;
+        user.normalStars = (user.normalStars || 0) - 5;
         user.lastNormalStarConversionDate = new Date();
+
+        if (user.strikeCount >= 6) {
+            user.hasPendingBonusVoucher = true;
+        }
         await user.save();
 
-        res.json({ success: true, message: '5 normal stars converted to a strike star!', user: user.toObject({ virtuals: true }) });
+        res.json({ success: true, message: 'Normal stars converted to strike star!', user: user.toObject({ virtuals: true }) });
     } catch (error) {
         console.error('Error converting normal stars:', error);
         res.status(500).json({ success: false, message: 'Failed to convert normal stars' });
@@ -2023,27 +2026,30 @@ app.post('/users/:id/convert-normal-stars', authMiddleware, async (req, res) => 
 
 app.post('/users/:id/claim-bonus-voucher', authMiddleware, async (req, res) => {
     try {
-        const user = await User.findOne({ userId: req.params.id });
+        const user = await User.findById(req.params.id);
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
 
         if (!user.hasPendingBonusVoucher) {
-            return res.status(400).json({ success: false, message: 'No bonus voucher to claim' });
+            return res.status(400).json({ success: false, message: 'No pending bonus voucher to claim' });
         }
 
-        const voucherCode = `BONUS-80-${user.userId.toString().slice(-4)}`;
+        const voucherCode = `BONUS-80-${user._id.toString().slice(-4)}`;
         const voucher = new Voucher({
             phone: user.phone,
             code: voucherCode,
             discountPercentage: 80,
+            isUsed: false,
+            validUntil: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Valid for 7 days
             report: user._id,
             reportModel: 'User'
         });
         await voucher.save();
 
         user.hasPendingBonusVoucher = false;
-        user.strikeCount = 0; // Reset strike count after claiming
+        user.strikeCount = 0;
+        user.normalStars = 0; // Reset normal stars as well
         await user.save();
 
         res.json({ success: true, message: 'Bonus voucher claimed!', voucherCode, user: user.toObject({ virtuals: true }) });
