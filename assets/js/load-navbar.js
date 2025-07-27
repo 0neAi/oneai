@@ -255,6 +255,7 @@
     const currentCount = parseInt(localStorage.getItem('discountsUsed') || 0);
     localStorage.setItem('discountsUsed', currentCount + 1);
     localStorage.setItem('activeDiscount', discount);
+    console.log(`[load-navbar.js] Stored activeDiscount: ${discount}%`);
     updateDiscountDisplay();
   }
 
@@ -292,7 +293,6 @@
   window.handleLogout = function() {
     if (confirm('Are you sure you want to logout?')) {
       localStorage.removeItem('authToken');
-      localStorage.removeItem('activeDiscount');
       window.location.href = './index.html';
     }
   };
