@@ -336,11 +336,18 @@ const LoadingAnimation = (function() {
         };
     }
 
+    function setTerminalMessage(message) {
+        if (terminalContent) {
+            terminalContent.textContent = message;
+        }
+    }
+
     return {
         start,
         update,
         stop,
         success,
-        showSuccessWithButton // Expose the new function
+        showSuccessWithButton,
+        setTerminalMessage // Expose the new function
     };
 })();
