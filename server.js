@@ -1423,11 +1423,14 @@ app.post('/admin/update-status', adminAuth, async (req, res) => {
             }
             await user.save();
 
-            // Referral bonus logic (remains the same)
+            // Referral bonus logic
             if (user.referredBy) {
+                console.log(`User ${user.email} was referred by: ${user.referredBy}`);
                 const referrer = await User.findById(user.referredBy);
                 if (referrer) {
+                    console.log(`Referrer found: ${referrer.email}`);
                     const paymentCount = await Payment.countDocuments({ user: user._id, status: 'Completed' });
+                    console.log(`Referred user ${user.email} has ${paymentCount} completed payments.`);
                     if (paymentCount === 1) {
                         const voucherCode = `REFERRAL-100-${user._id.toString().slice(-4)}`;
                         const voucher = new Voucher({
@@ -1438,8 +1441,15 @@ app.post('/admin/update-status', adminAuth, async (req, res) => {
                             reportModel: 'User'
                         });
                         await voucher.save();
+                        console.log(`Generated referral voucher ${voucherCode} for referrer ${referrer.email}`);
+                    } else {
+                        console.log(`Voucher not generated for ${user.email} because payment count is not 1.`);
                     }
+                } else {
+                    console.log(`Referrer not found for user ${user.email} with ID ${user.referredBy}`);
                 }
+            } else {
+                console.log(`User ${user.email} was not referred by anyone.`);
             }
         }
     }
