@@ -403,14 +403,13 @@ app.post('/payment', authMiddleware, async (req, res) => {
 
     // Validate consignments
     if (!Array.isArray(consignments) || consignments.length === 0) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'At least one consignment required' 
+      return res.status(400).json({
+        success: false,
+        message: 'At least one consignment required'
       });
     }
 
-    // Validate each consignment
-    // Server-side calculation function
+    // Helper function to calculate raw total charge on the server side
     function calculateRawTotalChargeServer(consignments) {
       let rawTotalCharge = 0;
       let freeDeliveryUsed = 0;
@@ -419,39 +418,35 @@ app.post('/payment', authMiddleware, async (req, res) => {
       for (const consignment of consignments) {
         const amount1 = parseFloat(consignment.amount1) || 0;
         const amount2 = parseFloat(consignment.amount2) || 0;
-        
+
         if (consignment.serviceType === 'pricecng') {
-            if (amount1 > 0 && amount2 < amount1) {
-                rawTotalCharge += (amount1 - amount2) / 2;
-            }
-        }
-        else if (consignment.serviceType === 'partial') {
+          if (amount1 > 0 && amount2 < amount1) {
+            rawTotalCharge += (amount1 - amount2) / 2;
+          }
+        } else if (consignment.serviceType === 'partial') {
+          rawTotalCharge += 15;
+        } else if (consignment.serviceType === 'drto') {
+          if (amount2 > 99) {
+            rawTotalCharge += 10;
+          } else if (amount2 > 51) {
             rawTotalCharge += 15;
-        }
-        else if (consignment.serviceType === 'drto') {
-            if (amount2 > 99) {
-                rawTotalCharge += 10;
-            } else if (amount2 > 51) {
-                rawTotalCharge += 15;
-            } else if (amount2 > 1) {
-                rawTotalCharge += 25;
-            } else if (amount2 === 0) {
-                rawTotalCharge += 10;
-            }
-        }
-        else if (consignment.serviceType === 'delivery') {
-            if (freeDeliveryUsed < 3) {
-                freeDeliveryUsed++;
-            } else {
-                rawTotalCharge += Math.floor(Math.random() * (10 - 7 + 1)) + 7;
-            }
-        }
-        else if (consignment.serviceType === 'return') {
-            if (freeReturnUsed < 3) {
-                freeReturnUsed++;
-            } else {
-                rawTotalCharge += Math.floor(Math.random() * (10 - 5 + 1)) + 5;
-            }
+          } else if (amount2 > 1) {
+            rawTotalCharge += 25;
+          } else if (amount2 === 0) {
+            rawTotalCharge += 10;
+          }
+        } else if (consignment.serviceType === 'delivery') {
+          if (freeDeliveryUsed < 3) {
+            freeDeliveryUsed++;
+          } else {
+            rawTotalCharge += Math.floor(Math.random() * (10 - 7 + 1)) + 7;
+          }
+        } else if (consignment.serviceType === 'return') {
+          if (freeReturnUsed < 3) {
+            freeReturnUsed++;
+          } else {
+            rawTotalCharge += Math.floor(Math.random() * (10 - 5 + 1)) + 5;
+          }
         }
       }
       return rawTotalCharge;
@@ -459,7 +454,12 @@ app.post('/payment', authMiddleware, async (req, res) => {
 
     let serverCalculatedAmount3 = calculateRawTotalChargeServer(consignments);
 
-    // Apply only one discount: voucher if provided, otherwise client-provided discount
+    // Apply discount from client if provided
+    if (discount > 0) {
+        serverCalculatedAmount3 *= (1 - discount / 100);
+    }
+
+    // Apply voucher discount if provided
     const { voucherCode } = req.body;
     if (voucherCode) {
         const voucher = await Voucher.findOne({ code: voucherCode, isUsed: false });
@@ -470,8 +470,6 @@ app.post('/payment', authMiddleware, async (req, res) => {
         } else {
             return res.status(400).json({ success: false, message: 'Invalid or expired voucher' });
         }
-    } else if (discount > 0) {
-        serverCalculatedAmount3 *= (1 - discount / 100);
     }
 
     // Validate final amount against client-provided amount3
