@@ -46,10 +46,118 @@
     </div>
   </div>`;
 
+  // Inject CSS for discount wheel
+  const style = document.createElement('style');
+  style.innerHTML = `
+            .discount-spin-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.85); /* Darker, semi-transparent background */
+                display: none; /* Hidden by default */
+                justify-content: center;
+                align-items: center;
+                z-index: 1000;
+                backdrop-filter: blur(5px); /* Subtle blur effect */
+            }
+
+            .discount-wheel {
+                background: linear-gradient(135deg, #1a1a2e, #0f0f1a); /* Dark gradient background */
+                border: 2px solid #00ff41; /* Neon green border */
+                border-radius: 15px;
+                padding: 30px;
+                text-align: center;
+                box-shadow: 0 0 30px rgba(0, 255, 65, 0.5); /* Glowing shadow */
+                color: #e0e0e0; /* Light text color */
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                position: relative;
+                overflow: hidden;
+                animation: fadeInScale 0.5s ease-out forwards;
+            }
+
+            @keyframes fadeInScale {
+                from { opacity: 0; transform: scale(0.8); }
+                to { opacity: 1; transform: scale(1); }
+            }
+
+            .discount-wheel h3 {
+                color: #00ff41; /* Neon green heading */
+                margin-bottom: 20px;
+                font-size: 1.8em;
+                text-shadow: 0 0 8px rgba(0, 255, 65, 0.7);
+            }
+
+            .spin-container {
+                width: 180px;
+                height: 180px;
+                border: 5px solid #00ff41; /* Neon green border */
+                border-radius: 50%;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                margin: 0 auto 25px;
+                background-color: #0d0d1a; /* Dark inner background */
+                box-shadow: inset 0 0 15px rgba(0, 255, 65, 0.3), 0 0 20px rgba(0, 255, 65, 0.4);
+                position: relative;
+                overflow: hidden;
+            }
+
+            .spin-result {
+                font-size: 3.5em;
+                font-weight: bold;
+                color: #ff00ff; /* Vibrant magenta for the result */
+                text-shadow: 0 0 10px rgba(255, 0, 255, 0.8);
+                animation: pulse 1.5s infinite alternate;
+            }
+
+            @keyframes pulse {
+                from { transform: scale(1); text-shadow: 0 0 10px rgba(255, 0, 255, 0.8); }
+                to { transform: scale(1.05); text-shadow: 0 0 15px rgba(255, 0, 255, 1); }
+            }
+
+            .spin-button {
+                background: linear-gradient(45deg, #00ff41, #00cc33); /* Green gradient button */
+                color: #1a1a2e; /* Dark text for contrast */
+                border: none;
+                padding: 12px 30px;
+                border-radius: 8px;
+                font-size: 1.2em;
+                font-weight: bold;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                box-shadow: 0 5px 15px rgba(0, 255, 65, 0.4);
+            }
+
+            .spin-button:hover {
+                background: linear-gradient(45deg, #00cc33, #00ff41);
+                box-shadow: 0 8px 20px rgba(0, 255, 65, 0.6);
+                transform: translateY(-2px);
+            }
+
+            .discount-badge {
+                background-color: #00ff41; /* Neon green background */
+                color: #1a1a2e; /* Dark text */
+                padding: 5px 10px;
+                border-radius: 5px;
+                font-weight: bold;
+                margin-right: 5px;
+                box-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+            }
+
+            .discount-badge small {
+                color: #e0e0e0; /* Light text for small text */
+            }
+  `;
+  document.head.appendChild(style);
+
   // State Management
   let spinning = false;
   let spinInterval;
-  const MAX_DAILY_DISCOUNTS = 2;
+  const MAX_DAILY_DISCOUNTS = 3;
 
   // Core Functions
   function initializeNavbar() {
@@ -116,11 +224,13 @@
   }
 
   function processDiscountResult(discount) {
-    if (confirm(`🎉 Congratulations! You won ${discount}% discount!\nApply this discount?`)) {
-      updateDiscountUsage(discount);
-      alert(`✅ ${discount}% discount applied!`);
-      updateDiscountDisplay();
-    }
+    LoadingAnimation.showSuccessWithButton(
+      `🎉 Congratulations! You won ${discount}% discount!`, 
+      () => {
+        updateDiscountUsage(discount);
+        updateDiscountDisplay();
+      }
+    );
   }
 
   function checkDiscountAvailability() {
@@ -159,10 +269,10 @@
           <span class="discount-badge">${discount}% OFF!</span>
           <small>Applied to total charge</small>
         `;
-        discountDisplay.style.color = '#27ae60';
+        // Removed inline style, relying on CSS classes
       } else {
         discountDisplay.textContent = 'No active discount';
-        discountDisplay.style.color = '';
+        // Removed inline style, relying on CSS classes
       }
     }
     
