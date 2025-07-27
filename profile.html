@@ -137,6 +137,9 @@
             font-weight: bold;
             transition: all 0.3s ease;
             animation: pulse 2s infinite;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         .referral-link-section, .referral-section, .voucher-section {
@@ -163,6 +166,21 @@
             position: relative;
             overflow: hidden;
             animation: fade-in 1s ease-out;
+        }
+
+        .referral-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .referral-table th, .referral-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: left;
+        }
+
+        .referral-table th {
+            background-color: rgba(255, 255, 255, 0.1);
         }
     </style>
 </head>
@@ -239,9 +257,10 @@
                 <table>
                     <thead>
                         <tr>
-                            <th>User ID</th>
+                            <th>Name</th>
                             <th>Phone</th>
                             <th>Email</th>
+                            <th>Total Payments</th>
                         </tr>
                     </thead>
                     <tbody id="referralList">
@@ -313,9 +332,10 @@
                     user.referrals.forEach(referral => {
                         const tr = document.createElement('tr');
                         tr.innerHTML = `
-                            <td>${referral._id || 'N/A'}</td>
+                            <td>${referral.name || 'N/A'}</td>
                             <td>${referral.phone || 'N/A'}</td>
                             <td>${referral.email || 'N/A'}</td>
+                            <td>${referral.totalPayments || 0}</td>
                         `;
                         referralList.appendChild(tr);
                     });
@@ -377,7 +397,7 @@
                         document.getElementById('monthlyCommission').textContent = `৳${(commissionData.monthlyCommission || 0).toFixed(2)}`;
                     } else {
                         const errorText = await commissionResponse.text();
-                        console.error(`Failed to fetch monthly commission: ${commissionResponse.status} ${commissionResponse.statusText} - ${errorText}`);
+                        console.error(`Failed to fetch monthly commission: ${commissionResponse.status} ${response.statusText} - ${errorText}`);
                         document.getElementById('monthlyCommission').textContent = '৳0.00';
                     }
                 } catch (error) {
@@ -414,8 +434,12 @@
                     const claimBtn = document.getElementById('claim-bonus-btn');
                     const strikeMessage = document.getElementById('strikeMessage');
 
-                    collectBtn.style.display = 'block';
-                    convertBtn.style.display = 'block';
+                    collectBtn.style.display = 'flex';
+                    collectBtn.style.alignItems = 'center';
+                    collectBtn.style.justifyContent = 'center';
+                    convertBtn.style.display = 'flex';
+                    convertBtn.style.alignItems = 'center';
+                    convertBtn.style.justifyContent = 'center';
                     claimBtn.style.display = 'none';
                     strikeMessage.textContent = '';
                     strikeMessage.className = 'message';
