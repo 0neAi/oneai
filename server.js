@@ -1885,14 +1885,26 @@ app.get('/admin/user-payments/:email', adminAuth, async (req, res) => {
 app.get('/users/:id', authMiddleware, async (req, res) => {
   try {
     console.log(`Fetching user profile for ID: ${req.params.id}`);
-    const user = await User.findById(req.params.id).populate('referrals', 'phone email').select('+referralBonus +referralBonusStatus +strikeCount +strikeStars +lastPaymentDate +lastStrikeCollectionDate +hasPendingBonusVoucher');
+    const user = await User.findById(req.params.id).populate({
+      path: 'referrals',
+      select: 'name phone email',
+    }).select('+referralBonus +referralBonusStatus +strikeCount +strikeStars +lastPaymentDate +lastStrikeCollectionDate +hasPendingBonusVoucher');
     if (!user) {
       console.error(`User with ID ${req.params.id} not found in /users/:id endpoint.`);
       return res.status(404).json({ success: false, message: 'User not found' });
     }
+
+    const referralsWithPayments = await Promise.all(user.referrals.map(async (referral) => {
+      const paymentCount = await Payment.countDocuments({ user: referral._id, status: 'Completed' });
+      return {
+        ...referral.toObject(),
+        totalPayments: paymentCount,
+      };
+    }));
+
     const vouchers = await Voucher.find({ phone: user.phone, isUsed: false });
-    // Ensure all expected fields are present, even if null/undefined in DB
     const userObject = user.toObject({ virtuals: true });
+    userObject.referrals = referralsWithPayments;
     userObject.referralBonus = userObject.referralBonus || 0;
     userObject.referralBonusStatus = userObject.referralBonusStatus || 'N/A';
     userObject.strikeCount = userObject.strikeCount || 0;
