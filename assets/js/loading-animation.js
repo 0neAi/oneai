@@ -7,6 +7,38 @@ const LoadingAnimation = (function() {
     let matrixCanvas = null;
     let matrixCtx = null;
     let matrixAnimationId = null;
+    let messageIntervalId = null;
+    let messageIndex = 0;
+
+    const hackerMessages = [
+        "> Initializing secure connection...",
+        "> Bypassing firewall protocols...",
+        "> Decrypting data streams...",
+        "> Establishing root access...",
+        "> Injecting payload...",
+        "> Analyzing system vulnerabilities...",
+        "> Accessing restricted directories...",
+        "> Compiling exploit modules...",
+        "> Executing remote commands...",
+        "> Data exfiltration in progress...",
+        "> Evading detection systems...",
+        "> Cleaning up traces...",
+        "> Establishing persistent backdoor...",
+        "> System compromise confirmed...",
+        "> Awaiting admin approval...",
+        "> Processing authentication tokens...",
+        "> Synchronizing user profiles...",
+        "> Finalizing approval sequence...",
+        "> Almost there...",
+        "> Patience is a virtue...",
+        "> Just a few more moments...",
+        "> Verifying credentials...",
+        "> Cross-referencing databases...",
+        "> Initiating redirection protocol...",
+        "> Preparing dashboard interface...",
+        "> Welcome back, agent...",
+        "> Access granted. Enjoy your stay."
+    ];
 
     function init() {
         // Create the loading overlay
@@ -143,6 +175,7 @@ const LoadingAnimation = (function() {
         overlay.style.display = 'flex';
         setTimeout(() => overlay.style.opacity = '1', 10);
         startMatrix();
+        startMessageCycle();
     }
 
     function update(progress, message = null) {
@@ -159,15 +192,31 @@ const LoadingAnimation = (function() {
         }
     }
 
-    function setTerminalMessage(message) {
-        if (!terminalContent) return;
-        terminalContent.textContent = message;
+    function startMessageCycle() {
+        if (messageIntervalId) clearInterval(messageIntervalId);
+        messageIndex = 0;
+        const displayMessage = () => {
+            if (terminalContent) {
+                terminalContent.textContent = hackerMessages[messageIndex];
+                messageIndex = (messageIndex + 1) % hackerMessages.length;
+            }
+        };
+        displayMessage(); // Display first message immediately
+        messageIntervalId = setInterval(displayMessage, 2000); // Change message every 2 seconds
+    }
+
+    function stopMessageCycle() {
+        if (messageIntervalId) {
+            clearInterval(messageIntervalId);
+            messageIntervalId = null;
+        }
     }
 
     function stop() {
         if (!overlay) return;
 
         update(100, "Complete!");
+        stopMessageCycle();
         
         setTimeout(() => {
             overlay.style.opacity = '0';
@@ -214,11 +263,16 @@ const LoadingAnimation = (function() {
     }
 
     function stopMatrix() {
-        clearInterval(matrixAnimationId);
+        if (matrixAnimationId) {
+            clearInterval(matrixAnimationId);
+            matrixAnimationId = null;
+        }
     }
 
     function success(message = "Success!") {
         if (!overlay) init();
+
+        stopMessageCycle(); // Stop hacker messages on success
 
         // Change appearance for success
         overlay.style.background = 'rgba(0, 128, 0, 0.9)';
@@ -285,7 +339,6 @@ const LoadingAnimation = (function() {
     return {
         start,
         update,
-        setTerminalMessage,
         stop,
         success,
         showSuccessWithButton // Expose the new function
