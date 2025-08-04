@@ -908,13 +908,22 @@ window.viewPaymentDetails = function(trxid) {
     const payment = paymentState.payments.find(p => p.trxid === trxid);
     if (payment) {
         const detailsContent = document.getElementById('payment-details-content');
+        let formDataHtml = '';
+        if (payment.form_data) {
+            formDataHtml += '<h4>Submitted Form Data</h4>';
+            for (const [key, value] of Object.entries(payment.form_data)) {
+                formDataHtml += `<p><strong>${key.replace(/_/g, ' ')}:</strong> ${value}</p>`;
+            }
+        }
+
         detailsContent.innerHTML = `
             <p><strong>Company:</strong> ${formatCompanyName(payment.company)}</p>
             <p><strong>TRX ID:</strong> ${payment.trxid}</p>
             <p><strong>Amount:</strong> ৳${payment.amount3.toFixed(2)}</p>
             <p><strong>Status:</strong> <span class="status ${payment.status.toLowerCase()}">${payment.status}</span></p>
             <p><strong>Created:</strong> ${new Date(payment.createdAt).toLocaleString()}</p>
-            ${payment.form_data ? `<p><strong>Form Data:</strong> <pre>${JSON.stringify(payment.form_data, null, 2)}</pre></p>` : ''}
+            <hr>
+            ${formDataHtml}
         `;
         document.getElementById('payment-details-modal').style.display = 'flex';
     } else {
