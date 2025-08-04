@@ -57,7 +57,7 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
             text-align: center;
             flex: 1;
-            min-width: 150px;
+            min-width: 120px;
             max-width: 200px;
         }
 
@@ -120,7 +120,7 @@
             margin-bottom: 2rem;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
             animation: fadeIn 1s ease-in-out;
-            display: none; /* Hidden by default */
+            display: none;
         }
 
         @keyframes fadeIn {
@@ -181,6 +181,54 @@
             color: #fff;
         }
 
+        /* AI Services Section */
+        .ai-services {
+            background: #2a2a4e;
+            padding: 2rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            display: none;
+        }
+
+        .ai-services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .ai-service-btn {
+            background: linear-gradient(135deg, #3a3a5e 0%, #2a2a4e 100%);
+            border: none;
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .ai-service-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .ai-service-btn i {
+            font-size: 1.2rem;
+        }
+
+        /* No Payments Message */
+        .no-payments {
+            text-align: center;
+            padding: 2rem;
+            background: #2a2a4e;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+        }
+
         /* Services Section */
         .services-section {
             margin-bottom: 2rem;
@@ -217,44 +265,6 @@
             color: #e0e0e0;
         }
 
-        /* AI Services Section */
-        .ai-services {
-            background: #2a2a4e;
-            padding: 2rem;
-            border-radius: 10px;
-            margin-bottom: 2rem;
-        }
-
-        .ai-services-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-top: 1rem;
-        }
-
-        .ai-service-btn {
-            background: linear-gradient(135deg, #3a3a5e 0%, #2a2a4e 100%);
-            border: none;
-            color: white;
-            padding: 1rem;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .ai-service-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        .ai-service-btn i {
-            font-size: 1.2rem;
-        }
-
         /* Features Section */
         .features {
             background: #2a2a4e;
@@ -272,16 +282,6 @@
             font-size: 2rem;
             color: #ff69b4;
             margin-right: 1rem;
-        }
-
-        /* No Payments Message */
-        .no-payments {
-            text-align: center;
-            padding: 2rem;
-            background: #2a2a4e;
-            border-radius: 10px;
-            margin-bottom: 2rem;
-            display: none;
         }
 
         /* Responsive Design */
@@ -325,10 +325,10 @@
 
           if (!validateResponse.ok) {
             if (validateData.message === 'Authentication failed: User not approved') {
-                // window.location.href = 'waiting-for-approval.html';
+                window.location.href = 'waiting-for-approval.html';
             } else {
                 localStorage.clear();
-                // window.location.href = 'index.html';
+                window.location.href = 'index.html';
             }
             return;
           }
@@ -351,7 +351,7 @@
         } catch (error) {
           console.error('Error checking user approval status:', error);
           localStorage.clear();
-          // window.location.href = 'index.html';
+          window.location.href = 'index.html';
         }
       })();
     </script>
@@ -447,7 +447,7 @@
         </section>
 
         <!-- AI Services Section -->
-        <section class="ai-services" id="ai-services-section" style="display: none;">
+        <section class="ai-services" id="ai-services-section">
             <h2><i class="fas fa-robot"></i> AI Services</h2>
             <p>Access powerful AI tools with one click</p>
             <div class="ai-services-grid">
@@ -556,8 +556,7 @@
             </div>
         </div>
     </div>
-    <script src="./assets/js/loading-animation.js"></script>
-<script>
+    <script>
 // Global state management
 const paymentState = {
     payments: [],
@@ -571,6 +570,20 @@ const paymentState = {
 const notificationSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-alert-quick-chime-766.mp3');
 
 // Core Functions =============================================================
+
+function togglePaymentSections() {
+    const hasPayments = paymentState.payments.length > 0;
+    const paymentSection = document.getElementById('payment-section');
+    const noPaymentsMessage = document.getElementById('no-payments-message');
+    
+    if (hasPayments) {
+        paymentSection.style.display = 'block';
+        noPaymentsMessage.style.display = 'none';
+    } else {
+        paymentSection.style.display = 'none';
+        noPaymentsMessage.style.display = 'block';
+    }
+}
 
 function addNewPayment(payment) {
     const existing = paymentState.payments.find(p => p.trxid === payment.trxid);
@@ -617,20 +630,6 @@ async function refreshPayments() {
         showError(error.message || 'Failed to refresh payments');
     } finally {
         loadingOverlay.style.display = 'none';
-    }
-}
-
-function togglePaymentSections() {
-    const hasPayments = paymentState.payments.length > 0;
-    const paymentSection = document.getElementById('payment-section');
-    const noPaymentsMessage = document.getElementById('no-payments-message');
-    
-    if (hasPayments) {
-        paymentSection.style.display = 'block';
-        noPaymentsMessage.style.display = 'none';
-    } else {
-        paymentSection.style.display = 'none';
-        noPaymentsMessage.style.display = 'block';
     }
 }
 
@@ -800,7 +799,7 @@ function startCountdown(element, trxid) {
     }
 
     update();
-    paymentState.paymentTimers[trxid] = setInterval(refreshPayments, 1 * 60 * 1000);
+    paymentState.paymentTimers[trxid] = setInterval(update, 1000);
 }
 
 function updateStats() {
@@ -847,17 +846,15 @@ function closePaymentPopup() {
 }
 
 function handlePaymentCompletion(payment) {
-    LoadingAnimation.showSuccessWithButton(`Payment ${payment.trxid} Completed!`, () => {
-        showPaymentPopup(payment);
-        showPaymentNotification(payment);
-        playNotificationSound();
-        
-        if ('vibrate' in navigator) {
-            navigator.vibrate([300, 100, 300]);
-        }
-        
-        setTimeout(refreshPayments, 2000);
-    });
+    showPaymentPopup(payment);
+    showPaymentNotification(payment);
+    playNotificationSound();
+    
+    if ('vibrate' in navigator) {
+        navigator.vibrate([300, 100, 300]);
+    }
+    
+    setTimeout(refreshPayments, 2000);
 }
 
 function formatCompanyName(company) {
@@ -915,7 +912,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const userID = localStorage.getItem('userID');
         
         if (!authToken || !userID) {
-            // window.location.href = 'index.html';
+            window.location.href = 'index.html';
             return;
         }
 
@@ -926,7 +923,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error('Initialization error:', error);
         showError('Failed to load dashboard data');
         setTimeout(() => {
-            // window.location.href = 'index.html';
+            window.location.href = 'index.html';
         }, 3000);
     } finally {
         loadingOverlay.style.display = 'none';
