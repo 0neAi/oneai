@@ -47,6 +47,7 @@
             justify-content: space-around;
             gap: 1rem;
             margin-bottom: 2rem;
+            flex-wrap: wrap;
         }
 
         .stat-card {
@@ -56,6 +57,7 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
             text-align: center;
             flex: 1;
+            min-width: 150px;
             max-width: 200px;
         }
 
@@ -77,6 +79,7 @@
             justify-content: center;
             gap: 1rem;
             margin-bottom: 2rem;
+            flex-wrap: wrap;
         }
 
         .action-btn {
@@ -101,6 +104,11 @@
 
         .help-btn {
             background: linear-gradient(135deg, #28a745 0%, #218838 100%);
+            color: white;
+        }
+
+        .ai-btn {
+            background: linear-gradient(135deg, #6e45e2 0%, #88d3ce 100%);
             color: white;
         }
 
@@ -209,6 +217,44 @@
             color: #e0e0e0;
         }
 
+        /* AI Services Section */
+        .ai-services {
+            background: #2a2a4e;
+            padding: 2rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+        }
+
+        .ai-services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .ai-service-btn {
+            background: linear-gradient(135deg, #3a3a5e 0%, #2a2a4e 100%);
+            border: none;
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .ai-service-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .ai-service-btn i {
+            font-size: 1.2rem;
+        }
+
         /* Features Section */
         .features {
             background: #2a2a4e;
@@ -228,6 +274,16 @@
             margin-right: 1rem;
         }
 
+        /* No Payments Message */
+        .no-payments {
+            text-align: center;
+            padding: 2rem;
+            background: #2a2a4e;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            display: none;
+        }
+
         /* Responsive Design */
         @media screen and (max-width: 768px) {
             .dashboard-header h1 {
@@ -238,6 +294,10 @@
                 display: block;
                 overflow-x: auto;
                 white-space: nowrap;
+            }
+
+            .stat-card {
+                min-width: 120px;
             }
         }
     </style>
@@ -303,7 +363,8 @@
         <div class="navbar-placeholder" style="background: #2c3e50; color: white; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;">
             <i class="fas fa-bars"></i> FREE_PALESTINE
         </div>
-    <div id="payment-details-modal" class="premium-modal">
+        
+        <div id="payment-details-modal" class="premium-modal">
             <div class="premium-modal-content">
                 <h3 class="premium-modal-title"><i class="fas fa-info-circle"></i> Payment Details</h3>
                 <div id="payment-details-content"></div>
@@ -311,16 +372,17 @@
             </div>
         </div>
 
-    <div id="payment-popup" class="payment-popup">
-        <button class="close-btn" onclick="closePaymentPopup()">&times;</button>
-        <i class="fas fa-check-circle success-icon"></i>
-        <h3>Payment Completed!</h3>
-        <p>TRX ID: <span id="popup-trxid"></span></p>
-        <p>Amount: ৳<span id="popup-amount"></span></p>
-        <button class="action-btn refresh-btn" onclick="closePaymentPopup()">
-            OK
-        </button>
-    </div>
+        <div id="payment-popup" class="payment-popup">
+            <button class="close-btn" onclick="closePaymentPopup()">&times;</button>
+            <i class="fas fa-check-circle success-icon"></i>
+            <h3>Payment Completed!</h3>
+            <p>TRX ID: <span id="popup-trxid"></span></p>
+            <p>Amount: ৳<span id="popup-amount"></span></p>
+            <button class="action-btn refresh-btn" onclick="closePaymentPopup()">
+                OK
+            </button>
+        </div>
+        
         <header class="dashboard-header">
             <h1>1ai Dashboard</h1>
             <p>অনুগ্রহ পূর্বক অপেক্ষে করুন, যেকোন সমস্যায় হেল্পলাইনে যোগাযোগ করুন। <br> A Premium Digital Intelligence Platform</p>
@@ -340,7 +402,9 @@
                 <div class="value" id="failed-payments">0</div>
             </div>
         </div>
-<div id="notification-badge" class="notification-badge hidden">0</div>
+        
+        <div id="notification-badge" class="notification-badge hidden">0</div>
+        
         <div class="action-buttons">
             <button class="action-btn refresh-btn" onclick="refreshPayments()">
                 <i class="fas fa-sync-alt"></i> Refresh
@@ -348,9 +412,20 @@
             <button class="action-btn help-btn" onclick="sendHelpRequest()">
                 <i class="fas fa-life-ring"></i> Helpline
             </button>
+            <button class="action-btn ai-btn" onclick="showAiServices()">
+                <i class="fas fa-robot"></i> AI Services
+            </button>
         </div>
 
-        <section class="payment-section">
+        <!-- No Payments Message -->
+        <div class="no-payments" id="no-payments-message">
+            <i class="fas fa-info-circle fa-3x" style="color: #ff69b4; margin-bottom: 1rem;"></i>
+            <h3>No Payment Data Available</h3>
+            <p>You don't have any payment records yet. Complete a transaction to see details here.</p>
+        </div>
+
+        <!-- Payment Section (hidden by default) -->
+        <section class="payment-section" id="payment-section">
             <h2><i class="fas fa-clock"></i> Payment Status</h2>
             <div class="payment-table">
                 <table>
@@ -368,6 +443,32 @@
                         </tr>
                     </tbody>
                 </table>
+            </div>
+        </section>
+
+        <!-- AI Services Section -->
+        <section class="ai-services" id="ai-services-section" style="display: none;">
+            <h2><i class="fas fa-robot"></i> AI Services</h2>
+            <p>Access powerful AI tools with one click</p>
+            <div class="ai-services-grid">
+                <button class="ai-service-btn" onclick="window.open('https://chat.openai.com', '_blank')">
+                    <i class="fab fa-openai"></i> ChatGPT
+                </button>
+                <button class="ai-service-btn" onclick="window.open('https://deepseek.com', '_blank')">
+                    <i class="fas fa-search"></i> DeepSeek
+                </button>
+                <button class="ai-service-btn" onclick="window.open('https://stablediffusion.com', '_blank')">
+                    <i class="fas fa-image"></i> Stable Diffusion
+                </button>
+                <button class="ai-service-btn" onclick="window.open('https://elevenlabs.io', '_blank')">
+                    <i class="fas fa-microphone"></i> ElevenLabs
+                </button>
+                <button class="ai-service-btn" onclick="window.open('https://creator.nightcafe.studio', '_blank')">
+                    <i class="fas fa-moon"></i> NightCafe
+                </button>
+                <button class="ai-service-btn" onclick="window.open('https://midjourney.com', '_blank')">
+                    <i class="fas fa-paint-brush"></i> Midjourney
+                </button>
             </div>
         </section>
 
@@ -477,6 +578,7 @@ function addNewPayment(payment) {
         paymentState.payments.push(payment);
         renderPayment(payment);
         updateStats();
+        togglePaymentSections();
     }
 }
 
@@ -507,6 +609,7 @@ async function refreshPayments() {
         
         renderAllPayments();
         updateStats();
+        togglePaymentSections();
         
         showSuccess('Payments refreshed successfully');
     } catch (error) {
@@ -514,6 +617,20 @@ async function refreshPayments() {
         showError(error.message || 'Failed to refresh payments');
     } finally {
         loadingOverlay.style.display = 'none';
+    }
+}
+
+function togglePaymentSections() {
+    const hasPayments = paymentState.payments.length > 0;
+    const paymentSection = document.getElementById('payment-section');
+    const noPaymentsMessage = document.getElementById('no-payments-message');
+    
+    if (hasPayments) {
+        paymentSection.style.display = 'block';
+        noPaymentsMessage.style.display = 'none';
+    } else {
+        paymentSection.style.display = 'none';
+        noPaymentsMessage.style.display = 'block';
     }
 }
 
@@ -562,17 +679,14 @@ function connectWebSocket() {
 
 function renderAllPayments() {
     const tbody = document.getElementById('payment-status');
-    const paymentSection = document.querySelector('.payment-section');
     tbody.innerHTML = '';
     
     const pendingPayments = paymentState.payments.filter(p => p.status === 'Pending');
 
     if (pendingPayments.length === 0) {
-        paymentSection.style.display = 'none'; // Hide section if no pending payments
         return;
     }
     
-    paymentSection.style.display = 'block'; // Show section if there are pending payments
     const sortedPayments = [...pendingPayments].sort((a, b) => 
         new Date(b.createdAt) - new Date(a.createdAt)
     );
@@ -771,6 +885,15 @@ function showSuccess(message) {
     successDiv.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
     document.body.prepend(successDiv);
     setTimeout(() => successDiv.remove(), 5000);
+}
+
+function showAiServices() {
+    const aiSection = document.getElementById('ai-services-section');
+    if (aiSection.style.display === 'none') {
+        aiSection.style.display = 'block';
+    } else {
+        aiSection.style.display = 'none';
+    }
 }
 
 // Initialization =============================================================
