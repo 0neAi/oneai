@@ -43,28 +43,30 @@
 
         /* Stats */
         .dashboard-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
+            display: flex;
+            justify-content: space-around;
+            gap: 1rem;
             margin-bottom: 2rem;
         }
 
         .stat-card {
             background: #2a2a4e;
-            padding: 1.5rem;
-            border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
             text-align: center;
+            flex: 1;
+            max-width: 200px;
         }
 
         .stat-card h3 {
             margin-top: 0;
-            font-size: 1.2rem;
+            font-size: 1rem;
             color: #a0a0c0;
         }
 
         .stat-card .value {
-            font-size: 2rem;
+            font-size: 1.5rem;
             font-weight: bold;
             color: #ff69b4;
         }
@@ -563,13 +565,15 @@ function renderAllPayments() {
     const paymentSection = document.querySelector('.payment-section');
     tbody.innerHTML = '';
     
-    if (paymentState.payments.length === 0) {
-        paymentSection.style.display = 'none'; // Hide section if no payments
+    const pendingPayments = paymentState.payments.filter(p => p.status === 'Pending');
+
+    if (pendingPayments.length === 0) {
+        paymentSection.style.display = 'none'; // Hide section if no pending payments
         return;
     }
     
-    paymentSection.style.display = 'block'; // Show section if there are payments
-    const sortedPayments = [...paymentState.payments].sort((a, b) => 
+    paymentSection.style.display = 'block'; // Show section if there are pending payments
+    const sortedPayments = [...pendingPayments].sort((a, b) => 
         new Date(b.createdAt) - new Date(a.createdAt)
     );
     
