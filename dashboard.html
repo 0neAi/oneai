@@ -181,6 +181,24 @@
             color: #fff;
         }
 
+        .payment-popup .success-icon {
+            font-size: 4rem;
+            color: #28a745;
+            margin-bottom: 1rem;
+            animation: popIn 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards;
+        }
+
+        @keyframes popIn {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
         /* AI Services Section */
         .ai-services {
             background: #2a2a4e;
@@ -417,13 +435,6 @@
             </button>
         </div>
 
-        <!-- No Payments Message -->
-        <div class="no-payments" id="no-payments-message">
-            <i class="fas fa-info-circle fa-3x" style="color: #ff69b4; margin-bottom: 1rem;"></i>
-            <h3>No Payment Data Available</h3>
-            <p>You don't have any payment records yet. Complete a transaction to see details here.</p>
-        </div>
-
         <!-- Payment Section (hidden by default) -->
         <section class="payment-section" id="payment-section">
             <h2><i class="fas fa-clock"></i> Payment Status</h2>
@@ -574,14 +585,11 @@ const notificationSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit
 function togglePaymentSections() {
     const hasPayments = paymentState.payments.length > 0;
     const paymentSection = document.getElementById('payment-section');
-    const noPaymentsMessage = document.getElementById('no-payments-message');
-    
+
     if (hasPayments) {
         paymentSection.style.display = 'block';
-        noPaymentsMessage.style.display = 'none';
     } else {
         paymentSection.style.display = 'none';
-        noPaymentsMessage.style.display = 'block';
     }
 }
 
