@@ -104,10 +104,24 @@
 
         /* Payment Section */
         .payment-section {
-            background: #2a2a4e;
+            background: linear-gradient(135deg, #2a2a4e 0%, #1e1e3f 100%);
             padding: 2rem;
-            border-radius: 10px;
+            border-radius: 15px;
             margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            animation: fadeIn 1s ease-in-out;
+            display: none; /* Hidden by default */
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .payment-table table {
@@ -116,13 +130,45 @@
         }
 
         .payment-table th, .payment-table td {
-            padding: 1rem;
+            padding: 1rem 1.5rem;
             text-align: left;
             border-bottom: 1px solid #3a3a5e;
+            color: #e0e0e0;
         }
 
         .payment-table th {
             color: #ff69b4;
+            font-size: 1.1rem;
+        }
+
+        .payment-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .payment-table .status {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            text-align: center;
+            min-width: 100px;
+            display: inline-block;
+        }
+
+        .payment-table .status.pending {
+            background-color: #ffc107;
+            color: #000;
+        }
+
+        .payment-table .status.completed {
+            background-color: #28a745;
+            color: #fff;
+        }
+
+        .payment-table .status.failed {
+            background-color: #dc3545;
+            color: #fff;
         }
 
         /* Services Section */
@@ -518,12 +564,11 @@ function renderAllPayments() {
     tbody.innerHTML = '';
     
     if (paymentState.payments.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" class="text-center">No payments found</td></tr>`;
-        paymentSection.style.display = 'none';
+        paymentSection.style.display = 'none'; // Hide section if no payments
         return;
     }
     
-    paymentSection.style.display = 'block';
+    paymentSection.style.display = 'block'; // Show section if there are payments
     const sortedPayments = [...paymentState.payments].sort((a, b) => 
         new Date(b.createdAt) - new Date(a.createdAt)
     );
