@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Entertainment Services | 1ai</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="./assets/css/main.css">
-<style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <style>
         * {
             margin: 0;
             padding: 0;
@@ -29,6 +29,14 @@
             position: relative;
             overflow: hidden;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+            animation: gradientBG 15s ease infinite;
+            background-size: 400% 400%;
+        }
+        
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
         
         header::before {
@@ -39,6 +47,12 @@
             right: 0;
             height: 4px;
             background: linear-gradient(90deg, #e94560, #0dceda, #f9b208);
+            animation: rainbow 5s linear infinite;
+        }
+        
+        @keyframes rainbow {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 100% 50%; }
         }
         
         .logo {
@@ -59,6 +73,13 @@
             align-items: center;
             justify-content: center;
             border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
         }
         
         h1 {
@@ -68,6 +89,7 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            animation: fadeInDown 1s;
         }
         
         .tagline {
@@ -76,6 +98,7 @@
             max-width: 800px;
             margin: 0 auto 20px;
             line-height: 1.6;
+            animation: fadeIn 1.5s;
         }
         
         .container {
@@ -99,6 +122,21 @@
             transition: all 0.3s ease;
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.1);
+            animation: fadeInUp 0.5s;
+            opacity: 0;
+            animation-fill-mode: forwards;
+        }
+        
+        .service-card:nth-child(1) { animation-delay: 0.2s; }
+        .service-card:nth-child(2) { animation-delay: 0.4s; }
+        .service-card:nth-child(3) { animation-delay: 0.6s; }
+        .service-card:nth-child(4) { animation-delay: 0.8s; }
+        .service-card:nth-child(5) { animation-delay: 1s; }
+        .service-card:nth-child(6) { animation-delay: 1.2s; }
+        
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
         .service-card:hover {
@@ -183,154 +221,6 @@
             margin-right: 8px;
         }
         
-        .service-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(5px);
-        }
-        
-        .service-modal.active {
-            opacity: 1;
-            visibility: visible;
-        }
-        
-        .modal-content {
-            background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);
-            width: 90%;
-            max-width: 500px;
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-            transform: translateY(50px);
-            transition: transform 0.5s ease;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .service-modal.active .modal-content {
-            transform: translateY(0);
-        }
-        
-        .modal-header {
-            padding: 20px;
-            background: rgba(15, 52, 96, 0.7);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .modal-title {
-            font-size: 1.5rem;
-            color: #f9b208;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .close-modal {
-            background: none;
-            border: none;
-            color: #e94560;
-            font-size: 1.5rem;
-            cursor: pointer;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            transition: all 0.3s ease;
-        }
-        
-        .close-modal:hover {
-            background: rgba(233, 69, 96, 0.2);
-            transform: rotate(90deg);
-        }
-        
-        .modal-body {
-            padding: 25px;
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            color: #0dceda;
-        }
-        
-        .form-group input,
-        .form-group textarea,
-        .form-group select {
-            width: 100%;
-            padding: 14px;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            background: rgba(0, 0, 0, 0.3);
-            color: white;
-            font-size: 1rem;
-        }
-        
-        .form-group input:focus,
-        .form-group textarea:focus,
-        .form-group select:focus {
-            outline: none;
-            border-color: #0dceda;
-            box-shadow: 0 0 0 3px rgba(13, 206, 218, 0.2);
-        }
-        
-        .quality-options {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-            flex-wrap: wrap;
-        }
-        
-        .quality-option {
-            flex: 1;
-            min-width: 80px;
-            text-align: center;
-            padding: 10px;
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 8px;
-            cursor: pointer;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            transition: all 0.2s ease;
-        }
-        
-        .quality-option:hover {
-            background: rgba(13, 206, 218, 0.1);
-            border-color: #0dceda;
-        }
-        
-        .quality-option.selected {
-            background: rgba(13, 206, 218, 0.2);
-            border-color: #0dceda;
-            color: #0dceda;
-            font-weight: bold;
-        }
-        
-        .modal-footer {
-            padding: 20px;
-            background: rgba(15, 52, 96, 0.3);
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            text-align: center;
-        }
-        
         .section-title {
             text-align: center;
             font-size: 2.2rem;
@@ -340,6 +230,7 @@
             display: inline-block;
             left: 50%;
             transform: translateX(-50%);
+            animation: fadeIn 1s;
         }
         
         .section-title::after {
@@ -364,7 +255,14 @@
             border-radius: 15px;
             padding: 25px;
             border: 1px solid rgba(255, 255, 255, 0.1);
+            animation: fadeInUp 0.5s;
+            opacity: 0;
+            animation-fill-mode: forwards;
         }
+        
+        .testimonial:nth-child(1) { animation-delay: 0.3s; }
+        .testimonial:nth-child(2) { animation-delay: 0.6s; }
+        .testimonial:nth-child(3) { animation-delay: 0.9s; }
         
         .testimonial-header {
             display: flex;
@@ -414,7 +312,15 @@
             background: rgba(255, 255, 255, 0.05);
             border-radius: 15px;
             border: 1px solid rgba(255, 255, 255, 0.1);
+            animation: fadeIn 1s;
+            opacity: 0;
+            animation-fill-mode: forwards;
         }
+        
+        .stat-card:nth-child(1) { animation-delay: 0.2s; }
+        .stat-card:nth-child(2) { animation-delay: 0.4s; }
+        .stat-card:nth-child(3) { animation-delay: 0.6s; }
+        .stat-card:nth-child(4) { animation-delay: 0.8s; }
         
         .stat-number {
             font-size: 3rem;
@@ -434,6 +340,7 @@
             padding: 30px 20px 10px;
             color: #aaa;
             font-size: 0.9rem;
+            animation: fadeIn 1s;
         }
         
         .social-links {
@@ -460,6 +367,24 @@
             background: #0dceda;
             color: #1a1a2e;
             transform: translateY(-5px);
+        }
+        
+        .coming-soon {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .coming-soon::after {
+            content: "Coming Soon";
+            position: absolute;
+            top: 10px;
+            right: -30px;
+            background: #e94560;
+            color: white;
+            padding: 3px 30px;
+            transform: rotate(45deg);
+            font-size: 0.8rem;
+            font-weight: bold;
         }
         
         @media (max-width: 768px) {
@@ -491,32 +416,10 @@
     </header>
 
     <div class="container">
-        <h2 class="section-title">Our Services</h2>
+        <h2 class="section-title">Download Services</h2>
         
         <div class="services-grid">
-            <!-- TikTok Downloader -->
-            <div class="service-card">
-                <div class="card-header">
-                    <div class="card-icon">
-                        <i class="fab fa-tiktok"></i>
-                    </div>
-                    <h3 class="card-title">TikTok Video Downloader</h3>
-                </div>
-                <div class="card-content">
-                    <p class="card-description">Download TikTok videos without watermark in HD quality. Save your favorite videos with just one click.</p>
-                    <ul class="features">
-                        <li>No watermark</li>
-                        <li>High-quality downloads</li>
-                        <li>Fast processing</li>
-                        <li>Batch download support</li>
-                    </ul>
-                    <button class="btn" onclick="openServiceModal('tiktok')">
-                        <i class="fas fa-download"></i> Download Now
-                    </button>
-                </div>
-            </div>
-            
-            <!-- YouTube Downloader -->
+            <!-- YouTube Downloaders -->
             <div class="service-card">
                 <div class="card-header">
                     <div class="card-icon">
@@ -532,96 +435,212 @@
                         <li>Playlist download</li>
                         <li>Subtitles included</li>
                     </ul>
-                    <button class="btn" onclick="openServiceModal('youtube')">
-                        <i class="fas fa-download"></i> Download Now
-                    </button>
+                    <a href="https://ytbdownload.com/home/" target="_blank" class="btn">
+                        <i class="fas fa-download"></i> YTB Downloader
+                    </a>
+                    <a href="https://downloadtube.online/en/" target="_blank" class="btn" style="background: linear-gradient(90deg, #0dceda, #0f3460);">
+                        <i class="fas fa-download"></i> DownloadTube
+                    </a>
                 </div>
             </div>
             
-            <!-- Instagram Downloader -->
+            <!-- Telegram Bots -->
             <div class="service-card">
                 <div class="card-header">
                     <div class="card-icon">
-                        <i class="fab fa-instagram"></i>
+                        <i class="fab fa-telegram"></i>
                     </div>
-                    <h3 class="card-title">Instagram Downloader</h3>
+                    <h3 class="card-title">Useful Telegram Bots</h3>
                 </div>
                 <div class="card-content">
-                    <p class="card-description">Download Instagram photos, videos, reels, and stories in high quality. Save content from any public profile.</p>
+                    <p class="card-description">Access powerful Telegram bots for various services including Truecaller number lookup.</p>
                     <ul class="features">
-                        <li>Photos and videos</li>
-                        <li>Reels and stories</li>
-                        <li>IGTV support</li>
-                        <li>Private account access</li>
+                        <li>Truecaller number finder</li>
+                        <li>Instant information</li>
+                        <li>Easy to use</li>
+                        <li>24/7 available</li>
                     </ul>
-                    <button class="btn" onclick="openServiceModal('instagram')">
-                        <i class="fas fa-download"></i> Download Now
-                    </button>
+                    <a href="https://t.me/s/true_caller" target="_blank" class="btn" style="background: linear-gradient(90deg, #0088cc, #34b7f1);">
+                        <i class="fab fa-telegram"></i> Truecaller Bot
+                    </a>
                 </div>
             </div>
             
-            <!-- Facebook Downloader -->
+            <!-- IP Tools -->
             <div class="service-card">
                 <div class="card-header">
                     <div class="card-icon">
-                        <i class="fab fa-facebook"></i>
+                        <i class="fas fa-map-marker-alt"></i>
                     </div>
-                    <h3 class="card-title">Facebook Video Downloader</h3>
+                    <h3 class="card-title">IP Location Checker</h3>
                 </div>
                 <div class="card-content">
-                    <p class="card-description">Download videos from Facebook with ease. Save videos from pages, groups, and personal profiles.</p>
+                    <p class="card-description">Find the geographical location of any IP address with our accurate IP lookup tool.</p>
                     <ul class="features">
-                        <li>HD video quality</li>
-                        <li>No login required</li>
-                        <li>Private group access</li>
-                        <li>Fast downloads</li>
+                        <li>Precise geolocation</li>
+                        <li>ISP information</li>
+                        <li>Real-time data</li>
+                        <li>Detailed reports</li>
                     </ul>
-                    <button class="btn" onclick="openServiceModal('facebook')">
-                        <i class="fas fa-download"></i> Download Now
-                    </button>
+                    <a href="https://www.iplocation.net/" target="_blank" class="btn" style="background: linear-gradient(90deg, #4CAF50, #8BC34A);">
+                        <i class="fas fa-search"></i> Check IP Location
+                    </a>
                 </div>
             </div>
             
-            <!-- Music Downloader -->
+            <!-- CV Maker -->
             <div class="service-card">
                 <div class="card-header">
                     <div class="card-icon">
-                        <i class="fas fa-music"></i>
+                        <i class="fas fa-file-alt"></i>
                     </div>
-                    <h3 class="card-title">Premium Music Downloader</h3>
+                    <h3 class="card-title">Professional CV Maker</h3>
                 </div>
                 <div class="card-content">
-                    <p class="card-description">Download songs from Spotify, Apple Music, SoundCloud, and more. Get high-quality MP3 files.</p>
+                    <p class="card-description">Create stunning resumes that stand out from the crowd with our easy-to-use CV builder.</p>
                     <ul class="features">
-                        <li>320kbps MP3 quality</li>
-                        <li>Album downloads</li>
-                        <li>Metadata included</li>
-                        <li>Playlist conversion</li>
+                        <li>Professional templates</li>
+                        <li>Easy customization</li>
+                        <li>Download in PDF</li>
+                        <li>ATS friendly</li>
                     </ul>
-                    <button class="btn" onclick="openServiceModal('music')">
-                        <i class="fas fa-download"></i> Download Now
-                    </button>
+                    <a href="https://www.resume.com/" target="_blank" class="btn" style="background: linear-gradient(90deg, #9C27B0, #E91E63);">
+                        <i class="fas fa-file-download"></i> Build Your CV
+                    </a>
                 </div>
             </div>
             
-            <!-- Video Converter -->
+            <!-- Photo Editor -->
             <div class="service-card">
                 <div class="card-header">
                     <div class="card-icon">
-                        <i class="fas fa-file-video"></i>
+                        <i class="fas fa-camera-retro"></i>
                     </div>
-                    <h3 class="card-title">Video Converter Pro</h3>
+                    <h3 class="card-title">Photo Background Remover</h3>
                 </div>
                 <div class="card-content">
-                    <p class="card-description">Convert videos between formats with our powerful converter. Supports all popular formats.</p>
+                    <p class="card-description">Remove backgrounds from images automatically with AI-powered tools in seconds.</p>
                     <ul class="features">
-                        <li>MP4, AVI, MOV, MKV</li>
-                        <li>4K conversion</li>
+                        <li>100% automatic</li>
+                        <li>High quality results</li>
+                        <li>No registration</li>
+                        <li>Free to use</li>
+                    </ul>
+                    <a href="https://www.remove.bg/" target="_blank" class="btn" style="background: linear-gradient(90deg, #FF5722, #FF9800);">
+                        <i class="fas fa-magic"></i> Remove Background
+                    </a>
+                </div>
+            </div>
+            
+            <!-- MP4 to MP3 -->
+            <div class="service-card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-file-audio"></i>
+                    </div>
+                    <h3 class="card-title">MP4 to MP3 Converter</h3>
+                </div>
+                <div class="card-content">
+                    <p class="card-description">Convert video files to high-quality MP3 audio files quickly and easily.</p>
+                    <ul class="features">
+                        <li>Fast conversion</li>
+                        <li>High quality audio</li>
                         <li>Batch processing</li>
-                        <li>No quality loss</li>
+                        <li>No installation</li>
                     </ul>
-                    <button class="btn" onclick="openServiceModal('converter')">
+                    <a href="https://online-audio-converter.com/" target="_blank" class="btn" style="background: linear-gradient(90deg, #607D8B, #9E9E9E);">
                         <i class="fas fa-exchange-alt"></i> Convert Now
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <h2 class="section-title">Streaming & Entertainment</h2>
+        <div class="services-grid">
+            <!-- Movies Section -->
+            <div class="service-card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-film"></i>
+                    </div>
+                    <h3 class="card-title">Movies & TV Shows</h3>
+                </div>
+                <div class="card-content">
+                    <p class="card-description">Watch latest movies and TV shows in HD quality with multiple language options.</p>
+                    <ul class="features">
+                        <li>HD quality streaming</li>
+                        <li>Multiple languages</li>
+                        <li>Large collection</li>
+                        <li>Regular updates</li>
+                    </ul>
+                    <a href="https://mlwbd.love/" target="_blank" class="btn" style="background: linear-gradient(90deg, #E91E63, #9C27B0);">
+                        <i class="fas fa-play"></i> Watch Movies
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Bachelor Point -->
+            <div class="service-card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-tv"></i>
+                    </div>
+                    <h3 class="card-title">Bachelor Point Series</h3>
+                </div>
+                <div class="card-content">
+                    <p class="card-description">Watch all episodes of popular series Bachelor Point Season 5 on Telegram.</p>
+                    <ul class="features">
+                        <li>All episodes available</li>
+                        <li>HD quality</li>
+                        <li>Direct download</li>
+                        <li>No ads</li>
+                    </ul>
+                    <a href="https://t.me/Bachelorpoint_season5" target="_blank" class="btn" style="background: linear-gradient(90deg, #0088cc, #34b7f1);">
+                        <i class="fab fa-telegram"></i> Watch on Telegram
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Empty Section 1 -->
+            <div class="service-card coming-soon">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-plus-circle"></i>
+                    </div>
+                    <h3 class="card-title">New Service Coming</h3>
+                </div>
+                <div class="card-content">
+                    <p class="card-description">We're constantly adding new services to enhance your experience. Check back soon!</p>
+                    <ul class="features">
+                        <li>Exciting new features</li>
+                        <li>Improved performance</li>
+                        <li>User requests</li>
+                        <li>Coming soon</li>
+                    </ul>
+                    <button class="btn" style="background: linear-gradient(90deg, #607D8B, #9E9E9E);" disabled>
+                        <i class="fas fa-clock"></i> Coming Soon
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Empty Section 2 -->
+            <div class="service-card coming-soon">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-plus-circle"></i>
+                    </div>
+                    <h3 class="card-title">New Service Coming</h3>
+                </div>
+                <div class="card-content">
+                    <p class="card-description">We're constantly adding new services to enhance your experience. Check back soon!</p>
+                    <ul class="features">
+                        <li>Exciting new features</li>
+                        <li>Improved performance</li>
+                        <li>User requests</li>
+                        <li>Coming soon</li>
+                    </ul>
+                    <button class="btn" style="background: linear-gradient(90deg, #607D8B, #9E9E9E);" disabled>
+                        <i class="fas fa-clock"></i> Coming Soon
                     </button>
                 </div>
             </div>
@@ -643,7 +662,7 @@
             </div>
             <div class="stat-card">
                 <div class="stat-number">50+</div>
-                <div class="stat-label">Platforms</div>
+                <div class="stat-label">Services</div>
             </div>
         </div>
         
@@ -654,7 +673,7 @@
                     <div class="testimonial-avatar">S</div>
                     <div class="testimonial-name">Sarah Johnson</div>
                 </div>
-                <p class="testimonial-text">"The TikTok downloader is amazing! I can finally save my favorite videos without watermark. Service is super fast too!"</p>
+                <p class="testimonial-text">"The YouTube downloader works perfectly! I can finally save my favorite videos in HD quality. Service is super fast too!"</p>
                 <div class="testimonial-rating">
                     <i class="fas fa-star"></i>
                     <i class="fas fa-star"></i>
@@ -669,7 +688,7 @@
                     <div class="testimonial-avatar">M</div>
                     <div class="testimonial-name">Michael Chen</div>
                 </div>
-                <p class="testimonial-text">"I've tried many YouTube downloaders, but this one is by far the best. The 4K quality option is perfect for my needs."</p>
+                <p class="testimonial-text">"The Truecaller bot helped me identify unknown callers instantly. This service is a lifesaver!"</p>
                 <div class="testimonial-rating">
                     <i class="fas fa-star"></i>
                     <i class="fas fa-star"></i>
@@ -684,7 +703,7 @@
                     <div class="testimonial-avatar">A</div>
                     <div class="testimonial-name">Alex Rodriguez</div>
                 </div>
-                <p class="testimonial-text">"The music downloader saved me so much time! I can now download entire playlists from Spotify with perfect metadata."</p>
+                <p class="testimonial-text">"The movie collection is amazing! I can watch all the latest releases in HD quality without any hassle."</p>
                 <div class="testimonial-rating">
                     <i class="fas fa-star"></i>
                     <i class="fas fa-star"></i>
@@ -692,104 +711,6 @@
                     <i class="fas fa-star"></i>
                     <i class="fas fa-star-half-alt"></i>
                 </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- TikTok Modal -->
-    <div class="service-modal" id="tiktok-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title"><i class="fab fa-tiktok"></i> TikTok Video Downloader</h3>
-                <button class="close-modal" onclick="closeModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label for="tiktok-url">TikTok Video URL</label>
-                    <input type="text" id="tiktok-url" placeholder="https://www.tiktok.com/@username/video/123456789">
-                </div>
-                <div class="form-group">
-                    <label>Quality Options</label>
-                    <div class="quality-options">
-                        <div class="quality-option selected">HD</div>
-                        <div class="quality-option">SD</div>
-                        <div class="quality-option">Audio Only</div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn">
-                    <i class="fas fa-download"></i> Download Video
-                </button>
-            </div>
-        </div>
-    </div>
-    
-    <!-- YouTube Modal -->
-    <div class="service-modal" id="youtube-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title"><i class="fab fa-youtube"></i> YouTube Video Downloader</h3>
-                <button class="close-modal" onclick="closeModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label for="youtube-url">YouTube Video URL</label>
-                    <input type="text" id="youtube-url" placeholder="https://www.youtube.com/watch?v=abc123">
-                </div>
-                <div class="form-group">
-                    <label for="format">Download Format</label>
-                    <select id="format">
-                        <option value="mp4">MP4 Video</option>
-                        <option value="mp3">MP3 Audio</option>
-                        <option value="webm">WebM</option>
-                        <option value="m4a">M4A Audio</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Quality Options</label>
-                    <div class="quality-options">
-                        <div class="quality-option">1080p</div>
-                        <div class="quality-option selected">720p</div>
-                        <div class="quality-option">480p</div>
-                        <div class="quality-option">360p</div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn">
-                    <i class="fas fa-download"></i> Download Now
-                </button>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Instagram Modal -->
-    <div class="service-modal" id="instagram-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title"><i class="fab fa-instagram"></i> Instagram Downloader</h3>
-                <button class="close-modal" onclick="closeModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label for="instagram-url">Instagram Post URL</label>
-                    <input type="text" id="instagram-url" placeholder="https://www.instagram.com/p/Abc123/">
-                </div>
-                <div class="form-group">
-                    <label>Content Type</label>
-                    <div class="quality-options">
-                        <div class="quality-option selected">Photo</div>
-                        <div class="quality-option">Video</div>
-                        <div class="quality-option">Reel</div>
-                        <div class="quality-option">Story</div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn">
-                    <i class="fas fa-download"></i> Download Content
-                </button>
             </div>
         </div>
     </div>
@@ -806,51 +727,51 @@
     </footer>
 
     <script>
-        // Function to open service modal
-        function openServiceModal(service) {
-            closeModal(); // Close any open modals
-            document.getElementById(`${service}-modal`).classList.add('active');
-        }
-        
-        // Function to close modal
-        function closeModal() {
-            document.querySelectorAll('.service-modal').forEach(modal => {
-                modal.classList.remove('active');
-            });
-        }
-        
-        // Close modal when clicking outside content
-        document.querySelectorAll('.service-modal').forEach(modal => {
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    closeModal();
+        // Animate elements when they come into view
+        const animateOnScroll = () => {
+            const elements = document.querySelectorAll('.service-card, .testimonial, .stat-card');
+            
+            elements.forEach(element => {
+                const elementPosition = element.getBoundingClientRect().top;
+                const windowHeight = window.innerHeight;
+                
+                if (elementPosition < windowHeight - 100) {
+                    element.style.animationPlayState = 'running';
                 }
             });
-        });
+        };
         
-        // Quality option selection
-        document.querySelectorAll('.quality-option').forEach(option => {
-            option.addEventListener('click', function() {
-                // Remove selected class from siblings
-                this.parentElement.querySelectorAll('.quality-option').forEach(el => {
-                    el.classList.remove('selected');
-                });
-                // Add selected class to clicked element
-                this.classList.add('selected');
+        // Run animation check on load and scroll
+        window.addEventListener('load', animateOnScroll);
+        window.addEventListener('scroll', animateOnScroll);
+        
+        // Add hover effect to service cards
+        document.querySelectorAll('.service-card').forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.style.transform = 'translateY(-10px)';
+                card.style.boxShadow = '0 15px 30px rgba(0, 0, 0, 0.3)';
+            });
+            
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'translateY(0)';
+                card.style.boxShadow = '0 10px 20px rgba(0, 0, 0, 0.2)';
             });
         });
         
-        // Simulate download button functionality
+        // Add click effect to buttons
         document.querySelectorAll('.btn').forEach(btn => {
-            if (btn.textContent.includes('Download')) {
-                btn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    alert('Thank you for your request! Your download will begin shortly.\n\nNote: This is a demo interface. In a real application, this would initiate the download process.');
-                    closeModal();
-                });
-            }
+            btn.addEventListener('mousedown', () => {
+                btn.style.transform = 'translateY(1px)';
+            });
+            
+            btn.addEventListener('mouseup', () => {
+                btn.style.transform = 'translateY(-3px)';
+            });
+            
+            btn.addEventListener('mouseleave', () => {
+                btn.style.transform = 'translateY(0)';
+            });
         });
     </script>
-<script src="./assets/js/main.js"></script>
 </body>
 </html>
