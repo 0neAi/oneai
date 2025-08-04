@@ -9,452 +9,188 @@
     <link rel="stylesheet" href="./assets/css/main.css">
     <link rel="manifest" href="/manifest.json">
     <style>
-        /* Mobile-first responsive enhancements */
-        @media screen and (max-width: 736px) {
+        /* General Body Styles */
+        body {
+            background-color: #1a1a2e;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        /* Header */
+        .dashboard-header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding: 2rem 0;
+            border-bottom: 1px solid #3a3a5e;
+        }
+
+        .dashboard-header h1 {
+            font-size: 2.5rem;
+            color: #ff69b4;
+            margin: 0;
+        }
+
+        .dashboard-header p {
+            font-size: 1.1rem;
+            color: #a0a0c0;
+        }
+
+        /* Stats */
+        .dashboard-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: #2a2a4e;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+
+        .stat-card h3 {
+            margin-top: 0;
+            font-size: 1.2rem;
+            color: #a0a0c0;
+        }
+
+        .stat-card .value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #ff69b4;
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .action-btn {
+            padding: 0.8rem 1.5rem;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 150px;
+            text-align: center;
+        }
+
+        .refresh-btn {
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+            color: white;
+        }
+
+        .help-btn {
+            background: linear-gradient(135deg, #28a745 0%, #218838 100%);
+            color: white;
+        }
+
+        /* Payment Section */
+        .payment-section {
+            background: #2a2a4e;
+            padding: 2rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+        }
+
+        .payment-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .payment-table th, .payment-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #3a3a5e;
+        }
+
+        .payment-table th {
+            color: #ff69b4;
+        }
+
+        /* Services Section */
+        .services-section {
+            margin-bottom: 2rem;
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .service-card {
+            background: #2a2a4e;
+            padding: 2rem;
+            border-radius: 10px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .service-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .service-card i {
+            font-size: 2.5rem;
+            color: #ff69b4;
+            margin-bottom: 1rem;
+        }
+
+        .service-card h3 {
+            font-size: 1.3rem;
+            color: #e0e0e0;
+        }
+
+        /* Features Section */
+        .features {
+            background: #2a2a4e;
+            padding: 2rem;
+            border-radius: 10px;
+        }
+
+        .feature {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-icon {
+            font-size: 2rem;
+            color: #ff69b4;
+            margin-right: 1rem;
+        }
+
+        /* Responsive Design */
+        @media screen and (max-width: 768px) {
+            .dashboard-header h1 {
+                font-size: 2rem;
+            }
+
             .payment-table table {
                 display: block;
                 overflow-x: auto;
                 white-space: nowrap;
             }
-            .payment-table thead, .payment-table tbody, .payment-table th, .payment-table td, .payment-table tr {
-                display: block;
-            }
-            .payment-table thead tr {
-                position: absolute;
-                top: -9999px;
-                left: -9999px;
-            }
-            .payment-table tr {
-                border: 1px solid #eee;
-                margin-bottom: 10px;
-            }
-            .payment-table td {
-                border: none;
-                border-bottom: 1px solid #eee;
-                position: relative;
-                padding-left: 50%;
-                text-align: right;
-            }
-            .payment-table td:before {
-                position: absolute;
-                top: 6px;
-                left: 6px;
-                width: 45%;
-                padding-right: 10px;
-                white-space: nowrap;
-                text-align: left;
-                font-weight: bold;
-            }
-            .payment-table td:nth-of-type(1):before { content: "Status"; }
-            .payment-table td:nth-of-type(2):before { content: "Time Left"; }
-            .payment-table td:nth-of-type(3):before { content: "Company"; }
-            .payment-table td:nth-of-type(4):before { content: "TRX ID"; }
-            .payment-table td:nth-of-type(5):before { content: "Amount"; }
-            .payment-table td:nth-of-type(6):before { content: "Actions"; }
-            
-            .services-grid {
-                grid-template-columns: repeat(1, 1fr);
-                gap: 1rem;
-            }
-            
-            .service-card h3 {
-                font-size: 1.2rem;
-            }
-            /* Larger buttons for mobile */
-            .action-btn {
-                padding: 0.8rem 1.5rem;
-                font-size: 1.1rem;
-            }
-        }
-        
-        @media screen and (min-width: 737px) {
-            .services-grid {
-                grid-template-columns: repeat(3, 1fr);
-            }
-            
-            .dashboard-stats {
-                flex-direction: row;
-            }
-        }
-        
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.8);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            color: white;
-        }
-        
-        .status {
-            padding: 0.5rem 0.8rem;
-            border-radius: 8px;
-            font-weight: bold;
-            text-transform: uppercase;
-            font-size: 0.9rem;
-            text-align: center;
-            min-width: 100px;
-            display: inline-block;
-        }
-        
-        .status.pending {
-            background-color: #FFC107;
-            color: #000;
-            animation: pulse-yellow 2s infinite;
-        }
-        
-        .status.completed {
-            background-color: #28A745;
-            color: #FFF;
-        }
-
-        @keyframes pulse-yellow {
-            0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(255, 193, 7, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
-        }
-        
-        .status.failed {
-            background-color: #DC3545;
-            color: #FFF;
-        }
-        
-        .expired {
-            color: #DC3545;
-            font-weight: bold;
-        }
-        
-        .error {
-            position: fixed;
-            top: 1rem;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #DC3545;
-            color: white;
-            padding: 1rem;
-            border-radius: 4px;
-            z-index: 10000;
-            animation: fadeIn 0.3s ease-in-out;
-        }
-        
-        .success {
-            position: fixed;
-            top: 1rem;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #28A745;
-            color: white;
-            padding: 1rem;
-            border-radius: 4px;
-            z-index: 10000;
-            animation: fadeIn 0.3s ease-in-out;
-        }
-        
-        .dashboard-stats {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-        
-        .stat-card {
-            flex: 1;
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 1.5rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .stat-card h3 {
-            margin-top: 0;
-            color: #6c757d;
-            font-size: 1rem;
-        }
-        
-        .stat-card .value {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #343a40;
-        }
-        
-    .action-buttons {
-        display: flex;
-        gap: 1rem;
-        margin-top: 1rem;
-        justify-content: center; /* Center buttons horizontally */
-    }
-
-    .action-btn {
-        padding: 0.8rem 1.5rem;
-        border-radius: 4px;
-        border: none;
-        cursor: pointer;
-        font-weight: bold;
-        transition: all 0.3s ease;
-        font-size: 1rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 150px; /* Give buttons consistent width */
-        text-align: center; /* Center text */
-    }
-        
-        .action-btn:hover {
-            transform: translateY(-2px);
-        }
-        
- .refresh-btn {
-        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
-        color: white;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-
-    .refresh-btn:hover {
-        background: linear-gradient(135deg, #138496 0%, #117a8b 100%);
-        transform: translateY(-2px);
-        box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
-    }
-
-    .help-btn {
-        background: linear-gradient(135deg, #28a745 0%, #218838 100%);
-        color: white;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-
-    .help-btn:hover {
-        background: linear-gradient(135deg, #218838 0%, #1e7e34 100%);
-        transform: translateY(-2px);
-        box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
-    }
-
-    /* Add pulse animation for important actions */
-    @keyframes pulse {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.05); }
-        100% { transform: scale(1); }
-    }
-
-    .action-btn:active {
-        animation: pulse 0.3s ease;
-    }
-
-    /* Make icons consistent with text */
-    .action-btn i {
-        margin-right: 8px;
-        font-size: 0.9em;
-    }
-        
-        .service-card {
-            background: rgba(40, 40, 60, 0.5);
-            border-radius: 15px;
-            padding: 30px 20px;
-            text-align: center;
-            transition: all 0.4s ease;
-            backdrop-filter: blur(12px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-            border: 1px solid rgba(255,255,255,0.15);
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .service-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 15px 30px rgba(0,0,0,0.3);
-            background: rgba(50, 50, 70, 0.6);
-            border-color: rgba(78, 204, 163, 0.3);
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; top: 0; }
-            to { opacity: 1; top: 1rem; }
-        }
-        
-        .premium-payment {
-            background: linear-gradient(135deg, rgba(111,66,193,0.1) 0%, rgba(90,45,145,0.1) 100%);
-        }
-        .premium-payment td:first-child {
-            font-weight: bold;
-            color: #6f42c1;
-        }
-        
-        /* Premium Payment Modal */
-        .premium-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.7);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 10000;
-        }
-        
-        .premium-modal-content {
-            background: white;
-            padding: 2rem;
-            border-radius: 8px;
-            width: 90%;
-            max-width: 500px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        }
-        
-        .premium-form-group {
-            margin-bottom: 1.5rem;
-        }
-        
-        .premium-form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: bold;
-            color: #444;
-        }
-        
-        .premium-form-group input, 
-        .premium-form-group select {
-            width: 100%;
-            padding: 0.8rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 1rem;
-        }
-        
-        .premium-form-group input:focus, 
-        .premium-form-group select:focus {
-            outline: none;
-            border-color: #6f42c1;
-            box-shadow: 0 0 0 3px rgba(111, 66, 193, 0.1);
-        }
-        
-        .premium-modal-title {
-            color: #6f42c1;
-            margin-top: 0;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        /* Premium crown styling */
-        .premium-icon {
-            color: gold;
-            text-shadow: 0 0 3px rgba(0,0,0,0.3);
-        }
-                /* New notification badge */
-        .notification-badge {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            background: #4CAF50;
-            color: white;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.8rem;
-            z-index: 10000;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-        }
-                /* Add this new style for the payment popup */
-        .payment-popup {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: white;
-            padding: 2rem;
-            border-radius: 8px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            z-index: 10001;
-            display: none;
-            text-align: center;
-            max-width: 400px;
-            width: 90%;
-            animation: slideIn 0.5s ease-out;
-        }
-        
-        @keyframes slideIn {
-            from { transform: translate(-50%, -60%); opacity: 0; }
-            to { transform: translate(-50%, -50%); opacity: 1; }
-        }
-        
-        .payment-popup.active {
-            display: block;
-        }
-        
-        .payment-popup h3 {
-            margin-top: 0;
-            color: #28A745;
-        }
-        
-        .payment-popup .success-icon {
-            color: #28A745;
-            font-size: 3rem;
-            margin-bottom: 1rem;
-        }
-        
-        .payment-popup .close-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: #6c757d;
-        }
-                /* Features section */
-        .features {
-            background: rgba(5, 15, 5, 0.85);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(0, 255, 65, 0.3);
-            border-radius: 12px;
-            padding: 30px;
-            width: 100%;
-            max-width: 500px;
-            box-shadow: 0 0 30px rgba(0, 255, 65, 0.1);
-            position: relative;
-            z-index: 10;
-        }
-        
-        .features h3 {
-            font-size: 1.8rem;
-            margin-bottom: 25px;
-            text-align: center;
-            color: #00FF41;
-            text-shadow: 0 0 5px rgba(0, 255, 65, 0.5);
-        }
-        
-        .feature {
-            display: flex;
-            align-items: flex-start;
-            margin-bottom: 25px;
-        }
-        
-        .feature-icon {
-            font-size: 1.8rem;
-            color: #00FF41;
-            margin-right: 15px;
-            min-width: 40px;
-            text-align: center;
-        }
-        
-        .feature-content h4 {
-            font-size: 1.3rem;
-            margin-bottom: 8px;
-            color: #aaffaa;
-        }
-        
-        .feature-content p {
-            color: #88cc88;
-            line-height: 1.6;
         }
     </style>
 </head>
@@ -477,20 +213,18 @@
             }
           });
 
-          const validateData = await validateResponse.json(); // Parse JSON here
+          const validateData = await validateResponse.json();
 
           if (!validateResponse.ok) {
-            // Existing error handling for non-OK responses
             if (validateData.message === 'Authentication failed: User not approved') {
                 // window.location.href = 'waiting-for-approval.html';
             } else {
-                localStorage.clear(); // Clear local storage on invalid token or other errors
+                localStorage.clear();
                 // window.location.href = 'index.html';
             }
             return;
           }
 
-          // New check for isAdminApproved when response is OK
           if (validateData.isAdminApproved === false) {
               window.location.href = 'waiting-for-approval.html';
               return;
@@ -505,11 +239,10 @@
 
           if (!userResponse.ok) {
             console.error('Failed to fetch user details after successful validation.');
-            // Do not redirect or clear local storage here. The user is already authenticated and approved.
           }
         } catch (error) {
           console.error('Error checking user approval status:', error);
-          localStorage.clear(); // Clear local storage on any error during initial check 
+          localStorage.clear();
           // window.location.href = 'index.html';
         }
       })();
@@ -519,21 +252,17 @@
         <p>Loading your payment data...</p>
     </div>
     <div class="container">
-        <!-- Navbar will be injected here by load-navbar.js -->
         <div class="navbar-placeholder" style="background: #2c3e50; color: white; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;">
             <i class="fas fa-bars"></i> FREE_PALESTINE
         </div>
     <div id="payment-details-modal" class="premium-modal">
             <div class="premium-modal-content">
                 <h3 class="premium-modal-title"><i class="fas fa-info-circle"></i> Payment Details</h3>
-                <div id="payment-details-content">
-                    <!-- Details will be loaded here -->
-                </div>
+                <div id="payment-details-content"></div>
                 <button class="action-btn refresh-btn" onclick="closePaymentDetailsModal()">Close</button>
             </div>
         </div>
 
-    <!-- Add this new payment popup element -->
     <div id="payment-popup" class="payment-popup">
         <button class="close-btn" onclick="closePaymentPopup()">&times;</button>
         <i class="fas fa-check-circle success-icon"></i>
@@ -573,9 +302,6 @@
             </button>
         </div>
 
-        
-
-<br><br>
         <section class="payment-section">
             <h2><i class="fas fa-clock"></i> Payment Status</h2>
             <div class="payment-table">
@@ -589,9 +315,8 @@
                         </tr>
                     </thead>
                     <tbody id="payment-status">
-                        <!-- Dynamic content will be inserted here -->
                         <tr>
-                            <td colspan="6" class="text-center">Loading payment data...</td>
+                            <td colspan="4" class="text-center">Loading payment data...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -601,42 +326,40 @@
         <section class="services-section">
             <h2><i class="fas fa-cogs"></i> Services</h2>
             <div class="services-grid">
-                <!-- FIXED OTP GENERATOR BUTTON (changed to anchor tag) -->
                 <a href="otpgen.html" class="service-card">
-                    <i class="fas fa-shield-alt fa-3x"></i>
+                    <i class="fas fa-shield-alt"></i>
                     <h3>OTP Generator</h3>
                 </a>
                 <a href="entertainment.html" class="service-card">
-                    <i class="fas fa-life-ring fa-3x"></i>
+                    <i class="fas fa-life-ring"></i>
                     <h3>ENTERTAINMENT</h3>
                 </a>
                 <div class="service-card" onclick="showPremiumPaymentForm()">
-                    <i class="fas fa-unlock-alt fa-3x"></i>
+                    <i class="fas fa-unlock-alt"></i>
                     <h3>Password Cracker</h3>
                 </div>
                 <div class="service-card" onclick="showPremiumPaymentForm()">
-                    <i class="fas fa-map-marker-alt fa-3x"></i>
+                    <i class="fas fa-map-marker-alt"></i>
                     <h3>Location Tracker</h3>
                 </div>
                 <div class="service-card" onclick="showPremiumPaymentForm()">
-                    <i class="fas fa-address-book fa-3x"></i>
+                    <i class="fas fa-address-book"></i>
                     <h3>NID Call List</h3>
                 </div>
                 <div class="service-card" onclick="showPremiumPaymentForm()">
-                    <i class="fas fa-mobile-alt fa-3x"></i>
+                    <i class="fas fa-mobile-alt"></i>
                     <h3>Android Remote</h3>
                 </div>
-                <!-- Changed functionality: Now shows help instructions -->
                 <div class="service-card" onclick="showHelpInstructions()">
-                    <i class="fas fa-question-circle fa-3x"></i>
+                    <i class="fas fa-question-circle"></i>
                     <h3>Help</h3>
                 </div>
             </div>
         </section>
-    </div>
-            <div class="features"><br>
+
+        <div class="features">
             <h3>Why Choose 1AI?</h3>
-                    <div class="feature">
+            <div class="feature">
                 <div class="feature-icon">
                     <i class="fas fa-headset"></i>
                 </div>
@@ -646,7 +369,7 @@
                     <p>অনলাইন কুরিয়ার সার্ভিসঃ প্রাইসচেঞ্জ, ডেলিভারি, রিটার্ন, পেইডরিটার্ন সহ সকল প্রিমিয়াম সার্ভিস। </p>
                 </div>
             </div>
-                        <div class="feature">
+            <div class="feature">
                 <div class="feature-icon">
                     <i class="fas fa-headset"></i>
                 </div>
@@ -664,7 +387,6 @@
                     <p> কোন কারণে 1@i কাঙ্ক্ষিত সেবা প্রদান ব্যাহত হলে স্বয়ংক্রিয় ভাবে গ্রাহকদের পেমেন্ট রিভার্স-রিটার্ন করা হবে।সার্ভারে কোন কাজ সম্পন্ন হলে সার্ভারচার্জ স্বয়ংক্রিয় ভাবে কাটা হবে।কোন যান্ত্রিক ত্রুটির কারণে কোন সেবার মান নিয়ন্ত্রণ সম্ভব না হলে 1@i কোন ভাবেই দায়ী নয়।</p>
                 </div>
             </div>
-        </div> 
             <div class="feature">
                 <div class="feature-icon">
                     <i class="fas fa-bolt"></i>
@@ -674,7 +396,6 @@
                     <p>Our AI algorithms process requests in milliseconds for real-time performance.</p>
                 </div>
             </div>
-            
             <div class="feature">
                 <div class="feature-icon">
                     <i class="fas fa-robot"></i>
@@ -684,7 +405,7 @@
                     <p>ওয়ান এআই সার্ভিস সম্পুর্ণ স্বয়ংক্রিয়ভাবে আপনার সেবাপ্রদান নিশ্চিত করবে, এক্ষেত্রে কিছুসময় অপেক্ষাকরুন।1@i সম্পূর্ণ স্বাধীন এআই মডেল যারউপর কারো সম্পূর্ণ নিয়ন্ত্রণ সম্ভব নয়। Powered by cutting-edge machine learning models trained on massive datasets.</p>
                 </div>
             </div>
-       
+        </div>
     </div>
     <script src="./assets/js/loading-animation.js"></script>
 <script>
@@ -719,7 +440,6 @@ async function refreshPayments() {
     try {
         loadingOverlay.style.display = 'flex';
         
-        // Clear existing timers
         Object.values(paymentState.paymentTimers).forEach(timer => clearInterval(timer));
         paymentState.paymentTimers = {};
         
@@ -798,7 +518,7 @@ function renderAllPayments() {
     tbody.innerHTML = '';
     
     if (paymentState.payments.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center">No payments found</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center">No payments found</td></tr>`;
         paymentSection.style.display = 'none';
         return;
     }
@@ -1131,13 +851,11 @@ document.getElementById('notification-badge').addEventListener('click', function
                         swReg.pushManager.getSubscription()
                             .then(subscription => {
                                 if (subscription === null) {
-                                    // Not subscribed, so ask for permission
                                     swReg.pushManager.subscribe({
                                         userVisibleOnly: true,
                                         applicationServerKey: 'BC4WNXapAoWn3i2p5JW1aCwMEGPzS0fEfK5qc_3tA0-q4rNKcJWjpf92dfXQ6OmrrkHUbDSWv_w5AJ9qYGIdRv4'
                                     })
                                     .then(newSubscription => {
-                                        // Send the subscription to the server
                                         fetch('https://oneai-wjox.onrender.com/subscribe', {
                                             method: 'POST',
                                             body: JSON.stringify(newSubscription),
