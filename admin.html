@@ -1466,6 +1466,7 @@
                         if (response.data.success) {
                             localStorage.setItem('adminToken', response.data.token);
                             this.isAuthenticated = true;
+                            this.loadData();
                         }
                     } catch (error) {
                         this.loginError = (error.response && error.response.data && error.response.data.message) 
