@@ -1,1036 +1,777 @@
-<!DOCTYPE HTML>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="bn">
 <head>
-    <title>0NEAi Dashboard</title>
-    <link rel="icon" href="./images/logo.png" type="image/png">
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>বিনোদন সেবা | 1ai</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="./assets/css/main.css">
-    <link rel="manifest" href="/manifest.json">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
     <style>
-        /* General Body Styles */
-        body {
-            background-color: #1a1a2e;
-            color: #e0e0e0;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-
+        
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding-bottom: 40px;
+        }
+        
+        header {
+            background: linear-gradient(90deg, #0f3460 0%, #1a1a2e 100%);
+            padding: 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+            animation: gradientBG 15s ease infinite;
+            background-size: 400% 400%;
+        }
+        
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        header::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #e94560, #0dceda, #f9b208);
+            animation: rainbow 5s linear infinite;
+        }
+        
+        @keyframes rainbow {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 100% 50%; }
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .logo i {
+            font-size: 2.5rem;
+            color: #e94560;
+            background: rgba(233, 69, 96, 0.1);
+            width: 70px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #f9b208, #e94560, #0dceda);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            animation: fadeInDown 1s;
+        }
+        
+        .tagline {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 800px;
+            margin: 0 auto 20px;
+            line-height: 1.6;
+            animation: fadeIn 1.5s;
+        }
+        
         .container {
             max-width: 1200px;
-            margin: 0 auto;
-            padding: 1rem;
+            margin: 30px auto;
+            padding: 0 20px;
         }
-
-        /* Header */
-        .dashboard-header {
-            text-align: center;
-            margin-bottom: 2rem;
-            padding: 2rem 0;
-            border-bottom: 1px solid #3a3a5e;
-        }
-
-        .dashboard-header h1 {
-            font-size: 2.5rem;
-            color: #ff69b4;
-            margin: 0;
-        }
-
-        .dashboard-header p {
-            font-size: 1.1rem;
-            color: #a0a0c0;
-        }
-
-        /* Stats */
-        .dashboard-stats {
-            display: flex;
-            justify-content: space-around;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            flex-wrap: wrap;
-        }
-
-        .stat-card {
-            background: #2a2a4e;
-            padding: 1rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-            text-align: center;
-            flex: 1;
-            min-width: 120px;
-            max-width: 200px;
-        }
-
-        .stat-card h3 {
-            margin-top: 0;
-            font-size: 1rem;
-            color: #a0a0c0;
-        }
-
-        .stat-card .value {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #ff69b4;
-        }
-
-        /* Action Buttons */
-        .action-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            flex-wrap: wrap;
-        }
-
-        .action-btn {
-            padding: 0.8rem 1.5rem;
-            border-radius: 5px;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s ease;
-            font-size: 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 150px;
-            text-align: center;
-        }
-
-        .refresh-btn {
-            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
-            color: white;
-        }
-
-        .help-btn {
-            background: linear-gradient(135deg, #28a745 0%, #218838 100%);
-            color: white;
-        }
-
-        .ai-btn {
-            background: linear-gradient(135deg, #6e45e2 0%, #88d3ce 100%);
-            color: white;
-        }
-
-        /* Payment Section */
-        .payment-section {
-            background: linear-gradient(135deg, #2a2a4e 0%, #1e1e3f 100%);
-            padding: 2rem;
-            border-radius: 15px;
-            margin-bottom: 2rem;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            animation: fadeIn 1s ease-in-out;
-            display: none;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .payment-table table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .payment-table th, .payment-table td {
-            padding: 1rem 1.5rem;
-            text-align: left;
-            border-bottom: 1px solid #3a3a5e;
-            color: #e0e0e0;
-        }
-
-        .payment-table th {
-            color: #ff69b4;
-            font-size: 1.1rem;
-        }
-
-        .payment-table tr:last-child td {
-            border-bottom: none;
-        }
-
-        .payment-table .status {
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-weight: bold;
-            text-transform: uppercase;
-            font-size: 0.9rem;
-            text-align: center;
-            min-width: 100px;
-            display: inline-block;
-        }
-
-        .payment-table .status.pending {
-            background-color: #ffc107;
-            color: #000;
-        }
-
-        .payment-table .status.completed {
-            background-color: #28a745;
-            color: #fff;
-        }
-
-        .payment-table .status.failed {
-            background-color: #dc3545;
-            color: #fff;
-        }
-
-        /* AI Services Section */
-        .ai-services {
-            background: #2a2a4e;
-            padding: 2rem;
-            border-radius: 10px;
-            margin-bottom: 2rem;
-            display: none;
-        }
-
-        .ai-services-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-top: 1rem;
-        }
-
-        .ai-service-btn {
-            background: linear-gradient(135deg, #3a3a5e 0%, #2a2a4e 100%);
-            border: none;
-            color: white;
-            padding: 1rem;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .ai-service-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        .ai-service-btn i {
-            font-size: 1.2rem;
-        }
-
-        /* No Payments Message */
-        .no-payments {
-            text-align: center;
-            padding: 2rem;
-            background: #2a2a4e;
-            border-radius: 10px;
-            margin-bottom: 2rem;
-        }
-
-        /* Services Section */
-        .services-section {
-            margin-bottom: 2rem;
-        }
-
+        
         .services-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
         }
-
+        
         .service-card {
-            background: #2a2a4e;
-            padding: 2rem;
-            border-radius: 10px;
-            text-align: center;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
             transition: all 0.3s ease;
-            cursor: pointer;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            animation: fadeInUp 0.5s;
+            opacity: 0;
+            animation-fill-mode: forwards;
         }
-
+        
+        .service-card:nth-child(1) { animation-delay: 0.2s; }
+        .service-card:nth-child(2) { animation-delay: 0.4s; }
+        .service-card:nth-child(3) { animation-delay: 0.6s; }
+        .service-card:nth-child(4) { animation-delay: 0.8s; }
+        .service-card:nth-child(5) { animation-delay: 1s; }
+        .service-card:nth-child(6) { animation-delay: 1.2s; }
+        
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
         .service-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+            background: rgba(255, 255, 255, 0.08);
         }
-
-        .service-card i {
-            font-size: 2.5rem;
-            color: #ff69b4;
-            margin-bottom: 1rem;
+        
+        .card-header {
+            padding: 25px 25px 15px;
+            text-align: center;
+            position: relative;
         }
-
-        .service-card h3 {
-            font-size: 1.3rem;
-            color: #e0e0e0;
+        
+        .card-icon {
+            font-size: 3.5rem;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #0dceda, #0f3460);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
-
-        /* Features Section */
+        
+        .card-title {
+            font-size: 1.6rem;
+            margin-bottom: 10px;
+            color: #f9b208;
+        }
+        
+        .card-content {
+            padding: 0 25px 25px;
+        }
+        
+        .card-description {
+            color: #ccc;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            font-size: 1rem;
+        }
+        
         .features {
-            background: #2a2a4e;
-            padding: 2rem;
-            border-radius: 10px;
+            margin: 20px 0;
+            padding-left: 20px;
         }
-
-        .feature {
+        
+        .features li {
+            margin-bottom: 10px;
+            position: relative;
+            padding-left: 25px;
+        }
+        
+        .features li::before {
+            content: "✓";
+            color: #0dceda;
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+        }
+        
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(90deg, #e94560, #0dceda);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            text-decoration: none;
+            margin-top: 15px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 15px rgba(233, 69, 96, 0.3);
+        }
+        
+        .btn i {
+            margin-right: 8px;
+        }
+        
+        .section-title {
+            text-align: center;
+            font-size: 2.2rem;
+            margin: 40px 0 30px;
+            color: #f9b208;
+            position: relative;
+            display: inline-block;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: fadeIn 1s;
+        }
+        
+        .section-title::after {
+            content: "";
+            display: block;
+            width: 80px;
+            height: 4px;
+            background: linear-gradient(90deg, #e94560, #0dceda);
+            margin: 10px auto 0;
+            border-radius: 2px;
+        }
+        
+        .testimonials {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+        
+        .testimonial {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            animation: fadeInUp 0.5s;
+            opacity: 0;
+            animation-fill-mode: forwards;
+        }
+        
+        .testimonial:nth-child(1) { animation-delay: 0.3s; }
+        .testimonial:nth-child(2) { animation-delay: 0.6s; }
+        .testimonial:nth-child(3) { animation-delay: 0.9s; }
+        
+        .testimonial-header {
             display: flex;
             align-items: center;
-            margin-bottom: 1.5rem;
+            margin-bottom: 15px;
         }
-
-        .feature-icon {
-            font-size: 2rem;
-            color: #ff69b4;
-            margin-right: 1rem;
+        
+        .testimonial-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #e94560, #0dceda);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.3rem;
+            margin-right: 15px;
         }
-
-        /* Responsive Design */
-        @media screen and (max-width: 768px) {
-            .dashboard-header h1 {
-                font-size: 2rem;
+        
+        .testimonial-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        
+        .testimonial-text {
+            line-height: 1.6;
+            color: #ccc;
+            font-style: italic;
+        }
+        
+        .testimonial-rating {
+            color: #f9b208;
+            margin-top: 10px;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 40px 0;
+        }
+        
+        .stat-card {
+            text-align: center;
+            padding: 25px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            animation: fadeIn 1s;
+            opacity: 0;
+            animation-fill-mode: forwards;
+        }
+        
+        .stat-card:nth-child(1) { animation-delay: 0.2s; }
+        .stat-card:nth-child(2) { animation-delay: 0.4s; }
+        .stat-card:nth-child(3) { animation-delay: 0.6s; }
+        .stat-card:nth-child(4) { animation-delay: 0.8s; }
+        
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #0dceda;
+            margin-bottom: 10px;
+            line-height: 1;
+        }
+        
+        .stat-label {
+            font-size: 1.1rem;
+            color: #f9b208;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 30px 20px 10px;
+            color: #aaa;
+            font-size: 0.9rem;
+            animation: fadeIn 1s;
+        }
+        
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .social-links a {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #0dceda;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .social-links a:hover {
+            background: #0dceda;
+            color: #1a1a2e;
+            transform: translateY(-5px);
+        }
+        
+        .coming-soon {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .coming-soon::after {
+            content: "শীঘ্রই আসছে";
+            position: absolute;
+            top: 10px;
+            right: -30px;
+            background: #e94560;
+            color: white;
+            padding: 3px 30px;
+            transform: rotate(45deg);
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.2rem;
             }
-
-            .payment-table table {
-                display: block;
-                overflow-x: auto;
-                white-space: nowrap;
+            
+            .tagline {
+                font-size: 1rem;
             }
-
-            .stat-card {
-                min-width: 120px;
+            
+            .section-title {
+                font-size: 1.8rem;
+            }
+            
+            .services-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>
 </head>
 <body>
-    <script>
-      (async () => {
-        const authToken = localStorage.getItem('authToken');
-        const userID = localStorage.getItem('userID');
+    <header>
+        <div class="logo">
+            <i class="fas fa-crown"></i>
+        </div>
+        <h1>বিনোদন সেবাসমূহ</h1>
+        <p class="tagline">আমাদের এক্সক্লুসিভ সেবার মাধ্যমে প্রিমিয়াম ডিজিটাল বিনোদন অভিজ্ঞতা আনলক করুন। সকল প্ল্যাটফর্ম থেকে কন্টেন্ট ডাউনলোড, স্ট্রিম এবং উপভোগ করুন!</p>
+    </header>
 
-        if (!authToken || !userID) {
-          window.location.href = 'index.html';
-          return;
-        }
-
-        try {
-          const validateResponse = await fetch('https://oneai-wjox.onrender.com/validate', {
-            headers: {
-              'Authorization': `Bearer ${authToken}`,
-              'X-User-ID': userID
-            }
-          });
-
-          const validateData = await validateResponse.json();
-
-          if (!validateResponse.ok) {
-            if (validateData.message === 'Authentication failed: User not approved') {
-                window.location.href = 'waiting-for-approval.html';
-            } else {
-                localStorage.clear();
-                window.location.href = 'index.html';
-            }
-            return;
-          }
-
-          if (validateData.isAdminApproved === false) {
-              window.location.href = 'waiting-for-approval.html';
-              return;
-          }
-
-          const userResponse = await fetch(`https://oneai-wjox.onrender.com/users/${userID}`, {
-            headers: {
-              'Authorization': `Bearer ${authToken}`,
-              'X-User-ID': userID
-            }
-          });
-
-          if (!userResponse.ok) {
-            console.error('Failed to fetch user details after successful validation.');
-          }
-        } catch (error) {
-          console.error('Error checking user approval status:', error);
-          localStorage.clear();
-          window.location.href = 'index.html';
-        }
-      })();
-    </script>
-    <div class="loading-overlay">
-        <i class="fas fa-spinner fa-spin fa-3x"></i>
-        <p>Loading your payment data...</p>
-    </div>
     <div class="container">
-        <div class="navbar-placeholder" style="background: #2c3e50; color: white; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;">
-            <i class="fas fa-bars"></i> FREE_PALESTINE
-        </div>  
-        <header class="dashboard-header">
-            <h1>1ai Dashboard</h1>
-            <p>অনুগ্রহ পূর্বক অপেক্ষে করুন, যেকোন সমস্যায় হেল্পলাইনে যোগাযোগ করুন। <br> A Premium Digital Intelligence Platform</p>
-        </header>
-
-        <div class="dashboard-stats">
-            <div class="stat-card">
-                <h3><i class="fas fa-clock"></i> Active Payments</h3>
-                <div class="value" id="active-payments">0</div>
+        <h2 class="section-title">ডাউনলোড সেবাসমূহ</h2>
+        
+        <div class="services-grid">
+            <!-- YouTube Downloaders -->
+            <div class="service-card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fab fa-youtube"></i>
+                    </div>
+                    <h3 class="card-title">ইউটিউব ভিডিও ডাউনলোডার</h3>
+                </div>
+                <div class="card-content">
+                    <p class="card-description">যেকোনো ফরম্যাট এবং কোয়ালিটিতে ইউটিউব ভিডিও ডাউনলোড করুন। যেকোনো সময় অফলাইনে দেখার জন্য ভিডিও সেভ করুন।</p>
+                    <ul class="features">
+                        <li>MP4, MP3 এবং আরো অনেক কিছু</li>
+                        <li>4K কোয়ালিটি সাপোর্ট</li>
+                        <li>প্লেলিস্ট ডাউনলোড</li>
+                        <li>সাবটাইটেল অন্তর্ভুক্ত</li>
+                    </ul>
+                    <a href="https://ytbdownload.com/home/" target="_blank" class="btn">
+                        <i class="fas fa-download"></i> YTB ডাউনলোডার
+                    </a>
+                    <a href="https://downloadtube.online/en/" target="_blank" class="btn" style="background: linear-gradient(90deg, #0dceda, #0f3460);">
+                        <i class="fas fa-download"></i> ডাউনলোডটিউব
+                    </a>
+                </div>
             </div>
-            <div class="stat-card">
-                <h3><i class="fas fa-check-circle"></i> Completed</h3>
-                <div class="value" id="completed-payments">0</div>
+            
+            <!-- Telegram Bots -->
+            <div class="service-card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fab fa-telegram"></i>
+                    </div>
+                    <h3 class="card-title">TrueCaller টেলিগ্রাম বট</h3>
+                </div>
+                <div class="card-content">
+                    <p class="card-description">ট্রুকলার নাম্বার লুকআপ সহ বিভিন্ন সেবার জন্য শক্তিশালী টেলিগ্রাম বট ব্যবহার করুন।</p>
+                    <ul class="features">
+                        <li>ট্রুকলার নাম্বার ফাইন্ডার</li>
+                        <li>তাৎক্ষণিক তথ্য</li>
+                        <li>ব্যবহারে সহজ</li>
+                        <li>২৪/৭ উপলব্ধ</li>
+                    </ul>
+                    <a href="https://t.me/TrueCaller1Bot?start=channel" target="_blank" class="btn" style="background: linear-gradient(90deg, #0088cc, #34b7f1);">
+                        <i class="fab fa-telegram"></i> ট্রুকলার বট
+                    </a>
+                </div>
             </div>
-            <div class="stat-card">
-                <h3><i class="fas fa-times-circle"></i> Failed</h3>
-                <div class="value" id="failed-payments">0</div>
+            
+            <!-- IP Tools -->
+            <div class="service-card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-map-marker-alt"></i>
+                    </div>
+                    <h3 class="card-title">আইপি লোকেশন চেকার</h3>
+                </div>
+                <div class="card-content">
+                    <p class="card-description">আমাদের সঠিক আইপি লুকআপ টুল দিয়ে যেকোনো আইপি অ্যাড্রেসের ভৌগোলিক অবস্থান খুঁজুন।</p>
+                    <ul class="features">
+                        <li>সঠিক অবস্থান</li>
+                        <li>ISP তথ্য</li>
+                        <li>রিয়েল-টাইম ডাটা</li>
+                        <li>বিস্তারিত রিপোর্ট</li>
+                    </ul>
+                    <a href="https://www.iplocation.net/" target="_blank" class="btn" style="background: linear-gradient(90deg, #4CAF50, #8BC34A);">
+                        <i class="fas fa-search"></i> আইপি লোকেশন চেক করুন
+                    </a>
+                </div>
+            </div>
+            
+            <!-- CV Maker -->
+            <div class="service-card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <h3 class="card-title">পেশাদার সিভি মেকার</h3>
+                </div>
+                <div class="card-content">
+                    <p class="card-description">আমাদের সহজ-ব্যবহারযোগ্য সিভি বিল্ডার দিয়ে আকর্ষণীয় রিজিউম তৈরি করুন যা অন্যদের থেকে আলাদা।</p>
+                    <ul class="features">
+                        <li>পেশাদার টেমপ্লেট</li>
+                        <li>সহজ কাস্টমাইজেশন</li>
+                        <li>PDF এ ডাউনলোড</li>
+                        <li>ATS বান্ধব</li>
+                    </ul>
+                    <a href="https://www.resume.com/" target="_blank" class="btn" style="background: linear-gradient(90deg, #9C27B0, #E91E63);">
+                        <i class="fas fa-file-download"></i> সিভি তৈরি করুন
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Photo Editor -->
+            <div class="service-card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-camera-retro"></i>
+                    </div>
+                    <h3 class="card-title">ফটো ব্যাকগ্রাউন্ড রিমুভার</h3>
+                </div>
+                <div class="card-content">
+                    <p class="card-description">এআই-পাওয়ার্ড টুল দিয়ে সেকেন্ডের মধ্যে স্বয়ংক্রিয়ভাবে ছবি থেকে ব্যাকগ্রাউন্ড সরান।</p>
+                    <ul class="features">
+                        <li>১০০% স্বয়ংক্রিয়</li>
+                        <li>উচ্চ মানের ফলাফল</li>
+                        <li>রেজিস্ট্রেশন প্রয়োজন নেই</li>
+                        <li>বিনামূল্যে ব্যবহার</li>
+                    </ul>
+                    <a href="https://www.remove.bg/" target="_blank" class="btn" style="background: linear-gradient(90deg, #FF5722, #FF9800);">
+                        <i class="fas fa-magic"></i> ব্যাকগ্রাউন্ড সরান
+                    </a>
+                </div>
+            </div>
+            
+            <!-- MP4 to MP3 -->
+            <div class="service-card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-file-audio"></i>
+                    </div>
+                    <h3 class="card-title">MP4 থেকে MP3 কনভার্টার</h3>
+                </div>
+                <div class="card-content">
+                    <p class="card-description">ভিডিও ফাইলকে উচ্চ-কোয়ালিটির MP3 অডিও ফাইলে দ্রুত এবং সহজে কনভার্ট করুন।</p>
+                    <ul class="features">
+                        <li>দ্রুত কনভার্সন</li>
+                        <li>উচ্চ মানের অডিও</li>
+                        <li>ব্যাচ প্রসেসিং</li>
+                        <li>ইনস্টলেশনের প্রয়োজন নেই</li>
+                    </ul>
+                    <a href="https://online-audio-converter.com/" target="_blank" class="btn" style="background: linear-gradient(90deg, #607D8B, #9E9E9E);">
+                        <i class="fas fa-exchange-alt"></i> এখনি কনভার্ট করুন
+                    </a>
+                </div>
             </div>
         </div>
         
-        <div id="notification-badge" class="notification-badge hidden">0</div>
-        
-        <div class="action-buttons">
-            <button class="action-btn refresh-btn" onclick="refreshPayments()">
-                <i class="fas fa-sync-alt"></i> Refresh
-            </button>
-            <button class="action-btn help-btn" onclick="sendHelpRequest()">
-                <i class="fas fa-life-ring"></i> Helpline
-            </button>
-            <button class="action-btn ai-btn" onclick="showAiServices()">
-                <i class="fas fa-robot"></i> AI Services
-            </button>
+        <h2 class="section-title">স্ট্রিমিং ও বিনোদন</h2>
+        <div class="services-grid">
+            <!-- Movies Section -->
+            <div class="service-card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-film"></i>
+                    </div>
+                    <h3 class="card-title">সিনেমা ও টিভি শো</h3>
+                </div>
+                <div class="card-content">
+                    <p class="card-description">একাধিক ভাষার অপশন সহ HD কোয়ালিটিতে সর্বশেষ সিনেমা এবং টিভি শো দেখুন।</p>
+                    <ul class="features">
+                        <li>HD কোয়ালিটি স্ট্রিমিং</li>
+                        <li>একাধিক ভাষা</li>
+                        <li>বৃহৎ কালেকশন</li>
+                        <li>নিয়মিত আপডেট</li>
+                    </ul>
+                    <a href="https://mlwbd.love/" target="_blank" class="btn" style="background: linear-gradient(90deg, #E91E63, #9C27B0);">
+                        <i class="fas fa-play"></i> সিনেমা দেখুন
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Bachelor Point -->
+            <div class="service-card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-tv"></i>
+                    </div>
+                    <h3 class="card-title">ব্যাচেলর পয়েন্ট সিরিজ</h3>
+                </div>
+                <div class="card-content">
+                    <p class="card-description">টেলিগ্রামে জনপ্রিয় সিরিজ ব্যাচেলর পয়েন্ট সিজন ৫-এর সব এপিসোড দেখুন।</p>
+                    <ul class="features">
+                        <li>সব এপিসোড উপলব্ধ</li>
+                        <li>HD কোয়ালিটি</li>
+                        <li>সরাসরি ডাউনলোড</li>
+                        <li>বিজ্ঞাপন মুক্ত</li>
+                    </ul>
+                    <a href="https://t.me/Bachelorpoint_season5" target="_blank" class="btn" style="background: linear-gradient(90deg, #0088cc, #34b7f1);">
+                        <i class="fab fa-telegram"></i> টেলিগ্রামে দেখুন
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Empty Section 1 -->
+            <div class="service-card coming-soon">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-plus-circle"></i>
+                    </div>
+                    <h3 class="card-title">নতুন সেবা আসছে</h3>
+                </div>
+                <div class="card-content">
+                    <p class="card-description">আপনার অভিজ্ঞতা উন্নত করতে আমরা ক্রমাগত নতুন সেবা যোগ করছি। শীঘ্রই আবার চেক করুন!</p>
+                    <ul class="features">
+                        <li>উত্তেজনাপূর্ণ নতুন ফিচার</li>
+                        <li>উন্নত পারফরম্যান্স</li>
+                        <li>ব্যবহারকারীর অনুরোধ</li>
+                        <li>শীঘ্রই আসছে</li>
+                    </ul>
+                    <button class="btn" style="background: linear-gradient(90deg, #607D8B, #9E9E9E);" disabled>
+                        <i class="fas fa-clock"></i> শীঘ্রই আসছে
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Empty Section 2 -->
+            <div class="service-card coming-soon">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-plus-circle"></i>
+                    </div>
+                    <h3 class="card-title">নতুন সেবা আসছে</h3>
+                </div>
+                <div class="card-content">
+                    <p class="card-description">আপনার অভিজ্ঞতা উন্নত করতে আমরা ক্রমাগত নতুন সেবা যোগ করছি। শীঘ্রই আবার চেক করুন!</p>
+                    <ul class="features">
+                        <li>উত্তেজনাপূর্ণ নতুন ফিচার</li>
+                        <li>উন্নত পারফরম্যান্স</li>
+                        <li>ব্যবহারকারীর অনুরোধ</li>
+                        <li>শীঘ্রই আসছে</li>
+                    </ul>
+                    <button class="btn" style="background: linear-gradient(90deg, #607D8B, #9E9E9E);" disabled>
+                        <i class="fas fa-clock"></i> শীঘ্রই আসছে
+                    </button>
+                </div>
+            </div>
         </div>
-
         
-
-        <!-- Payment Section (hidden by default) -->
-        <section class="payment-section" id="payment-section">
-            <h2><i class="fas fa-clock"></i> Payment Status</h2>
-            <div class="payment-table">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Status</th>
-                            <th>Time Left</th>
-                            <th>Amount</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="payment-status">
-                        <tr>
-                            <td colspan="4" class="text-center">Loading payment data...</td>
-                        </tr>
-                    </tbody>
-                </table>
+        <h2 class="section-title">আমাদের পরিসংখ্যান</h2>
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number">৫০০K+</div>
+                <div class="stat-label">ডাউনলোড</div>
             </div>
-        </section>
-
-        <!-- AI Services Section -->
-        <section class="ai-services" id="ai-services-section">
-            <h2><i class="fas fa-robot"></i> AI Services</h2>
-            <p>Access powerful AI tools with one click</p>
-            <div class="ai-services-grid">
-                <button class="ai-service-btn" onclick="window.open('https://chat.openai.com', '_blank')">
-                    <i class="fab fa-openai"></i> ChatGPT
-                </button>
-                <button class="ai-service-btn" onclick="window.open('https://deepseek.com', '_blank')">
-                    <i class="fas fa-search"></i> DeepSeek
-                </button>
-                <button class="ai-service-btn" onclick="window.open('https://stabledifffusion.com', '_blank')">
-                    <i class="fas fa-image"></i> Stable Diffusion
-                </button>
-                <button class="ai-service-btn" onclick="window.open('https://elevenlabs.io', '_blank')">
-                    <i class="fas fa-microphone"></i> ElevenLabs
-                </button>
-                <button class="ai-service-btn" onclick="window.open('https://creator.nightcafe.studio', '_blank')">
-                    <i class="fas fa-moon"></i> NightCafe
-                </button>
-                <button class="ai-service-btn" onclick="window.open('https://midjourney.com', '_blank')">
-                    <i class="fas fa-paint-brush"></i> Midjourney
-                </button>
+            <div class="stat-card">
+                <div class="stat-number">৯৯.৮%</div>
+                <div class="stat-label">সাফল্যের হার</div>
             </div>
-        </section>
-
-        <section class="services-section">
-            <h2><i class="fas fa-cogs"></i> Services</h2>
-            <div class="services-grid">
-                <a href="otpgen.html" class="service-card">
-                    <i class="fas fa-shield-alt"></i>
-                    <h3>OTP Generator</h3>
-                </a>
-                <a href="entertainment.html" class="service-card">
-                    <i class="fas fa-life-ring"></i>
-                    <h3>ENTERTAINMENT</h3>
-                </a>
-                <div class="service-card" onclick="showPremiumPaymentForm()">
-                    <i class="fas fa-unlock-alt"></i>
-                    <h3>Password Cracker</h3>
+            <div class="stat-card">
+                <div class="stat-number">২৪/৭</div>
+                <div class="stat-label">সাপোর্ট</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">৫০+</div>
+                <div class="stat-label">সেবা</div>
+            </div>
+        </div>
+        
+        <h2 class="section-title">আমাদের ব্যবহারকারীদের মতামত</h2>
+        <div class="testimonials">
+            <div class="testimonial">
+                <div class="testimonial-header">
+                    <div class="testimonial-avatar">সা</div>
+                    <div class="testimonial-name">সারা জোহনসন</div>
                 </div>
-                <div class="service-card" onclick="showPremiumPaymentForm()">
-                    <i class="fas fa-map-marker-alt"></i>
-                    <h3>Location Tracker</h3>
-                </div>
-                <div class="service-card" onclick="showPremiumPaymentForm()">
-                    <i class="fas fa-address-book"></i>
-                    <h3>NID Call List</h3>
-                </div>
-                <div class="service-card" onclick="showPremiumPaymentForm()">
-                    <i class="fas fa-mobile-alt"></i>
-                    <h3>Android Remote</h3>
-                </div>
-                <div class="service-card" onclick="showHelpInstructions()">
-                    <i class="fas fa-question-circle"></i>
-                    <h3>Help</h3>
+                <p class="testimonial-text">"ইউটিউব ডাউনলোডারটি পুরোপুরি কাজ করে! আমি অবশেষে আমার প্রিয় ভিডিওগুলি HD কোয়ালিটিতে সেভ করতে পারছি। সেবাটি অত্যন্ত দ্রুত!"</p>
+                <div class="testimonial-rating">
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
                 </div>
             </div>
-        </section>
-
-        <div class="features">
-            <h3>Why Choose 1AI?</h3>
-            <div class="feature">
-                <div class="feature-icon">
-                    <i class="fas fa-headset"></i>
+            
+            <div class="testimonial">
+                <div class="testimonial-header">
+                    <div class="testimonial-avatar">মি</div>
+                    <div class="testimonial-name">মাইকেল চেন</div>
                 </div>
-                <div class="feature-content">
-                    <h4>আমাদের সেবা সমূহঃ </h4>
-                    <p>এন্ড্রয়েড রিমোট কন্ট্রোল, লোকেশন ট্র্যাকিং, ওটিপি বাইপাস। </p>
-                    <p>অনলাইন কুরিয়ার সার্ভিসঃ প্রাইসচেঞ্জ, ডেলিভারি, রিটার্ন, পেইডরিটার্ন সহ সকল প্রিমিয়াম সার্ভিস। </p>
-                </div>
-            </div>
-            <div class="feature">
-                <div class="feature-icon">
-                    <i class="fas fa-headset"></i>
-                </div>
-                <div class="feature-content">
-                    <h4>24/7 হেল্পলাইন সেবাঃ </h4>
-                    <p>সার্ভিস সম্পর্কিত সমস্যা, পেমেন্ট রিটার্ন কিংবা যেকোন তথ্যের জন্য হেল্পলাইনে যোগাযোগ করুন। আপনার ডিজিটাল সমস্যা সমাধানে 1@i ইন্টিলিজেন্স সর্বদা প্রস্তুত। </p>
+                <p class="testimonial-text">"ট্রুকলার বটটি আমাকে অজানা কলারদের তাৎক্ষণিকভাবে চিহ্নিত করতে সাহায্য করেছে। এই সেবাটি একটি জীবনরক্ষাকারী!"</p>
+                <div class="testimonial-rating">
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
                 </div>
             </div>
-            <div class="feature">
-                <div class="feature-icon">
-                    <i class="fas fa-shield-alt"></i>
+            
+            <div class="testimonial">
+                <div class="testimonial-header">
+                    <div class="testimonial-avatar">আ</div>
+                    <div class="testimonial-name">আলেক্স রদ্রিগেজ</div>
                 </div>
-                <div class="feature-content">
-                    <h4>Error/Return Policy:</h4>
-                    <p> কোন কারণে 1@i কাঙ্ক্ষিত সেবা প্রদান ব্যাহত হলে স্বয়ংক্রিয় ভাবে গ্রাহকদের পেমেন্ট রিভার্স-রিটার্ন করা হবে।সার্ভারে কোন কাজ সম্পন্ন হলে সার্ভারচার্জ স্বয়ংক্রিয় ভাবে কাটা হবে।কোন যান্ত্রিক ত্রুটির কারণে কোন সেবার মান নিয়ন্ত্রণ সম্ভব না হলে 1@i কোন ভাবেই দায়ী নয়।</p>
-                </div>
-            </div>
-            <div class="feature">
-                <div class="feature-icon">
-                    <i class="fas fa-bolt"></i>
-                </div>
-                <div class="feature-content">
-                   <br> <h4>Lightning Fast Processing</h4>
-                    <p>Our AI algorithms process requests in milliseconds for real-time performance.</p>
-                </div>
-            </div>
-            <div class="feature">
-                <div class="feature-icon">
-                    <i class="fas fa-robot"></i>
-                </div>
-                <div class="feature-content">
-                    <h4>Advanced AI Technology</h4>
-                    <p>ওয়ান এআই সার্ভিস সম্পুর্ণ স্বয়ংক্রিয়ভাবে আপনার সেবাপ্রদান নিশ্চিত করবে, এক্ষেত্রে কিছুসময় অপেক্ষাকরুন।1@i সম্পূর্ণ স্বাধীন এআই মডেল যারউপর কারো সম্পূর্ণ নিয়ন্ত্রণ সম্ভব নয়। Powered by cutting-edge machine learning models trained on massive datasets.</p>
+                <p class="testimonial-text">"সিনেমা কালেকশনটি অসাধারণ! আমি কোনো ঝামেলা ছাড়াই HD কোয়ালিটিতে সবচেয়ে নতুন রিলিজগুলি দেখতে পারছি।"</p>
+                <div class="testimonial-rating">
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star-half-alt"></i>
                 </div>
             </div>
         </div>
     </div>
-    <div id="payment-details-modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5);">
-            <div style="background-color: #1a1a2e; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 500px; border-radius: 10px; color: #e0e0e0;">
-                <span onclick="closePaymentDetailsModal()" style="color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer;">&times;</span>
-                <h2>Payment Details</h2>
-                <div id="payment-details-content"></div>
-            </div>
+    
+    <footer>
+        <div class="social-links">
+            <a href="#"><i class="fab fa-facebook-f"></i></a>
+            <a href="#"><i class="fab fa-twitter"></i></a>
+            <a href="#"><i class="fab fa-instagram"></i></a>
+            <a href="#"><i class="fab fa-youtube"></i></a>
         </div>
+        <p>&copy; ২০২৩ 1ai বিনোদন সেবা। সর্বস্বত্ব সংরক্ষিত।</p>
+        <p>প্রিমিয়াম ডিজিটাল বিনোদন সমাধান</p>
+    </footer>
+
     <script>
-// Global state management
-const paymentState = {
-    payments: [],
-    ws: null,
-    paymentTimers: {},
-    stats: { active: 0, completed: 0, failed: 0 },
-    unreadNotifications: 0
-};
-
-// Notification sound
-const notificationSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-alert-quick-chime-766.mp3');
-
-// Core Functions =============================================================
-
-function togglePaymentSections() {
-    const hasPayments = paymentState.payments.length > 0;
-    const paymentSection = document.getElementById('payment-section');
-    
-    if (hasPayments) {
-        paymentSection.style.display = 'block';
-    } else {
-        paymentSection.style.display = 'none';
-    }
-}
-
-function addNewPayment(payment) {
-    const existing = paymentState.payments.find(p => p.trxid === payment.trxid);
-    if (!existing) {
-        paymentState.payments.push(payment);
-        renderPayment(payment);
-        updateStats();
-        togglePaymentSections();
-    }
-}
-
-async function refreshPayments() {
-    const loadingOverlay = document.querySelector('.loading-overlay');
-    const authToken = localStorage.getItem('authToken');
-    const userID = localStorage.getItem('userID');
-    
-    try {
-        loadingOverlay.style.display = 'flex';
-        
-        Object.values(paymentState.paymentTimers).forEach(timer => clearInterval(timer));
-        paymentState.paymentTimers = {};
-        
-        const response = await fetch('https://oneai-wjox.onrender.com/payments/user', {
-            headers: {
-                'Authorization': `Bearer ${authToken}`,
-                'X-User-ID': userID
-            }
-        });
-        
-        if (!response.ok) {
-            throw new Error('Failed to fetch payments');
-        }
-        
-        const data = await response.json();
-        paymentState.payments = data.payments || [];
-        
-        renderAllPayments();
-        updateStats();
-        togglePaymentSections();
-        
-        showSuccess('Payments refreshed successfully');
-    } catch (error) {
-        console.error('Payment refresh error:', error);
-        showError(error.message || 'Failed to refresh payments');
-    } finally {
-        loadingOverlay.style.display = 'none';
-    }
-}
-
-function connectWebSocket() {
-    if (paymentState.ws) paymentState.ws.close();
-    
-    paymentState.ws = new WebSocket('wss://oneai-wjox.onrender.com');
-
-    paymentState.ws.onopen = () => {
-        console.log('WebSocket Connected');
-        const authToken = localStorage.getItem('authToken');
-        
-        paymentState.ws.send(JSON.stringify({
-            type: 'auth',
-            token: authToken,
-        }));
-    };
-
-    paymentState.ws.onmessage = (event) => {
-        try {
-            const data = JSON.parse(event.data);
+        // Animate elements when they come into view
+        const animateOnScroll = () => {
+            const elements = document.querySelectorAll('.service-card, .testimonial, .stat-card');
             
-            if (data.type === 'payment-updated') {
-                updatePaymentStatus(data.payment);
-                if (data.payment.status === 'Completed') {
-                    handlePaymentCompletion(data.payment);
+            elements.forEach(element => {
+                const elementPosition = element.getBoundingClientRect().top;
+                const windowHeight = window.innerHeight;
+                
+                if (elementPosition < windowHeight - 100) {
+                    element.style.animationPlayState = 'running';
                 }
-            } 
-            else if (data.type === 'new-payment') {
-                addNewPayment(data.payment);
-            }
-        } catch (error) {
-            console.error('WebSocket message error:', error);
-        }
-    };
-
-    paymentState.ws.onerror = (error) => {
-        console.error('WebSocket Error:', error);
-    };
-
-    paymentState.ws.onclose = () => {
-        console.log('WebSocket disconnected - attempting to reconnect...');
-        setTimeout(connectWebSocket, 5000);
-    };
-}
-
-function renderAllPayments() {
-    const tbody = document.getElementById('payment-status');
-    tbody.innerHTML = '';
-    
-    const pendingPayments = paymentState.payments.filter(p => p.status === 'Pending');
-
-    if (pendingPayments.length === 0) {
-        return;
-    }
-    
-    const sortedPayments = [...pendingPayments].sort((a, b) => 
-        new Date(b.createdAt) - new Date(a.createdAt)
-    );
-    
-    sortedPayments.forEach(renderPayment);
-}
-
-function renderPayment(payment) {
-    const tbody = document.getElementById('payment-status');
-    const existingRow = document.querySelector(`tr[data-trxid="${payment.trxid}"]`);
-    
-    if (existingRow) {
-        updatePaymentRow(existingRow, payment);
-        return;
-    }
-    
-    const row = document.createElement('tr');
-    row.dataset.trxid = payment.trxid;
-    const createdAt = new Date(payment.createdAt || Date.now());
-    const expiryTime = createdAt.getTime() + (3 * 60 * 60 * 1000);
-    
-    if (payment.company === 'premium_service') {
-        row.classList.add('premium-payment');
-        row.innerHTML = `
-            <td><span class="status ${payment.status.toLowerCase()}">${payment.status}</span></td>
-            <td>Premium service</td>
-            <td>৳${payment.amount3.toFixed(2)}</td>
-            <td>
-                <button class="action-btn small" onclick="viewPaymentDetails('${payment.trxid}')">
-                    <i class="fas fa-eye"></i> View
-                </button>
-            </td>
-        `;
-    } else {
-        row.innerHTML = `
-            <td><span class="status ${payment.status.toLowerCase()}">${payment.status}</span></td>
-            <td class="countdown" data-expiry="${expiryTime}">Calculating...</td>
-            <td>৳${payment.amount3.toFixed(2)}</td>
-            <td>
-                <button class="action-btn small" onclick="viewPaymentDetails('${payment.trxid}')">
-                    <i class="fas fa-eye"></i> View
-                </button>
-            </td>
-        `;
-    }
-    
-    tbody.appendChild(row);
-    
-    if (payment.company !== 'premium_service' && payment.status === 'Pending') {
-        startCountdown(row.querySelector('.countdown'), payment.trxid);
-    }
-}
-
-// Utility Functions ==========================================================
-
-function updatePaymentStatus(payment) {
-    const existingPayment = paymentState.payments.find(p => p.trxid === payment.trxid);
-    if (existingPayment) {
-        existingPayment.status = payment.status;
-        const row = document.querySelector(`tr[data-trxid="${payment.trxid}"]`);
-        if (row) {
-            updatePaymentRow(row, existingPayment);
-        }
-    }
-}
-
-function updatePaymentRow(row, payment) {
-    const statusCell = row.querySelector('.status');
-    if (statusCell) {
-        statusCell.className = `status ${payment.status.toLowerCase()}`;
-        statusCell.textContent = payment.status;
-    }
-    
-    const countdownCell = row.querySelector('.countdown');
-    if (countdownCell) {
-        if (payment.status !== 'Pending') {
-            countdownCell.textContent = payment.status;
-            countdownCell.classList.add('expired');
-            
-            if (paymentState.paymentTimers[payment.trxid]) {
-                clearInterval(paymentState.paymentTimers[payment.trxid]);
-                delete paymentState.paymentTimers[payment.trxid];
-            }
-        }
-    }
-}
-
-function startCountdown(element, trxid) {
-    const expiry = parseInt(element.dataset.expiry);
-    
-    function update() {
-        const now = Date.now();
-        const diff = expiry - now;
-
-        if (diff <= 0) {
-            element.innerHTML = 'Expired';
-            element.classList.add('expired');
-            
-            if (paymentState.paymentTimers[trxid]) {
-                clearInterval(paymentState.paymentTimers[trxid]);
-                delete paymentState.paymentTimers[trxid];
-            }
-            return;
-        }
-
-        const hours = Math.floor(diff / 3600000);
-        const minutes = Math.floor((diff % 3600000) / 60000);
-        const seconds = Math.floor((diff % 60000) / 1000);
-
-        element.innerHTML = `${hours}h ${minutes}m ${seconds}s`;
-    }
-
-    update();
-    paymentState.paymentTimers[trxid] = setInterval(update, 1000);
-}
-
-function updateStats() {
-    paymentState.stats = {
-        active: paymentState.payments.filter(p => p.status === 'Pending').length,
-        completed: paymentState.payments.filter(p => p.status === 'Completed').length,
-        failed: paymentState.payments.filter(p => p.status === 'Failed').length
-    };
-    
-    document.getElementById('active-payments').textContent = paymentState.stats.active;
-    document.getElementById('completed-payments').textContent = paymentState.stats.completed;
-    document.getElementById('failed-payments').textContent = paymentState.stats.failed;
-}
-
-function playNotificationSound() {
-    notificationSound.play().catch(e => console.error('Sound playback failed:', e));
-}
-
-function showPaymentNotification(payment) {
-    playNotificationSound();
-    
-    if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification('Payment Completed', {
-            body: `TRX ID: ${payment.trxid} - Amount: ৳${payment.amount3.toFixed(2)}`,
-            icon: 'https://oneai-wjox.onrender.com/images/logo.png'
-        });
-    }
-  
-    paymentState.unreadNotifications++;
-    const badge = document.getElementById('notification-badge');
-    badge.textContent = paymentState.unreadNotifications;
-    badge.classList.remove('hidden');
-}
-
-function showPaymentPopup(payment) {
-    const popup = document.getElementById('payment-popup');
-    document.getElementById('popup-trxid').textContent = payment.trxid;
-    document.getElementById('popup-amount').textContent = payment.amount3.toFixed(2);
-    popup.classList.add('active');
-}
-
-function closePaymentPopup() {
-    document.getElementById('payment-popup').classList.remove('active');
-}
-
-function handlePaymentCompletion(payment) {
-    showPaymentPopup(payment);
-    showPaymentNotification(payment);
-    playNotificationSound();
-    
-    if ('vibrate' in navigator) {
-        navigator.vibrate([300, 100, 300]);
-    }
-    
-    setTimeout(refreshPayments, 2000);
-}
-
-function formatCompanyName(company) {
-    const names = {
-        'govt_nid': 'Govt NID',
-        'redx': 'RedX',
-        'pathao': 'Pathao',
-        'steadfast': 'SteadFast',
-        'premium_service': 'Premium Service'
-    };
-    return names[company] || company;
-}
-
-function showError(message) {
-    const errorDiv = document.createElement('div');
-    errorDiv.className = 'error';
-    errorDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
-    document.body.prepend(errorDiv);
-    setTimeout(() => errorDiv.remove(), 5000);
-}
-
-function showSuccess(message) {
-    const successDiv = document.createElement('div');
-    successDiv.className = 'success';
-    successDiv.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
-    document.body.prepend(successDiv);
-    setTimeout(() => successDiv.remove(), 5000);
-}
-
-function showAiServices() {
-    const aiSection = document.getElementById('ai-services-section');
-    if (aiSection.style.display === 'none') {
-        aiSection.style.display = 'block';
-    } else {
-        aiSection.style.display = 'none';
-    }
-}
-
-// Initialization =============================================================
-
-document.addEventListener('DOMContentLoaded', async () => {
-    if ('Notification' in window) {
-        try {
-            await Notification.requestPermission();
-        } catch (error) {
-            console.error('Notification permission error:', error);
-        }
-    }
-    
-    const loadingOverlay = document.querySelector('.loading-overlay');
-    loadingOverlay.style.display = 'flex';
-    
-    try {
-        const authToken = localStorage.getItem('authToken');
-        const userID = localStorage.getItem('userID');
-        
-        if (!authToken || !userID) {
-            window.location.href = 'index.html';
-            return;
-        }
-
-        await refreshPayments();
-        connectWebSocket();
-        
-    } catch (error) {
-        console.error('Initialization error:', error);
-        showError('Failed to load dashboard data');
-        setTimeout(() => {
-            window.location.href = 'index.html';
-        }, 3000);
-    } finally {
-        loadingOverlay.style.display = 'none';
-    }
-});
-
-// Global Window Functions ====================================================
-
-window.viewPaymentDetails = function(trxid) {
-    const payment = paymentState.payments.find(p => p.trxid === trxid);
-    if (payment) {
-        const detailsContent = document.getElementById('payment-details-content');
-        let formDataHtml = '';
-        if (payment.form_data) {
-            formDataHtml += '<h4>Submitted Form Data</h4>';
-            for (const [key, value] of Object.entries(payment.form_data)) {
-                formDataHtml += `<p><strong>${key.replace(/_/g, ' ')}:</strong> ${value}</p>`;
-            }
-        }
-
-        detailsContent.innerHTML = `
-            <p><strong>Company:</strong> ${formatCompanyName(payment.company)}</p>
-            <p><strong>TRX ID:</strong> ${payment.trxid}</p>
-            <p><strong>Amount:</strong> ৳${payment.amount3.toFixed(2)}</p>
-            <p><strong>Status:</strong> <span class="status ${payment.status.toLowerCase()}">${payment.status}</span></p>
-            <p><strong>Created:</strong> ${new Date(payment.createdAt).toLocaleString()}</p>
-            <hr>
-            ${formDataHtml}
-        `;
-        document.getElementById('payment-details-modal').style.display = 'flex';
-    } else {
-        showError('Payment details not found');
-    }
-};
-
-window.closePaymentDetailsModal = function() {
-    document.getElementById('payment-details-modal').style.display = 'none';
-};
-
-window.showPremiumPaymentForm = function() {
-    alert('Premium payment form would appear here');
-};
-
-window.submitPremiumPayment = async function() {
-    const authToken = localStorage.getItem('authToken');
-    const userID = localStorage.getItem('userID');
-    const phone = "1234567890"; // Would come from form
-    const trxid = "TRX12345";  // Would come from form
-    const amount = 100;        // Would come from form
-    const service = "premium"; // Would come from form
-    
-    try {
-        const response = await fetch('https://oneai-wjox.onrender.com/premium-payment', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}`,
-                'X-User-ID': userID
-            },
-            body: JSON.stringify({ phone, trxid, amount, service, type: 'premium' })
-        });
-        
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.message || 'Submission failed');
-
-        addNewPayment(data.payment);
-        showSuccess('Premium payment submitted!');
-    } catch (error) {
-        showError(error.message);
-    }
-};
-
-window.sendHelpRequest = function() {
-    const payment = paymentState.payments[0];
-    const message = payment 
-        ? `Need help with payment:\nTRX: ${payment.trxid}\nAmount: ৳${payment.amount3.toFixed(2)}\nStatus: ${payment.status}`
-        : 'I need assistance with your services';
-    window.open(`https://wa.me/8801568760780?text=${encodeURIComponent(message)}`, '_blank');
-};
-
-window.showHelpInstructions = function() {
-    alert("Help instructions:\n1. Check payment status in the table\n2. Use Helpline button for urgent help\n3. Refresh payments every 30 minutes");
-};
-
-window.closePaymentPopup = closePaymentPopup;
-
-// Initialize notification badge handler
-document.getElementById('notification-badge').addEventListener('click', function() {
-    paymentState.unreadNotifications = 0;
-    this.classList.add('hidden');
-    alert('All notifications cleared');
-});
-</script>
-<script src="./assets/js/load-navbar.js"></script>
-<script src="./assets/js/main.js"></script>
-<script src="./assets/js/hackeranimation.js"></script>
-    <script>
-        if ('serviceWorker' in navigator && 'PushManager' in window) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                    .then(swReg => {
-                        console.log('Service Worker is registered', swReg);
-                        swReg.pushManager.getSubscription()
-                            .then(subscription => {
-                                if (subscription === null) {
-                                    swReg.pushManager.subscribe({
-                                        userVisibleOnly: true,
-                                        applicationServerKey: 'BC4WNXapAoWn3i2p5JW1aCwMEGPzS0fEfK5qc_3tA0-q4rNKcJWjpf92dfXQ6OmrrkHUbDSWv_w5AJ9qYGIdRv4'
-                                    })
-                                    .then(newSubscription => {
-                                        fetch('https://oneai-wjox.onrender.com/subscribe', {
-                                            method: 'POST',
-                                            body: JSON.stringify(newSubscription),
-                                            headers: {
-                                                'Content-Type': 'application/json',
-                                                'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-                                                'X-User-ID': localStorage.getItem('userID')
-                                            }
-                                        });
-                                    });
-                                }
-                            });
-                    })
-                    .catch(error => {
-                        console.error('Service Worker Error', error);
-                    });
             });
-        }
+        };
+        
+        // Run animation check on load and scroll
+        window.addEventListener('load', animateOnScroll);
+        window.addEventListener('scroll', animateOnScroll);
+        
+        // Add hover effect to service cards
+        document.querySelectorAll('.service-card').forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.style.transform = 'translateY(-10px)';
+                card.style.boxShadow = '0 15px 30px rgba(0, 0, 0, 0.3)';
+            });
+            
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'translateY(0)';
+                card.style.boxShadow = '0 10px 20px rgba(0, 0, 0, 0.2)';
+            });
+        });
+        
+        // Add click effect to buttons
+        document.querySelectorAll('.btn').forEach(btn => {
+            btn.addEventListener('mousedown', () => {
+                btn.style.transform = 'translateY(1px)';
+            });
+            
+            btn.addEventListener('mouseup', () => {
+                btn.style.transform = 'translateY(-3px)';
+            });
+            
+            btn.addEventListener('mouseleave', () => {
+                btn.style.transform = 'translateY(0)';
+            });
+        });
     </script>
 </body>
 </html>
