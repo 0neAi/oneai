@@ -218,8 +218,8 @@
   </script>
   <script>
     // Set the date we're counting down to
-    var countDownDate = localStorage.getItem('countDownDate');
-    if (!countDownDate) {
+    var countDownDate = parseInt(localStorage.getItem('countDownDate'));
+    if (!countDownDate || isNaN(countDownDate)) {
       countDownDate = new Date().getTime() + (50 * 60 * 60 * 1000);
       localStorage.setItem('countDownDate', countDownDate);
     }
