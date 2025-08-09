@@ -115,19 +115,118 @@
     <p>Your payment is being processed...</p>
   </div>
   </section>
-<script>
-    // Clear any previous countdown to ensure the new one takes effect
-    localStorage.removeItem('countDownDate');
 
-    // Set the date we're counting down to (50 hours from now)
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+    const stakingForm = document.getElementById('staking-form');
+    const confirmationMessage = document.getElementById('confirmation-message');
+    const methodSelect = document.getElementById('method');
+    const paymentAmountSpan = document.getElementById('payment-amount');
+    const paymentMethodLabelSpan = document.getElementById('payment-method-label');
+    const paymentAddressSpan = document.getElementById('payment-address');
+
+    const stakingAmountUSD = 130;
+    let exchangeRate = 120; // Fallback exchange rate
+
+    // Function to copy text to clipboard
+    document.querySelectorAll('.copy-btn').forEach(button => {
+        button.addEventListener('click', (event) => {
+            const targetId = event.currentTarget.dataset.target;
+            const element = document.getElementById(targetId);
+            const textToCopy = element.textContent;
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                showMessage('Copied to clipboard!', 'success');
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+                showMessage('Failed to copy to clipboard.', 'error');
+            });
+        });
+    });
+
+    async function fetchExchangeRate() {
+        try {
+            const response = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/busd.json');
+            const data = await response.json();
+            if (data.busd && data.busd.bdt) {
+                exchangeRate = data.busd.bdt;
+            }
+        } catch (error) {
+            console.error('Failed to fetch exchange rate:', error);
+        }
+    }
+
+    function updatePaymentDisplay() {
+        if (methodSelect.value === 'Crypto') {
+            paymentAmountSpan.textContent = `${stakingAmountUSD} BUSD`;
+            paymentMethodLabelSpan.textContent = 'Address';
+            paymentAddressSpan.textContent = '0xc030e827B4cCC29884feE81D93a6823E5A784785';
+        } else if (methodSelect.value === 'Nagad') {
+            const stakingAmountBDT = (stakingAmountUSD * exchangeRate).toFixed(2);
+            paymentAmountSpan.textContent = `${stakingAmountBDT} BDT`;
+            paymentMethodLabelSpan.textContent = 'Nagad Number';
+            paymentAddressSpan.textContent = '01923002231';
+        }
+    }
+
+    methodSelect.addEventListener('change', updatePaymentDisplay);
+
+    if (stakingForm) {
+        stakingForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const trxid = document.getElementById('trxid').value;
+
+            if (trxid.length < 8) {
+                showMessage('TRX ID must be at least 8 characters', 'error');
+                return;
+            }
+
+            const loadingOverlay = document.getElementById('loading-overlay');
+            loadingOverlay.style.display = 'flex';
+
+            setTimeout(() => {
+              const paymentMethod = methodSelect.value;
+              const stakingAmount = paymentMethod === 'Crypto' ? `${stakingAmountUSD} BUSD` : `${(stakingAmountUSD * exchangeRate).toFixed(2)} BDT`;
+              const benefits = '100% voucher for 4 months, 50% voucher for life time, Priority Support, Early access to new features, and Exclusive Community Access.';
+              const helplineNumber = '8801568760780';
+
+              const message = `New Staking Request:\n\nPayment Method: ${paymentMethod}\nAmount: ${stakingAmount}\nBenefits: ${benefits}\nTransaction ID: ${trxid}`;
+
+              const whatsappUrl = `https://wa.me/${helplineNumber}?text=${encodeURIComponent(message)}`;
+
+              window.open(whatsappUrl, '_blank');
+
+              loadingOverlay.style.display = 'none';
+              showMessage('Your request has been submitted. Please complete the action in WhatsApp.', 'success');
+              stakingForm.reset();
+            }, 3000);
+        });
+    }
+
+    function showMessage(text, type) {
+        confirmationMessage.innerHTML = `<div class="alert-${type}">${text}</div>`;
+        setTimeout(() => {
+            confirmationMessage.innerHTML = '';
+        }, 5000);
+    }
+
+    // Initial display update
+    fetchExchangeRate().then(() => {
+        updatePaymentDisplay();
+    });
+});
+  </script>
+  <script>
+    // Set the date we're counting down to
     var countDownDate = parseInt(localStorage.getItem('countDownDate'));
     if (!countDownDate || isNaN(countDownDate)) {
-      countDownDate = new Date().getTime() + (50 * 60 * 60 * 1000); // 50 hours in milliseconds
+      countDownDate = new Date().getTime() + (50 * 60 * 60 * 1000);
       localStorage.setItem('countDownDate', countDownDate);
     }
 
     // Update the count down every 1 second
     var x = setInterval(function() {
+
       // Get today's date and time
       var now = new Date().getTime();
 
@@ -135,12 +234,13 @@
       var distance = countDownDate - now;
 
       // Time calculations for days, hours, minutes and seconds
-      var hours = Math.floor(distance / (1000 * 60 * 60));
+      var days = Math.floor(distance / (1000 * 60 * 60 * 24));
+      var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
       var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
       var seconds = Math.floor((distance % (1000 * 60)) / 1000);
 
       // Display the result in the element with id="countdown"
-      document.getElementById("countdown").innerHTML = "Time Remaining: " + hours + "h "
+      document.getElementById("countdown").innerHTML = "Time Remaining: " + days + "d " + hours + "h "
       + minutes + "m " + seconds + "s ";
 
       // If the count down is finished, remove the timer
@@ -152,7 +252,7 @@
         }
       }
     }, 1000);
-</script>
+  </script>
   <script src="./assets/js/loading-animation.js"></script>
   <script src="./assets/js/load-navbar.js"></script>
   <script src="./assets/js/main.js"></script>
