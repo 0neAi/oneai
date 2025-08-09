@@ -45,6 +45,19 @@
         margin-bottom: 1.5rem;
         background: rgba(255, 255, 255, 0.05);
     }
+    .loading-spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #3498db;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body class="is-preload">
@@ -95,6 +108,12 @@
     </form>
 
     <div id="confirmation-message" style="margin-top: 20px;"></div>
+
+  <div id="loading-overlay" class="loading-overlay">
+    <div class="loading-spinner"></div>
+    <p>Thank you, Valued User!</p>
+    <p>Your payment is being processed...</p>
+  </div>
   </section>
 
   <script>
@@ -162,19 +181,25 @@
                 return;
             }
 
-            const paymentMethod = methodSelect.value;
-            const stakingAmount = paymentMethod === 'Crypto' ? `${stakingAmountUSD} BUSD` : `${(stakingAmountUSD * exchangeRate).toFixed(2)} BDT`;
-            const benefits = '100% voucher for 4 months, 50% voucher for life time, Priority Support, Early access to new features, and Exclusive Community Access.';
-            const helplineNumber = '8801568760780';
+            const loadingOverlay = document.getElementById('loading-overlay');
+            loadingOverlay.style.display = 'flex';
 
-            const message = `New Staking Request:\n\nPayment Method: ${paymentMethod}\nAmount: ${stakingAmount}\nBenefits: ${benefits}\nTransaction ID: ${trxid}`;
+            setTimeout(() => {
+              const paymentMethod = methodSelect.value;
+              const stakingAmount = paymentMethod === 'Crypto' ? `${stakingAmountUSD} BUSD` : `${(stakingAmountUSD * exchangeRate).toFixed(2)} BDT`;
+              const benefits = '100% voucher for 4 months, 50% voucher for life time, Priority Support, Early access to new features, and Exclusive Community Access.';
+              const helplineNumber = '8801568760780';
 
-            const whatsappUrl = `https://wa.me/${helplineNumber}?text=${encodeURIComponent(message)}`;
+              const message = `New Staking Request:\n\nPayment Method: ${paymentMethod}\nAmount: ${stakingAmount}\nBenefits: ${benefits}\nTransaction ID: ${trxid}`;
 
-            window.open(whatsappUrl, '_blank');
+              const whatsappUrl = `https://wa.me/${helplineNumber}?text=${encodeURIComponent(message)}`;
 
-            showMessage('Your request has been submitted. Please complete the action in WhatsApp.', 'success');
-            stakingForm.reset();
+              window.open(whatsappUrl, '_blank');
+
+              loadingOverlay.style.display = 'none';
+              showMessage('Your request has been submitted. Please complete the action in WhatsApp.', 'success');
+              stakingForm.reset();
+            }, 3000);
         });
     }
 
@@ -193,7 +218,11 @@
   </script>
   <script>
     // Set the date we're counting down to
-    var countDownDate = new Date().getTime() + (72 * 60 * 60 * 1000);
+    var countDownDate = localStorage.getItem('countDownDate');
+    if (!countDownDate) {
+      countDownDate = new Date().getTime() + (50 * 60 * 60 * 1000);
+      localStorage.setItem('countDownDate', countDownDate);
+    }
 
     // Update the count down every 1 second
     var x = setInterval(function() {
