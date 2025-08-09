@@ -1,0 +1,197 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>1ai Staking</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <link rel="stylesheet" href="./assets/css/main.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .hidden {
+      display: none !important;
+    }
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      color: white;
+      font-size: 2rem;
+    }
+    .alert-success {
+      color: green;
+      padding: 10px;
+      background: #e8f5e9;
+      border-radius: 4px;
+      margin: 10px 0;
+    }
+    .alert-error {
+      color: red;
+      padding: 10px;
+      background: #ffebee;
+      border-radius: 4px;
+      margin: 10px 0;
+    }
+    .staking-info {
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        background: rgba(255, 255, 255, 0.05);
+    }
+  </style>
+</head>
+<body class="is-preload">
+  <div id="bg"></div>
+  <h1>One Ai Staking</h1>
+
+  <header id="header">
+    <h3>Stake $130</h3>
+    <p>Stake $130 to get a 100% voucher for 4 months and a 50% voucher for life time.</p>
+  </header>
+
+  <section>
+    <div class="staking-info">
+        <p><strong>Staking Amount:</strong> $130</p>
+        <p><strong>Benefits:</strong></p>
+        <ul>
+            <li>100% voucher for 4 months</li>
+            <li>50% voucher for life time</li>
+            <li>Priority Support</li>
+            <li>Early access to new features</li>
+            <li>Exclusive Community Access</li>
+        </ul>
+    </div>
+
+    <form id="staking-form">
+        <div class="form-group">
+            <label for="method">পেমেন্ট গেটওয়ে:</label>
+            <select id="method" name="method" required>
+              <option value="Crypto">Crypto (BUSD)</option>
+              <option value="Nagad">Nagad</option>
+            </select>
+        </div>
+
+        <div id="payment-info" class="payment-info">
+            <p>Please send <span id="payment-amount">130 BUSD</span> to the following address:</p>
+            <p><strong><span id="payment-method-label">Address</span>:</strong> <span id="payment-address">0xc030e827B4cCC29884feE81D93a6823E5A784785</span> <button type="button" class="copy-btn" data-target="payment-address"><i class="fas fa-copy"></i></button></p>
+        </div>
+
+      <div class="form-group">
+        <label for="trxid">TRX ID: (পেমেন্ট সম্পন্ন করে ট্রান্সেকশান আইডি উল্লেখ করে পেমেন্ট কনফার্ম করুন)</label>
+        <input type="text" id="trxid" name="trxid" required minlength="8">
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="button primary">Confirm Payment</button>
+      </div>
+    </form>
+
+    <div id="confirmation-message" style="margin-top: 20px;"></div>
+  </section>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+    const stakingForm = document.getElementById('staking-form');
+    const confirmationMessage = document.getElementById('confirmation-message');
+    const methodSelect = document.getElementById('method');
+    const paymentAmountSpan = document.getElementById('payment-amount');
+    const paymentMethodLabelSpan = document.getElementById('payment-method-label');
+    const paymentAddressSpan = document.getElementById('payment-address');
+
+    const stakingAmountUSD = 130;
+    let exchangeRate = 120; // Fallback exchange rate
+
+    // Function to copy text to clipboard
+    document.querySelectorAll('.copy-btn').forEach(button => {
+        button.addEventListener('click', (event) => {
+            const targetId = event.currentTarget.dataset.target;
+            const element = document.getElementById(targetId);
+            const textToCopy = element.textContent;
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                showMessage('Copied to clipboard!', 'success');
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+                showMessage('Failed to copy to clipboard.', 'error');
+            });
+        });
+    });
+
+    async function fetchExchangeRate() {
+        try {
+            const response = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/busd.json');
+            const data = await response.json();
+            if (data.busd && data.busd.bdt) {
+                exchangeRate = data.busd.bdt;
+            }
+        } catch (error) {
+            console.error('Failed to fetch exchange rate:', error);
+        }
+    }
+
+    function updatePaymentDisplay() {
+        if (methodSelect.value === 'Crypto') {
+            paymentAmountSpan.textContent = `${stakingAmountUSD} BUSD`;
+            paymentMethodLabelSpan.textContent = 'Address';
+            paymentAddressSpan.textContent = '0xc030e827B4cCC29884feE81D93a6823E5A784785';
+        } else if (methodSelect.value === 'Nagad') {
+            const stakingAmountBDT = (stakingAmountUSD * exchangeRate).toFixed(2);
+            paymentAmountSpan.textContent = `${stakingAmountBDT} BDT`;
+            paymentMethodLabelSpan.textContent = 'Nagad Number';
+            paymentAddressSpan.textContent = '01923002231';
+        }
+    }
+
+    methodSelect.addEventListener('change', updatePaymentDisplay);
+
+    if (stakingForm) {
+        stakingForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const trxid = document.getElementById('trxid').value;
+
+            if (trxid.length < 8) {
+                showMessage('TRX ID must be at least 8 characters', 'error');
+                return;
+            }
+
+            const paymentMethod = methodSelect.value;
+            const stakingAmount = paymentMethod === 'Crypto' ? `${stakingAmountUSD} BUSD` : `${(stakingAmountUSD * exchangeRate).toFixed(2)} BDT`;
+            const benefits = '100% voucher for 4 months, 50% voucher for life time, Priority Support, Early access to new features, and Exclusive Community Access.';
+            const helplineNumber = '8801568760780';
+
+            const message = `New Staking Request:\n\nPayment Method: ${paymentMethod}\nAmount: ${stakingAmount}\nBenefits: ${benefits}\nTransaction ID: ${trxid}`;
+
+            const whatsappUrl = `https://wa.me/${helplineNumber}?text=${encodeURIComponent(message)}`;
+
+            window.open(whatsappUrl, '_blank');
+
+            showMessage('Your request has been submitted. Please complete the action in WhatsApp.', 'success');
+            stakingForm.reset();
+        });
+    }
+
+    function showMessage(text, type) {
+        confirmationMessage.innerHTML = `<div class="alert-${type}">${text}</div>`;
+        setTimeout(() => {
+            confirmationMessage.innerHTML = '';
+        }, 5000);
+    }
+
+    // Initial display update
+    fetchExchangeRate().then(() => {
+        updatePaymentDisplay();
+    });
+});
+  </script>
+  <script src="./assets/js/loading-animation.js"></script>
+  <script src="./assets/js/load-navbar.js"></script>
+  <script src="./assets/js/main.js"></script>
+</body>
+</html>
