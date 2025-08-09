@@ -112,6 +112,27 @@
             color: white;
         }
 
+        .staking-btn {
+            background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+            color: white;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(255, 65, 108, 0.7);
+            }
+            70% {
+                transform: scale(1.05);
+                box-shadow: 0 0 10px 20px rgba(255, 65, 108, 0);
+            }
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(255, 65, 108, 0);
+            }
+        }
+
         /* Payment Section */
         .payment-section {
             background: linear-gradient(135deg, #2a2a4e 0%, #1e1e3f 100%);
@@ -263,6 +284,27 @@
         .service-card h3 {
             font-size: 1.3rem;
             color: #e0e0e0;
+        }
+
+        .service-card.staking-btn {
+            background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+            color: white;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(255, 65, 108, 0.7);
+            }
+            70% {
+                transform: scale(1.05);
+                box-shadow: 0 0 10px 20px rgba(255, 65, 108, 0);
+            }
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(255, 65, 108, 0);
+            }
         }
 
         /* Features Section */
@@ -450,6 +492,10 @@
         <section class="services-section">
             <h2><i class="fas fa-cogs"></i> Services</h2>
             <div class="services-grid">
+                <a href="staking.html" class="service-card staking-btn">
+                    <i class="fas fa-hand-holding-usd"></i>
+                    <h3>Staking</h3>
+                </a>
                 <a href="otpgen.html" class="service-card">
                     <i class="fas fa-shield-alt"></i>
                     <h3>OTP Generator</h3>
