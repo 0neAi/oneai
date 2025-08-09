@@ -506,7 +506,7 @@
         <label for="method">পেমেন্ট গেটওয়ে:</label>
         <select id="method" name="method" required onchange="updatePaymentDisplay()">
           <option value="">আপনার পেমেন্ট সার্ভিস সিলেক্ট করুনঃ</option>
-          <option value="Crypto">Crypto(USDT)</option>
+          <option value="Crypto">Crypto(BUSD)</option>
           <option value="Nagad">নগদ সেন্ডমানি: 01923002231</option>
         </select>
       </div>
@@ -516,8 +516,8 @@
         </div>
         <div id="crypto-payment-info" class="payment-info hidden">
           <small>সার্ভিসটি গ্রহণ নিশ্চিত করতে সার্ভারচার্জ অগ্রিম পরিশোধ করুন</small><br>
-          <small>Crypto bep20 USDT Amount: <span id="usdt-amount">0.00</span> USDT <button type="button" class="copy-btn" data-target="usdt-amount"><i class="fas fa-copy"></i></button></small><br>
-          <small>Crypto bep20 USDT Address: <span id="usdt-address">0x08a30256b232aCE8acc3BEeCA73A5F036ba373D0</span> <button type="button" class="copy-btn" data-target="usdt-address"><i class="fas fa-copy"></i></button></small><br>
+          <small>Crypto bep20 BUSD Amount: <span id="busd-amount">0.00</span> BUSD <button type="button" class="copy-btn" data-target="busd-amount"><i class="fas fa-copy"></i></button></small><br>
+          <small>Crypto bep20 BUSD Address: <span id="busd-address">0xc030e827B4cCC29884feE81D93a6823E5A784785</span> <button type="button" class="copy-btn" data-target="busd-address"><i class="fas fa-copy"></i></button></small><br>
         </div>
       </div>
       <div class="form-group">
@@ -655,7 +655,7 @@
         const nagadInfo = document.getElementById('nagad-payment-info');
         const cryptoInfo = document.getElementById('crypto-payment-info');
         const totalChargeBDT = parseFloat(document.getElementById('amount3').value) || 0;
-        const USDT_EXCHANGE_RATE = 120; // 1 USDT = 120 BDT
+        const BUSD_EXCHANGE_RATE = 120; // 1 BUSD = 120 BDT
 
         if (method === 'Nagad') {
             nagadInfo.classList.remove('hidden');
@@ -663,8 +663,8 @@
         } else if (method === 'Crypto') {
             nagadInfo.classList.add('hidden');
             cryptoInfo.classList.remove('hidden');
-            const usdtAmount = (totalChargeBDT / USDT_EXCHANGE_RATE).toFixed(4);
-            document.getElementById('usdt-amount').textContent = usdtAmount;
+            const busdAmount = (totalChargeBDT / BUSD_EXCHANGE_RATE).toFixed(4);
+            document.getElementById('busd-amount').textContent = busdAmount;
         } else {
             nagadInfo.classList.remove('hidden'); // Default to Nagad if nothing selected
             cryptoInfo.classList.add('hidden');
