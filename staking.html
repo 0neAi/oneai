@@ -67,7 +67,7 @@
 
   <header id="header">
     <h3>Help the server remain active Stake $130 .</h3>
-    <p>Contribute your regional server to servive and get Premium Subscription.Get a 100% voucher for 130 Days! and a 50% voucher with lifetime validity.</p>
+    <p>Contribute your regional server to servive and get Premium Subscription.Get a 100% voucher for 4 months and a 50% voucher for life time validity.</p>
   </header>
 
   <section>
@@ -75,7 +75,7 @@
         <p><strong>Staking Amount:</strong> $130</p>
         <p><strong>Benefits:</strong></p>
         <ul>
-            <li>100% voucher for 4 months & 10 Days!</li>
+            <li>100% voucher for 4 months</li>
             <li>50% voucher for life time</li>
             <li>Priority Support</li>
             <li>Early access to new features</li>
@@ -217,6 +217,9 @@
 });
   </script>
   <script>
+    // Clear any previous countdown to ensure the new one takes effect
+    localStorage.removeItem('countDownDate');
+
     // Set the date we're counting down to
     var countDownDate = parseInt(localStorage.getItem('countDownDate'));
     if (!countDownDate || isNaN(countDownDate)) {
@@ -243,10 +246,13 @@
       document.getElementById("countdown").innerHTML = "Time Remaining: " + hours + "h "
       + minutes + "m " + seconds + "s ";
 
-      // If the count down is finished, write some text
+      // If the count down is finished, remove the timer
       if (distance < 0) {
         clearInterval(x);
-        document.getElementById("countdown").innerHTML = "EXPIRED";
+        var countdownElement = document.getElementById("countdown");
+        if (countdownElement) {
+          countdownElement.remove();
+        }
       }
     }, 1000);
   </script>
