@@ -28,7 +28,7 @@
       <div class="notice-content">
         <span class="icon solid fa-bullhorn"></span>
         <marquee behavior="scroll" direction="left">
-          আকর্ষনীয় ডিসকাউন্ট দেওয়া হচ্ছে ! পেমেন্ট করার আগে আপনার ভাগ্য যাচাই করুন | যেকোন সমস্যার জন্য হেল্পলাইনে যোগাযোগ করুন | Congratulation we are live again. THANKYOU TO OUR VALUED USER
+          আকর্ষনীয় ডিসকাউন্ট দেওয়া হচ্ছে ! পেমেন্ট করার আগে আপনার ভাগ্য যাচাই করুন | যেকোন সমস্যার জন্য হেল্পলাইনে যোগাযোগ করুন | Congratulation!!! we are live again. THANKYOU TO OUR VALUED USER
           WHO STAKED TO MAKE THE SERVER ALIVE. ( MD. Akash, Hasan NPX, Tal Ha, MD.Abdullah AL ) check your profile and the support page to collect the vouchers.
         </marquee>
       </div>
