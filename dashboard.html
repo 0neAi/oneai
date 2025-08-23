@@ -14,6 +14,7 @@
             background-color: #1a1a2e;
             color: #e0e0e0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow-x: hidden;
         }
 
         .container {
@@ -26,7 +27,7 @@
         .dashboard-header {
             text-align: center;
             margin-bottom: 2rem;
-            padding: 2rem 0;
+            padding: 1rem 0;
             border-bottom: 1px solid #3a3a5e;
         }
 
@@ -155,9 +156,15 @@
             }
         }
 
+        .payment-table {
+            width: 100%;
+            overflow-x: auto;
+        }
+
         .payment-table table {
             width: 100%;
             border-collapse: collapse;
+            min-width: 600px;
         }
 
         .payment-table th, .payment-table td {
@@ -268,6 +275,9 @@
             text-align: center;
             transition: all 0.3s ease;
             cursor: pointer;
+            display: block;
+            text-decoration: none;
+            color: inherit;
         }
 
         .service-card:hover {
@@ -292,21 +302,6 @@
             animation: pulse 2s infinite;
         }
 
-        @keyframes pulse {
-            0% {
-                transform: scale(1);
-                box-shadow: 0 0 0 0 rgba(255, 65, 108, 0.7);
-            }
-            70% {
-                transform: scale(1.05);
-                box-shadow: 0 0 10px 20px rgba(255, 65, 108, 0);
-            }
-            100% {
-                transform: scale(1);
-                box-shadow: 0 0 0 0 rgba(255, 65, 108, 0);
-            }
-        }
-
         /* Features Section */
         .features {
             background: #2a2a4e;
@@ -316,7 +311,7 @@
 
         .feature {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             margin-bottom: 1.5rem;
         }
 
@@ -324,6 +319,67 @@
             font-size: 2rem;
             color: #ff69b4;
             margin-right: 1rem;
+            flex-shrink: 0;
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            color: white;
+        }
+
+        .loading-overlay i {
+            margin-bottom: 1rem;
+        }
+
+        /* Notification Badge */
+        .notification-badge {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            background: #ff416c;
+            color: white;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+            z-index: 100;
+        }
+
+        .notification-badge.hidden {
+            display: none;
+        }
+
+        /* Mobile Navigation */
+        .mobile-nav-toggle {
+            display: none;
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            background: #2c3e50;
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            font-size: 1.5rem;
+            cursor: pointer;
         }
 
         /* Responsive Design */
@@ -331,15 +387,122 @@
             .dashboard-header h1 {
                 font-size: 2rem;
             }
-
-            .payment-table table {
-                display: block;
-                overflow-x: auto;
-                white-space: nowrap;
+            
+            .dashboard-header p {
+                font-size: 0.9rem;
             }
 
             .stat-card {
+                min-width: 100px;
+                max-width: 140px;
+                padding: 0.8rem;
+            }
+
+            .stat-card h3 {
+                font-size: 0.9rem;
+            }
+
+            .stat-card .value {
+                font-size: 1.2rem;
+            }
+
+            .action-btn {
                 min-width: 120px;
+                padding: 0.6rem 1rem;
+                font-size: 0.9rem;
+            }
+
+            .payment-section, .ai-services, .features {
+                padding: 1rem;
+            }
+
+            .payment-table th, .payment-table td {
+                padding: 0.8rem;
+            }
+
+            .services-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 1rem;
+            }
+
+            .service-card {
+                padding: 1.5rem 1rem;
+            }
+
+            .service-card i {
+                font-size: 2rem;
+            }
+
+            .service-card h3 {
+                font-size: 1.1rem;
+            }
+
+            .feature {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+
+            .feature-icon {
+                margin-right: 0;
+                margin-bottom: 0.5rem;
+            }
+        }
+
+        @media screen and (max-width: 480px) {
+            .container {
+                padding: 0.5rem;
+            }
+            
+            .dashboard-header {
+                padding: 1rem 0;
+            }
+            
+            .dashboard-stats {
+                justify-content: center;
+            }
+            
+            .stat-card {
+                min-width: 100px;
+                max-width: 100px;
+                margin-bottom: 0.5rem;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .action-btn {
+                width: 100%;
+                max-width: 250px;
+                margin-bottom: 0.5rem;
+            }
+            
+            .services-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .payment-table {
+                font-size: 0.8rem;
+            }
+            
+            .payment-table th, .payment-table td {
+                padding: 0.5rem;
+            }
+            
+            .payment-table .status {
+                padding: 0.3rem 0.5rem;
+                font-size: 0.7rem;
+            }
+            
+            .navbar-placeholder {
+                padding: 0.8rem;
+                font-size: 0.9rem;
+            }
+            
+            .mobile-nav-toggle {
+                display: flex;
             }
         }
     </style>
@@ -401,6 +564,13 @@
         <i class="fas fa-spinner fa-spin fa-3x"></i>
         <p>Loading your payment data...</p>
     </div>
+    
+    <div class="mobile-nav-toggle">
+        <i class="fas fa-bars"></i>
+    </div>
+    
+    <div id="notification-badge" class="notification-badge hidden">0</div>
+    
     <div class="container">
         <div class="navbar-placeholder" style="background: #2c3e50; color: white; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;">
             <i class="fas fa-bars"></i> FREE_PALESTINE
@@ -425,8 +595,6 @@
             </div>
         </div>
         
-        <div id="notification-badge" class="notification-badge hidden">0</div>
-        
         <div class="action-buttons">
             <button class="action-btn refresh-btn" onclick="refreshPayments()">
                 <i class="fas fa-sync-alt"></i> Refresh
@@ -438,8 +606,6 @@
                 <i class="fas fa-robot"></i> AI Services
             </button>
         </div>
-
-        
 
         <!-- Payment Section (hidden by default) -->
         <section class="payment-section" id="payment-section">
