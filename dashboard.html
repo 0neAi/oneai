@@ -1,7 +1,7 @@
 <!DOCTYPE HTML>
 <html lang="en">
 <head>
-    <title>0NEAi Dashboard</title>
+    <title>1NEAi Dashboard</title>
     <link rel="icon" href="./images/logo.png" type="image/png">
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
@@ -10,10 +10,16 @@
     <link rel="manifest" href="/manifest.json">
     <style>
         /* General Body Styles */
+        * {
+            box-sizing: border-box;
+        }
+        
         body {
             background-color: #1a1a2e;
             color: #e0e0e0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
             overflow-x: hidden;
         }
 
@@ -21,55 +27,58 @@
             max-width: 1200px;
             margin: 0 auto;
             padding: 1rem;
+            width: 100%;
         }
 
         /* Header */
         .dashboard-header {
             text-align: center;
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
             padding: 1rem 0;
             border-bottom: 1px solid #3a3a5e;
         }
 
         .dashboard-header h1 {
-            font-size: 2.5rem;
+            font-size: 1.8rem;
             color: #ff69b4;
-            margin: 0;
+            margin: 0 0 0.5rem 0;
         }
 
         .dashboard-header p {
-            font-size: 1.1rem;
+            font-size: 0.9rem;
             color: #a0a0c0;
+            line-height: 1.4;
+            margin: 0;
         }
 
         /* Stats */
         .dashboard-stats {
             display: flex;
-            justify-content: space-around;
-            gap: 1rem;
-            margin-bottom: 2rem;
             flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.8rem;
+            margin-bottom: 1.5rem;
         }
 
         .stat-card {
             background: #2a2a4e;
-            padding: 1rem;
+            padding: 0.8rem;
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
             text-align: center;
             flex: 1;
-            min-width: 120px;
-            max-width: 200px;
+            min-width: 100px;
+            max-width: 120px;
         }
 
         .stat-card h3 {
-            margin-top: 0;
-            font-size: 1rem;
+            margin: 0 0 0.5rem 0;
+            font-size: 0.8rem;
             color: #a0a0c0;
         }
 
         .stat-card .value {
-            font-size: 1.5rem;
+            font-size: 1.2rem;
             font-weight: bold;
             color: #ff69b4;
         }
@@ -77,25 +86,26 @@
         /* Action Buttons */
         .action-buttons {
             display: flex;
-            justify-content: center;
-            gap: 1rem;
-            margin-bottom: 2rem;
             flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.8rem;
+            margin-bottom: 1.5rem;
         }
 
         .action-btn {
-            padding: 0.8rem 1.5rem;
+            padding: 0.8rem 1rem;
             border-radius: 5px;
             border: none;
             cursor: pointer;
             font-weight: bold;
             transition: all 0.3s ease;
-            font-size: 1rem;
+            font-size: 0.9rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            min-width: 150px;
+            min-width: 120px;
             text-align: center;
+            flex: 1;
         }
 
         .refresh-btn {
@@ -126,7 +136,7 @@
             }
             70% {
                 transform: scale(1.05);
-                box-shadow: 0 0 10px 20px rgba(255, 65, 108, 0);
+                box-shadow: 0 0 10px 10px rgba(255, 65, 108, 0);
             }
             100% {
                 transform: scale(1);
@@ -137,12 +147,13 @@
         /* Payment Section */
         .payment-section {
             background: linear-gradient(135deg, #2a2a4e 0%, #1e1e3f 100%);
-            padding: 2rem;
-            border-radius: 15px;
-            margin-bottom: 2rem;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            padding: 1.2rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
             animation: fadeIn 1s ease-in-out;
             display: none;
+            overflow-x: auto;
         }
 
         @keyframes fadeIn {
@@ -157,26 +168,28 @@
         }
 
         .payment-table {
-            width: 100%;
             overflow-x: auto;
+            width: 100%;
         }
 
         .payment-table table {
             width: 100%;
             border-collapse: collapse;
-            min-width: 600px;
+            min-width: 500px;
         }
 
         .payment-table th, .payment-table td {
-            padding: 1rem 1.5rem;
+            padding: 0.8rem;
             text-align: left;
             border-bottom: 1px solid #3a3a5e;
             color: #e0e0e0;
+            font-size: 0.9rem;
         }
 
         .payment-table th {
             color: #ff69b4;
-            font-size: 1.1rem;
+            font-size: 0.95rem;
+            white-space: nowrap;
         }
 
         .payment-table tr:last-child td {
@@ -184,13 +197,13 @@
         }
 
         .payment-table .status {
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
+            padding: 0.4rem 0.6rem;
+            border-radius: 15px;
             font-weight: bold;
             text-transform: uppercase;
-            font-size: 0.9rem;
+            font-size: 0.75rem;
             text-align: center;
-            min-width: 100px;
+            min-width: 80px;
             display: inline-block;
         }
 
@@ -212,16 +225,16 @@
         /* AI Services Section */
         .ai-services {
             background: #2a2a4e;
-            padding: 2rem;
+            padding: 1.2rem;
             border-radius: 10px;
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
             display: none;
         }
 
         .ai-services-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.8rem;
             margin-top: 1rem;
         }
 
@@ -229,14 +242,17 @@
             background: linear-gradient(135deg, #3a3a5e 0%, #2a2a4e 100%);
             border: none;
             color: white;
-            padding: 1rem;
+            padding: 0.8rem;
             border-radius: 8px;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 0.5rem;
+            gap: 0.3rem;
             cursor: pointer;
             transition: all 0.3s ease;
+            font-size: 0.8rem;
+            text-align: center;
         }
 
         .ai-service-btn:hover {
@@ -251,49 +267,54 @@
         /* No Payments Message */
         .no-payments {
             text-align: center;
-            padding: 2rem;
+            padding: 1.5rem;
             background: #2a2a4e;
             border-radius: 10px;
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
         }
 
         /* Services Section */
         .services-section {
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
         }
 
         .services-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
         }
 
         .service-card {
             background: #2a2a4e;
-            padding: 2rem;
+            padding: 1.2rem;
             border-radius: 10px;
             text-align: center;
             transition: all 0.3s ease;
             cursor: pointer;
-            display: block;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100px;
             text-decoration: none;
             color: inherit;
         }
 
         .service-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
         }
 
         .service-card i {
-            font-size: 2.5rem;
+            font-size: 1.8rem;
             color: #ff69b4;
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
         }
 
         .service-card h3 {
-            font-size: 1.3rem;
+            font-size: 0.95rem;
             color: #e0e0e0;
+            margin: 0;
         }
 
         .service-card.staking-btn {
@@ -305,21 +326,44 @@
         /* Features Section */
         .features {
             background: #2a2a4e;
-            padding: 2rem;
+            padding: 1.2rem;
             border-radius: 10px;
+        }
+
+        .features h3 {
+            margin-top: 0;
+            font-size: 1.2rem;
+            color: #ff69b4;
         }
 
         .feature {
             display: flex;
             align-items: flex-start;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.2rem;
         }
 
         .feature-icon {
-            font-size: 2rem;
+            font-size: 1.5rem;
             color: #ff69b4;
-            margin-right: 1rem;
+            margin-right: 0.8rem;
             flex-shrink: 0;
+        }
+
+        .feature-content {
+            flex: 1;
+        }
+
+        .feature-content h4 {
+            font-size: 1rem;
+            margin: 0 0 0.5rem 0;
+            color: #e0e0e0;
+        }
+
+        .feature-content p {
+            font-size: 0.85rem;
+            margin: 0 0 0.5rem 0;
+            line-height: 1.4;
+            color: #a0a0c0;
         }
 
         /* Loading Overlay */
@@ -329,7 +373,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(26, 26, 46, 0.9);
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -342,168 +386,237 @@
             margin-bottom: 1rem;
         }
 
+        /* Navbar */
+        .navbar-placeholder {
+            background: #2c3e50;
+            color: white;
+            padding: 0.8rem;
+            margin-bottom: 1rem;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .navbar-placeholder i {
+            font-size: 1.2rem;
+        }
+
         /* Notification Badge */
         .notification-badge {
             position: fixed;
-            top: 1rem;
-            right: 1rem;
+            top: 10px;
+            right: 10px;
             background: #ff416c;
             color: white;
             border-radius: 50%;
             width: 25px;
             height: 25px;
             display: flex;
-            justify-content: center;
             align-items: center;
+            justify-content: center;
             font-size: 0.8rem;
             font-weight: bold;
-            z-index: 100;
+            z-index: 1000;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
         }
 
         .notification-badge.hidden {
             display: none;
         }
 
-        /* Mobile Navigation */
-        .mobile-nav-toggle {
-            display: none;
-            position: fixed;
-            top: 1rem;
-            right: 1rem;
-            background: #2c3e50;
-            color: white;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            font-size: 1.5rem;
-            cursor: pointer;
-        }
-
         /* Responsive Design */
-        @media screen and (max-width: 768px) {
-            .dashboard-header h1 {
-                font-size: 2rem;
+        @media screen and (max-width: 480px) {
+            .container {
+                padding: 0.8rem;
             }
             
-            .dashboard-header p {
-                font-size: 0.9rem;
+            .dashboard-header h1 {
+                font-size: 1.6rem;
             }
-
+            
             .stat-card {
-                min-width: 100px;
-                max-width: 140px;
-                padding: 0.8rem;
+                min-width: 85px;
+                padding: 0.6rem;
             }
-
+            
             .stat-card h3 {
-                font-size: 0.9rem;
+                font-size: 0.75rem;
             }
-
+            
             .stat-card .value {
-                font-size: 1.2rem;
+                font-size: 1rem;
             }
-
+            
             .action-btn {
-                min-width: 120px;
-                padding: 0.6rem 1rem;
-                font-size: 0.9rem;
+                min-width: 100px;
+                padding: 0.7rem 0.8rem;
+                font-size: 0.8rem;
             }
-
-            .payment-section, .ai-services, .features {
-                padding: 1rem;
-            }
-
-            .payment-table th, .payment-table td {
-                padding: 0.8rem;
-            }
-
+            
             .services-grid {
-                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-                gap: 1rem;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.8rem;
             }
-
+            
             .service-card {
-                padding: 1.5rem 1rem;
+                padding: 1rem;
+                min-height: 90px;
             }
-
+            
             .service-card i {
-                font-size: 2rem;
+                font-size: 1.5rem;
             }
-
+            
             .service-card h3 {
-                font-size: 1.1rem;
+                font-size: 0.85rem;
             }
-
+            
+            .ai-services-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
             .feature {
                 flex-direction: column;
                 align-items: center;
                 text-align: center;
             }
-
+            
             .feature-icon {
                 margin-right: 0;
                 margin-bottom: 0.5rem;
             }
+            
+            .payment-section, .ai-services, .features {
+                padding: 1rem;
+            }
+            
+            .payment-table th, .payment-table td {
+                padding: 0.6rem;
+            }
         }
 
-        @media screen and (max-width: 480px) {
-            .container {
-                padding: 0.5rem;
-            }
-            
-            .dashboard-header {
-                padding: 1rem 0;
-            }
-            
-            .dashboard-stats {
-                justify-content: center;
-            }
-            
-            .stat-card {
-                min-width: 100px;
-                max-width: 100px;
-                margin-bottom: 0.5rem;
+        @media screen and (max-width: 350px) {
+            .services-grid, .ai-services-grid {
+                grid-template-columns: 1fr;
             }
             
             .action-buttons {
                 flex-direction: column;
-                align-items: center;
             }
             
             .action-btn {
                 width: 100%;
-                max-width: 250px;
-                margin-bottom: 0.5rem;
             }
-            
-            .services-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .payment-table {
-                font-size: 0.8rem;
-            }
-            
-            .payment-table th, .payment-table td {
-                padding: 0.5rem;
-            }
-            
-            .payment-table .status {
-                padding: 0.3rem 0.5rem;
-                font-size: 0.7rem;
-            }
-            
-            .navbar-placeholder {
-                padding: 0.8rem;
-                font-size: 0.9rem;
-            }
-            
-            .mobile-nav-toggle {
-                display: flex;
-            }
+        }
+
+        /* Utility Classes */
+        .text-center {
+            text-align: center;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        /* Payment Details Modal */
+        #payment-details-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 1rem;
+        }
+        
+        .modal-content {
+            background: #2a2a4e;
+            padding: 1.5rem;
+            border-radius: 10px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        
+        /* Payment Popup */
+        #payment-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #2a2a4e;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3);
+            z-index: 1001;
+            display: none;
+            text-align: center;
+            max-width: 90%;
+            width: 300px;
+        }
+        
+        #payment-popup.active {
+            display: block;
+            animation: popIn 0.3s ease;
+        }
+        
+        @keyframes popIn {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+            100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+        
+        /* Toast notifications */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 0.8rem 1.5rem;
+            border-radius: 30px;
+            z-index: 1002;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+            animation: toastIn 0.3s ease, toastOut 0.3s ease 2.7s forwards;
+        }
+        
+        .toast.success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .toast.error {
+            background: #dc3545;
+            color: white;
+        }
+        
+        @keyframes toastIn {
+            0% { opacity: 0; transform: translate(-50%, -20px); }
+            100% { opacity: 1; transform: translate(-50%, 0); }
+        }
+        
+        @keyframes toastOut {
+            0% { opacity: 1; transform: translate(-50%, 0); }
+            100% { opacity: 0; transform: translate(-50%, -20px); }
         }
     </style>
 </head>
@@ -565,16 +678,15 @@
         <p>Loading your payment data...</p>
     </div>
     
-    <div class="mobile-nav-toggle">
-        <i class="fas fa-bars"></i>
-    </div>
-    
     <div id="notification-badge" class="notification-badge hidden">0</div>
     
     <div class="container">
-        <div class="navbar-placeholder" style="background: #2c3e50; color: white; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;">
-            <i class="fas fa-bars"></i> FREE_PALESTINE
+        <div class="navbar-placeholder">
+            <i class="fas fa-bars" id="menu-toggle"></i>
+            <span>FREE_PALESTINE</span>
+            <div style="width: 24px;"></div> <!-- Spacer for balance -->
         </div>  
+        
         <header class="dashboard-header">
             <h1>1ai Dashboard</h1>
             <p>অনুগ্রহ পূর্বক অপেক্ষে করুন, যেকোন সমস্যায় হেল্পলাইনে যোগাযোগ করুন। <br> A Premium Digital Intelligence Platform</p>
@@ -582,7 +694,7 @@
 
         <div class="dashboard-stats">
             <div class="stat-card">
-                <h3><i class="fas fa-clock"></i> Active Payments</h3>
+                <h3><i class="fas fa-clock"></i> Active</h3>
                 <div class="value" id="active-payments">0</div>
             </div>
             <div class="stat-card">
@@ -724,7 +836,7 @@
                     <i class="fas fa-bolt"></i>
                 </div>
                 <div class="feature-content">
-                   <br> <h4>Lightning Fast Processing</h4>
+                   <h4>Lightning Fast Processing</h4>
                     <p>Our AI algorithms process requests in milliseconds for real-time performance.</p>
                 </div>
             </div>
@@ -739,6 +851,24 @@
             </div>
         </div>
     </div>
+    
+    <!-- Payment Details Modal -->
+    <div id="payment-details-modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closePaymentDetailsModal()">&times;</button>
+            <h3>Payment Details</h3>
+            <div id="payment-details-content"></div>
+        </div>
+    </div>
+    
+    <!-- Payment Popup -->
+    <div id="payment-popup">
+        <h3>Payment Completed!</h3>
+        <p>TRX ID: <span id="popup-trxid"></span></p>
+        <p>Amount: ৳<span id="popup-amount"></span></p>
+        <button class="action-btn" onclick="closePaymentPopup()">OK</button>
+    </div>
+    
     <script>
 // Global state management
 const paymentState = {
@@ -863,6 +993,7 @@ function renderAllPayments() {
     const pendingPayments = paymentState.payments.filter(p => p.status === 'Pending');
 
     if (pendingPayments.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center">No active payments</td></tr>';
         return;
     }
     
@@ -1050,23 +1181,23 @@ function formatCompanyName(company) {
 
 function showError(message) {
     const errorDiv = document.createElement('div');
-    errorDiv.className = 'error';
+    errorDiv.className = 'toast error';
     errorDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
-    document.body.prepend(errorDiv);
-    setTimeout(() => errorDiv.remove(), 5000);
+    document.body.appendChild(errorDiv);
+    setTimeout(() => errorDiv.remove(), 3000);
 }
 
 function showSuccess(message) {
     const successDiv = document.createElement('div');
-    successDiv.className = 'success';
+    successDiv.className = 'toast success';
     successDiv.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
-    document.body.prepend(successDiv);
-    setTimeout(() => successDiv.remove(), 5000);
+    document.body.appendChild(successDiv);
+    setTimeout(() => successDiv.remove(), 3000);
 }
 
 function showAiServices() {
     const aiSection = document.getElementById('ai-services-section');
-    if (aiSection.style.display === 'none') {
+    if (aiSection.style.display === 'none' || !aiSection.style.display) {
         aiSection.style.display = 'block';
     } else {
         aiSection.style.display = 'none';
@@ -1194,7 +1325,12 @@ window.closePaymentPopup = closePaymentPopup;
 document.getElementById('notification-badge').addEventListener('click', function() {
     paymentState.unreadNotifications = 0;
     this.classList.add('hidden');
-    alert('All notifications cleared');
+    showSuccess('Notifications cleared');
+});
+
+// Mobile menu toggle
+document.getElementById('menu-toggle').addEventListener('click', function() {
+    alert('Mobile menu would open here');
 });
 </script>
 <script src="./assets/js/load-navbar.js"></script>
