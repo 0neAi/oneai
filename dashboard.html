@@ -1437,6 +1437,9 @@ document.getElementById('menu-toggle').addEventListener('click', function() {
                                                 'X-User-ID': localStorage.getItem('userID')
                                             }
                                         });
+                                    })
+                                    .catch(error => {
+                                        console.error('Failed to subscribe to push notifications:', error);
                                     });
                                 }
                             });
