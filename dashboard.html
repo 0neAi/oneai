@@ -621,7 +621,59 @@
     </style>
 </head>
 <body>
-    <!-- Removed the initial auth check script as it was causing issues -->
+    <!-- Initial Auth Check Script -->
+    <script>
+        (async () => {
+            const authToken = localStorage.getItem('authToken');
+            const userID = localStorage.getItem('userID');
+
+            if (!authToken || !userID) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            try {
+                const validateResponse = await fetch('https://oneai-wjox.onrender.com/validate', {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'X-User-ID': userID
+                    }
+                });
+
+                const validateData = await validateResponse.json();
+
+                if (!validateResponse.ok) {
+                    if (validateData.message === 'Authentication failed: User not approved') {
+                        window.location.href = 'waiting-for-approval.html';
+                    } else {
+                        localStorage.clear();
+                        window.location.href = 'index.html';
+                    }
+                    return;
+                }
+
+                if (validateData.isAdminApproved === false) {
+                    window.location.href = 'waiting-for-approval.html';
+                    return;
+                }
+
+                const userResponse = await fetch(`https://oneai-wjox.onrender.com/users/${userID}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'X-User-ID': userID
+                    }
+                });
+
+                if (!userResponse.ok) {
+                    console.error('Failed to fetch user details after successful validation.');
+                }
+            } catch (error) {
+                console.error('Error checking user approval status:', error);
+                localStorage.clear();
+                window.location.href = 'index.html';
+            }
+        })();
+    </script>
 
     <div class="loading-overlay">
         <i class="fas fa-spinner fa-spin fa-3x"></i>
@@ -717,50 +769,6 @@
             </div>
         </section>
 
-        <!-- Location Tracker Requests Section -->
-        <section class="location-tracker-requests-section" id="location-tracker-requests-section">
-            <h2><i class="fas fa-map-marker-alt"></i> Location Tracker Requests</h2>
-            <div class="table-responsive">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Source</th>
-                            <th>Data Needed</th>
-                            <th>Status</th>
-                            <th>Date</th>
-                        </tr>
-                    </thead>
-                    <tbody id="location-tracker-requests-table-body">
-                        <tr>
-                            <td colspan="4" class="text-center">No location tracker requests found.</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
-<!-- Add this section to dashboard.html after the location tracker section -->
-<section class="fexiload-requests-section" id="fexiload-requests-section">
-  <h2><i class="fas fa-mobile-alt"></i> Flexiload Requests</h2>
-  <div class="table-responsive">
-    <table class="table">
-      <thead>
-        <tr>
-          <th>GP Number</th>
-          <th>Amount</th>
-          <th>Status</th>
-          <th>Date</th>
-        </tr>
-      </thead>
-      <tbody id="fexiload-requests-table-body">
-        <tr>
-          <td colspan="4" class="text-center">No flexiload requests found.</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</section>
-
         <section class="services-section">
             <h2><i class="fas fa-cogs"></i> Services</h2>
             <div class="services-grid">
@@ -776,14 +784,10 @@
                     <i class="fas fa-unlock-alt"></i>
                     <h3>Password Cracker</h3>
                 </div>
-                <a href="tracker.html" class="service-card">
+                <div class="service-card" onclick="showPremiumPaymentForm()">
                     <i class="fas fa-map-marker-alt"></i>
                     <h3>Location Tracker</h3>
-                </a>
-                <a href="fexiload.html" class="service-card">
-                    <i class="fas fa-mobile-alt"></i>
-                    <h3>Recharge</h3>
-                </a>
+                </div>
                 <div class="service-card" onclick="showPremiumPaymentForm()">
                     <i class="fas fa-address-book"></i>
                     <h3>NID Call List</h3>
@@ -922,60 +926,20 @@ async function refreshPayments() {
         });
         
         if (!response.ok) {
-            console.error(`Failed to fetch payments. Status: ${response.status}, StatusText: ${response.statusText}`);
-            let errorMessage = 'Failed to fetch payments.';
-            
-            if (response.status === 401 || response.status === 403) {
-                // Check if user is not approved
-                try {
-                    const errorData = await response.json();
-                    if (errorData.message && errorData.message.includes('not approved')) {
-                        window.location.href = 'waiting-for-approval.html';
-                        return;
-                    }
-                } catch (e) {
-                    // If we can't parse the error, continue with default behavior
-                }
-                
-                errorMessage = 'Session expired or invalid. Please log in again.';
-                localStorage.clear();
-                window.location.href = 'index.html';
-                return;
-            } else if (response.status >= 500) {
-                errorMessage = 'Server error. Please try again later.';
-            }
-
-            showError(errorMessage);
-            return;
+            throw new Error('Failed to fetch payments');
         }
-
-        const rawResponseText = await response.text();
-        console.log('Raw response from /api/payments/my-payments:', rawResponseText);
-        const data = JSON.parse(rawResponseText);
+        
+        const data = await response.json();
         paymentState.payments = data.payments || [];
-
+        
         renderAllPayments();
         updateStats();
         togglePaymentSections();
-
+        
         showSuccess('Payments refreshed successfully');
     } catch (error) {
         console.error('Payment refresh error:', error);
-        let errorMessage = 'An unexpected error occurred. Please try again.';
-
-        if (error instanceof TypeError) {
-            if (error.message.includes('NetworkError')) {
-                errorMessage = 'Network error. Please check your connection.';
-            } else {
-                errorMessage = 'Invalid data received from server. Please try again.';
-            }
-        } else if (error instanceof SyntaxError) {
-            errorMessage = 'Invalid JSON received from server. Please try again.';
-        }
-
-        showError(errorMessage);
-        localStorage.clear();
-        window.location.href = 'index.html';
+        showError(error.message || 'Failed to refresh payments');
     } finally {
         loadingOverlay.style.display = 'none';
     }
@@ -1271,6 +1235,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (error) {
         console.error('Initialization error:', error);
         showError('Failed to load dashboard data');
+        setTimeout(() => {
+            window.location.href = 'index.html';
+        }, 3000);
     } finally {
         loadingOverlay.style.display = 'none';
     }
@@ -1405,9 +1372,6 @@ document.getElementById('menu-toggle').addEventListener('click', function() {
                                                 'X-User-ID': localStorage.getItem('userID')
                                             }
                                         });
-                                    })
-                                    .catch(error => {
-                                        console.error('Failed to subscribe to push notifications:', error);
                                     });
                                 }
                             });
