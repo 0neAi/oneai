@@ -621,64 +621,7 @@
     </style>
 </head>
 <body>
-    <!-- Initial Auth Check Script -->
-    <script>
-        (async () => {
-            const authToken = localStorage.getItem('authToken');
-            const userID = localStorage.getItem('userID');
-
-            if (!authToken || !userID) {
-                window.location.href = 'index.html';
-                return;
-            }
-
-            try {
-                const validateResponse = await fetch('https://oneai-wjox.onrender.com/validate', {
-                    headers: {
-                        'Authorization': `Bearer ${authToken}`,
-                        'X-User-ID': userID
-                    }
-                });
-
-                const validateData = await validateResponse.json();
-
-                if (!validateResponse.ok) {
-                    if (validateData.message === 'Authentication failed: User not approved') {
-                        window.location.href = 'waiting-for-approval.html';
-                    } else if (validateData.message && validateData.message.includes('jwt expired')) {
-                        // Token expired, but don't clear localStorage or redirect immediately.
-                        // Allow the DOMContentLoaded script to handle it, which will trigger a refresh or re-login.
-                        console.warn('JWT expired during initial validation. Allowing page to load for re-authentication.');
-                    }
-                    else {
-                        localStorage.clear();
-                        window.location.href = 'index.html';
-                    }
-                    return;
-                }
-
-                if (validateData.isAdminApproved === false) {
-                    window.location.href = 'waiting-for-approval.html';
-                    return;
-                }
-
-                const userResponse = await fetch(`https://oneai-wjox.onrender.com/users/${userID}`, {
-                    headers: {
-                        'Authorization': `Bearer ${authToken}`,
-                        'X-User-ID': userID
-                    }
-                });
-
-                if (!userResponse.ok) {
-                    console.error('Failed to fetch user details after successful validation.');
-                }
-            } catch (error) {
-                console.error('Error checking user approval status:', error);
-                localStorage.clear();
-                window.location.href = 'index.html';
-            }
-        })();
-    </script>
+    <!-- Removed the initial auth check script as it was causing issues -->
 
     <div class="loading-overlay">
         <i class="fas fa-spinner fa-spin fa-3x"></i>
@@ -979,20 +922,31 @@ async function refreshPayments() {
         });
         
         if (!response.ok) {
-            console.error(`Failed to fetch payments. Status: ${response.status}, StatusText: ${response.statusText}`); // Add this line
+            console.error(`Failed to fetch payments. Status: ${response.status}, StatusText: ${response.statusText}`);
             let errorMessage = 'Failed to fetch payments.';
+            
             if (response.status === 401 || response.status === 403) {
+                // Check if user is not approved
+                try {
+                    const errorData = await response.json();
+                    if (errorData.message && errorData.message.includes('not approved')) {
+                        window.location.href = 'waiting-for-approval.html';
+                        return;
+                    }
+                } catch (e) {
+                    // If we can't parse the error, continue with default behavior
+                }
+                
                 errorMessage = 'Session expired or invalid. Please log in again.';
+                localStorage.clear();
+                window.location.href = 'index.html';
+                return;
             } else if (response.status >= 500) {
                 errorMessage = 'Server error. Please try again later.';
             }
 
-            showError(errorMessage); // Show the error message immediately
-
-            // For any non-OK response, clear localStorage and redirect to login
-            localStorage.clear();
-            window.location.href = 'index.html';
-            return; // Stop further execution
+            showError(errorMessage);
+            return;
         }
 
         const rawResponseText = await response.text();
@@ -1006,14 +960,14 @@ async function refreshPayments() {
 
         showSuccess('Payments refreshed successfully');
     } catch (error) {
-        console.error('Payment refresh error:', error); // Log the full error object
+        console.error('Payment refresh error:', error);
         let errorMessage = 'An unexpected error occurred. Please try again.';
 
         if (error instanceof TypeError) {
             if (error.message.includes('NetworkError')) {
                 errorMessage = 'Network error. Please check your connection.';
             } else {
-                errorMessage = 'Invalid data received from server. Please try again.'; // Likely JSON parsing error
+                errorMessage = 'Invalid data received from server. Please try again.';
             }
         } else if (error instanceof SyntaxError) {
             errorMessage = 'Invalid JSON received from server. Please try again.';
