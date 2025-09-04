@@ -1790,23 +1790,6 @@ ${additionalNote ? `Additional Note: ${additionalNote}` : ''}
 // ======================
 // Admin Routes
 // ======================
-const adminLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
-  message: 'Too many login attempts, please try again after 15 minutes'
-});
-
-app.post('/subscribe', authMiddleware, async (req, res) => {
-  try {
-    const { gpNumber, rechargeAmount, transactionNumber } = req.body;
-
-    if (!gpNumber || !rechargeAmount || !transactionNumber) {
-      return res.status(400).json({
-        success: false,
-        message: 'All fields are required'
-      });
-    }
-
     const fexiloadRequest = new FexiloadRequest({
       gpNumber,
       rechargeAmount,
