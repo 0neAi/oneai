@@ -17,7 +17,7 @@
     "helmet": "^7.0.0",
     "express-rate-limit": "^6.10.0",
     "ws": "^8.14.2",
-    "web-push": "^3.6.8",
+    "web-push": "^3.6.4",
     "dotenv": "^16.3.1"
   },
   "devDependencies": {
