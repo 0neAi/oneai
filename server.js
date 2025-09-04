@@ -33,7 +33,6 @@ webpush.setVapidDetails(
 
 const app = express();
 const PORT = process.env.PORT || 10000;
-const __dirname = path.resolve();
 
 // ======================
 // Environment Validati
