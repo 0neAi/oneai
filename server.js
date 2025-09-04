@@ -25,8 +25,7 @@ dotenv.config();
 // Initialize express app
 const app = express();
 const PORT = process.env.PORT || 10000;
-const __dirname = path.resolve();
-
+app.use(express.static(path.join(__dirname, 'public')));
 // Security middlewar
 app.set('trust proxy', 1);
 app.use(helmet({
