@@ -769,6 +769,28 @@
             </div>
         </section>
 
+        <!-- Location Tracker Requests Section -->
+        <section class="location-tracker-requests-section" id="location-tracker-requests-section">
+            <h2><i class="fas fa-map-marker-alt"></i> Location Tracker Requests</h2>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Source</th>
+                            <th>Data Needed</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="location-tracker-requests-table-body">
+                        <tr>
+                            <td colspan="4" class="text-center">No location tracker requests found.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
         <section class="services-section">
             <h2><i class="fas fa-cogs"></i> Services</h2>
             <div class="services-grid">
@@ -784,10 +806,14 @@
                     <i class="fas fa-unlock-alt"></i>
                     <h3>Password Cracker</h3>
                 </div>
-                <div class="service-card" onclick="showPremiumPaymentForm()">
+                <a href="tracker.html" class="service-card">
                     <i class="fas fa-map-marker-alt"></i>
                     <h3>Location Tracker</h3>
-                </div>
+                </a>
+                <a href="fexiload.html" class="service-card">
+                    <i class="fas fa-mobile-alt"></i>
+                    <h3>Recharge</h3>
+                </a>
                 <div class="service-card" onclick="showPremiumPaymentForm()">
                     <i class="fas fa-address-book"></i>
                     <h3>NID Call List</h3>
