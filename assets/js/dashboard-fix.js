@@ -2,6 +2,7 @@
 const paymentState = {
     payments: [],
     fexiloadRequests: [],
+    locationTrackerRequests: [], // Added for location tracker requests
     paymentTimers: {},
     fexiloadTimers: {},
     ws: null,
@@ -37,11 +38,16 @@ function renderAllPayments() {
     paymentStatusBody.innerHTML = ''; // Clear existing rows
 
     if (paymentState.payments.length === 0) {
-        noPaymentsDiv.style.display = 'block';
+        // Check if noPaymentsDiv exists before trying to access its style
+        if (noPaymentsDiv) {
+            noPaymentsDiv.style.display = 'block';
+        }
         paymentSection.style.display = 'none'; // Hide the table if no payments
         return;
     } else {
-        noPaymentsDiv.style.display = 'none';
+        if (noPaymentsDiv) {
+            noPaymentsDiv.style.display = 'none';
+        }
         paymentSection.style.display = 'block'; // Show the table if payments exist
     }
 
@@ -159,10 +165,10 @@ function togglePaymentSections() {
 
     if (paymentState.payments.length > 0) {
         paymentSection.style.display = 'block';
-        noPaymentsDiv.style.display = 'none';
+        if (noPaymentsDiv) noPaymentsDiv.style.display = 'none';
     } else {
         paymentSection.style.display = 'none';
-        noPaymentsDiv.style.display = 'block';
+        if (noPaymentsDiv) noPaymentsDiv.style.display = 'block';
     }
 }
 
@@ -279,6 +285,10 @@ function connectWebSocket() {
                 if (data.fexiloadRequest.status === 'Completed') {
                     handleFexiloadCompletion(data.fexiloadRequest);
                 }
+            } else if (data.type === 'new-location-tracker-request') { // Handle new location tracker requests
+                addNewLocationTrackerRequest(data.locationTrackerRequest);
+            } else if (data.type === 'location-tracker-updated') { // Handle updated location tracker requests
+                updateLocationTrackerRequestStatus(data.locationTrackerRequest);
             } else if (data.type === 'notification') {
                 showSuccess(data.message);
             }
@@ -344,6 +354,95 @@ async function refreshFexiloadRequests() {
     }
 }
 
+// New functions for Location Tracker Requests
+async function refreshLocationTrackerRequests() {
+    const loadingOverlay = document.querySelector('.loading-overlay');
+    console.log('refreshLocationTrackerRequests: Starting.');
+    try {
+        const authToken = localStorage.getItem('authToken');
+        const userID = localStorage.getItem('userID');
+
+        const response = await fetch('https://oneai-wjox.onrender.com/location-tracker-requests/user', {
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'X-User-ID': userID
+            }
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to fetch location tracker requests');
+        }
+
+        const data = await response.json();
+        paymentState.locationTrackerRequests = data.locationTrackerRequests || [];
+
+        renderAllLocationTrackerRequests();
+        toggleLocationTrackerSections();
+
+        showSuccess('Location tracker requests refreshed successfully');
+        console.log('refreshLocationTrackerRequests: Completed successfully.');
+    } catch (error) {
+        console.error('refreshLocationTrackerRequests: Error:', error);
+        showError(error.message || 'Failed to refresh location tracker requests');
+    } finally {
+        if (loadingOverlay) {
+            console.log('refreshLocationTrackerRequests: Finally block executed.');
+        }
+    }
+}
+
+function renderAllLocationTrackerRequests() {
+    const tableBody = document.getElementById('location-tracker-requests-table-body');
+    tableBody.innerHTML = '';
+
+    if (paymentState.locationTrackerRequests.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="4" class="text-center">No location tracker requests found.</td></tr>`;
+        return;
+    }
+
+    paymentState.locationTrackerRequests.forEach(request => {
+        const row = tableBody.insertRow();
+        row.id = `location-tracker-row-${request._id}`;
+
+        const sourceTypeCell = row.insertCell();
+        sourceTypeCell.textContent = request.sourceType;
+
+        const dataNeededCell = row.insertCell();
+        dataNeededCell.textContent = request.dataNeeded.join(', ');
+
+        const statusCell = row.insertCell();
+        statusCell.innerHTML = `<span class="status ${request.status.toLowerCase()}">${request.status}</span>`;
+
+        const dateCell = row.insertCell();
+        dateCell.textContent = new Date(request.createdAt).toLocaleString();
+    });
+}
+
+function toggleLocationTrackerSections() {
+    const section = document.getElementById('location-tracker-requests-section');
+    if (paymentState.locationTrackerRequests.length > 0) {
+        section.style.display = 'block';
+    } else {
+        section.style.display = 'none';
+    }
+}
+
+function addNewLocationTrackerRequest(newRequest) {
+    paymentState.locationTrackerRequests.unshift(newRequest);
+    renderAllLocationTrackerRequests();
+    showSuccess(`New location tracker request received: ${newRequest._id}`);
+}
+
+function updateLocationTrackerRequestStatus(updatedRequest) {
+    const existingRequestIndex = paymentState.locationTrackerRequests.findIndex(req => req._id === updatedRequest._id);
+    if (existingRequestIndex !== -1) {
+        paymentState.locationTrackerRequests[existingRequestIndex] = updatedRequest;
+        renderAllLocationTrackerRequests();
+        showSuccess(`Location tracker request ${updatedRequest._id} updated to ${updatedRequest.status}`);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('DOMContentLoaded: Starting dashboard initialization.');
     if ('Notification' in window) {
@@ -372,12 +471,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        console.log('DOMContentLoaded: Initiating concurrent data refresh for payments and fexiload requests...');
+        console.log('DOMContentLoaded: Initiating concurrent data refresh for payments, fexiload, and location tracker requests...');
         await Promise.all([
             refreshPayments(),
-            refreshFexiloadRequests()
+            refreshFexiloadRequests(),
+            refreshLocationTrackerRequests() // Call new function here
         ]);
-        console.log('DOMContentLoaded: Both payments and fexiload requests refreshed concurrently.');
+        console.log('DOMContentLoaded: All data refreshed concurrently.');
         
         connectWebSocket();
         console.log('DOMContentLoaded: WebSocket connection initiated.');
