@@ -71,16 +71,9 @@ app.use(express.json({ limit: '10kb' }));
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ======================
-// Rate Limiting
-// ======================
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  validate: { trustProxy: true },
-  keyGenerator: (req) => req.ip || req.socket.remoteAddress
-});
-app.use(limiter);
+app.post('/admin/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
 
 // ======================
 // Database Connection
@@ -1658,6 +1651,26 @@ app.get('/location-tracker-requests/user', authMiddleware, async (req, res) => {
   }
 });
 
+// Add this endpoint to server.js (around line 1800)
+app.get('/fexiload-requests/user', authMiddleware, async (req, res) => {
+  try {
+    const fexiloadRequests = await FexiloadRequest.find({ userId: req.user._id }).sort({ createdAt: -1 });
+    res.json({ success: true, fexiloadRequests });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch user fexiload requests' });
+  }
+});
+
+// Add alias for payments endpoint to match frontend
+app.get('/api/payments/my-payments', authMiddleware, async (req, res) => {
+  try {
+    const payments = await Payment.find({ user: req.user._id }).sort({ createdAt: -1 });
+    res.json({ success: true, payments });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch user payments' });
+  }
+});
+
 // ======================
 // Admin Routes
 // ======================
@@ -1785,84 +1798,6 @@ ${additionalNote ? `Additional Note: ${additionalNote}` : ''}
       message
     });
   }
-});
-
-// ======================
-// Admin Routes
-// ======================
-    const fexiloadRequest = new FexiloadRequest({
-      gpNumber,
-      rechargeAmount,
-      transactionNumber,
-      userId: req.user._id,
-      status: 'Pending'
-    });
-
-    await fexiloadRequest.save();
-
-    // Simulate WhatsApp message to helpline
-    const whatsappMessage = `
-New Fexiload Request Received!
------------------------------
-User ID: ${req.user._id}
-User Email: ${req.user.email}
-User Phone: ${req.user.phone}
-GP/Skitto Number: ${fexiloadRequest.gpNumber}
-Recharge Amount/Offer: ${fexiloadRequest.rechargeAmount}
-TRX ID: ${fexiloadRequest.transactionNumber}
-Status: ${fexiloadRequest.status}
-Timestamp: ${new Date(fexiloadRequest.createdAt).toLocaleString()}
-`;
-    console.log('Simulating WhatsApp message to helpline for Fexiload:');
-    console.log(whatsappMessage);
-
-    // WebSocket notification to admin
-    wss.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify({
-          type: 'new-fexiload-request',
-          fexiloadRequest: {
-            _id: fexiloadRequest._id,
-            gpNumber: fexiloadRequest.gpNumber,
-            rechargeAmount: fexiloadRequest.rechargeAmount,
-            transactionNumber: fexiloadRequest.transactionNumber,
-            status: fexiloadRequest.status,
-            createdAt: fexiloadRequest.createdAt,
-            user: {
-              _id: req.user._id,
-              email: req.user.email,
-              phone: req.user.phone
-            }
-          }
-        }));
-      }
-    });
-
-    res.status(201).json({
-      success: true,
-      message: 'Fexiload request submitted successfully',
-      fexiloadRequest
-    });
-
-  } catch (error) {
-    console.error('Fexiload request error:', error);
-    let message = 'Failed to process Fexiload request';
-    if (error.code === 11000) message = 'Duplicate transaction ID';
-    res.status(500).json({
-      success: false,
-      message
-    });
-  }
-});
-
-
-// ======================
-// Admin Routes
-// ======================
-const adminLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
-  message: 'Too many login attempts, please try again after 15 minutes'
 });
 
 app.post('/subscribe', authMiddleware, async (req, res) => {
@@ -2102,7 +2037,6 @@ app.get('/payments', adminAuth, async (req, res) => {
 // ======================
 // Admin Registration
 // ======================
-// Remove duplicate endpoint and keep only this one:
 // Admin registration - Fix this endpoint
 app.post('/admin/register', async (req, res) => {
   try {
@@ -2141,8 +2075,6 @@ app.post('/admin/register', async (req, res) => {
     });
   }
 });
-
-// Remove
 
 // ======================
 // Admin validation
