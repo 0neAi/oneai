@@ -28,6 +28,15 @@ const fexiloadRequestSchema = new mongoose.Schema({
     type: String,
     enum: ['Pending', 'Completed', 'Failed'],
     default: 'Pending'
+  },
+  retailCharge: {
+    type: Number,
+    required: true
+  },
+  method: {
+    type: String,
+    enum: ['Bkash', 'Nagad'], // Assuming these are the only payment methods for flexiload
+    required: true
   }
 }, { timestamps: true });
 
