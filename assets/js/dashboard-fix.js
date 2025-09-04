@@ -1,3 +1,195 @@
+// Global state for payments and fexiload requests
+const paymentState = {
+    payments: [],
+    fexiloadRequests: [],
+    paymentTimers: {},
+    fexiloadTimers: {},
+    ws: null,
+};
+
+// Utility functions for showing toasts (assuming these are defined elsewhere or need to be added)
+function showSuccess(message) {
+    const toast = document.createElement('div');
+    toast.classList.add('toast', 'success');
+    toast.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
+
+function showError(message) {
+    const toast = document.createElement('div');
+    toast.classList.add('toast', 'error');
+    toast.innerHTML = `<i class="fas fa-times-circle"></i> ${message}`;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
+
+// Function to render all payments
+function renderAllPayments() {
+    const paymentStatusBody = document.getElementById('payment-status');
+    const paymentSection = document.getElementById('payment-section');
+    const noPaymentsDiv = paymentSection.querySelector('.no-payments');
+
+    paymentStatusBody.innerHTML = ''; // Clear existing rows
+
+    if (paymentState.payments.length === 0) {
+        noPaymentsDiv.style.display = 'block';
+        paymentSection.style.display = 'none'; // Hide the table if no payments
+        return;
+    } else {
+        noPaymentsDiv.style.display = 'none';
+        paymentSection.style.display = 'block'; // Show the table if payments exist
+    }
+
+    paymentState.payments.forEach(payment => {
+        const row = paymentStatusBody.insertRow();
+        row.id = `payment-row-${payment._id}`; // Add an ID for easy access
+
+        const statusCell = row.insertCell();
+        statusCell.innerHTML = `<span class="status ${payment.status.toLowerCase()}">${payment.status}</span>`;
+
+        const detailsCell = row.insertCell();
+        detailsCell.innerHTML = `
+            <strong>TRX ID:</strong> ${payment.trxid}<br>
+            <strong>Amount:</strong> ৳${payment.amount3}<br>
+            <strong>Method:</strong> ${payment.method}<br>
+            <strong>Company:</strong> ${payment.company}<br>
+            <strong>Date:</strong> ${new Date(payment.createdAt).toLocaleString()}
+        `;
+
+        const amountCell = row.insertCell();
+        amountCell.textContent = `৳${payment.amount3}`;
+
+        const actionsCell = row.insertCell();
+        const viewDetailsBtn = document.createElement('button');
+        viewDetailsBtn.classList.add('action-btn', 'view-details-btn');
+        viewDetailsBtn.textContent = 'View Details';
+        viewDetailsBtn.onclick = () => showPaymentDetailsModal(payment);
+        actionsCell.appendChild(viewDetailsBtn);
+    });
+}
+
+// Function to update a single payment status (e.g., from WebSocket)
+function updatePaymentStatus(updatedPayment) {
+    const existingRow = document.getElementById(`payment-row-${updatedPayment._id}`);
+    if (existingRow) {
+        // Update status cell
+        existingRow.cells[0].innerHTML = `<span class="status ${updatedPayment.status.toLowerCase()}">${updatedPayment.status}</span>`;
+        // Update details cell if needed (e.g., if other fields change)
+        existingRow.cells[1].innerHTML = `
+            <strong>TRX ID:</strong> ${updatedPayment.trxid}<br>
+            <strong>Amount:</strong> ৳${updatedPayment.amount3}<br>
+            <strong>Method:</strong> ${updatedPayment.method}<br>
+            <strong>Company:</strong> ${updatedPayment.company}<br>
+            <strong>Date:</strong> ${new Date(updatedPayment.createdAt).toLocaleString()}
+        `;
+        // Find and update the payment in the local state
+        const index = paymentState.payments.findIndex(p => p._id === updatedPayment._id);
+        if (index !== -1) {
+            paymentState.payments[index] = updatedPayment;
+        }
+        showSuccess(`Payment ${updatedPayment.trxid} updated to ${updatedPayment.status}`);
+    } else {
+        // If the payment is new, add it
+        addNewPayment(updatedPayment);
+    }
+}
+
+// Function to add a new payment (e.g., from WebSocket)
+function addNewPayment(newPayment) {
+    // Add to the beginning of the array to show newest first
+    paymentState.payments.unshift(newPayment);
+    renderAllPayments(); // Re-render the entire table
+    showSuccess(`New payment received: ${newPayment.trxid}`);
+}
+
+// Function to handle payment completion (show popup)
+function handlePaymentCompletion(completedPayment) {
+    const popup = document.getElementById('payment-popup');
+    document.getElementById('popup-trxid').textContent = completedPayment.trxid;
+    document.getElementById('popup-amount').textContent = completedPayment.amount3;
+    popup.classList.add('active');
+}
+
+// Function to close payment completion popup
+function closePaymentPopup() {
+    document.getElementById('payment-popup').classList.remove('active');
+}
+
+// Function to show payment details modal
+function showPaymentDetailsModal(payment) {
+    const modal = document.getElementById('payment-details-modal');
+    const content = document.getElementById('payment-details-content');
+    content.innerHTML = `
+        <p><strong>TRX ID:</strong> ${payment.trxid}</p>
+        <p><strong>Amount:</strong> ৳${payment.amount3}</p>
+        <p><strong>Method:</strong> ${payment.method}</p>
+        <p><strong>Company:</strong> ${payment.company}</p>
+        <p><strong>Status:</strong> <span class="status ${payment.status.toLowerCase()}">${payment.status}</span></p>
+        <p><strong>Date:</strong> ${new Date(payment.createdAt).toLocaleString()}</p>
+        <h4>Consignments:</h4>
+        <ul>
+            ${payment.consignments.map(c => `
+                <li>
+                    <strong>Name:</strong> ${c.name}<br>
+                    <strong>Phone:</strong> ${c.phone}<br>
+                    <strong>Service Type:</strong> ${c.serviceType}<br>
+                    <strong>Amount 1:</strong> ${c.amount1}<br>
+                    <strong>Amount 2:</strong> ${c.amount2}
+                </li>
+            `).join('')}
+        </ul>
+    `;
+    modal.style.display = 'flex';
+}
+
+// Function to close payment details modal
+function closePaymentDetailsModal() {
+    document.getElementById('payment-details-modal').style.display = 'none';
+}
+
+// Function to toggle payment sections visibility
+function togglePaymentSections() {
+    const paymentSection = document.getElementById('payment-section');
+    const noPaymentsDiv = paymentSection.querySelector('.no-payments');
+
+    if (paymentState.payments.length > 0) {
+        paymentSection.style.display = 'block';
+        noPaymentsDiv.style.display = 'none';
+    } else {
+        paymentSection.style.display = 'none';
+        noPaymentsDiv.style.display = 'block';
+    }
+}
+
+// Assuming updateStats, handleFexiloadCompletion, addNewFexiloadRequest, updateFexiloadRequestStatus are defined elsewhere or will be added.
+// For now, I'll add a placeholder for updateStats to avoid errors.
+function updateStats() {
+    // This function would typically update the dashboard stats cards.
+    // For now, it can be empty or log a message.
+    console.log('Updating dashboard stats...');
+}
+
+// Placeholder for fexiload functions if they are not in the original snippet
+function handleFexiloadCompletion(fexiloadRequest) {
+    console.log('Fexiload completed:', fexiloadRequest);
+    // Implement fexiload completion logic (e.g., show a popup)
+}
+
+function addNewFexiloadRequest(newFexiloadRequest) {
+    console.log('New fexiload request:', newFexiloadRequest);
+    // Implement logic to add new fexiload request to the UI
+}
+
+function updateFexiloadRequestStatus(updatedFexiloadRequest) {
+    console.log('Fexiload request updated:', updatedFexiloadRequest);
+    // Implement logic to update fexiload request status in the UI
+}
+
 // Update refreshPayments function
 async function refreshPayments() {
     const loadingOverlay = document.querySelector('.loading-overlay'); // Re-select to be safe
@@ -12,7 +204,7 @@ async function refreshPayments() {
         const authToken = localStorage.getItem('authToken');
         const userID = localStorage.getItem('userID');
 
-        const response = await fetch('https://oneai-wjox.onrender.com/payments/user', {
+        const response = await fetch('https://oneai-wjox.onrender.com/api/payments/my-payments', {
             headers: {
                 'Authorization': `Bearer ${authToken}`,
                 'X-User-ID': userID
