@@ -741,6 +741,29 @@
             </div>
         </section>
 
+        <!-- Fexiload Requests Section (hidden by default) -->
+        <section class="payment-section" id="fexiload-section" style="display: none;">
+            <h2><i class="fas fa-mobile-alt"></i> Fexiload Requests</h2>
+            <div class="payment-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>GP Number</th>
+                            <th>Amount/Offer</th>
+                            <th>TRX ID</th>
+                            <th>Time Left</th>
+                        </tr>
+                    </thead>
+                    <tbody id="fexiload-requests-status">
+                        <tr>
+                            <td colspan="5" class="text-center">No fexiload requests found</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
         <!-- AI Services Section -->
         <section class="ai-services" id="ai-services-section">
             <h2><i class="fas fa-robot"></i> AI Services</h2>
@@ -767,7 +790,7 @@
             </div>
         </section>
 
-        <section class="services-section">
+                <section class="services-section">
             <h2><i class="fas fa-cogs"></i> Services</h2>
             <div class="services-grid">
                 <a href="otpgen.html" class="service-card">
@@ -786,7 +809,7 @@
                     <i class="fas fa-unlock-alt"></i>
                     <h3>Password Cracker</h3>
                 </div>
-                <div class="service-card" onclick="showPremiumPaymentForm()">
+                <div class="service-card" onclick="showTrackerService()">
                     <i class="fas fa-map-marker-alt"></i>
                     <h3>Location Tracker</h3>
                 </div>
@@ -802,6 +825,114 @@
                     <i class="fas fa-question-circle"></i>
                     <h3>Help</h3>
                 </div>
+            </div>
+        </section>
+
+        <section id="tracker-service-section" class="hidden">
+            <div id="main-content">
+                <header>
+                    <h1>ওয়ান এআই লোকেশন ট্র্যাকার সেবা</h1>
+                    <h3>সেবা অনুরোধ</h3>
+                    <p>সঠিকভাবে বিস্তারিত তথ্য প্রদান করুন এবং সার্ভিস চার্জ প্রদানের মাধ্যমে সার্ভিসটি সক্রিয় করুন।</p>
+                </header>
+
+                <section>
+                    <h3>তথ্য দিন</h3>
+
+                    <form id="tracker-form">
+                        <div class="form-group">
+                            <label>ট্র্যাক করার জন্য তথ্য দিন:</label>
+                            <div class="source-type-options">
+                                <div class="service-box" data-source-type="imei">
+                                    <input type="radio" id="sourceTypeImei" name="sourceType" value="imei">
+                                    <label for="sourceTypeImei">আইএমইআই নম্বর</label>
+                                </div>
+
+                                <div class="service-box" data-source-type="phoneNumber">
+                                    <input type="radio" id="sourceTypePhoneNumber" name="sourceType" value="phoneNumber">
+                                    <label for="sourceTypePhoneNumber">মোবাইল নম্বর</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group" id="data-needed-group" style="display: none;">
+                            <label>প্রয়োজনীয় তথ্য নির্বাচন করুন:</label>
+                            <div id="data-needed-options-container" class="data-needed-options-grid">
+                                <!-- Dynamic checkboxes will be inserted here by JavaScript -->
+                            </div>
+                        </div>
+
+                        <div class="form-group" id="imei-input-group" style="display: none;">
+                            <label for="imei">আইএমইআই নম্বর:</label>
+                            <input type="text" id="imei" name="imei" placeholder="আইএমইআই নম্বর লিখুন">
+                        </div>
+
+                        <div class="form-group" id="last-used-phone-input-group" style="display: none;">
+                            <label for="lastUsedPhoneNumber">সর্বশেষ ব্যবহৃত মোবাইল নম্বর (ঐচ্ছিক):</label>
+                            <input type="tel" id="lastUsedPhoneNumber" name="lastUsedPhoneNumber" pattern="01[3-9]\d{8}" title="11-digit Bangladeshi phone number (013-019)" placeholder="01XXXXXXXXX">
+                        </div>
+
+                        <div class="form-group" id="phone-input-group" style="display: none;">
+                            <label for="phoneNumber">মোবাইল নম্বর:</label>
+                            <input type="tel" id="phoneNumber" name="phoneNumber" pattern="01[3-9]\d{8}" title="11-digit Bangladeshi phone number (013-019)" placeholder="01XXXXXXXXX">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="serviceChargeDisplay">সার্ভার চার্জ:</label>
+                            <input type="text" id="serviceChargeDisplay" name="serviceChargeDisplay" readonly required value="0.00">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="additionalNote">অতিরিক্ত নোট:</label>
+                            <textarea id="additionalNote" name="additionalNote" placeholder="যেকোনো অতিরিক্ত বিবরণ বা অনুরোধ"></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="method">পেমেন্ট গেটওয়ে:</label>
+                            <select id="method" name="method" required onchange="updatePaymentDisplay()">
+                                <option value="">আপনার পেমেন্ট সার্ভিস সিলেক্ট করুনঃ</option>
+                                <option value="Nagad">নগদ সেন্ডমানি: 01923002231</option>
+                                <option value="Bkash">বিকাশ সেন্ডমানি: 01770605072</option> <!-- Added Bkash number -->
+                            </select>
+                        </div>
+                        
+                        <div id="payment-details-container" class="hidden">
+                            <div id="nagad-payment-info" class="payment-info hidden">
+                                <small>সার্ভিসটি গ্রহণ নিশ্চিত করতে সার্ভারচার্জ অগ্রিম পরিশোধ করুন</small><br>
+                                <small>পরিমাণ: ৳<span id="nagad-amount">0.00</span></small><br>
+                                <small>নগদ পার্সোনাল(sendmoney): <span id="nagad-number">01923002231</span> <button type="button" class="copy-btn" data-target="nagad-number"><i class="fas fa-copy"></i></button></small><br>
+                            </div>
+                            <div id="bkash-payment-info" class="payment-info hidden">
+                                <small>সার্ভিসটি গ্রহণ নিশ্চিত করতে সার্ভারচার্জ অগ্রিম পরিশোধ করুন</small><br>
+                                <small>পরিমাণ: ৳<span id="bkash-amount">0.00</span></small><br>
+                                <small>বিকাশ পার্সোনাল(sendmoney): <span id="bkash-number">01770605072</span> <button type="button" class="copy-btn" data-target="bkash-number"><i class="fas fa-copy"></i></button></small><br>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="trxid">TRX ID: (পেমেন্ট সম্পন্ন করে ট্রান্সেকশান আইডি উল্লেখ করে পেমেন্ট কনফার্ম করুন)</label>
+                            <input type="text" id="trxid" name="trxid" required minlength="8">
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="button primary" id="submit-tracker-button" disabled>কনফার্ম পেমেন্ট</button>
+                            <button type="button" class="button" onclick="clearForm()">ক্লিয়ার ফর্ম</button>
+                        </div>
+
+                        <div class="terms-container">
+                            <input type="checkbox" id="terms-checkbox" name="terms" style="margin-right: 0.5rem;">
+                            <label for="terms-checkbox">এই লাল চেকবক্সটি চেক করার মাধ্যমে ব্যবহারকারী আমাদের পরিষেবার শর্তাবলীতে সম্মত হচ্ছেন এবং নিশ্চিত করছেন যে তিনি এমন একটি নম্বর/ডিভাইস ট্র্যাক করছেন যা তার নিজের, চুরি হয়ে গেছে বা হারিয়ে গেছে। এবং পরিষেবার সঠিক ও আইনি ব্যবহারের দায়িত্ব নিচ্ছেন, এবং কারো প্রতি হয়রানি বা অনুনোমোদিত গুপ্তচরবৃত্তি না করার বিষয়ে সম্মত হচ্ছেন। কারণ মহান ক্ষমতার সাথে আসে মহান দায়িত্ব।</label>
+                        </div>
+                    </form>
+                    
+                    <p>আপনার অ্যাপ/ওয়েবসাইট লগ আউট হলে কমপক্ষে ২৫ মিনিট লগইন করা থেকে বিরত থাকুন। অনুগ্রহপূর্বক কিছুক্ষণ অপেক্ষা করুন, পেমেন্ট সম্পন্ন হলে আপনার সার্ভিসটি স্বয়ংক্রিয়ভাবে প্রক্রিয়াকরণ শুরু হবে। লোকেশন ট্র্যাকিং সার্ভিস ডেলিভারি হতে ৬ থেকে ২৪ ঘন্টা সময় লাগতে পারে। যদি ওয়ানএআই সময়মতো কোনো সার্ভিস প্রদান করতে ব্যর্থ হয়, তাহলে পরবর্তী ২৪ ঘন্টার মধ্যে পেমেন্ট ব্যবহারকারীকে ফেরত দেওয়া হবে।</p>
+                    
+                    <div id="confirmation-message" style="margin-top: 20px;"></div>
+                </section>
+
+                <footer>
+                    <p>1Ai এর সাথেই থাকুন ওয়ানএআই আপনার ডিজিটাল সমস্যার স্মার্ট সমাধান।</p>
+                </footer>
             </div>
         </section>
 
@@ -877,8 +1008,10 @@
 // Global state management
 const paymentState = {
     payments: [],
+    fexiloadRequests: [], // New: Fexiload requests array
     ws: null,
     paymentTimers: {},
+    fexiloadTimers: {}, // New: Fexiload timers object
     stats: { active: 0, completed: 0, failed: 0 },
     unreadNotifications: 0
 };
@@ -899,6 +1032,17 @@ function togglePaymentSections() {
     }
 }
 
+function toggleFexiloadSections() {
+    const hasFexiloadRequests = paymentState.fexiloadRequests.length > 0;
+    const fexiloadSection = document.getElementById('fexiload-section');
+    
+    if (hasFexiloadRequests) {
+        fexiloadSection.style.display = 'block';
+    } else {
+        fexiloadSection.style.display = 'none';
+    }
+}
+
 function addNewPayment(payment) {
     const existing = paymentState.payments.find(p => p.trxid === payment.trxid);
     if (!existing) {
@@ -906,6 +1050,15 @@ function addNewPayment(payment) {
         renderPayment(payment);
         updateStats();
         togglePaymentSections();
+    }
+}
+
+function addNewFexiloadRequest(request) {
+    const existing = paymentState.fexiloadRequests.find(r => r.transactionNumber === request.transactionNumber);
+    if (!existing) {
+        paymentState.fexiloadRequests.push(request);
+        renderFexiloadRequest(request);
+        toggleFexiloadSections();
     }
 }
 
@@ -947,6 +1100,43 @@ async function refreshPayments() {
     }
 }
 
+async function refreshFexiloadRequests() {
+    const loadingOverlay = document.querySelector('.loading-overlay');
+    const authToken = localStorage.getItem('authToken');
+    const userID = localStorage.getItem('userID');
+
+    try {
+        loadingOverlay.style.display = 'flex';
+
+        Object.values(paymentState.fexiloadTimers).forEach(timer => clearInterval(timer));
+        paymentState.fexiloadTimers = {};
+
+        const response = await fetch('https://oneai-wjox.onrender.com/fexiload-requests/user', {
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'X-User-ID': userID
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch fexiload requests');
+        }
+
+        const data = await response.json();
+        paymentState.fexiloadRequests = data.fexiloadRequests || [];
+
+        renderAllFexiloadRequests();
+        toggleFexiloadSections();
+
+        showSuccess('Fexiload requests refreshed successfully');
+    } catch (error) {
+        console.error('Fexiload refresh error:', error);
+        showError(error.message || 'Failed to refresh fexiload requests');
+    } finally {
+        loadingOverlay.style.display = 'none';
+    }
+}
+
 function connectWebSocket() {
     if (paymentState.ws) paymentState.ws.close();
     
@@ -974,6 +1164,15 @@ function connectWebSocket() {
             } 
             else if (data.type === 'new-payment') {
                 addNewPayment(data.payment);
+            }
+            else if (data.type === 'new-fexiload-request') {
+                addNewFexiloadRequest(data.fexiloadRequest);
+            }
+            else if (data.type === 'fexiload-updated') {
+                updateFexiloadRequestStatus(data.fexiloadRequest);
+                if (data.fexiloadRequest.status === 'Completed') {
+                    handleFexiloadCompletion(data.fexiloadRequest);
+                }
             }
         } catch (error) {
             console.error('WebSocket message error:', error);
@@ -1006,6 +1205,24 @@ function renderAllPayments() {
     );
     
     sortedPayments.forEach(renderPayment);
+}
+
+function renderAllFexiloadRequests() {
+    const tbody = document.getElementById('fexiload-requests-status');
+    tbody.innerHTML = '';
+    
+    const pendingFexiloadRequests = paymentState.fexiloadRequests.filter(r => r.status === 'Pending');
+
+    if (pendingFexiloadRequests.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center">No active fexiload requests</td></tr>';
+        return;
+    }
+    
+    const sortedRequests = [...pendingFexiloadRequests].sort((a, b) => 
+        new Date(b.createdAt) - new Date(a.createdAt)
+    );
+    
+    sortedRequests.forEach(renderFexiloadRequest);
 }
 
 function renderPayment(payment) {
@@ -1054,6 +1271,35 @@ function renderPayment(payment) {
     }
 }
 
+function renderFexiloadRequest(request) {
+    const tbody = document.getElementById('fexiload-requests-status');
+    const existingRow = document.querySelector(`tr[data-trxid="${request.transactionNumber}"]`);
+    
+    if (existingRow) {
+        updateFexiloadRequestRow(existingRow, request);
+        return;
+    }
+    
+    const row = document.createElement('tr');
+    row.dataset.trxid = request.transactionNumber;
+    const createdAt = new Date(request.createdAt || Date.now());
+    const expiryTime = createdAt.getTime() + (30 * 60 * 1000); // 30 minutes for Fexiload
+    
+    row.innerHTML = `
+        <td><span class="status ${request.status.toLowerCase()}">${request.status}</span></td>
+        <td>${request.gpNumber}</td>
+        <td>${request.rechargeAmount}</td>
+        <td>${request.transactionNumber}</td>
+        <td class="countdown" data-expiry="${expiryTime}">Calculating...</td>
+    `;
+    
+    tbody.appendChild(row);
+    
+    if (request.status === 'Pending') {
+        startCountdown(row.querySelector('.countdown'), request.transactionNumber, true);
+    }
+}
+
 // Utility Functions ==========================================================
 
 function updatePaymentStatus(payment) {
@@ -1088,8 +1334,41 @@ function updatePaymentRow(row, payment) {
     }
 }
 
-function startCountdown(element, trxid) {
+function updateFexiloadRequestStatus(request) {
+    const existingRequest = paymentState.fexiloadRequests.find(r => r.transactionNumber === request.transactionNumber);
+    if (existingRequest) {
+        existingRequest.status = request.status;
+        const row = document.querySelector(`tr[data-trxid="${request.transactionNumber}"]`);
+        if (row) {
+            updateFexiloadRequestRow(row, existingRequest);
+        }
+    }
+}
+
+function updateFexiloadRequestRow(row, request) {
+    const statusCell = row.querySelector('.status');
+    if (statusCell) {
+        statusCell.className = `status ${request.status.toLowerCase()}`;
+        statusCell.textContent = request.status;
+    }
+    
+    const countdownCell = row.querySelector('.countdown');
+    if (countdownCell) {
+        if (request.status !== 'Pending') {
+            countdownCell.textContent = request.status;
+            countdownCell.classList.add('expired');
+            
+            if (paymentState.fexiloadTimers[request.transactionNumber]) {
+                clearInterval(paymentState.fexiloadTimers[request.transactionNumber]);
+                delete paymentState.fexiloadTimers[request.transactionNumber];
+            }
+        }
+    }
+}
+
+function startCountdown(element, trxid, isFexiload = false) {
     const expiry = parseInt(element.dataset.expiry);
+    const timers = isFexiload ? paymentState.fexiloadTimers : paymentState.paymentTimers;
     
     function update() {
         const now = Date.now();
@@ -1099,9 +1378,9 @@ function startCountdown(element, trxid) {
             element.innerHTML = 'Expired';
             element.classList.add('expired');
             
-            if (paymentState.paymentTimers[trxid]) {
-                clearInterval(paymentState.paymentTimers[trxid]);
-                delete paymentState.paymentTimers[trxid];
+            if (timers[trxid]) {
+                clearInterval(timers[trxid]);
+                delete timers[trxid];
             }
             return;
         }
@@ -1114,7 +1393,7 @@ function startCountdown(element, trxid) {
     }
 
     update();
-    paymentState.paymentTimers[trxid] = setInterval(update, 1000);
+    timers[trxid] = setInterval(update, 1000);
 }
 
 function updateStats() {
@@ -1170,6 +1449,17 @@ function handlePaymentCompletion(payment) {
     }
     
     setTimeout(refreshPayments, 2000);
+}
+
+function handleFexiloadCompletion(request) {
+    showSuccess(`Fexiload for ${request.gpNumber} completed!`);
+    playNotificationSound();
+    
+    if ('vibrate' in navigator) {
+        navigator.vibrate([300, 100, 300]);
+    }
+    
+    setTimeout(refreshFexiloadRequests, 2000);
 }
 
 function formatCompanyName(company) {
@@ -1232,6 +1522,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         await refreshPayments();
+        await refreshFexiloadRequests(); // New: Refresh Fexiload requests on load
         connectWebSocket();
         
     } catch (error) {
@@ -1321,6 +1612,25 @@ window.sendHelpRequest = function() {
 
 window.showHelpInstructions = function() {
     alert("Help instructions:\n1. Check payment status in the table\n2. Use Helpline button for urgent help\n3. Refresh payments every 30 minutes");
+};
+
+window.showTrackerService = function() {
+    // Hide other sections
+    document.getElementById('payment-section').classList.add('hidden');
+    document.getElementById('fexiload-section').classList.add('hidden');
+    document.getElementById('ai-services-section').classList.add('hidden');
+    document.querySelector('.features').classList.add('hidden');
+
+    // Show tracker service section
+    document.getElementById('tracker-service-section').classList.remove('hidden');
+
+    // Load tracker.js if not already loaded
+    if (!document.getElementById('tracker-script')) {
+        const script = document.createElement('script');
+        script.src = './assets/js/tracker.js';
+        script.id = 'tracker-script';
+        document.body.appendChild(script);
+    }
 };
 
 window.closePaymentPopup = closePaymentPopup;
