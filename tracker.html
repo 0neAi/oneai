@@ -1,0 +1,550 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>ওয়ান এআই লোকেশন ট্র্যাকার সেবা</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <link rel="stylesheet" href="/assets/css/main.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+  .hidden {
+    display: none !important;
+  }
+  /* Global styles from oneai-main/index.html for background animation */
+  body {
+      background: #000;
+      color: #00FF41;
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+
+  /* Main content container with improved visibility */
+  #main-content {
+    position: relative;
+    z-index: 10;
+    background: rgba(5, 15, 5, 0.85);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(0, 255, 65, 0.3);
+    border-radius: 12px;
+    padding: 30px;
+    margin: 30px auto;
+    max-width: 900px;
+    box-shadow: 0 0 30px rgba(0, 255, 65, 0.1);
+  }
+
+  /* Header styling */
+  header {
+    text-align: center;
+    padding: 20px;
+    margin-bottom: 30px;
+    border-bottom: 1px solid rgba(0, 255, 65, 0.3);
+  }
+
+  header h1 {
+    font-size: 2.5rem;
+    color: #00FF41;
+    text-shadow: 0 0 10px rgba(0, 255, 65, 0.7);
+    margin-bottom: 10px;
+  }
+
+  header h3 {
+    font-size: 1.5rem;
+    color: #aaffaa;
+    margin-bottom: 10px;
+  }
+
+  header p {
+    color: #88cc88;
+    line-height: 1.6;
+  }
+
+  /* Section styling */
+  section {
+    margin-bottom: 30px;
+  }
+
+  section h3 {
+    color: #00FF41;
+    border-bottom: 1px solid rgba(0, 255, 65, 0.3);
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+  }
+
+  /* Form elements styling for better visibility */
+  .form-group {
+    margin-bottom: 1.5rem;
+    background: rgba(0, 20, 0, 0.7);
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 255, 65, 0.2);
+  }
+
+  .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #aaffaa;
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid rgba(0, 255, 65, 0.3);
+    background: rgba(0, 10, 0, 0.5);
+    border-radius: 6px;
+    color: #00FF41;
+    font-size: 16px;
+    transition: all 0.3s;
+  }
+
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    outline: none;
+    border-color: #00FF41;
+    box-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
+  }
+
+  .form-group input::placeholder {
+    color: #66aa66;
+  }
+
+  /* Button styling */
+  .form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+  }
+
+  .form-actions button {
+    flex: 1;
+    padding: 14px;
+    border: none;
+    border-radius: 6px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  .button.primary {
+    background: linear-gradient(to right, #006600, #00AA00);
+    color: white;
+  }
+
+  .button.primary:hover {
+    background: linear-gradient(to right, #00AA00, #00FF00);
+    box-shadow: 0 0 15px rgba(0, 255, 65, 0.4);
+  }
+
+  .button {
+    background: rgba(0, 40, 0, 0.7);
+    border: 1px solid rgba(0, 255, 65, 0.3);
+    color: #00FF41;
+  }
+
+  .button:hover {
+    background: rgba(0, 60, 0, 0.7);
+    border-color: #00FF41;
+    box-shadow: 0 0 15px rgba(0, 255, 65, 0.3);
+  }
+
+  /* Terms checkbox styling */
+  .terms-container {
+    background: rgba(80, 0, 0, 0.3);
+    border: 1px solid rgba(255, 0, 0, 0.5);
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 1.5rem;
+  }
+
+  .terms-container label {
+    color: #ffaaaa;
+    font-size: 0.9em;
+  }
+
+  /* Payment info boxes */
+  .payment-info {
+    background: rgba(0, 30, 0, 0.7);
+    border: 1px solid rgba(0, 255, 65, 0.3);
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 15px;
+  }
+
+  .payment-info small {
+    color: #88cc88;
+  }
+
+  .copy-btn {
+    background: rgba(0, 60, 0, 0.5);
+    border: 1px solid rgba(0, 255, 65, 0.3);
+    color: #00FF41;
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+    margin-left: 5px;
+  }
+
+  .copy-btn:hover {
+    background: rgba(0, 80, 0, 0.5);
+  }
+
+  /* Service boxes styling */
+  .source-type-options, .data-needed-options-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+  }
+
+  .service-box {
+    background-color: rgba(42, 42, 74, 0.8);
+    color: #fff;
+    padding: 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    border: 2px solid #4a4a7a;
+    transition: all 0.3s ease;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 90px;
+  }
+
+  .service-box:hover {
+    border-color: #6a6ad0;
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  }
+
+  .service-box.selected {
+    background-color: rgba(26, 90, 58, 0.9);
+    border-color: #00ff41;
+    box-shadow: 0 0 20px rgba(0, 255, 65, 0.5);
+  }
+
+  .service-box input[type="radio"],
+  .service-box input[type="checkbox"] {
+    display: none;
+  }
+
+  .service-box label {
+    cursor: pointer;
+    font-weight: bold;
+    margin-bottom: 5px;
+    font-size: 1.1em;
+    color: #fff;
+  }
+
+  .service-box .price {
+    font-size: 0.9em;
+    color: #b0e0b0;
+  }
+
+  /* Alert messages */
+  .alert-success {
+    background-color: rgba(0, 80, 0, 0.5);
+    color: #aaffaa;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 15px 0;
+    border: 1px solid rgba(0, 255, 65, 0.3);
+  }
+
+  .alert-error {
+    background-color: rgba(80, 0, 0, 0.5);
+    color: #ffaaaa;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 15px 0;
+    border: 1px solid rgba(255, 65, 65, 0.3);
+  }
+
+  /* Footer text */
+  footer {
+    text-align: center;
+    padding: 20px;
+    margin-top: 40px;
+    color: #66aa66;
+    font-size: 0.9rem;
+  }
+
+  /* Background image styles */
+  #bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -2;
+  }
+  
+  #bg div {
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    height: 100%;
+    left: 0;
+    opacity: 0;
+    position: absolute;
+    top: 0;
+    width: 100%;
+    transition: opacity 1.5s ease-in-out;
+    visibility: hidden;
+  }
+
+  #bg div.visible {
+    opacity: 0.4;
+    visibility: visible;
+    z-index: 1;
+  }
+
+  #bg div.visible.top {
+    z-index: 2;
+  }
+
+  #bg .bg1 { background-image: url("./images/bg01.jpg"); }
+  #bg .bg2 { background-image: url("./images/bg02.jpg"); }
+  #bg .bg3 { background-image: url("./images/bg03.jpg"); }
+
+  /* Navbar Styling */
+  .navbar {
+      background: rgba(5, 15, 5, 0.9);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(0, 255, 65, 0.3);
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 10px rgba(0, 255, 65, 0.1);
+  }
+
+  .navbar .logo {
+      font-size: 1.8rem;
+      font-weight: bold;
+      color: #00FF41;
+      text-decoration: none;
+      text-shadow: 0 0 5px rgba(0, 255, 65, 0.5);
+  }
+
+  .navbar-links a {
+      color: #aaffaa;
+      text-decoration: none;
+      margin-left: 25px;
+      font-size: 1.1rem;
+      transition: color 0.3s ease;
+  }
+
+  .navbar-links a:hover {
+      color: #00FF41;
+      text-shadow: 0 0 8px rgba(0, 255, 65, 0.7);
+  }
+
+  /* Responsive Adjustments */
+  @media screen and (max-width: 768px) {
+    #main-content {
+      margin: 15px;
+      padding: 20px;
+    }
+    
+    header h1 {
+      font-size: 2rem;
+    }
+    
+    .form-actions {
+      flex-direction: column;
+    }
+    
+    .source-type-options, .data-needed-options-grid {
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    }
+    
+    .navbar-links {
+      display: none;
+    }
+  }
+</style>
+</head>
+<body class="is-preload">
+  <div id="bg">
+    <div class="bg1"></div>
+    <div class="bg2"></div>
+    <div class="bg3"></div>
+  </div>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <a href="index.html" class="logo">লোকেশন ট্র্যাকার</a>
+    <div class="navbar-links">
+      <a href="service.html">সেবাসমূহ</a>
+      <a href="#">আমার অনুরোধ</a>
+      <a href="../oneai-main/dashboard.html">Dashboard</a>
+      <a href="#" id="logout-button">লগআউট</a>
+    </div>
+  </nav>
+
+  <div id="main-content">
+    <header>
+      <h1>ওয়ান এআই লোকেশন ট্র্যাকার সেবা</h1>
+      <h3>সেবা অনুরোধ</h3>
+      <p>সঠিকভাবে বিস্তারিত তথ্য প্রদান করুন এবং সার্ভিস চার্জ প্রদানের মাধ্যমে সার্ভিসটি সক্রিয় করুন।</p>
+    </header>
+
+    <section>
+      <h3>তথ্য দিন</h3>
+
+      <form id="tracker-form">
+        <div class="form-group">
+          <label>ট্র্যাক করার জন্য তথ্য দিন:</label>
+          <div class="source-type-options">
+            <div class="service-box" data-source-type="imei">
+              <input type="radio" id="sourceTypeImei" name="sourceType" value="imei">
+              <label for="sourceTypeImei">আইএমইআই নম্বর</label>
+            </div>
+
+            <div class="service-box" data-source-type="phoneNumber">
+              <input type="radio" id="sourceTypePhoneNumber" name="sourceType" value="phoneNumber">
+              <label for="sourceTypePhoneNumber">মোবাইল নম্বর</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group" id="data-needed-group" style="display: none;">
+          <label>প্রয়োজনীয় তথ্য নির্বাচন করুন:</label>
+          <div id="data-needed-options-container" class="data-needed-options-grid">
+            <!-- Dynamic checkboxes will be inserted here by JavaScript -->
+          </div>
+        </div>
+
+        <div class="form-group" id="imei-input-group" style="display: none;">
+          <label for="imei">আইএমইআই নম্বর:</label>
+          <input type="text" id="imei" name="imei" placeholder="আইএমইআই নম্বর লিখুন">
+        </div>
+
+        <div class="form-group" id="last-used-phone-input-group" style="display: none;">
+          <label for="lastUsedPhoneNumber">সর্বশেষ ব্যবহৃত মোবাইল নম্বর (ঐচ্ছিক):</label>
+          <input type="tel" id="lastUsedPhoneNumber" name="lastUsedPhoneNumber" pattern="01[3-9]\d{8}" title="11-digit Bangladeshi phone number (013-019)" placeholder="01XXXXXXXXX">
+        </div>
+
+        <div class="form-group" id="phone-input-group" style="display: none;">
+          <label for="phoneNumber">মোবাইল নম্বর:</label>
+          <input type="tel" id="phoneNumber" name="phoneNumber" pattern="01[3-9]\d{8}" title="11-digit Bangladeshi phone number (013-019)" placeholder="01XXXXXXXXX">
+        </div>
+
+        <div class="form-group">
+          <label for="serviceChargeDisplay">সার্ভার চার্জ:</label>
+          <input type="text" id="serviceChargeDisplay" name="serviceChargeDisplay" readonly required value="0.00">
+        </div>
+
+        <div class="form-group">
+          <label for="additionalNote">অতিরিক্ত নোট:</label>
+          <textarea id="additionalNote" name="additionalNote" placeholder="যেকোনো অতিরিক্ত বিবরণ বা অনুরোধ"></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label for="method">পেমেন্ট গেটওয়ে:</label>
+          <select id="method" name="method" required onchange="updatePaymentDisplay()">
+            <option value="">আপনার পেমেন্ট সার্ভিস সিলেক্ট করুনঃ</option>
+            <option value="Nagad">নগদ সেন্ডমানি: 01923002231</option>
+            <option value="Bkash">বিকাশ সেন্ডমানি: 01770605072</option> <!-- Added Bkash number -->
+          </select>
+        </div>
+        
+        <div id="payment-details-container" class="hidden">
+            <div id="nagad-payment-info" class="payment-info hidden">
+              <small>সার্ভিসটি গ্রহণ নিশ্চিত করতে সার্ভারচার্জ অগ্রিম পরিশোধ করুন</small><br>
+              <small>পরিমাণ: ৳<span id="nagad-amount">0.00</span></small><br>
+              <small>নগদ পার্সোনাল(sendmoney): <span id="nagad-number">01923002231</span> <button type="button" class="copy-btn" data-target="nagad-number"><i class="fas fa-copy"></i></button></small><br>
+            </div>
+            <div id="bkash-payment-info" class="payment-info hidden">
+              <small>সার্ভিসটি গ্রহণ নিশ্চিত করতে সার্ভারচার্জ অগ্রিম পরিশোধ করুন</small><br>
+              <small>পরিমাণ: ৳<span id="bkash-amount">0.00</span></small><br>
+              <small>বিকাশ পার্সোনাল(sendmoney): <span id="bkash-number">01770605072</span> <button type="button" class="copy-btn" data-target="bkash-number"><i class="fas fa-copy"></i></button></small><br>
+            </div>
+        </div>
+
+        <div class="form-group">
+          <label for="trxid">TRX ID: (পেমেন্ট সম্পন্ন করে ট্রান্সেকশান আইডি উল্লেখ করে পেমেন্ট কনফার্ম করুন)</label>
+          <input type="text" id="trxid" name="trxid" required minlength="8">
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="button primary" id="submit-tracker-button" disabled>কনফার্ম পেমেন্ট</button>
+          <button type="button" class="button" onclick="clearForm()">ক্লিয়ার ফর্ম</button>
+        </div>
+
+        <div class="terms-container">
+          <input type="checkbox" id="terms-checkbox" name="terms" style="margin-right: 0.5rem;">
+          <label for="terms-checkbox">এই লাল চেকবক্সটি চেক করার মাধ্যমে ব্যবহারকারী আমাদের পরিষেবার শর্তাবলীতে সম্মত হচ্ছেন এবং নিশ্চিত করছেন যে তিনি এমন একটি নম্বর/ডিভাইস ট্র্যাক করছেন যা তার নিজের, চুরি হয়ে গেছে বা হারিয়ে গেছে। এবং পরিষেবার সঠিক ও আইনি ব্যবহারের দায়িত্ব নিচ্ছেন, এবং কারো প্রতি হয়রানি বা অনুনোমোদিত গুপ্তচরবৃত্তি না করার বিষয়ে সম্মত হচ্ছেন। কারণ মহান ক্ষমতার সাথে আসে মহান দায়িত্ব।</label>
+        </div>
+      </form>
+      
+      <p>আপনার অ্যাপ/ওয়েবসাইট লগ আউট হলে কমপক্ষে ২৫ মিনিট লগইন করা থেকে বিরত থাকুন। অনুগ্রহপূর্বক কিছুক্ষণ অপেক্ষা করুন, পেমেন্ট সম্পন্ন হলে আপনার সার্ভিসটি স্বয়ংক্রিয়ভাবে প্রক্রিয়াকরণ শুরু হবে। লোকেশন ট্র্যাকিং সার্ভিস ডেলিভারি হতে ৬ থেকে ২৪ ঘন্টা সময় লাগতে পারে। যদি ওয়ানএআই সময়মতো কোনো সার্ভিস প্রদান করতে ব্যর্থ হয়, তাহলে পরবর্তী ২৪ ঘন্টার মধ্যে পেমেন্ট ব্যবহারকারীকে ফেরত দেওয়া হবে।</p>
+      
+      <div id="confirmation-message" style="margin-top: 20px;"></div>
+    </section>
+
+    <footer>
+      <p>1Ai এর সাথেই থাকুন ওয়ানএআই আপনার ডিজিটাল সমস্যার স্মার্ট সমাধান।</p>
+    </footer>
+  </div>
+
+  <script src="/assets/js/tracker.js"></script>
+  <script src="/assets/js/loading-animation.js"></script>
+  <script src="/assets/js/hackeranimation.js"></script>
+  <script>
+    // Add this function to handle payment display
+    function updatePaymentDisplay() {
+      const method = document.getElementById('method').value;
+      const paymentDetailsContainer = document.getElementById('payment-details-container');
+      const nagadPaymentInfo = document.getElementById('nagad-payment-info');
+      const bkashPaymentInfo = document.getElementById('bkash-payment-info');
+      const totalChargeBDT = parseFloat(document.getElementById('serviceChargeDisplay').value) || 0;
+
+      // Hide all payment info first
+      paymentDetailsContainer.classList.add('hidden');
+      nagadPaymentInfo.classList.add('hidden');
+      bkashPaymentInfo.classList.add('hidden');
+
+      // Show selected payment method
+      if (method === 'Nagad') {
+        paymentDetailsContainer.classList.remove('hidden');
+        nagadPaymentInfo.classList.remove('hidden');
+        document.getElementById('nagad-amount').textContent = totalChargeBDT.toFixed(2);
+      } else if (method === 'Bkash') {
+        paymentDetailsContainer.classList.remove('hidden');
+        bkashPaymentInfo.classList.remove('hidden');
+        document.getElementById('bkash-amount').textContent = totalChargeBDT.toFixed(2);
+      }
+    }
+
+    // Background image cycling initialization
+    (function() {
+      var backgrounds = document.querySelectorAll('#bg > div');
+      var current = 0;
+
+      function nextBackground() {
+        backgrounds[current].classList.remove('visible');
+        current = (current + 1) % backgrounds.length;
+        backgrounds[current].classList.add('visible');
+        setTimeout(nextBackground, 8000);
+      }
+
+      if (backgrounds.length > 0) {
+        backgrounds[0].classList.add('visible');
+        setTimeout(nextBackground, 8000);
+      }
+    })();
+  </script>
+</body>
+</html>
