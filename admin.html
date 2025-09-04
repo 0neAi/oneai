@@ -825,6 +825,66 @@
                         </form>
                     </div>
                 </div>
+
+                <!-- Fexiload Requests Section -->
+                <div class="card shadow-sm mt-5">
+                    <div class="card-header d-flex justify-content-between align-items-center py-3">
+                        <h5 class="mb-0"><i class="bi bi-phone me-2"></i>Fexiload Requests</h5>
+                        <button class="btn btn-sm btn-outline-primary" @click="refreshFexiloadRequests">
+                            <i class="bi bi-arrow-clockwise"></i> Refresh
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th>User</th>
+                                        <th>GP Number</th>
+                                        <th>Amount/Offer</th>
+                                        <th>TRX ID</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="request in fexiloadRequests" :key="request._id">
+                                        <td>
+                                            <span v-if="request.userId">{{ request.userId.email }}</span>
+                                            <span v-else class="text-muted">N/A</span>
+                                        </td>
+                                        <td>{{ request.gpNumber }}</td>
+                                        <td>{{ request.rechargeAmount }}</td>
+                                        <td>{{ request.transactionNumber }}</td>
+                                        <td>{{ formatDateTime(request.createdAt) }}</td>
+                                        <td>
+                                            <span class="status-badge" :class="statusClass(request.status)">
+                                                {{ request.status }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-success" @click="updateFexiloadRequestStatus(request, 'Completed')" v-if="request.status === 'Pending'">
+                                                <i class="bi bi-check-circle"></i> Complete
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" @click="updateFexiloadRequestStatus(request, 'Failed')" v-if="request.status === 'Pending'">
+                                                <i class="bi bi-x-circle"></i> Fail
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger ms-1" @click="deleteItem('fexiload request', request._id)">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="fexiloadRequests.length === 0">
+                                        <td colspan="7" class="text-center py-4 text-muted">
+                                            No fexiload requests found
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -1284,6 +1344,96 @@
                 </div>
             </div>
         </div>
+
+        <!-- Fexiload Request Details Modal -->
+        <div class="modal fade" id="fexiloadRequestModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Fexiload Request Details</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div v-if="selectedFexiloadRequest">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Request ID</label>
+                                        <input type="text" class="form-control" :value="selectedFexiloadRequest._id" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Status</label>
+                                        <select class="form-select" v-model="selectedFexiloadRequest.status">
+                                            <option value="Pending">Pending</option>
+                                            <option value="Completed">Completed</option>
+                                            <option value="Failed">Failed</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">User Email</label>
+                                        <input type="text" class="form-control" 
+                                               :value="(selectedFexiloadRequest.userId && selectedFexiloadRequest.userId.email) || 'N/A'" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">User Phone</label>
+                                        <input type="text" class="form-control" 
+                                               :value="(selectedFexiloadRequest.userId && selectedFexiloadRequest.userId.phone) || 'N/A'" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">GP Number</label>
+                                        <input type="text" class="form-control" :value="selectedFexiloadRequest.gpNumber" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Recharge Amount/Offer</label>
+                                        <input type="text" class="form-control" :value="selectedFexiloadRequest.rechargeAmount" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Transaction Number (TRX ID)</label>
+                                <input type="text" class="form-control" :value="selectedFexiloadRequest.transactionNumber" readonly>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Requested On</label>
+                                        <input type="text" class="form-control" :value="formatDateTime(selectedFexiloadRequest.createdAt)" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Last Updated</label>
+                                        <input type="text" class="form-control" :value="formatDateTime(selectedFexiloadRequest.updatedAt)" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" @click="saveFexiloadRequestChanges">Save Changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -1324,6 +1474,7 @@
                     merchantIssues: [],
                     penaltyReports: [],
                     premiumPayments: [],
+                    fexiloadRequests: [], // New data array for Fexiload requests
                     stats: { 
                         totalUsers: 0, 
                         totalPayments: 0, 
@@ -1337,6 +1488,7 @@
                     selectedIssue: null,
                     selectedPenalty: null,
                     selectedPremiumPayment: null,
+                    selectedFexiloadRequest: null, // New data for selected Fexiload request
                     paymentModal: null,
                     issueModal: null,
                     penaltyModal: null,
@@ -1344,6 +1496,7 @@
                     approveIssueModal: null,
                     processPremiumModal: null,
                     approveUserModal: null,
+                    fexiloadRequestModal: null, // New modal for Fexiload requests
                     commissionPercentage: 5,
                     selectedUserDetail: null,
                     userDetailsModal: null,
@@ -1485,7 +1638,8 @@
                         this.loadPayments(),
                         this.loadMerchantIssues(),
                         this.loadPenaltyReports(),
-                        this.loadPremiumPayments()
+                        this.loadPremiumPayments(),
+                        this.loadFexiloadRequests()
                     ];
 
                     try {
@@ -1557,6 +1711,16 @@
                             this.premiumPayments = [];
                         }
                     },
+
+                    async loadFexiloadRequests() {
+                        try {
+                            const response = await axios.get(`${API_BASE}/admin/fexiload-requests`);
+                            this.fexiloadRequests = response.data.fexiloadRequests || [];
+                        } catch (error) {
+                            console.error('Error loading fexiload requests:', error);
+                            this.fexiloadRequests = [];
+                        }
+                    },
                 async refreshPayments() {
                     try {
                         this.isLoading = true;
@@ -1612,6 +1776,16 @@
                         await this.loadPremiumPayments();
                     } catch (error) {
                         console.error('Refresh premium payments error:', error);
+                    } finally {
+                        this.isLoading = false;
+                    }
+                },
+                async refreshFexiloadRequests() {
+                    try {
+                        this.isLoading = true;
+                        await this.loadFexiloadRequests();
+                    } catch (error) {
+                        console.error('Refresh fexiload requests error:', error);
                     } finally {
                         this.isLoading = false;
                     }
@@ -1972,6 +2146,36 @@
                         this.isLoading = false;
                     }
                 },
+                showFexiloadRequestDetails(request) {
+                    this.selectedFexiloadRequest = { ...request };
+                    if (!this.fexiloadRequestModal) {
+                        this.fexiloadRequestModal = new bootstrap.Modal(
+                            document.getElementById('fexiloadRequestModal')
+                        );
+                    }
+                    this.fexiloadRequestModal.show();
+                },
+                async saveFexiloadRequestChanges() {
+                    try {
+                        this.isLoading = true;
+                        const response = await axios.put(
+                            `${API_BASE}/admin/fexiload-requests/${this.selectedFexiloadRequest._id}/status`,
+                            { status: this.selectedFexiloadRequest.status }
+                        );
+
+                        if (response.data.success) {
+                            const index = this.fexiloadRequests.findIndex(r => r._id === this.selectedFexiloadRequest._id);
+                            if (index > -1) {
+                                this.fexiloadRequests[index] = response.data.fexiloadRequest;
+                            }
+                            this.fexiloadRequestModal.hide();
+                        }
+                    } catch (error) {
+                        console.error('Save fexiload request changes error:', error);
+                    } finally {
+                        this.isLoading = false;
+                    }
+                },
                 async generatePremiumVoucher() {
                     this.generatingPremiumVoucher = true;
                     this.premiumVoucherMessage = '';
@@ -2030,6 +2234,16 @@
                                 successMessage = 'Penalty report deleted successfully!';
                                 errorMessage = 'Failed to delete penalty report.';
                                 break;
+                            case 'fexiload request':
+                                url = `${API_BASE}/admin/fexiload-requests/${id}`;
+                                successMessage = 'Fexiload request deleted successfully!';
+                                errorMessage = 'Failed to delete fexiload request.';
+                                break;
+                            case 'fexiload request':
+                                url = `${API_BASE}/admin/fexiload-requests/${id}`;
+                                successMessage = 'Fexiload request deleted successfully!';
+                                errorMessage = 'Failed to delete fexiload request.';
+                                break;
                             default:
                                 alert('Invalid item type for deletion.');
                                 return;
@@ -2052,6 +2266,9 @@
                                     break;
                                 case 'penalty report':
                                     await this.loadPenaltyReports();
+                                    break;
+                                case 'fexiload request':
+                                    await this.loadFexiloadRequests();
                                     break;
                             }
                         } else {
@@ -2191,6 +2408,16 @@
                                 this.updateCharts();
                             } else if (data.type === 'new-penalty') {
                                 this.penaltyReports.unshift(data.report);
+                            } else if (data.type === 'new-fexiload-request') {
+                                this.fexiloadRequests.unshift(data.fexiloadRequest);
+                            } else if (data.type === 'fexiload-updated') {
+                                const index = this.fexiloadRequests.findIndex(r => r._id === data.fexiloadRequest._id);
+                                if (index > -1) {
+                                    this.fexiloadRequests.splice(index, 1, {
+                                        ...this.fexiloadRequests[index],
+                                        status: data.fexiloadRequest.status
+                                    });
+                                }
                             }
                         } catch (error) {
                             console.error('WebSocket message error:', error);
@@ -2265,6 +2492,11 @@
 
                 this.processPremiumModal = new bootstrap.Modal(
                     document.getElementById('processPremiumModal'),
+                    { keyboard: false }
+                );
+
+                this.fexiloadRequestModal = new bootstrap.Modal(
+                    document.getElementById('fexiloadRequestModal'),
                     { keyboard: false }
                 );
 
