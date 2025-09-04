@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 
 const consignmentSchema = new mongoose.Schema({
   name: { 
@@ -130,4 +130,4 @@ paymentSchema.virtual('formattedDate').get(function() {
 
 const Payment = mongoose.model('Payment', paymentSchema);
 
-export default Payment; 
+module.exports = Payment; 
