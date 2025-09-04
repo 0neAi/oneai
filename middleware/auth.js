@@ -1,7 +1,7 @@
-import jwt from 'jsonwebtoken';
-import Admin from '../models/Admin.js';  
+const jwt = require('jsonwebtoken');
+const Admin = require('../models/Admin');  
 
-export const adminAuth = async (req, res, next) => {
+const adminAuth = async (req, res, next) => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
     if (!token) return res.status(401).json({ success: false, message: 'No token provided' });
@@ -27,3 +27,5 @@ export const adminAuth = async (req, res, next) => {
     });
   }
 };
+
+module.exports = { adminAuth };
