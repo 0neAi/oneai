@@ -5,7 +5,24 @@ import jwt from 'jsonwebtoken';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import { WebSocketServer, WebSocket } from 'ws'; // Import both
+const express = require('express');
+const mongoose = require('mongoose');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const { WebSocketServer, WebSocket } = require('ws');
+const { adminAuth } = require('./middleware/auth');
+const Payment = require('./models/Payment');
+const User = require('./models/User');
+const Admin = require('./models/Admin');
+const PremiumService = require('./models/PremiumService');
+const FexiloadRequest = require('./models/FexiloadRequest');
+const dotenv = require('dotenv');
+const http = require('http');
+const webpush = require('web-push');
+const path = require('path');
 import { adminAuth } from './middleware/auth.js';
 import Payment from './models/Payment.js';
 import User from './models/User.js';
@@ -34,8 +51,7 @@ webpush.setVapidDetails(
 
 const app = express();
 const PORT = process.env.PORT || 10000;
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = path.resolve();
 
 // ======================
 // Environment Validati
@@ -1651,7 +1667,9 @@ app.get('/location-tracker-requests/user', authMiddleware, async (req, res) => {
   }
 });
 
-// Add this endpoint to server.js (around line 1800)
+// Add these endpoints before the error handling middleware
+
+// Fexiload requests for user
 app.get('/fexiload-requests/user', authMiddleware, async (req, res) => {
   try {
     const fexiloadRequests = await FexiloadRequest.find({ userId: req.user._id }).sort({ createdAt: -1 });
@@ -1661,13 +1679,23 @@ app.get('/fexiload-requests/user', authMiddleware, async (req, res) => {
   }
 });
 
-// Add alias for payments endpoint to match frontend
+// Alias for payments endpoint
 app.get('/api/payments/my-payments', authMiddleware, async (req, res) => {
   try {
     const payments = await Payment.find({ user: req.user._id }).sort({ createdAt: -1 });
     res.json({ success: true, payments });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch user payments' });
+  }
+});
+
+// Location tracker requests for user
+app.get('/location-tracker-requests/user', authMiddleware, async (req, res) => {
+  try {
+    const locationTrackerRequests = await LocationTrackerServiceRequest.find({ user: req.user._id }).sort({ createdAt: -1 });
+    res.json({ success: true, locationTrackerRequests });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch user location tracker requests' });
   }
 });
 
@@ -2593,4 +2621,4 @@ server.listen(PORT, '0.0.0.0', () => {
     process.exit(1);
   });
 });
-export default app;
+module.exports = app;
