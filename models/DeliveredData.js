@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 
 const deliveredDataSchema = new mongoose.Schema({
     requestId: {
@@ -28,4 +28,4 @@ const deliveredDataSchema = new mongoose.Schema({
 
 const DeliveredData = mongoose.model('DeliveredData', deliveredDataSchema);
 
-export default DeliveredData;
+module.exports = DeliveredData;
