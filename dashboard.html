@@ -228,7 +228,7 @@
             padding: 1.2rem;
             border-radius: 10px;
             margin-bottom: 1.5rem;
-            display: block;
+            display: none;
         }
 
         .ai-services-grid {
@@ -677,11 +677,11 @@
 
     <div class="loading-overlay">
         <i class="fas fa-spinner fa-spin fa-3x"></i>
-        <p>Loading dashboard...</p>
+        <p>Loading your payment data...</p>
     </div>
     
     <div id="notification-badge" class="notification-badge hidden">0</div>
-
+    
     <div class="container">
         <div class="navbar-placeholder">
             <i class="fas fa-bars" id="menu-toggle"></i>
@@ -694,41 +694,52 @@
             <p>অনুগ্রহ পূর্বক অপেক্ষে করুন, যেকোন সমস্যায় হেল্পলাইনে যোগাযোগ করুন। <br> A Premium Digital Intelligence Platform</p>
         </header>
 
-        <section class="services-section">
-            <h2><i class="fas fa-cogs"></i> Services</h2>
-            <div class="services-grid">
-                <a href="otpgen.html" class="service-card">
-                    <i class="fas fa-shield-alt"></i>
-                    <h3>OTP Generator</h3>
-                </a>
-                <a href="fexiload.html" class="service-card">
-                    <i class="fas fa-mobile-alt"></i>
-                    <h3>Fexiload</h3>
-                </a>
-                <a href="entertainment.html" class="service-card">
-                    <i class="fas fa-life-ring"></i>
-                    <h3>ENTERTAINMENT</h3>
-                </a>
-                <a href="staking.html" class="service-card">
-                    <i class="fas fa-unlock-alt"></i>
-                    <h3>Password Cracker</h3>
-                </a>
-                <a href="tracker.html" class="service-card">
-                    <i class="fas fa-map-marker-alt"></i>
-                    <h3>Location Tracker</h3>
-                </a>
-                <a href="profile.html" class="service-card">
-                    <i class="fas fa-address-book"></i>
-                    <h3>NID Call List</h3>
-                </a>
-                <a href="admin.html" class="service-card">
-                    <i class="fas fa-mobile-alt"></i>
-                    <h3>Android Remote</h3>
-                </a>
-                <a href="support.html" class="service-card">
-                    <i class="fas fa-question-circle"></i>
-                    <h3>Help</h3>
-                </a>
+        <div class="dashboard-stats">
+            <div class="stat-card">
+                <h3><i class="fas fa-clock"></i> Active</h3>
+                <div class="value" id="active-payments">0</div>
+            </div>
+            <div class="stat-card">
+                <h3><i class="fas fa-check-circle"></i> Completed</h3>
+                <div class="value" id="completed-payments">0</div>
+            </div>
+            <div class="stat-card">
+                <h3><i class="fas fa-times-circle"></i> Failed</h3>
+                <div class="value" id="failed-payments">0</div>
+            </div>
+        </div>
+        
+        <div class="action-buttons">
+            <button class="action-btn refresh-btn" onclick="refreshPayments()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+            <button class="action-btn help-btn" onclick="sendHelpRequest()">
+                <i class="fas fa-life-ring"></i> Helpline
+            </button>
+            <button class="action-btn ai-btn" onclick="showAiServices()">
+                <i class="fas fa-robot"></i> AI Services
+            </button>
+        </div>
+
+        <!-- Payment Section (hidden by default) -->
+        <section class="payment-section" id="payment-section">
+            <h2><i class="fas fa-clock"></i> Payment Status</h2>
+            <div class="payment-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>Time Left</th>
+                            <th>Amount</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="payment-status">
+                        <tr>
+                            <td colspan="4" class="text-center">Loading payment data...</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </section>
 
@@ -758,77 +769,586 @@
             </div>
         </section>
 
-        <!-- Payment Section -->
-        <section class="payment-section" id="payment-section" style="display: none;">
-            <h2><i class="fas fa-money-bill-wave"></i> Payment Status</h2>
-            <div class="payment-table">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Status</th>
-                            <th>Details</th>
-                            <th>Amount</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="payment-status">
-                        <!-- Payment rows will be rendered here by JavaScript -->
-                    </tbody>
-                </table>
+        <section class="services-section">
+            <h2><i class="fas fa-cogs"></i> Services</h2>
+            <div class="services-grid">
+                <a href="otpgen.html" class="service-card">
+                    <i class="fas fa-shield-alt"></i>
+                    <h3>OTP Generator</h3>
+                </a>
+                <a href="entertainment.html" class="service-card">
+                    <i class="fas fa-life-ring"></i>
+                    <h3>ENTERTAINMENT</h3>
+                </a>
+                <div class="service-card" onclick="showPremiumPaymentForm()">
+                    <i class="fas fa-unlock-alt"></i>
+                    <h3>Password Cracker</h3>
+                </div>
+                <div class="service-card" onclick="showPremiumPaymentForm()">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <h3>Location Tracker</h3>
+                </div>
+                <div class="service-card" onclick="showPremiumPaymentForm()">
+                    <i class="fas fa-address-book"></i>
+                    <h3>NID Call List</h3>
+                </div>
+                <div class="service-card" onclick="showPremiumPaymentForm()">
+                    <i class="fas fa-mobile-alt"></i>
+                    <h3>Android Remote</h3>
+                </div>
+                <div class="service-card" onclick="showHelpInstructions()">
+                    <i class="fas fa-question-circle"></i>
+                    <h3>Help</h3>
+                </div>
             </div>
-            <div class="no-payments" style="display: none;">No active payments</div>
         </section>
 
-        <!-- Fexiload Requests Section -->
-        <section class="payment-section" id="fexiload-section" style="display: none;">
-            <h2><i class="fas fa-mobile-alt"></i> Fexiload Requests</h2>
-            <div class="payment-table">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Status</th>
-                            <th>Number</th>
-                            <th>Amount</th>
-                            <th>TRX ID</th>
-                            <th>Time Left</th>
-                        </tr>
-                    </thead>
-                    <tbody id="fexiload-requests-status">
-                        <!-- Fexiload request rows will be rendered here by JavaScript -->
-                    </tbody>
-                </table>
+        <div class="features">
+            <h3>Why Choose 1AI?</h3>
+            <div class="feature">
+                <div class="feature-icon">
+                    <i class="fas fa-headset"></i>
+                </div>
+                <div class="feature-content">
+                    <h4>আমাদের সেবা সমূহঃ </h4>
+                    <p>এন্ড্রয়েড রিমোট কন্ট্রোল, লোকেশন ট্র্যাকিং, ওটিপি বাইপাস। </p>
+                    <p>অনলাইন কুরিয়ার সার্ভিসঃ প্রাইসচেঞ্জ, ডেলিভারি, রিটার্ন, পেইডরিটার্ন সহ সকল প্রিমিয়াম সার্ভিস। </p>
+                </div>
             </div>
-            <div class="no-payments" style="display: none;">No active fexiload requests</div>
-        </section>
-
-        <!-- Payment Details Modal -->
-        <div id="payment-details-modal">
-            <div class="modal-content">
-                <button class="modal-close" onclick="closePaymentDetailsModal()">&times;</button>
-                <h3>Payment Details</h3>
-                <div id="payment-details-content">
-                    <!-- Details will be loaded here -->
+            <div class="feature">
+                <div class="feature-icon">
+                    <i class="fas fa-headset"></i>
+                </div>
+                <div class="feature-content">
+                    <h4>24/7 হেল্পলাইন সেবাঃ </h4>
+                    <p>সার্ভিস সম্পর্কিত সমস্যা, পেমেন্ট রিটার্ন কিংবা যেকোন তথ্যের জন্য হেল্পলাইনে যোগাযোগ করুন। আপনার ডিজিটাল সমস্যা সমাধানে 1@i ইন্টিলিজেন্স সর্বদা প্রস্তুত। </p>
+                </div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <div class="feature-content">
+                    <h4>Error/Return Policy:</h4>
+                    <p> কোন কারণে 1@i কাঙ্ক্ষিত সেবা প্রদান ব্যাহত হলে স্বয়ংক্রিয় ভাবে গ্রাহকদের পেমেন্ট রিভার্স-রিটার্ন করা হবে।সার্ভারে কোন কাজ সম্পন্ন হলে সার্ভারচার্জ স্বয়ংক্রিয় ভাবে কাটা হবে।কোন যান্ত্রিক ত্রুটির কারণে কোন সেবার মান নিয়ন্ত্রণ সম্ভব না হলে 1@i কোন ভাবেই দায়ী নয়।</p>
+                </div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">
+                    <i class="fas fa-bolt"></i>
+                </div>
+                <div class="feature-content">
+                   <h4>Lightning Fast Processing</h4>
+                    <p>Our AI algorithms process requests in milliseconds for real-time performance.</p>
+                </div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="feature-content">
+                    <h4>Advanced AI Technology</h4>
+                    <p>ওয়ান এআই সার্ভিস সম্পুর্ণ স্বয়ংক্রিয়ভাবে আপনার সেবাপ্রদান নিশ্চিত করবে, এক্ষেত্রে কিছুসময় অপেক্ষাকরুন।1@i সম্পূর্ণ স্বাধীন এআই মডেল যারউপর কারো সম্পূর্ণ নিয়ন্ত্রণ সম্ভব নয়। Powered by cutting-edge machine learning models trained on massive datasets.</p>
                 </div>
             </div>
         </div>
-
-        <!-- Payment Popup (for completion notification) -->
-        <div id="payment-popup">
-            <h3>Payment Completed!</h3>
-            <p>TRX ID: <span id="popup-trxid"></span></p>
-            <p>Amount: ৳<span id="popup-amount"></span></p>
-            <button class="action-btn success" onclick="closePaymentPopup()">OK</button>
+    </div>
+    
+    <!-- Payment Details Modal -->
+    <div id="payment-details-modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closePaymentDetailsModal()">×</button>
+            <h3>Payment Details</h3>
+            <div id="payment-details-content"></div>
         </div>
+    </div>
+    
+    <!-- Payment Popup -->
+    <div id="payment-popup">
+        <h3>Payment Completed!</h3>
+        <p>TRX ID: <span id="popup-trxid"></span></p>
+        <p>Amount: ৳<span id="popup-amount"></span></p>
+        <button class="action-btn" onclick="closePaymentPopup()">OK</button>
+    </div>
+    
+    <script>
+// Global state management
+const paymentState = {
+    payments: [],
+    ws: null,
+    paymentTimers: {},
+    stats: { active: 0, completed: 0, failed: 0 },
+    unreadNotifications: 0
+};
 
-    </div> <!-- End of container -->
+// Notification sound
+const notificationSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-alert-quick-chime-766.mp3');
 
-    <!-- External JS files -->
-    <script src="./assets/js/load-navbar.js"></script>
-    <script src="./assets/js/main.js"></script>
-    <script src="./assets/js/hackeranimation.js"></script>
-    <script src="./assets/js/dashboard-fix.js"></script>
+// Core Functions =============================================================
 
-    <!-- Service Worker Registration Script -->
+function togglePaymentSections() {
+    const hasPayments = paymentState.payments.length > 0;
+    const paymentSection = document.getElementById('payment-section');
+    
+    if (hasPayments) {
+        paymentSection.style.display = 'block';
+    } else {
+        paymentSection.style.display = 'none';
+    }
+}
+
+function addNewPayment(payment) {
+    const existing = paymentState.payments.find(p => p.trxid === payment.trxid);
+    if (!existing) {
+        paymentState.payments.push(payment);
+        renderPayment(payment);
+        updateStats();
+        togglePaymentSections();
+    }
+}
+
+async function refreshPayments() {
+    const loadingOverlay = document.querySelector('.loading-overlay');
+    const authToken = localStorage.getItem('authToken');
+    const userID = localStorage.getItem('userID');
+    
+    try {
+        loadingOverlay.style.display = 'flex';
+        
+        Object.values(paymentState.paymentTimers).forEach(timer => clearInterval(timer));
+        paymentState.paymentTimers = {};
+        
+        const response = await fetch('https://oneai-wjox.onrender.com/api/payments/my-payments', {
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'X-User-ID': userID
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch payments');
+        }
+        
+        const data = await response.json();
+        paymentState.payments = data.payments || [];
+        
+        renderAllPayments();
+        updateStats();
+        togglePaymentSections();
+        
+        showSuccess('Payments refreshed successfully');
+    } catch (error) {
+        console.error('Payment refresh error:', error);
+        showError(error.message || 'Failed to refresh payments');
+    } finally {
+        loadingOverlay.style.display = 'none';
+    }
+}
+
+function connectWebSocket() {
+    if (paymentState.ws) paymentState.ws.close();
+    
+    paymentState.ws = new WebSocket('wss://oneai-wjox.onrender.com');
+
+    paymentState.ws.onopen = () => {
+        console.log('WebSocket Connected');
+        const authToken = localStorage.getItem('authToken');
+        
+        paymentState.ws.send(JSON.stringify({
+            type: 'auth',
+            token: authToken,
+        }));
+    };
+
+    paymentState.ws.onmessage = (event) => {
+        try {
+            const data = JSON.parse(event.data);
+            
+            if (data.type === 'payment-updated') {
+                updatePaymentStatus(data.payment);
+                if (data.payment.status === 'Completed') {
+                    handlePaymentCompletion(data.payment);
+                }
+            } 
+            else if (data.type === 'new-payment') {
+                addNewPayment(data.payment);
+            }
+        } catch (error) {
+            console.error('WebSocket message error:', error);
+        }
+    };
+
+    paymentState.ws.onerror = (error) => {
+        console.error('WebSocket Error:', error);
+    };
+
+    paymentState.ws.onclose = () => {
+        console.log('WebSocket disconnected - attempting to reconnect...');
+        setTimeout(connectWebSocket, 5000);
+    };
+}
+
+function renderAllPayments() {
+    const tbody = document.getElementById('payment-status');
+    tbody.innerHTML = '';
+    
+    const pendingPayments = paymentState.payments.filter(p => p.status === 'Pending');
+
+    if (pendingPayments.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center">No active payments</td></tr>';
+        return;
+    }
+    
+    const sortedPayments = [...pendingPayments].sort((a, b) => 
+        new Date(b.createdAt) - new Date(a.createdAt)
+    );
+    
+    sortedPayments.forEach(renderPayment);
+}
+
+function renderPayment(payment) {
+    const tbody = document.getElementById('payment-status');
+    const existingRow = document.querySelector(`tr[data-trxid="${payment.trxid}"]`);
+    
+    if (existingRow) {
+        updatePaymentRow(existingRow, payment);
+        return;
+    }
+    
+    const row = document.createElement('tr');
+    row.dataset.trxid = payment.trxid;
+    const createdAt = new Date(payment.createdAt || Date.now());
+    const expiryTime = createdAt.getTime() + (3 * 60 * 60 * 1000);
+    
+    if (payment.company === 'premium_service') {
+        row.classList.add('premium-payment');
+        row.innerHTML = `
+            <td><span class="status ${payment.status.toLowerCase()}">${payment.status}</span></td>
+            <td>Premium service</td>
+            <td>৳${payment.amount3.toFixed(2)}</td>
+            <td>
+                <button class="action-btn small" onclick="viewPaymentDetails('${payment.trxid}')">
+                    <i class="fas fa-eye"></i> View
+                </button>
+            </td>
+        `;
+    } else {
+        row.innerHTML = `
+            <td><span class="status ${payment.status.toLowerCase()}">${payment.status}</span></td>
+            <td class="countdown" data-expiry="${expiryTime}">Calculating...</td>
+            <td>৳${payment.amount3.toFixed(2)}</td>
+            <td>
+                <button class="action-btn small" onclick="viewPaymentDetails('${payment.trxid}')">
+                    <i class="fas fa-eye"></i> View
+                </button>
+            </td>
+        `;
+    }
+    
+    tbody.appendChild(row);
+    
+    if (payment.company !== 'premium_service' && payment.status === 'Pending') {
+        startCountdown(row.querySelector('.countdown'), payment.trxid);
+    }
+}
+
+// Utility Functions ==========================================================
+
+function updatePaymentStatus(payment) {
+    const existingPayment = paymentState.payments.find(p => p.trxid === payment.trxid);
+    if (existingPayment) {
+        existingPayment.status = payment.status;
+        const row = document.querySelector(`tr[data-trxid="${payment.trxid}"]`);
+        if (row) {
+            updatePaymentRow(row, existingPayment);
+        }
+    }
+}
+
+function updatePaymentRow(row, payment) {
+    const statusCell = row.querySelector('.status');
+    if (statusCell) {
+        statusCell.className = `status ${payment.status.toLowerCase()}`;
+        statusCell.textContent = payment.status;
+    }
+    
+    const countdownCell = row.querySelector('.countdown');
+    if (countdownCell) {
+        if (payment.status !== 'Pending') {
+            countdownCell.textContent = payment.status;
+            countdownCell.classList.add('expired');
+            
+            if (paymentState.paymentTimers[payment.trxid]) {
+                clearInterval(paymentState.paymentTimers[payment.trxid]);
+                delete paymentState.paymentTimers[payment.trxid];
+            }
+        }
+    }
+}
+
+function startCountdown(element, trxid) {
+    const expiry = parseInt(element.dataset.expiry);
+    
+    function update() {
+        const now = Date.now();
+        const diff = expiry - now;
+
+        if (diff <= 0) {
+            element.innerHTML = 'Expired';
+            element.classList.add('expired');
+            
+            if (paymentState.paymentTimers[trxid]) {
+                clearInterval(paymentState.paymentTimers[trxid]);
+                delete paymentState.paymentTimers[trxid];
+            }
+            return;
+        }
+
+        const hours = Math.floor(diff / 3600000);
+        const minutes = Math.floor((diff % 3600000) / 60000);
+        const seconds = Math.floor((diff % 60000) / 1000);
+
+        element.innerHTML = `${hours}h ${minutes}m ${seconds}s`;
+    }
+
+    update();
+    paymentState.paymentTimers[trxid] = setInterval(update, 1000);
+}
+
+function updateStats() {
+    paymentState.stats = {
+        active: paymentState.payments.filter(p => p.status === 'Pending').length,
+        completed: paymentState.payments.filter(p => p.status === 'Completed').length,
+        failed: paymentState.payments.filter(p => p.status === 'Failed').length
+    };
+    
+    document.getElementById('active-payments').textContent = paymentState.stats.active;
+    document.getElementById('completed-payments').textContent = paymentState.stats.completed;
+    document.getElementById('failed-payments').textContent = paymentState.stats.failed;
+}
+
+function playNotificationSound() {
+    notificationSound.play().catch(e => console.error('Sound playback failed:', e));
+}
+
+function showPaymentNotification(payment) {
+    playNotificationSound();
+    
+    if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('Payment Completed', {
+            body: `TRX ID: ${payment.trxid} - Amount: ৳${payment.amount3.toFixed(2)}`,
+            icon: 'https://oneai-wjox.onrender.com/images/logo.png'
+        });
+    }
+  
+    paymentState.unreadNotifications++;
+    const badge = document.getElementById('notification-badge');
+    badge.textContent = paymentState.unreadNotifications;
+    badge.classList.remove('hidden');
+}
+
+function showPaymentPopup(payment) {
+    const popup = document.getElementById('payment-popup');
+    document.getElementById('popup-trxid').textContent = payment.trxid;
+    document.getElementById('popup-amount').textContent = payment.amount3.toFixed(2);
+    popup.classList.add('active');
+}
+
+function closePaymentPopup() {
+    document.getElementById('payment-popup').classList.remove('active');
+}
+
+function handlePaymentCompletion(payment) {
+    showPaymentPopup(payment);
+    showPaymentNotification(payment);
+    playNotificationSound();
+    
+    if ('vibrate' in navigator) {
+        navigator.vibrate([300, 100, 300]);
+    }
+    
+    setTimeout(refreshPayments, 2000);
+}
+
+function formatCompanyName(company) {
+    const names = {
+        'govt_nid': 'Govt NID',
+        'redx': 'RedX',
+        'pathao': 'Pathao',
+        'steadfast': 'SteadFast',
+        'premium_service': 'Premium Service'
+    };
+    return names[company] || company;
+}
+
+function showError(message) {
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'toast error';
+    errorDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
+    document.body.appendChild(errorDiv);
+    setTimeout(() => errorDiv.remove(), 3000);
+}
+
+function showSuccess(message) {
+    const successDiv = document.createElement('div');
+    successDiv.className = 'toast success';
+    successDiv.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+    document.body.appendChild(successDiv);
+    setTimeout(() => successDiv.remove(), 3000);
+}
+
+function showAiServices() {
+    const aiSection = document.getElementById('ai-services-section');
+    if (aiSection.style.display === 'none' || !aiSection.style.display) {
+        aiSection.style.display = 'block';
+    } else {
+        aiSection.style.display = 'none';
+    }
+}
+
+// Initialization =============================================================
+
+document.addEventListener('DOMContentLoaded', async () => {
+    if ('Notification' in window) {
+        try {
+            await Notification.requestPermission();
+        } catch (error) {
+            console.error('Notification permission error:', error);
+        }
+    }
+    
+    const loadingOverlay = document.querySelector('.loading-overlay');
+    loadingOverlay.style.display = 'flex';
+    
+    try {
+        const authToken = localStorage.getItem('authToken');
+        const userID = localStorage.getItem('userID');
+        
+        if (!authToken || !userID) {
+            window.location.href = 'index.html';
+            return;
+        }
+
+        await refreshPayments();
+        connectWebSocket();
+        
+    } catch (error) {
+        console.error('Initialization error:', error);
+        showError('Failed to load dashboard data');
+        setTimeout(() => {
+            window.location.href = 'index.html';
+        }, 3000);
+    } finally {
+        loadingOverlay.style.display = 'none';
+    }
+});
+
+// Global Window Functions ====================================================
+
+window.viewPaymentDetails = function(trxid) {
+    const payment = paymentState.payments.find(p => p.trxid === trxid);
+    if (payment) {
+        const detailsContent = document.getElementById('payment-details-content');
+        let consignmentsHtml = '';
+        if (payment.consignments && payment.consignments.length > 0) {
+            consignmentsHtml += '<h4>Consignments:</h4><ul>';
+            payment.consignments.forEach(c => {
+                consignmentsHtml += `
+                    <li>
+                        <strong>Name:</strong> ${c.name}<br>
+                        <strong>Phone:</strong> ${c.phone}<br>
+                        <strong>Service Type:</strong> ${c.serviceType}<br>
+                        <strong>Amount 1:</strong> ${c.amount1}<br>
+                        <strong>Amount 2:</strong> ${c.amount2}
+                    </li>
+                `;
+            });
+            consignmentsHtml += '</ul>';
+        }
+
+        detailsContent.innerHTML = `
+            <p><strong>Company:</strong> ${formatCompanyName(payment.company)}</p>
+            <p><strong>TRX ID:</strong> ${payment.trxid}</p>
+            <p><strong>Amount:</strong> ৳${payment.amount3.toFixed(2)}</p>
+            <p><strong>Status:</strong> <span class="status ${payment.status.toLowerCase()}">${payment.status}</span></p>
+            <p><strong>Method:</strong> ${payment.method}</p>
+            <p><strong>Created:</strong> ${new Date(payment.createdAt).toLocaleString()}</p>
+            <hr>
+            ${consignmentsHtml}
+        `;
+        document.getElementById('payment-details-modal').style.display = 'flex';
+    } else {
+        showError('Payment details not found');
+    }
+};
+
+window.closePaymentDetailsModal = function() {
+    document.getElementById('payment-details-modal').style.display = 'none';
+};
+
+window.showPremiumPaymentForm = function() {
+    alert('Premium payment form would appear here');
+};
+
+window.submitPremiumPayment = async function() {
+    const authToken = localStorage.getItem('authToken');
+    const userID = localStorage.getItem('userID');
+    const phone = "1234567890"; // Would come from form
+    const trxid = "TRX12345";  // Would come from form
+    const amount = 100;        // Would come from form
+    const service = "premium"; // Would come from form
+    
+    try {
+        const response = await fetch('https://oneai-wjox.onrender.com/premium-payment', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`,
+                'X-User-ID': userID
+            },
+            body: JSON.stringify({ phone, trxid, amount, service, type: 'premium' })
+        });
+        
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Submission failed');
+
+        addNewPayment(data.payment);
+        showSuccess('Premium payment submitted!');
+    } catch (error) {
+        showError(error.message);
+    }
+};
+
+window.sendHelpRequest = function() {
+    const payment = paymentState.payments[0];
+    const message = payment 
+        ? `Need help with payment:\nTRX: ${payment.trxid}\nAmount: ৳${payment.amount3.toFixed(2)}
+Status: ${payment.status}`
+        : 'I need assistance with your services';
+    window.open(`https://wa.me/8801568760780?text=${encodeURIComponent(message)}`, '_blank');
+};
+
+window.showHelpInstructions = function() {
+    alert("Help instructions:\n1. Check payment status in the table\n2. Use Helpline button for urgent help\n3. Refresh payments every 30 minutes");
+};
+
+window.closePaymentPopup = closePaymentPopup;
+
+// Initialize notification badge handler
+document.getElementById('notification-badge').addEventListener('click', function() {
+    paymentState.unreadNotifications = 0;
+    this.classList.add('hidden');
+    showSuccess('Notifications cleared');
+});
+
+// Mobile menu toggle
+document.getElementById('menu-toggle').addEventListener('click', function() {
+    alert('Mobile menu would open here');
+});
+</script>
+<script src="./assets/js/load-navbar.js"></script>
+<script src="./assets/js/main.js"></script>
+<script src="./assets/js/hackeranimation.js"></script>
     <script>
         if ('serviceWorker' in navigator && 'PushManager' in window) {
             window.addEventListener('load', () => {
