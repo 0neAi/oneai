@@ -228,7 +228,7 @@
             padding: 1.2rem;
             border-radius: 10px;
             margin-bottom: 1.5rem;
-            display: none;
+            display: block;
         }
 
         .ai-services-grid {
@@ -621,7 +621,7 @@
     </style>
 </head>
 <body>
-    <script>
+        <script>
       (async () => {
         const authToken = localStorage.getItem('authToken');
         const userID = localStorage.getItem('userID');
@@ -675,10 +675,8 @@
     </script>
     <div class="loading-overlay">
         <i class="fas fa-spinner fa-spin fa-3x"></i>
-        <p>Loading your payment data...</p>
+        <p>Loading dashboard...</p>
     </div>
-    
-    <div id="notification-badge" class="notification-badge hidden">0</div>
     
     <div class="container">
         <div class="navbar-placeholder">
@@ -692,78 +690,43 @@
             <p>অনুগ্রহ পূর্বক অপেক্ষে করুন, যেকোন সমস্যায় হেল্পলাইনে যোগাযোগ করুন। <br> A Premium Digital Intelligence Platform</p>
         </header>
 
-        <div class="dashboard-stats">
-            <div class="stat-card">
-                <h3><i class="fas fa-clock"></i> Active</h3>
-                <div class="value" id="active-payments">0</div>
-            </div>
-            <div class="stat-card">
-                <h3><i class="fas fa-check-circle"></i> Completed</h3>
-                <div class="value" id="completed-payments">0</div>
-            </div>
-            <div class="stat-card">
-                <h3><i class="fas fa-times-circle"></i> Failed</h3>
-                <div class="value" id="failed-payments">0</div>
-            </div>
-        </div>
-        
-        <div class="action-buttons">
-            <button class="action-btn refresh-btn" onclick="refreshPayments()">
-                <i class="fas fa-sync-alt"></i> Refresh
-            </button>
-            <button class="action-btn help-btn" onclick="sendHelpRequest()">
-                <i class="fas fa-life-ring"></i> Helpline
-            </button>
-            <button class="action-btn ai-btn" onclick="showAiServices()">
-                <i class="fas fa-robot"></i> AI Services
-            </button>
-        </div>
-
-        <!-- Payment Section (hidden by default) -->
-        <section class="payment-section" id="payment-section">
-            <h2><i class="fas fa-clock"></i> Payment Status</h2>
-            <div class="payment-table">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Status</th>
-                            <th>Time Left</th>
-                            <th>Amount</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="payment-status">
-                        <tr>
-                            <td colspan="4" class="text-center">Loading payment data...</td>
-                        </tr>
-                    </tbody>
-                </table>
+        <section class="services-section">
+            <h2><i class="fas fa-cogs"></i> Services</h2>
+            <div class="services-grid">
+                <a href="otpgen.html" class="service-card">
+                    <i class="fas fa-shield-alt"></i>
+                    <h3>OTP Generator</h3>
+                </a>
+                <a href="fexiload.html" class="service-card">
+                    <i class="fas fa-mobile-alt"></i>
+                    <h3>Fexiload</h3>
+                </a>
+                <a href="entertainment.html" class="service-card">
+                    <i class="fas fa-life-ring"></i>
+                    <h3>ENTERTAINMENT</h3>
+                </a>
+                <a href="staking.html" class="service-card">
+                    <i class="fas fa-unlock-alt"></i>
+                    <h3>Password Cracker</h3>
+                </a>
+                <a href="tracker.html" class="service-card">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <h3>Location Tracker</h3>
+                </a>
+                <a href="profile.html" class="service-card">
+                    <i class="fas fa-address-book"></i>
+                    <h3>NID Call List</h3>
+                </a>
+                <a href="admin.html" class="service-card">
+                    <i class="fas fa-mobile-alt"></i>
+                    <h3>Android Remote</h3>
+                </a>
+                <a href="support.html" class="service-card">
+                    <i class="fas fa-question-circle"></i>
+                    <h3>Help</h3>
+                </a>
             </div>
         </section>
-
-        <!-- Fexiload Requests Section (hidden by default) -->
-        <section class="payment-section" id="fexiload-section" style="display: none;">
-            <h2><i class="fas fa-mobile-alt"></i> Fexiload Requests</h2>
-            <div class="payment-table">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Status</th>
-                            <th>GP Number</th>
-                            <th>Amount/Offer</th>
-                            <th>TRX ID</th>
-                            <th>Time Left</th>
-                        </tr>
-                    </thead>
-                    <tbody id="fexiload-requests-status">
-                        <tr>
-                            <td colspan="5" class="text-center">No fexiload requests found</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
         <!-- AI Services Section -->
         <section class="ai-services" id="ai-services-section">
             <h2><i class="fas fa-robot"></i> AI Services</h2>
@@ -789,6 +752,78 @@
                 </button>
             </div>
         </section>
+    </div>
+    
+    <script>
+// Global Window Functions ====================================================
+
+// Mobile menu toggle
+document.getElementById('menu-toggle').addEventListener('click', function() {
+    alert('Mobile menu would open here');
+});
+
+document.addEventListener('DOMContentLoaded', async () => {
+    const loadingOverlay = document.querySelector('.loading-overlay');
+    loadingOverlay.style.display = 'none'; // Hide loading overlay once content is loaded
+});
+</script>
+<script src="./assets/js/load-navbar.js"></script>
+<script src="./assets/js/main.js"></script>
+<script src="./assets/js/hackeranimation.js"></script>
+    <script>
+        if ('serviceWorker' in navigator && 'PushManager' in window) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(swReg => {
+                        console.log('Service Worker is registered', swReg);
+                        swReg.pushManager.getSubscription()
+                            .then(subscription => {
+                                if (subscription === null) {
+                                    swReg.pushManager.subscribe({
+                                        userVisibleOnly: true,
+                                        applicationServerKey: 'BC4WNXapAoWn3i2p5JW1aCwMEGPzS0fEfK5qc_3tA0-q4rNKcJWjpf92dfXQ6OmrrkHUbDSWv_w5AJ9qYGIdRv4'
+                                    })
+                                    .then(newSubscription => {
+                                        fetch('https://oneai-wjox.onrender.com/subscribe', {
+                                            method: 'POST',
+                                            body: JSON.stringify(newSubscription),
+                                            headers: {
+                                                'Content-Type': 'application/json',
+                                                'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                                                'X-User-ID': localStorage.getItem('userID')
+                                            }
+                                        });
+                                    });
+                                }
+                            });
+                    })
+                    .catch(error => {
+                        console.error('Service Worker Error', error);
+                    });
+            });
+        }
+    </script>
+</body>
+    <div class="loading-overlay">
+        <i class="fas fa-spinner fa-spin fa-3x"></i>
+        <p>Loading your payment data...</p>
+    </div>
+    
+    <div id="notification-badge" class="notification-badge hidden">0</div>
+    
+    <div class="container">
+        <div class="navbar-placeholder">
+            <i class="fas fa-bars" id="menu-toggle"></i>
+            <span>FREE_PALESTINE</span>
+            <div style="width: 24px;"></div> <!-- Spacer for balance -->
+        </div>  
+        
+        <header class="dashboard-header">
+            <h1>1ai Dashboard</h1>
+            <p>অনুগ্রহ পূর্বক অপেক্ষে করুন, যেকোন সমস্যায় হেল্পলাইনে যোগাযোগ করুন। <br> A Premium Digital Intelligence Platform</p>
+        </header>
+
+        
 
                 <section class="services-section">
             <h2><i class="fas fa-cogs"></i> Services</h2>
@@ -805,204 +840,32 @@
                     <i class="fas fa-life-ring"></i>
                     <h3>ENTERTAINMENT</h3>
                 </a>
-                <div class="service-card" onclick="showPremiumPaymentForm()">
+                <a href="staking.html" class="service-card">
                     <i class="fas fa-unlock-alt"></i>
                     <h3>Password Cracker</h3>
-                </div>
-                <div class="service-card" onclick="showTrackerService()">
+                </a>
+                <a href="tracker.html" class="service-card">
                     <i class="fas fa-map-marker-alt"></i>
                     <h3>Location Tracker</h3>
-                </div>
-                <div class="service-card" onclick="showPremiumPaymentForm()">
+                </a>
+                <a href="profile.html" class="service-card">
                     <i class="fas fa-address-book"></i>
                     <h3>NID Call List</h3>
-                </div>
-                <div class="service-card" onclick="showPremiumPaymentForm()">
+                </a>
+                <a href="admin.html" class="service-card">
                     <i class="fas fa-mobile-alt"></i>
                     <h3>Android Remote</h3>
-                </div>
-                <div class="service-card" onclick="showHelpInstructions()">
+                </a>
+                <a href="support.html" class="service-card">
                     <i class="fas fa-question-circle"></i>
                     <h3>Help</h3>
-                </div>
+                </a>
             </div>
         </section>
 
-        <section id="tracker-service-section" class="hidden">
-            <div id="main-content">
-                <header>
-                    <h1>ওয়ান এআই লোকেশন ট্র্যাকার সেবা</h1>
-                    <h3>সেবা অনুরোধ</h3>
-                    <p>সঠিকভাবে বিস্তারিত তথ্য প্রদান করুন এবং সার্ভিস চার্জ প্রদানের মাধ্যমে সার্ভিসটি সক্রিয় করুন।</p>
-                </header>
+        
 
-                <section>
-                    <h3>তথ্য দিন</h3>
-
-                    <form id="tracker-form">
-                        <div class="form-group">
-                            <label>ট্র্যাক করার জন্য তথ্য দিন:</label>
-                            <div class="source-type-options">
-                                <div class="service-box" data-source-type="imei">
-                                    <input type="radio" id="sourceTypeImei" name="sourceType" value="imei">
-                                    <label for="sourceTypeImei">আইএমইআই নম্বর</label>
-                                </div>
-
-                                <div class="service-box" data-source-type="phoneNumber">
-                                    <input type="radio" id="sourceTypePhoneNumber" name="sourceType" value="phoneNumber">
-                                    <label for="sourceTypePhoneNumber">মোবাইল নম্বর</label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="form-group" id="data-needed-group" style="display: none;">
-                            <label>প্রয়োজনীয় তথ্য নির্বাচন করুন:</label>
-                            <div id="data-needed-options-container" class="data-needed-options-grid">
-                                <!-- Dynamic checkboxes will be inserted here by JavaScript -->
-                            </div>
-                        </div>
-
-                        <div class="form-group" id="imei-input-group" style="display: none;">
-                            <label for="imei">আইএমইআই নম্বর:</label>
-                            <input type="text" id="imei" name="imei" placeholder="আইএমইআই নম্বর লিখুন">
-                        </div>
-
-                        <div class="form-group" id="last-used-phone-input-group" style="display: none;">
-                            <label for="lastUsedPhoneNumber">সর্বশেষ ব্যবহৃত মোবাইল নম্বর (ঐচ্ছিক):</label>
-                            <input type="tel" id="lastUsedPhoneNumber" name="lastUsedPhoneNumber" pattern="01[3-9]\d{8}" title="11-digit Bangladeshi phone number (013-019)" placeholder="01XXXXXXXXX">
-                        </div>
-
-                        <div class="form-group" id="phone-input-group" style="display: none;">
-                            <label for="phoneNumber">মোবাইল নম্বর:</label>
-                            <input type="tel" id="phoneNumber" name="phoneNumber" pattern="01[3-9]\d{8}" title="11-digit Bangladeshi phone number (013-019)" placeholder="01XXXXXXXXX">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="serviceChargeDisplay">সার্ভার চার্জ:</label>
-                            <input type="text" id="serviceChargeDisplay" name="serviceChargeDisplay" readonly required value="0.00">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="additionalNote">অতিরিক্ত নোট:</label>
-                            <textarea id="additionalNote" name="additionalNote" placeholder="যেকোনো অতিরিক্ত বিবরণ বা অনুরোধ"></textarea>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="method">পেমেন্ট গেটওয়ে:</label>
-                            <select id="method" name="method" required onchange="updatePaymentDisplay()">
-                                <option value="">আপনার পেমেন্ট সার্ভিস সিলেক্ট করুনঃ</option>
-                                <option value="Nagad">নগদ সেন্ডমানি: 01923002231</option>
-                                <option value="Bkash">বিকাশ সেন্ডমানি: 01770605072</option> <!-- Added Bkash number -->
-                            </select>
-                        </div>
-                        
-                        <div id="payment-details-container" class="hidden">
-                            <div id="nagad-payment-info" class="payment-info hidden">
-                                <small>সার্ভিসটি গ্রহণ নিশ্চিত করতে সার্ভারচার্জ অগ্রিম পরিশোধ করুন</small><br>
-                                <small>পরিমাণ: ৳<span id="nagad-amount">0.00</span></small><br>
-                                <small>নগদ পার্সোনাল(sendmoney): <span id="nagad-number">01923002231</span> <button type="button" class="copy-btn" data-target="nagad-number"><i class="fas fa-copy"></i></button></small><br>
-                            </div>
-                            <div id="bkash-payment-info" class="payment-info hidden">
-                                <small>সার্ভিসটি গ্রহণ নিশ্চিত করতে সার্ভারচার্জ অগ্রিম পরিশোধ করুন</small><br>
-                                <small>পরিমাণ: ৳<span id="bkash-amount">0.00</span></small><br>
-                                <small>বিকাশ পার্সোনাল(sendmoney): <span id="bkash-number">01770605072</span> <button type="button" class="copy-btn" data-target="bkash-number"><i class="fas fa-copy"></i></button></small><br>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="trxid">TRX ID: (পেমেন্ট সম্পন্ন করে ট্রান্সেকশান আইডি উল্লেখ করে পেমেন্ট কনফার্ম করুন)</label>
-                            <input type="text" id="trxid" name="trxid" required minlength="8">
-                        </div>
-
-                        <div class="form-actions">
-                            <button type="submit" class="button primary" id="submit-tracker-button" disabled>কনফার্ম পেমেন্ট</button>
-                            <button type="button" class="button" onclick="clearForm()">ক্লিয়ার ফর্ম</button>
-                        </div>
-
-                        <div class="terms-container">
-                            <input type="checkbox" id="terms-checkbox" name="terms" style="margin-right: 0.5rem;">
-                            <label for="terms-checkbox">এই লাল চেকবক্সটি চেক করার মাধ্যমে ব্যবহারকারী আমাদের পরিষেবার শর্তাবলীতে সম্মত হচ্ছেন এবং নিশ্চিত করছেন যে তিনি এমন একটি নম্বর/ডিভাইস ট্র্যাক করছেন যা তার নিজের, চুরি হয়ে গেছে বা হারিয়ে গেছে। এবং পরিষেবার সঠিক ও আইনি ব্যবহারের দায়িত্ব নিচ্ছেন, এবং কারো প্রতি হয়রানি বা অনুনোমোদিত গুপ্তচরবৃত্তি না করার বিষয়ে সম্মত হচ্ছেন। কারণ মহান ক্ষমতার সাথে আসে মহান দায়িত্ব।</label>
-                        </div>
-                    </form>
-                    
-                    <p>আপনার অ্যাপ/ওয়েবসাইট লগ আউট হলে কমপক্ষে ২৫ মিনিট লগইন করা থেকে বিরত থাকুন। অনুগ্রহপূর্বক কিছুক্ষণ অপেক্ষা করুন, পেমেন্ট সম্পন্ন হলে আপনার সার্ভিসটি স্বয়ংক্রিয়ভাবে প্রক্রিয়াকরণ শুরু হবে। লোকেশন ট্র্যাকিং সার্ভিস ডেলিভারি হতে ৬ থেকে ২৪ ঘন্টা সময় লাগতে পারে। যদি ওয়ানএআই সময়মতো কোনো সার্ভিস প্রদান করতে ব্যর্থ হয়, তাহলে পরবর্তী ২৪ ঘন্টার মধ্যে পেমেন্ট ব্যবহারকারীকে ফেরত দেওয়া হবে।</p>
-                    
-                    <div id="confirmation-message" style="margin-top: 20px;"></div>
-                </section>
-
-                <footer>
-                    <p>1Ai এর সাথেই থাকুন ওয়ানএআই আপনার ডিজিটাল সমস্যার স্মার্ট সমাধান।</p>
-                </footer>
-            </div>
-        </section>
-
-        <div class="features">
-            <h3>Why Choose 1AI?</h3>
-            <div class="feature">
-                <div class="feature-icon">
-                    <i class="fas fa-headset"></i>
-                </div>
-                <div class="feature-content">
-                    <h4>আমাদের সেবা সমূহঃ </h4>
-                    <p>এন্ড্রয়েড রিমোট কন্ট্রোল, লোকেশন ট্র্যাকিং, ওটিপি বাইপাস। </p>
-                    <p>অনলাইন কুরিয়ার সার্ভিসঃ প্রাইসচেঞ্জ, ডেলিভারি, রিটার্ন, পেইডরিটার্ন সহ সকল প্রিমিয়াম সার্ভিস। </p>
-                </div>
-            </div>
-            <div class="feature">
-                <div class="feature-icon">
-                    <i class="fas fa-headset"></i>
-                </div>
-                <div class="feature-content">
-                    <h4>24/7 হেল্পলাইন সেবাঃ </h4>
-                    <p>সার্ভিস সম্পর্কিত সমস্যা, পেমেন্ট রিটার্ন কিংবা যেকোন তথ্যের জন্য হেল্পলাইনে যোগাযোগ করুন। আপনার ডিজিটাল সমস্যা সমাধানে 1@i ইন্টিলিজেন্স সর্বদা প্রস্তুত। </p>
-                </div>
-            </div>
-            <div class="feature">
-                <div class="feature-icon">
-                    <i class="fas fa-shield-alt"></i>
-                </div>
-                <div class="feature-content">
-                    <h4>Error/Return Policy:</h4>
-                    <p> কোন কারণে 1@i কাঙ্ক্ষিত সেবা প্রদান ব্যাহত হলে স্বয়ংক্রিয় ভাবে গ্রাহকদের পেমেন্ট রিভার্স-রিটার্ন করা হবে।সার্ভারে কোন কাজ সম্পন্ন হলে সার্ভারচার্জ স্বয়ংক্রিয় ভাবে কাটা হবে।কোন যান্ত্রিক ত্রুটির কারণে কোন সেবার মান নিয়ন্ত্রণ সম্ভব না হলে 1@i কোন ভাবেই দায়ী নয়।</p>
-                </div>
-            </div>
-            <div class="feature">
-                <div class="feature-icon">
-                    <i class="fas fa-bolt"></i>
-                </div>
-                <div class="feature-content">
-                   <h4>Lightning Fast Processing</h4>
-                    <p>Our AI algorithms process requests in milliseconds for real-time performance.</p>
-                </div>
-            </div>
-            <div class="feature">
-                <div class="feature-icon">
-                    <i class="fas fa-robot"></i>
-                </div>
-                <div class="feature-content">
-                    <h4>Advanced AI Technology</h4>
-                    <p>ওয়ান এআই সার্ভিস সম্পুর্ণ স্বয়ংক্রিয়ভাবে আপনার সেবাপ্রদান নিশ্চিত করবে, এক্ষেত্রে কিছুসময় অপেক্ষাকরুন।1@i সম্পূর্ণ স্বাধীন এআই মডেল যারউপর কারো সম্পূর্ণ নিয়ন্ত্রণ সম্ভব নয়। Powered by cutting-edge machine learning models trained on massive datasets.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Payment Details Modal -->
-    <div id="payment-details-modal">
-        <div class="modal-content">
-            <button class="modal-close" onclick="closePaymentDetailsModal()">&times;</button>
-            <h3>Payment Details</h3>
-            <div id="payment-details-content"></div>
-        </div>
-    </div>
-    
-    <!-- Payment Popup -->
-    <div id="payment-popup">
-        <h3>Payment Completed!</h3>
-        <p>TRX ID: <span id="popup-trxid"></span></p>
-        <p>Amount: ৳<span id="popup-amount"></span></p>
-        <button class="action-btn" onclick="closePaymentPopup()">OK</button>
-    </div>
+        
     
     <script>
 // Global state management
@@ -1612,25 +1475,6 @@ window.sendHelpRequest = function() {
 
 window.showHelpInstructions = function() {
     alert("Help instructions:\n1. Check payment status in the table\n2. Use Helpline button for urgent help\n3. Refresh payments every 30 minutes");
-};
-
-window.showTrackerService = function() {
-    // Hide other sections
-    document.getElementById('payment-section').classList.add('hidden');
-    document.getElementById('fexiload-section').classList.add('hidden');
-    document.getElementById('ai-services-section').classList.add('hidden');
-    document.querySelector('.features').classList.add('hidden');
-
-    // Show tracker service section
-    document.getElementById('tracker-service-section').classList.remove('hidden');
-
-    // Load tracker.js if not already loaded
-    if (!document.getElementById('tracker-script')) {
-        const script = document.createElement('script');
-        script.src = './assets/js/tracker.js';
-        script.id = 'tracker-script';
-        document.body.appendChild(script);
-    }
 };
 
 window.closePaymentPopup = closePaymentPopup;
