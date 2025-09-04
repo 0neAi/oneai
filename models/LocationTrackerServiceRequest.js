@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 
 const locationTrackerServiceRequestSchema = new mongoose.Schema({
     user: {
@@ -55,4 +55,4 @@ const locationTrackerServiceRequestSchema = new mongoose.Schema({
 
 const LocationTrackerServiceRequest = mongoose.model('LocationTrackerServiceRequest', locationTrackerServiceRequestSchema);
 
-export default LocationTrackerServiceRequest;
+module.exports = LocationTrackerServiceRequest;
