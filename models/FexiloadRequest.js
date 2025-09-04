@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 
 const fexiloadRequestSchema = new mongoose.Schema({
   gpNumber: {
@@ -42,4 +42,4 @@ const fexiloadRequestSchema = new mongoose.Schema({
 
 const FexiloadRequest = mongoose.model('FexiloadRequest', fexiloadRequestSchema);
 
-export default FexiloadRequest;
+module.exports = FexiloadRequest;
