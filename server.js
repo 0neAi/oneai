@@ -11,6 +11,7 @@ import Payment from './models/Payment.js';
 import User from './models/User.js';
 import Admin from './models/Admin.js';
 import PremiumService from './models/PremiumService.js';
+import FexiloadRequest from './models/FexiloadRequest.js';
 import dotenv from 'dotenv';
 import http from 'http';
 import webpush from 'web-push';
@@ -1222,6 +1223,74 @@ app.get('/admin/premium-services', adminAuth, async (req, res) => {
   }
 });
 
+// ======================
+// Fexiload Admin Routes
+// ======================
+app.get('/admin/fexiload-requests', adminAuth, async (req, res) => {
+  try {
+    const fexiloadRequests = await FexiloadRequest.find().populate('userId', 'email phone').sort({ createdAt: -1 });
+    res.json({ success: true, fexiloadRequests });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch fexiload requests' });
+  }
+});
+
+app.put('/admin/fexiload-requests/:id/status', adminAuth, async (req, res) => {
+  try {
+    const { status } = req.body;
+    const validStatuses = ['Pending', 'Completed', 'Failed'];
+
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ success: false, message: 'Invalid status' });
+    }
+
+    const fexiloadRequest = await FexiloadRequest.findByIdAndUpdate(
+      req.params.id,
+      { status, updatedAt: Date.now() },
+      { new: true }
+    );
+
+    if (!fexiloadRequest) {
+      return res.status(404).json({ success: false, message: 'Fexiload request not found' });
+    }
+
+    // If the status is completed, send a push notification (optional, but good practice)
+    if (status === 'Completed' && fexiloadRequest.userId.pushSubscription) {
+        const payload = JSON.stringify({
+            title: 'Fexiload Completed!',
+            body: `Your recharge for ${fexiloadRequest.gpNumber} of ${fexiloadRequest.rechargeAmount} has been successfully processed.`,
+            icon: 'https://oneai-wjox.onrender.com/images/logo.png'
+        });
+
+        webpush.sendNotification(fexiloadRequest.userId.pushSubscription, payload).catch(error => {
+            console.error('Push notification error for fexiload:', error);
+        });
+    }
+
+    // WebSocket notification to user (if connected)
+    wss.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN && client.userID === fexiloadRequest.userId.toString()) {
+        client.send(JSON.stringify({
+          type: 'fexiload-updated',
+          fexiloadRequest: {
+            _id: fexiloadRequest._id,
+            status: fexiloadRequest.status,
+            gpNumber: fexiloadRequest.gpNumber,
+            rechargeAmount: fexiloadRequest.rechargeAmount,
+            transactionNumber: fexiloadRequest.transactionNumber,
+            updatedAt: fexiloadRequest.updatedAt
+          }
+        }));
+      }
+    });
+
+    res.json({ success: true, fexiloadRequest });
+  } catch (error) {
+    console.error('Fexiload status update error:', error);
+    res.status(500).json({ success: false, message: 'Failed to update fexiload request status' });
+  }
+});
+
 app.get('/premium-services/:phone', async (req, res) => {
     try {
         const services = await PremiumService.find({ phone: req.params.phone }).sort({ createdAt: -1 });
@@ -1369,6 +1438,87 @@ app.post('/premium-service', async (req, res) => {
     });
   }
 });
+
+// ======================
+// Fexiload Routes
+// ======================
+app.post('/fexiload-request', authMiddleware, async (req, res) => {
+  try {
+    const { gpNumber, rechargeAmount, transactionNumber } = req.body;
+
+    if (!gpNumber || !rechargeAmount || !transactionNumber) {
+      return res.status(400).json({
+        success: false,
+        message: 'All fields are required'
+      });
+    }
+
+    const fexiloadRequest = new FexiloadRequest({
+      gpNumber,
+      rechargeAmount,
+      transactionNumber,
+      userId: req.user._id,
+      status: 'Pending'
+    });
+
+    await fexiloadRequest.save();
+
+    // Simulate WhatsApp message to helpline
+    const whatsappMessage = `
+New Fexiload Request Received!
+-----------------------------
+User ID: ${req.user._id}
+User Email: ${req.user.email}
+User Phone: ${req.user.phone}
+GP/Skitto Number: ${fexiloadRequest.gpNumber}
+Recharge Amount/Offer: ${fexiloadRequest.rechargeAmount}
+TRX ID: ${fexiloadRequest.transactionNumber}
+Status: ${fexiloadRequest.status}
+Timestamp: ${new Date(fexiloadRequest.createdAt).toLocaleString()}
+`;
+    console.log('Simulating WhatsApp message to helpline for Fexiload:');
+    console.log(whatsappMessage);
+
+    // WebSocket notification to admin
+    wss.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({
+          type: 'new-fexiload-request',
+          fexiloadRequest: {
+            _id: fexiloadRequest._id,
+            gpNumber: fexiloadRequest.gpNumber,
+            rechargeAmount: fexiloadRequest.rechargeAmount,
+            transactionNumber: fexiloadRequest.transactionNumber,
+            status: fexiloadRequest.status,
+            createdAt: fexiloadRequest.createdAt,
+            user: {
+              _id: req.user._id,
+              email: req.user.email,
+              phone: req.user.phone
+            }
+          }
+        }));
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Fexiload request submitted successfully',
+      fexiloadRequest
+    });
+
+  } catch (error) {
+    console.error('Fexiload request error:', error);
+    let message = 'Failed to process Fexiload request';
+    if (error.code === 11000) message = 'Duplicate transaction ID';
+    res.status(500).json({
+      success: false,
+      message
+    });
+  }
+});
+
+
 // ======================
 // Admin Routes
 // ======================
