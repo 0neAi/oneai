@@ -1460,3 +1460,370 @@ body {
             color: #88cc88;
             line-height: 1.6;
         }
+/* CSS from tracker.html */
+.hidden {
+  display: none !important;
+}
+/* Global styles from oneai-main/index.html for background animation */
+body {
+    background: #000;
+    color: #00FF41;
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Main content container with improved visibility */
+#main-content {
+  position: relative;
+  z-index: 10;
+  background: rgba(5, 15, 5, 0.85);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 255, 65, 0.3);
+  border-radius: 12px;
+  padding: 30px;
+  margin: 30px auto;
+  max-width: 900px;
+  box-shadow: 0 0 30px rgba(0, 255, 65, 0.1);
+}
+
+/* Header styling */
+header {
+  text-align: center;
+  padding: 20px;
+  margin-bottom: 30px;
+  border-bottom: 1px solid rgba(0, 255, 65, 0.3);
+}
+
+header h1 {
+  font-size: 2.5rem;
+  color: #00FF41;
+  text-shadow: 0 0 10px rgba(0, 255, 65, 0.7);
+  margin-bottom: 10px;
+}
+
+header h3 {
+  font-size: 1.5rem;
+  color: #aaffaa;
+  margin-bottom: 10px;
+}
+
+header p {
+  color: #88cc88;
+  line-height: 1.6;
+}
+
+/* Section styling */
+section {
+  margin-bottom: 30px;
+}
+
+section h3 {
+  color: #00FF41;
+  border-bottom: 1px solid rgba(0, 255, 65, 0.3);
+  padding-bottom: 10px;
+  margin-bottom: 20px;
+}
+
+/* Form elements styling for better visibility */
+.form-group {
+  margin-bottom: 1.5rem;
+  background: rgba(0, 20, 0, 0.7);
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 255, 65, 0.2);
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #aaffaa;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid rgba(0, 255, 65, 0.3);
+  background: rgba(0, 10, 0, 0.5);
+  border-radius: 6px;
+  color: #00FF41;
+  font-size: 16px;
+  transition: all 0.3s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #00FF41;
+  box-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
+}
+
+.form-group input::placeholder {
+  color: #66aa66;
+}
+
+/* Button styling */
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.form-actions button {
+  flex: 1;
+  padding: 14px;
+  border: none;
+  border-radius: 6px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.button.primary {
+  background: linear-gradient(to right, #006600, #00AA00);
+  color: white;
+}
+
+.button.primary:hover {
+  background: linear-gradient(to right, #00AA00, #00FF00);
+  box-shadow: 0 0 15px rgba(0, 255, 65, 0.4);
+}
+
+.button {
+  background: rgba(0, 40, 0, 0.7);
+  border: 1px solid rgba(0, 255, 65, 0.3);
+  color: #00FF41;
+}
+
+.button:hover {
+  background: rgba(0, 60, 0, 0.7);
+  border-color: #00FF41;
+  box-shadow: 0 0 15px rgba(0, 255, 65, 0.3);
+}
+
+/* Terms checkbox styling */
+.terms-container {
+  background: rgba(80, 0, 0, 0.3);
+  border: 1px solid rgba(255, 0, 0, 0.5);
+  border-radius: 8px;
+  padding: 15px;
+  margin-top: 1.5rem;
+}
+
+.terms-container label {
+  color: #ffaaaa;
+  font-size: 0.9em;
+}
+
+/* Payment info boxes */
+.payment-info {
+  background: rgba(0, 30, 0, 0.7);
+  border: 1px solid rgba(0, 255, 65, 0.3);
+  border-radius: 8px;
+  padding: 15px;
+  margin-top: 15px;
+}
+
+.payment-info small {
+  color: #88cc88;
+}
+
+.copy-btn {
+  background: rgba(0, 60, 0, 0.5);
+  border: 1px solid rgba(0, 255, 65, 0.3);
+  color: #00FF41;
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  margin-left: 5px;
+}
+
+.copy-btn:hover {
+  background: rgba(0, 80, 0, 0.5);
+}
+
+/* Service boxes styling */
+.source-type-options, .data-needed-options-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.service-box {
+  background-color: rgba(42, 42, 74, 0.8);
+  color: #fff;
+  padding: 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 2px solid #4a4a7a;
+  transition: all 0.3s ease;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 90px;
+}
+
+.service-box:hover {
+  border-color: #6a6ad0;
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.service-box.selected {
+  background-color: rgba(26, 90, 58, 0.9);
+  border-color: #00ff41;
+  box-shadow: 0 0 20px rgba(0, 255, 65, 0.5);
+}
+
+.service-box input[type="radio"],
+.service-box input[type="checkbox"] {
+  display: none;
+}
+
+.service-box label {
+  cursor: pointer;
+  font-weight: bold;
+  margin-bottom: 5px;
+  font-size: 1.1em;
+  color: #fff;
+}
+
+.service-box .price {
+  font-size: 0.9em;
+  color: #b0e0b0;
+}
+
+/* Alert messages */
+.alert-success {
+  background-color: rgba(0, 80, 0, 0.5);
+  color: #aaffaa;
+  padding: 15px;
+  border-radius: 8px;
+  margin: 15px 0;
+  border: 1px solid rgba(0, 255, 65, 0.3);
+}
+
+.alert-error {
+  background-color: rgba(80, 0, 0, 0.5);
+  color: #ffaaaa;
+  padding: 15px;
+  border-radius: 8px;
+  margin: 15px 0;
+  border: 1px solid rgba(255, 65, 65, 0.3);
+}
+
+/* Footer text */
+footer {
+  text-align: center;
+  padding: 20px;
+  margin-top: 40px;
+  color: #66aa66;
+  font-size: 0.9rem;
+}
+
+/* Background image styles */
+#bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -2;
+}
+
+#bg div {
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  height: 100%;
+  left: 0;
+  opacity: 0;
+  position: absolute;
+  top: 0;
+  width: 100%;
+  transition: opacity 1.5s ease-in-out;
+  visibility: hidden;
+}
+
+#bg div.visible {
+  opacity: 0.4;
+  visibility: visible;
+  z-index: 1;
+}
+
+#bg div.visible.top {
+  z-index: 2;
+}
+
+#bg .bg1 { background-image: url("./images/bg01.jpg"); }
+#bg .bg2 { background-image: url("./images/bg02.jpg"); }
+#bg .bg3 { background-image: url("./images/bg03.jpg"); }
+
+/* Navbar Styling */
+.navbar {
+    background: rgba(5, 15, 5, 0.9);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(0, 255, 65, 0.3);
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 10px rgba(0, 255, 65, 0.1);
+}
+
+.navbar .logo {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #00FF41;
+    text-decoration: none;
+    text-shadow: 0 0 5px rgba(0, 255, 65, 0.5);
+}
+
+.navbar-links a {
+    color: #aaffaa;
+    text-decoration: none;
+    margin-left: 25px;
+    font-size: 1.1rem;
+    transition: color 0.3s ease;
+}
+
+.navbar-links a:hover {
+    color: #00FF41;
+    text-shadow: 0 0 8px rgba(0, 255, 65, 0.7);
+}
+
+/* Responsive Adjustments */
+@media screen and (max-width: 768px) {
+  #main-content {
+    margin: 15px;
+    padding: 20px;
+  }
+  
+  header h1 {
+    font-size: 2rem;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+  }
+  
+  .source-type-options, .data-needed-options-grid {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  }
+  
+  .navbar-links {
+    display: none;
+  }
+}
