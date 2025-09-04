@@ -979,27 +979,35 @@ async function refreshPayments() {
         });
         
         if (!response.ok) {
-            // Check for authentication errors (e.g., token expired, invalid token)
+            let errorMessage = 'Failed to fetch payments.';
             if (response.status === 401 || response.status === 403) {
-                console.error('Authentication error during payment refresh. Clearing localStorage and redirecting to login.');
-                localStorage.clear();
-                window.location.href = 'index.html';
-                return; // Stop further execution
+                errorMessage = 'Session expired or invalid. Please log in again.';
+            } else if (response.status >= 500) {
+                errorMessage = 'Server error. Please try again later.';
             }
-            throw new Error('Failed to fetch payments');
+
+            showError(errorMessage); // Show the error message immediately
+
+            // For any non-OK response, clear localStorage and redirect to login
+            localStorage.clear();
+            window.location.href = 'index.html';
+            return; // Stop further execution
         }
-        
+
         const data = await response.json();
         paymentState.payments = data.payments || [];
-        
+
         renderAllPayments();
         updateStats();
         togglePaymentSections();
-        
+
         showSuccess('Payments refreshed successfully');
     } catch (error) {
-        console.error('Payment refresh error:', error);
-        showError(error.message || 'Failed to refresh payments');
+        // This catch block will now primarily handle network errors or issues with response.json()
+        console.error('Payment refresh network/parsing error:', error);
+        showError('Network error or invalid data. Please try again.');
+        localStorage.clear(); // Clear token on network/parsing errors too, as session might be bad
+        window.location.href = 'index.html';
     } finally {
         loadingOverlay.style.display = 'none';
     }
@@ -1295,9 +1303,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (error) {
         console.error('Initialization error:', error);
         showError('Failed to load dashboard data');
-        setTimeout(() => {
-            window.location.href = 'index.html';
-        }, 3000);
     } finally {
         loadingOverlay.style.display = 'none';
     }
