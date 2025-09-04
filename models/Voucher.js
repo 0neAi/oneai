@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 
 const voucherSchema = new mongoose.Schema({
     phone: { type: String, required: true },
@@ -19,4 +19,4 @@ const voucherSchema = new mongoose.Schema({
 
 const Voucher = mongoose.model('Voucher', voucherSchema);
 
-export default Voucher;
+module.exports = Voucher;
