@@ -645,7 +645,12 @@
                 if (!validateResponse.ok) {
                     if (validateData.message === 'Authentication failed: User not approved') {
                         window.location.href = 'waiting-for-approval.html';
-                    } else {
+                    } else if (validateData.message && validateData.message.includes('jwt expired')) {
+                        // Token expired, but don't clear localStorage or redirect immediately.
+                        // Allow the DOMContentLoaded script to handle it, which will trigger a refresh or re-login.
+                        console.warn('JWT expired during initial validation. Allowing page to load for re-authentication.');
+                    }
+                    else {
                         localStorage.clear();
                         window.location.href = 'index.html';
                     }
@@ -974,6 +979,13 @@ async function refreshPayments() {
         });
         
         if (!response.ok) {
+            // Check for authentication errors (e.g., token expired, invalid token)
+            if (response.status === 401 || response.status === 403) {
+                console.error('Authentication error during payment refresh. Clearing localStorage and redirecting to login.');
+                localStorage.clear();
+                window.location.href = 'index.html';
+                return; // Stop further execution
+            }
             throw new Error('Failed to fetch payments');
         }
         
