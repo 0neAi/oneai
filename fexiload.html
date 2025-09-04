@@ -1,8 +1,8 @@
 <!DOCTYPE HTML>
-<html lang="en">
+<html lang="bn">
 <head>
   <meta charset="utf-8" />
-  <title>1ai Fexiload Service</title>
+  <title>ওয়ানএআই ফ্লেক্সিলোড সার্ভিস</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
   <link rel="stylesheet" href="./assets/css/main.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -35,7 +35,7 @@
     color: red;
     padding: 10px;
     background: #ffebee;
-    border-radius: 4px;
+    border-radius: 44px;
     margin: 10px 0;
   }
   .form-group {
@@ -58,51 +58,72 @@
     text-align: center;
     font-weight: bold;
   }
+  .cashback-info {
+    font-size: 0.9em;
+    color: #1cc88a; /* Green color for success/cashback */
+    margin-left: 10px;
+  }
 </style>
 </head>
 <body class="is-preload">
   <div id="bg"></div>
-  <h1>One Ai Fexiload Service</h1>
+  <h1>ওয়ানএআই ফ্লেক্সিলোড সার্ভিস</h1>
 
   <header id="header">
-    <h3>Mobile Recharge Service</h3>
+    <h3>মোবাইল রিচার্জ সার্ভিস</h3>
     <p>আপনার গ্রামীণফোন/স্কিটো নম্বরে রিচার্জ করুন।</p>
   </header>
 
   <section>
-    <h3>INPUT DATA</h3>
+    <h3>তথ্য দিন</h3>
     <form id="fexiload-form">
       <div class="form-group">
-        <label for="gpNumber">GP/Skitto Number:</label>
+        <label for="gpNumber">জিপি/স্কিটো নম্বর:</label>
         <input type="tel" id="gpNumber" name="gpNumber" required 
                pattern="01[7-9]\d{8}" 
-               title="11-digit Grameenphone/Skitto number (017, 018, 019)" placeholder="01XXXXXXXXX">
+               title="১১-সংখ্যার গ্রামীণফোন/স্কিটো নম্বর (০১৭, ০১৮, ০১৯)" placeholder="০১৭XXXXXXXX">
       </div>
 
       <div class="form-group">
-        <label for="rechargeAmount">Recharge Amount / Offer:</label>
-        <input type="text" id="rechargeAmount" name="rechargeAmount" required placeholder="e.g., 200 BDT or 1GB 30 Days">
+        <label for="rechargeAmount">রিচার্জের পরিমাণ:</label>
+        <input type="number" id="rechargeAmount" name="rechargeAmount" required 
+               min="1" placeholder="রিচার্জের পরিমাণ লিখুন" 
+               oninput="calculateRetailCharge()">
       </div>
 
       <div class="form-group">
-        <label for="transactionNumber">Transaction Number (TRX ID):</label>
-        <input type="text" id="transactionNumber" name="transactionNumber" required minlength="8" placeholder="Your payment TRX ID">
+        <label for="retailCharge">রিটেইল চার্জ / পেমেন্ট চার্জ:</label>
+        <input type="text" id="retailCharge" name="retailCharge" readonly required>
       </div>
 
       <div class="form-group">
-        <input type="checkbox" id="terms-checkbox" name="terms" style="margin-right: 0.5rem;">
-        <label for="terms-checkbox" style="display: inline-block; font-size: 0.9em; color: red; background-color: black; padding: 10px; border-radius: 5px; border: 1px solid red;">আমি উক্ত সার্ভিস গ্রহণের জন্য অনুরোধ করছি
-          এবং এই সকল পরিবর্তনের সম্পুর্ন দায়ভার আমি গ্রহণ করছি। ওয়ানএআই ইন্টিলিজেন্স আমার অনুরোধকৃত পরিবর্তন সমূহের জন্য কোন ভাবেই দায়ীনয়।ভবিষ্যতে কোন ধরণের ইনকোয়েরি তে আমি এর দায়ভার সম্পুর্ণ নিজে বহন করার নিশ্চয়তা দিচ্ছি।আমি যদি সার্ভিসের গোপনীয়তা নষ্ট করি ওয়ান এআই আমার গোপনীয়তা
-          রক্ষা করতে বাধ্য থাকবে না তা আমি অবগত থেকে উক্ত সার্ভিস গ্রহণের অনুরোধ জানাচ্ছি। উক্ত শর্তে রাজি থাকলে চেকবক্সে টিক দিন। </label>
+        <label for="method">পেমেন্ট গেটওয়ে:</label>
+        <select id="method" name="method" required onchange="updatePaymentDisplay()">
+          <option value="">আপনার পেমেন্ট সার্ভিস সিলেক্ট করুনঃ</option>
+          <option value="Bkash">বিকাশ সেন্ডমানি: 01770605072</option>
+          <option value="Nagad">নগদ সেন্ডমানি: 01923002231</option>
+        </select>
+      </div>
+      <div id="nagad-payment-info" class="payment-info hidden">
+        <small>রিচার্জ নিশ্চিত করতে রিটেইল চার্জ অগ্রিম পরিশোধ করুন</small><br>
+        <small>নগদ পার্সোনাল(sendmoney): <span id="nagad-number">01923002231</span> <button type="button" class="copy-btn" data-target="nagad-number"><i class="fas fa-copy"></i></button></small><br>
+      </div>
+      <div id="bkash-payment-info" class="payment-info hidden">
+        <small>রিচার্জ নিশ্চিত করতে রিটেইল চার্জ অগ্রিম পরিশোধ করুন</small><br>
+        <small>বিকাশ পার্সোনাল(sendmoney): <span id="bkash-number">01770605072</span> <button type="button" class="copy-btn" data-target="bkash-number"><i class="fas fa-copy"></i></button></small><br>
+      </div>
+      <div class="form-group">
+        <label for="transactionNumber">TRX ID: (পেমেন্ট সম্পন্ন করে ট্রান্সেকশান আইডি উল্লেখ করে পেমেন্ট কনফার্ম করুন)</label>
+        <input type="text" id="transactionNumber" name="transactionNumber" required minlength="8" placeholder="আপনার পেমেন্ট TRX ID">
       </div>
 
       <div class="form-actions">
-        <button type="submit" class="button primary" id="submit-fexiload-button" disabled>Submit Recharge Request</button>
-        <button type="button" class="button" onclick="clearForm()">Clear Form</button>
+        <button type="submit" class="button primary" id="submit-fexiload-button">সাবমিট রিচার্জ রিকোয়েস্ট</button>
+        <button type="button" class="button" onclick="clearForm()">ফর্ম ক্লিয়ার করুন</button>
       </div>
       
       <div class="warning-message">
-        <i class="fas fa-exclamation-triangle"></i> Maximum 30 minutes will be taken to success the recharge.
+        <i class="fas fa-exclamation-triangle"></i> রিচার্জ সফল হতে সর্বোচ্চ ৩০ মিনিট সময় লাগবে।
       </div>
 
       <div id="confirmation-message" style="margin-top: 20px;"></div>
@@ -128,11 +149,53 @@
     }
 
     function clearForm() {
-      if (confirm('Are you sure you want to clear the form?')) {
+      if (confirm('আপনি কি নিশ্চিত যে আপনি ফর্মটি ক্লিয়ার করতে চান?')) {
         document.getElementById('fexiload-form').reset();
-        document.getElementById('submit-fexiload-button').disabled = true;
+        document.getElementById('retailCharge').value = ''; // Clear retail charge
         document.getElementById('confirmation-message').innerHTML = '';
       }
+    }
+
+    function calculateRetailCharge() {
+      const rechargeAmount = parseFloat(document.getElementById('rechargeAmount').value);
+      if (isNaN(rechargeAmount) || rechargeAmount <= 0) {
+        document.getElementById('retailCharge').value = '';
+        return;
+      }
+      const cashback = rechargeAmount * 0.10; // 10% cashback
+      const retailCharge = rechargeAmount - cashback;
+      document.getElementById('retailCharge').value = retailCharge.toFixed(2) + ' টাকা';
+      updatePaymentDisplay(); // Call this to update payment info based on new retail charge
+    }
+
+    // New function to update payment display based on method
+    function updatePaymentDisplay() {
+        const method = document.getElementById('method').value;
+        const nagadInfo = document.getElementById('nagad-payment-info');
+        const bkashInfo = document.getElementById('bkash-payment-info');
+
+        if (method === 'Nagad') {
+            nagadInfo.classList.remove('hidden');
+            bkashInfo.classList.add('hidden');
+        } else if (method === 'Bkash') {
+            nagadInfo.classList.add('hidden');
+            bkashInfo.classList.remove('hidden');
+        } else {
+            nagadInfo.classList.add('hidden'); // Hide all if no method selected
+            bkashInfo.classList.add('hidden');
+        }
+    }
+
+    // Function to copy text to clipboard
+    function copyToClipboard(elementId) {
+        const element = document.getElementById(elementId);
+        const textToCopy = element.textContent;
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            showMessage('Copied to clipboard!', 'success');
+        }).catch(err => {
+            console.error('Failed to copy: ', err);
+            showMessage('Failed to copy to clipboard.', 'error');
+        });
     }
 
     document.getElementById('fexiload-form').addEventListener('submit', async (e) => {
@@ -145,7 +208,7 @@
         const tokenExp = localStorage.getItem('tokenExp');
 
         if (!authToken || !userID || !tokenExp || Date.now() > parseInt(tokenExp)) {
-          showMessage('Session expired or invalid. Please log in again.', 'error');
+          showMessage('সেশন শেষ হয়ে গেছে অথবা অবৈধ। অনুগ্রহ করে আবার লগইন করুন।', 'error');
           localStorage.clear();
           setTimeout(() => { window.location.href = 'index.html'; }, 1500);
           return;
@@ -158,22 +221,29 @@
         const gpNumber = document.getElementById('gpNumber').value.trim();
         const rechargeAmount = document.getElementById('rechargeAmount').value.trim();
         const transactionNumber = document.getElementById('transactionNumber').value.trim();
+        const retailCharge = document.getElementById('retailCharge').value.trim();
+        const method = document.getElementById('method').value; // Get selected payment method
 
         if (!validateGpNumber(gpNumber)) {
-          throw new Error('Invalid GP/Skitto number format.');
+          throw new Error('অবৈধ জিপি/স্কিটো নম্বর ফরম্যাট।');
         }
         if (!rechargeAmount) {
-          throw new Error('Recharge amount or offer is required.');
+          throw new Error('রিচার্জের পরিমাণ বা অফার নির্বাচন করা আবশ্যক।');
+        }
+        if (!method) { // Validate payment method selection
+          throw new Error('পেমেন্ট সার্ভিস নির্বাচন করা আবশ্যক।');
         }
         if (transactionNumber.length < 8) {
-          throw new Error('Transaction number (TRX ID) must be at least 8 characters.');
+          throw new Error('ট্রানজেকশন নম্বর (TRX ID) কমপক্ষে ৮ অক্ষরের হতে হবে।');
         }
 
         const formData = {
           gpNumber,
           rechargeAmount,
           transactionNumber,
-          userId: userID // Include userId for backend association
+          retailCharge,
+          method, // Include payment method in form data
+          userId: userID
         };
 
         const response = await fetch('https://oneai-wjox.onrender.com/fexiload-request', {
@@ -190,23 +260,25 @@
         
         if (response.ok) {
           const whatsappMessage = `
-New Fexiload Request:
-User ID: ${userID}
-GP/Skitto Number: ${formData.gpNumber}
-Recharge Amount/Offer: ${formData.rechargeAmount}
-Transaction Number (TRX ID): ${formData.transactionNumber}
+নতুন ফ্লেক্সিলোড রিকোয়েস্ট:
+ইউজার আইডি: ${userID}
+জিপি/স্কিটো নম্বর: ${formData.gpNumber}
+রিচার্জের পরিমাণ/অফার: ${formData.rechargeAmount}
+পেমেন্ট মেথড: ${formData.method}
+ট্রানজেকশন নম্বর (TRX ID): ${formData.transactionNumber}
+রিটেইল চার্জ: ${formData.retailCharge}
 `.trim();
 
           window.open(`https://wa.me/8801568760780?text=${encodeURIComponent(whatsappMessage)}`, '_blank');
 
-          showMessage('Fexiload request submitted successfully! Please wait up to 30 minutes for recharge.', 'success');
+          showMessage('ফ্লেক্সিলোড রিকোয়েস্ট সফলভাবে সাবমিট করা হয়েছে! রিচার্জ হতে সর্বোচ্চ ৩০ মিনিট সময় লাগতে পারে।', 'success');
           setTimeout(() => window.location.href = 'dashboard.html', 3000);
         } else {
-          showMessage(responseData.message || 'Fexiload request failed.', 'error');
+          showMessage(responseData.message || 'ফ্লেক্সিলোড রিকোয়েস্ট ব্যর্থ হয়েছে।', 'error');
         }
       } catch (error) {
-        console.error('Fexiload submission error:', error);
-        showMessage(error.message || 'An unexpected error occurred.', 'error');
+        console.error('ফ্লেক্সিলোড সাবমিশন ত্রুটি:', error);
+        showMessage(error.message || 'একটি অপ্রত্যাশিত ত্রুটি ঘটেছে।', 'error');
       } finally {
         isSubmitting = false;
         loadingOverlay.style.display = 'none';
@@ -214,8 +286,14 @@ Transaction Number (TRX ID): ${formData.transactionNumber}
     });
 
     document.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('terms-checkbox').addEventListener('change', function() {
-        document.getElementById('submit-fexiload-button').disabled = !this.checked;
+      // Initial calculation on load if an amount is pre-selected (e.g., by browser autofill)
+      calculateRetailCharge();
+      // Add event listener for copy buttons
+      document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('copy-btn') || e.target.closest('.copy-btn')) {
+            const targetId = e.target.closest('.copy-btn').getAttribute('data-target');
+            copyToClipboard(targetId);
+        }
       });
     });
   </script>
