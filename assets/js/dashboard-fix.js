@@ -308,50 +308,77 @@ function connectWebSocket() {
 }
 
 async function refreshFexiloadRequests() {
-    const loadingOverlay = document.querySelector('.loading-overlay'); // Re-select to be safe
-    console.log('refreshFexiloadRequests: Starting.');
-    try {
-        // No need to show overlay here, DOMContentLoaded handles it
+  try {
+    const authToken = localStorage.getItem('authToken');
+    const userID = localStorage.getItem('userID');
 
-        Object.values(paymentState.fexiloadTimers).forEach(timer => clearInterval(timer));
-        paymentState.fexiloadTimers = {};
+    const response = await fetch('https://oneai-wjox.onrender.com/fexiload-requests/user', {
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+        'X-User-ID': userID
+      }
+    });
 
-        const authToken = localStorage.getItem('authToken');
-        const userID = localStorage.getItem('userID');
-
-        const response = await fetch('https://oneai-wjox.onrender.com/fexiload-requests/user', {
-            headers: {
-                'Authorization': `Bearer ${authToken}`,
-                'X-User-ID': userID
-            }
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to fetch fexiload requests');
-        }
-
-        const data = await response.json();
-        paymentState.fexiloadRequests = data.fexiloadRequests || [];
-
-        renderAllFexiloadRequests();
-        toggleFexiloadSections(); // Ensure this is called to show/hide section
-
-        showSuccess('Fexiload requests refreshed successfully');
-        console.log('refreshFexiloadRequests: Completed successfully.');
-    } catch (error) {
-        console.error('refreshFexiloadRequests: Error:', error);
-        showError(error.message || 'Failed to refresh fexiload requests');
-    } finally {
-        // Only hide if this function was responsible for showing it, or if it's the last one.
-        // For now, let DOMContentLoaded handle the final hide.
-        // If this function is called independently, it should hide it.
-        // For now, I'll keep the hide here as a safeguard.
-        if (loadingOverlay) {
-            // loadingOverlay.style.display = 'none'; // Commenting out to let DOMContentLoaded handle it
-            console.log('refreshFexiloadRequests: Finally block executed.');
-        }
+    if (!response.ok) {
+      throw new Error('Failed to fetch fexiload requests');
     }
+
+    const data = await response.json();
+    paymentState.fexiloadRequests = data.fexiloadRequests || [];
+    renderAllFexiloadRequests();
+    toggleFexiloadSections();
+  } catch (error) {
+    console.error('Fexiload refresh error:', error);
+  }
+}
+
+function renderAllFexiloadRequests() {
+  const tbody = document.getElementById('fexiload-requests-table-body');
+  tbody.innerHTML = '';
+
+  if (paymentState.fexiloadRequests.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center">No flexiload requests found.</td></tr>';
+    return;
+  }
+
+  paymentState.fexiloadRequests.forEach(request => {
+    const row = tbody.insertRow();
+    row.innerHTML = `
+      <td>${request.gpNumber}</td>
+      <td>${request.rechargeAmount}</td>
+      <td><span class="status ${request.status.toLowerCase()}">${request.status}</span></td>
+      <td>${new Date(request.createdAt).toLocaleString()}</td>
+    `;
+  });
+}
+
+function toggleFexiloadSections() {
+  const section = document.getElementById('fexiload-requests-section');
+  if (paymentState.fexiloadRequests.length > 0) {
+    section.style.display = 'block';
+  } else {
+    section.style.display = 'none';
+  }
+}
+
+function addNewFexiloadRequest(newRequest) {
+  paymentState.fexiloadRequests.unshift(newRequest);
+  renderAllFexiloadRequests();
+  toggleFexiloadSections();
+  showSuccess(`New flexiload request received: ${newRequest.gpNumber}`);
+}
+
+function updateFexiloadRequestStatus(updatedRequest) {
+  const index = paymentState.fexiloadRequests.findIndex(req => req._id === updatedRequest._id);
+  if (index !== -1) {
+    paymentState.fexiloadRequests[index] = updatedRequest;
+    renderAllFexiloadRequests();
+    showSuccess(`Flexiload request ${updatedRequest.gpNumber} updated to ${updatedRequest.status}`);
+  }
+}
+
+function handleFexiloadCompletion(completedRequest) {
+  showSuccess(`Flexiload request for ${completedRequest.gpNumber} completed!`);
 }
 
 // New functions for Location Tracker Requests
