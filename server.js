@@ -1,10 +1,3 @@
-import express from 'express';
-import mongoose from 'mongoose';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
-import cors from 'cors';
-import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
 const express = require('express');
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
@@ -23,17 +16,6 @@ const dotenv = require('dotenv');
 const http = require('http');
 const webpush = require('web-push');
 const path = require('path');
-import { adminAuth } from './middleware/auth.js';
-import Payment from './models/Payment.js';
-import User from './models/User.js';
-import Admin from './models/Admin.js';
-import PremiumService from './models/PremiumService.js';
-import FexiloadRequest from './models/FexiloadRequest.js';
-import dotenv from 'dotenv';
-import http from 'http';
-import webpush from 'web-push';
-import path from 'path';
-import { fileURLToPath } from 'url'
 
 dotenv.config();
 
