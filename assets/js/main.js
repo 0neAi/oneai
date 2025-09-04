@@ -114,8 +114,14 @@
 
   // Signup Form Handler (Connected to Backend)
   (function() {
-    var $form = document.querySelector('#signup-form'),
-        $submit = document.querySelector('#signup-form input[type="submit"]'),
+    var $form = document.querySelector('#signup-form');
+
+    // Only proceed if the form exists on the page
+    if (!$form) {
+      return;
+    }
+
+    var $submit = document.querySelector('#signup-form input[type="submit"]'),
         $message;
 
     if (!('addEventListener' in $form))
@@ -276,8 +282,8 @@ async function checkAllVouchers() {
     const data = await response.json();
     
     if (response.ok) {
-      displayUserReports(data.reports);
-      updateVoucherDisplay(data.reports);
+      displayUserReports(data.reports || {});
+      updateVoucherDisplay(data.reports || {});
       showConfirmation("রিপোর্ট স্ট্যাটাস আপডেট করা হয়েছে", true);
     } else {
       showConfirmation(data.message, false);
@@ -341,8 +347,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const response = await fetch(`https://oneai-wjox.onrender.com/user-reports/${userPhone}`);
     if (response.ok) {
       const data = await response.json();
-      displayUserReports(data.reports);
-      updateVoucherDisplay(data.reports);
+      displayUserReports(data.reports || {});
+      updateVoucherDisplay(data.reports || {});
     }
   }
   
@@ -357,9 +363,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Load and display stored voucher codes on page load (issue voucher)
   const storedIssueVoucherCode = localStorage.getItem('issueVoucherCode');
   const storedIssueVoucherExpiry = localStorage.getItem('issueVoucherExpiry');
-  if (storedIssueVoucherCode && storedIssueVoucherExpiry && Date.now() < parseInt(storedIssueVoucherExpiry)) {
-    document.getElementById('issue-voucher-code').textContent = storedIssueVoucherCode;
-    document.getElementById('issue-voucher-container').style.display = 'block';
+  const issueVoucherCodeElement = document.getElementById('issue-voucher-code');
+  const issueVoucherContainer = document.getElementById('issue-voucher-container');
+
+  if (storedIssueVoucherCode && storedIssueVoucherExpiry && Date.now() < parseInt(storedIssueVoucherExpiry) && issueVoucherCodeElement && issueVoucherContainer) {
+    issueVoucherCodeElement.textContent = storedIssueVoucherCode;
+    issueVoucherContainer.style.display = 'block';
     startVoucherCountdown('issue');
   } else if (storedIssueVoucherCode) {
     // Clear expired voucher
