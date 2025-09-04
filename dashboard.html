@@ -995,7 +995,9 @@ async function refreshPayments() {
             return; // Stop further execution
         }
 
-        const data = await response.json();
+        const rawResponseText = await response.text();
+        console.log('Raw response from /api/payments/my-payments:', rawResponseText);
+        const data = JSON.parse(rawResponseText);
         paymentState.payments = data.payments || [];
 
         renderAllPayments();
@@ -1004,10 +1006,21 @@ async function refreshPayments() {
 
         showSuccess('Payments refreshed successfully');
     } catch (error) {
-        // This catch block will now primarily handle network errors or issues with response.json()
-        console.error('Payment refresh network/parsing error:', error);
-        showError('Network error or invalid data. Please try again.');
-        localStorage.clear(); // Clear token on network/parsing errors too, as session might be bad
+        console.error('Payment refresh error:', error); // Log the full error object
+        let errorMessage = 'An unexpected error occurred. Please try again.';
+
+        if (error instanceof TypeError) {
+            if (error.message.includes('NetworkError')) {
+                errorMessage = 'Network error. Please check your connection.';
+            } else {
+                errorMessage = 'Invalid data received from server. Please try again.'; // Likely JSON parsing error
+            }
+        } else if (error instanceof SyntaxError) {
+            errorMessage = 'Invalid JSON received from server. Please try again.';
+        }
+
+        showError(errorMessage);
+        localStorage.clear();
         window.location.href = 'index.html';
     } finally {
         loadingOverlay.style.display = 'none';
