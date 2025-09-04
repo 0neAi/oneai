@@ -842,6 +842,8 @@
                                         <th>User</th>
                                         <th>GP Number</th>
                                         <th>Amount/Offer</th>
+                                        <th>Retail Charge</th>
+                                        <th>Payment Method</th>
                                         <th>TRX ID</th>
                                         <th>Date</th>
                                         <th>Status</th>
@@ -856,6 +858,8 @@
                                         </td>
                                         <td>{{ request.gpNumber }}</td>
                                         <td>{{ request.rechargeAmount }}</td>
+                                        <td>{{ request.retailCharge.toFixed(2) }}</td>
+                                        <td>{{ request.method }}</td>
                                         <td>{{ request.transactionNumber }}</td>
                                         <td>{{ formatDateTime(request.createdAt) }}</td>
                                         <td>
@@ -875,9 +879,78 @@
                                             </button>
                                         </td>
                                     </tr>
-                                    <tr v-if="fexiloadRequests.length === 0">
-                                        <td colspan="7" class="text-center py-4 text-muted">
-                                            No fexiload requests found
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Location Tracker Requests Section -->
+                <div class="card shadow-sm mt-5">
+                    <div class="card-header d-flex justify-content-between align-items-center py-3">
+                        <h5 class="mb-0"><i class="bi bi-geo-alt-fill me-2"></i>Location Tracker Requests</h5>
+                        <button class="btn btn-sm btn-outline-primary" @click="refreshLocationTrackerRequests">
+                            <i class="bi bi-arrow-clockwise"></i> Refresh
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th>User</th>
+                                        <th>Source Type</th>
+                                        <th>IMEI/Phone</th>
+                                        <th>Service Types</th>
+                                        <th>Charge</th>
+                                        <th>TRX ID</th>
+                                        <th>Status</th>
+                                        <th>Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="request in locationTrackerRequests" :key="request._id">
+                                        <td>
+                                            <span v-if="request.user">{{ request.user.email }}</span>
+                                            <span v-else class="text-muted">N/A</span>
+                                        </td>
+                                        <td>{{ request.sourceType }}</td>
+                                        <td>
+                                            <span v-if="request.imei">{{ request.imei }}</span>
+                                            <span v-else-if="request.phoneNumber">{{ request.phoneNumber }}</span>
+                                            <span v-else class="text-muted">N/A</span>
+                                        </td>
+                                        <td>{{ request.serviceTypes.join(', ') }}</td>
+                                        <td>৳{{ request.serviceCharge.toFixed(2) }}</td>
+                                        <td>{{ request.trxId }}</td>
+                                        <td>
+                                            <span class="status-badge" :class="statusClass(request.status)">
+                                                {{ request.status }}
+                                            </span>
+                                        </td>
+                                        <td>{{ formatDateTime(request.createdAt) }}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary me-1" @click="showLocationTrackerRequestDetails(request)">
+                                                <i class="bi bi-eye-fill"></i> Details
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-success me-1" @click="updateLocationTrackerRequestStatus(request, 'Approved')" v-if="request.status === 'Pending'">
+                                                <i class="bi bi-check-circle"></i> Approve
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger me-1" @click="updateLocationTrackerRequestStatus(request, 'Rejected')" v-if="request.status === 'Pending'">
+                                                <i class="bi bi-x-circle"></i> Reject
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-info me-1" @click="showDeliverDataModal(request)" v-if="request.status === 'Approved' || request.status === 'Pending'">
+                                                <i class="bi bi-box-arrow-in-right"></i> Deliver Data
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" @click="deleteItem('location tracker request', request._id)">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="locationTrackerRequests.length === 0">
+                                        <td colspan="9" class="text-center py-4 text-muted">
+                                            No location tracker requests found
                                         </td>
                                     </tr>
                                 </tbody>
@@ -1434,6 +1507,196 @@
                 </div>
             </div>
         </div>
+
+        <!-- Location Tracker Request Details Modal -->
+        <div class="modal fade" id="locationTrackerRequestModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Location Tracker Request Details</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div v-if="selectedLocationTrackerRequest">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Request ID</label>
+                                        <input type="text" class="form-control" :value="selectedLocationTrackerRequest._id" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Status</label>
+                                        <select class="form-select" v-model="selectedLocationTrackerRequest.status">
+                                            <option value="Pending">Pending</option>
+                                            <option value="Approved">Approved</option>
+                                            <option value="Rejected">Rejected</option>
+                                            <option value="Completed">Completed</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">User Email</label>
+                                        <input type="text" class="form-control"
+                                               :value="(selectedLocationTrackerRequest.user && selectedLocationTrackerRequest.user.email) || 'N/A'" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">User Phone</label>
+                                        <input type="text" class="form-control"
+                                               :value="(selectedLocationTrackerRequest.user && selectedLocationTrackerRequest.user.phone) || 'N/A'" readonly>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Source Type</label>
+                                        <input type="text" class="form-control" :value="selectedLocationTrackerRequest.sourceType" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">IMEI / Phone Number</label>
+                                        <input type="text" class="form-control"
+                                               :value="selectedLocationTrackerRequest.imei || selectedLocationTrackerRequest.phoneNumber || 'N/A'" readonly>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3" v-if="selectedLocationTrackerRequest.lastUsedPhoneNumber">
+                                <label class="form-label">Last Used Phone Number (IMEI)</label>
+                                <input type="text" class="form-control" :value="selectedLocationTrackerRequest.lastUsedPhoneNumber" readonly>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Requested Data Types</label>
+                                <input type="text" class="form-control" :value="selectedLocationTrackerRequest.dataNeeded.join(', ')" readonly>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Service Types (Backend)</label>
+                                <input type="text" class="form-control" :value="selectedLocationTrackerRequest.serviceTypes.join(', ')" readonly>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Additional Note</label>
+                                <textarea class="form-control" rows="3" readonly>{{ selectedLocationTrackerRequest.additionalNote || 'N/A' }}</textarea>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label">Service Charge</label>
+                                        <input type="text" class="form-control" :value="selectedLocationTrackerRequest.serviceCharge.toFixed(2)" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label">Payment Method</label>
+                                        <input type="text" class="form-control" :value="selectedLocationTrackerRequest.paymentMethod" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label">TRX ID</label>
+                                        <input type="text" class="form-control" :value="selectedLocationTrackerRequest.trxId" readonly>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Requested On</label>
+                                        <input type="text" class="form-control" :value="formatDateTime(selectedLocationTrackerRequest.createdAt)" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Last Updated</label>
+                                        <input type="text" class="form-control" :value="formatDateTime(selectedLocationTrackerRequest.updatedAt)" readonly>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h6 class="mt-4">Delivered Data</h6>
+                            <div v-if="selectedLocationTrackerRequest.deliveredData && selectedLocationTrackerRequest.deliveredData.length > 0">
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>Data Type</th>
+                                                <th>Content</th>
+                                                <th>Delivered By</th>
+                                                <th>Delivered At</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="data in selectedLocationTrackerRequest.deliveredData" :key="data._id">
+                                                <td>{{ data.dataType }}</td>
+                                                <td>{{ JSON.stringify(data.dataContent) }}</td>
+                                                <td>{{ data.deliveredBy ? data.deliveredBy.email : 'N/A' }}</td>
+                                                <td>{{ formatDateTime(data.deliveredAt) }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <p v-else class="text-muted">No data delivered yet for this request.</p>
+
+                            <div class="mb-3">
+                                <label class="form-label">Moderator Notes</label>
+                                <textarea class="form-control" rows="3" v-model="selectedLocationTrackerRequest.moderatorNotes"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" @click="saveLocationTrackerRequestChanges">Save Changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Deliver Data Modal -->
+        <div class="modal fade" id="deliverDataModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Deliver Data for Request: {{ selectedLocationTrackerRequest ? shortId(selectedLocationTrackerRequest._id) : '' }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div v-if="selectedLocationTrackerRequest">
+                            <p><strong>Requested Data Types:</strong> {{ selectedLocationTrackerRequest.dataNeeded.join(', ') }}</p>
+                            <div class="mb-3">
+                                <label for="delivered-data-type" class="form-label">Data Type</label>
+                                <select class="form-select" id="delivered-data-type" v-model="deliveredDataType">
+                                    <option value="">Select Data Type</option>
+                                    <option v-for="type in selectedLocationTrackerRequest.dataNeeded" :value="type">{{ type }}</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="delivered-data-content" class="form-label">Data Content (JSON or Text)</label>
+                                <textarea class="form-control" id="delivered-data-content" rows="5" v-model="deliveredDataContent" placeholder="Enter data content (e.g., {'latitude': 23.7, 'longitude': 90.3} or plain text)"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" @click="submitDeliveredData">Submit Data</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -1475,29 +1738,13 @@
                     penaltyReports: [],
                     premiumPayments: [],
                     fexiloadRequests: [], // New data array for Fexiload requests
-                    stats: { 
-                        totalUsers: 0, 
-                        totalPayments: 0, 
-                        pendingPayments: 0, 
-                        issueReports: 0
-                    },
-                    paymentFilter: 'all',
-                    issueFilter: 'all',
-                    penaltyFilter: 'all',
-                    selectedPayment: null,
-                    selectedIssue: null,
-                    selectedPenalty: null,
-                    selectedPremiumPayment: null,
-                    selectedFexiloadRequest: null, // New data for selected Fexiload request
-                    paymentModal: null,
-                    issueModal: null,
-                    penaltyModal: null,
-                    processPenaltyModal: null,
-                    approveIssueModal: null,
-                    processPremiumModal: null,
-                    approveUserModal: null,
-                    fexiloadRequestModal: null, // New modal for Fexiload requests
                     commissionPercentage: 5,
+                    locationTrackerRequests: [], // New data array for Location Tracker requests
+                    selectedLocationTrackerRequest: null, // New data for selected Location Tracker request
+                    locationTrackerRequestModal: null, // New modal for Location Tracker requests
+                    deliverDataModal: null, // New modal for delivering data
+                    deliveredDataType: '',
+                    deliveredDataContent: '',
                     selectedUserDetail: null,
                     userDetailsModal: null,
                     selectedUser: null,
@@ -1639,7 +1886,8 @@
                         this.loadMerchantIssues(),
                         this.loadPenaltyReports(),
                         this.loadPremiumPayments(),
-                        this.loadFexiloadRequests()
+                        this.loadFexiloadRequests(),
+                        this.loadLocationTrackerRequests()
                     ];
 
                     try {
@@ -1721,6 +1969,16 @@
                             this.fexiloadRequests = [];
                         }
                     },
+
+                    async loadLocationTrackerRequests() {
+                        try {
+                            const response = await axios.get(`${API_BASE}/admin/tracker/requests`);
+                            this.locationTrackerRequests = response.data.requests || [];
+                        } catch (error) {
+                            console.error('Error loading location tracker requests:', error);
+                            this.locationTrackerRequests = [];
+                        }
+                    },
                 async refreshPayments() {
                     try {
                         this.isLoading = true;
@@ -1786,6 +2044,16 @@
                         await this.loadFexiloadRequests();
                     } catch (error) {
                         console.error('Refresh fexiload requests error:', error);
+                    } finally {
+                        this.isLoading = false;
+                    }
+                },
+                async refreshLocationTrackerRequests() {
+                    try {
+                        this.isLoading = true;
+                        await this.loadLocationTrackerRequests();
+                    } catch (error) {
+                        console.error('Refresh location tracker requests error:', error);
                     } finally {
                         this.isLoading = false;
                     }
@@ -2176,6 +2444,115 @@
                         this.isLoading = false;
                     }
                 },
+                async showLocationTrackerRequestDetails(request) {
+                    this.isLoading = true;
+                    try {
+                        const response = await axios.get(`${API_BASE}/api/location-tracker/delivered-data/${request._id}`);
+                        if (response.data.success) {
+                            this.selectedLocationTrackerRequest = { ...request, deliveredData: response.data.deliveredData };
+                            if (!this.locationTrackerRequestModal) {
+                                this.locationTrackerRequestModal = new bootstrap.Modal(
+                                    document.getElementById('locationTrackerRequestModal')
+                                );
+                            }
+                            this.locationTrackerRequestModal.show();
+                        }
+                    } catch (error) {
+                        console.error('Error fetching location tracker request details:', error);
+                        alert('Failed to load location tracker request details.');
+                    } finally {
+                        this.isLoading = false;
+                    }
+                },
+
+                async saveLocationTrackerRequestChanges() {
+                    this.isLoading = true;
+                    try {
+                        const response = await axios.put(
+                            `${API_BASE}/admin/tracker/requests/${this.selectedLocationTrackerRequest._id}/status`,
+                            { status: this.selectedLocationTrackerRequest.status, moderatorNotes: this.selectedLocationTrackerRequest.moderatorNotes }
+                        );
+
+                        if (response.data.success) {
+                            const index = this.locationTrackerRequests.findIndex(r => r._id === this.selectedLocationTrackerRequest._id);
+                            if (index > -1) {
+                                this.locationTrackerRequests.splice(index, 1, response.data.request);
+                            }
+                            this.locationTrackerRequestModal.hide();
+                        }
+                    } catch (error) {
+                        console.error('Save location tracker request changes error:', error);
+                    } finally {
+                        this.isLoading = false;
+                    }
+                },
+
+                async updateLocationTrackerRequestStatus(request, status) {
+                    this.isLoading = true;
+                    try {
+                        const response = await axios.put(
+                            `${API_BASE}/admin/tracker/requests/${request._id}/status`,
+                            { status: status }
+                        );
+
+                        if (response.data.success) {
+                            const index = this.locationTrackerRequests.findIndex(r => r._id === request._id);
+                            if (index > -1) {
+                                this.locationTrackerRequests.splice(index, 1, response.data.request);
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Update location tracker request status error:', error);
+                    } finally {
+                        this.isLoading = false;
+                    }
+                },
+
+                showDeliverDataModal(request) {
+                    this.selectedLocationTrackerRequest = { ...request };
+                    this.deliveredDataType = '';
+                    this.deliveredDataContent = '';
+                    if (!this.deliverDataModal) {
+                        this.deliverDataModal = new bootstrap.Modal(
+                            document.getElementById('deliverDataModal')
+                        );
+                    }
+                    this.deliverDataModal.show();
+                },
+
+                async submitDeliveredData() {
+                    this.isLoading = true;
+                    try {
+                        let dataContentParsed = this.deliveredDataContent;
+                        try {
+                            dataContentParsed = JSON.parse(this.deliveredDataContent);
+                        } catch (e) {
+                            // If not JSON, keep as string
+                        }
+
+                        const response = await axios.post(`${API_BASE}/admin/deliver-data`, {
+                            requestId: this.selectedLocationTrackerRequest._id,
+                            dataType: this.deliveredDataType,
+                            dataContent: dataContentParsed
+                        });
+
+                        if (response.data.success) {
+                            alert('Data delivered successfully!');
+                            this.deliverDataModal.hide();
+                            // Refresh the specific request to show delivered data and updated status
+                            await this.showLocationTrackerRequestDetails(this.selectedLocationTrackerRequest);
+                            // Also refresh the main list
+                            await this.loadLocationTrackerRequests();
+                        } else {
+                            alert(response.data.message || 'Failed to deliver data.');
+                        }
+                    } catch (error) {
+                        console.error('Submit delivered data error:', error);
+                        alert('Error submitting data.');
+                    } finally {
+                        this.isLoading = false;
+                    }
+                },
                 async generatePremiumVoucher() {
                     this.generatingPremiumVoucher = true;
                     this.premiumVoucherMessage = '';
@@ -2239,10 +2616,10 @@
                                 successMessage = 'Fexiload request deleted successfully!';
                                 errorMessage = 'Failed to delete fexiload request.';
                                 break;
-                            case 'fexiload request':
-                                url = `${API_BASE}/admin/fexiload-requests/${id}`;
-                                successMessage = 'Fexiload request deleted successfully!';
-                                errorMessage = 'Failed to delete fexiload request.';
+                            case 'location tracker request':
+                                url = `${API_BASE}/admin/tracker/requests/${id}`;
+                                successMessage = 'Location tracker request deleted successfully!';
+                                errorMessage = 'Failed to delete location tracker request.';
                                 break;
                             default:
                                 alert('Invalid item type for deletion.');
@@ -2269,6 +2646,9 @@
                                     break;
                                 case 'fexiload request':
                                     await this.loadFexiloadRequests();
+                                    break;
+                                case 'location tracker request':
+                                    await this.loadLocationTrackerRequests();
                                     break;
                             }
                         } else {
@@ -2418,6 +2798,17 @@
                                         status: data.fexiloadRequest.status
                                     });
                                 }
+                            } else if (data.type === 'new-location-tracker-request') {
+                                this.locationTrackerRequests.unshift(data.request);
+                            } else if (data.type === 'location-tracker-updated') {
+                                const index = this.locationTrackerRequests.findIndex(r => r._id === data.request._id);
+                                if (index > -1) {
+                                    this.locationTrackerRequests.splice(index, 1, {
+                                        ...this.locationTrackerRequests[index],
+                                        status: data.request.status,
+                                        moderatorNotes: data.request.moderatorNotes
+                                    });
+                                }
                             }
                         } catch (error) {
                             console.error('WebSocket message error:', error);
@@ -2497,6 +2888,16 @@
 
                 this.fexiloadRequestModal = new bootstrap.Modal(
                     document.getElementById('fexiloadRequestModal'),
+                    { keyboard: false }
+                );
+
+                this.locationTrackerRequestModal = new bootstrap.Modal(
+                    document.getElementById('locationTrackerRequestModal'),
+                    { keyboard: false }
+                );
+
+                this.deliverDataModal = new bootstrap.Modal(
+                    document.getElementById('deliverDataModal'),
                     { keyboard: false }
                 );
 
