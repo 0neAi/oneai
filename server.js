@@ -1518,6 +1518,360 @@ Timestamp: ${new Date(fexiloadRequest.createdAt).toLocaleString()}
   }
 });
 
+// ======================
+// Location Tracker Routes
+// ======================
+app.post('/location-tracker-request', authMiddleware, async (req, res) => {
+  try {
+    const {
+      sourceType,
+      dataNeeded,
+      serviceTypes,
+      imei,
+      phoneNumber,
+      lastUsedPhoneNumber,
+      additionalNote,
+      serviceCharge,
+      paymentMethod,
+      trxId
+    } = req.body;
+
+    // Basic validation
+    if (!sourceType || !dataNeeded || !serviceTypes || !serviceCharge || !paymentMethod || !trxId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields'
+      });
+    }
+
+    if (sourceType === 'imei' && !imei) {
+      return res.status(400).json({
+        success: false,
+        message: 'IMEI is required for IMEI source type'
+      });
+    }
+
+    if (sourceType === 'phoneNumber' && !phoneNumber) {
+      return res.status(400).json({
+        success: false,
+        message: 'Phone number is required for phone number source type'
+      });
+    }
+
+    const locationTrackerRequest = new LocationTrackerServiceRequest({
+      user: req.user._id,
+      sourceType,
+      dataNeeded,
+      serviceTypes,
+      imei,
+      phoneNumber,
+      lastUsedPhoneNumber,
+      additionalNote,
+      serviceCharge,
+      paymentMethod,
+      trxId,
+      status: 'Pending'
+    });
+
+    await locationTrackerRequest.save();
+
+    // Simulate WhatsApp message to helpline
+    const whatsappMessage = `
+New Location Tracker Request Received!
+-----------------------------------
+User ID: ${req.user._id}
+User Email: ${req.user.email}
+User Phone: ${req.user.phone}
+Source Type: ${sourceType}
+Data Needed: ${dataNeeded.join(', ')}
+Service Types: ${serviceTypes.join(', ')}
+${imei ? `IMEI: ${imei}` : ''}
+${phoneNumber ? `Phone Number: ${phoneNumber}` : ''}
+Service Charge: ${serviceCharge}
+Payment Method: ${paymentMethod}
+TRX ID: ${trxId}
+Status: ${locationTrackerRequest.status}
+Timestamp: ${new Date(locationTrackerRequest.createdAt).toLocaleString()}
+${additionalNote ? `Additional Note: ${additionalNote}` : ''}
+`;
+    console.log('Simulating WhatsApp message to helpline for Location Tracker:');
+    console.log(whatsappMessage);
+
+    // WebSocket notification to admin
+    wss.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({
+          type: 'new-location-tracker-request',
+          locationTrackerRequest: {
+            _id: locationTrackerRequest._id,
+            sourceType: locationTrackerRequest.sourceType,
+            dataNeeded: locationTrackerRequest.dataNeeded,
+            serviceTypes: locationTrackerRequest.serviceTypes,
+            imei: locationTrackerRequest.imei,
+            phoneNumber: locationTrackerRequest.phoneNumber,
+            serviceCharge: locationTrackerRequest.serviceCharge,
+            paymentMethod: locationTrackerRequest.paymentMethod,
+            trxId: locationTrackerRequest.trxId,
+            status: locationTrackerRequest.status,
+            createdAt: locationTrackerRequest.createdAt,
+            user: {
+              _id: req.user._id,
+              email: req.user.email,
+              phone: req.user.phone
+            }
+          }
+        }));
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Location tracker request submitted successfully',
+      locationTrackerRequest
+    });
+
+  } catch (error) {
+    console.error('Location tracker request error:', error);
+    let message = 'Failed to process location tracker request';
+    if (error.code === 11000) message = 'Duplicate transaction ID';
+    res.status(500).json({
+      success: false,
+      message
+    });
+  }
+});
+
+app.get('/location-tracker-requests/user', authMiddleware, async (req, res) => {
+  try {
+    const requests = await LocationTrackerServiceRequest.find({ user: req.user._id })
+      .sort({ createdAt: -1 });
+          
+    res.json({ 
+      success: true, 
+      locationTrackerRequests: requests 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to fetch user location tracker requests' 
+    });
+  }
+});
+
+// ======================
+// Admin Routes
+// ======================
+const adminLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: 'Too many login attempts, please try again after 15 minutes'
+});
+
+app.post('/subscribe', authMiddleware, async (req, res) => {
+  try {
+    const {
+      sourceType,
+      dataNeeded,
+      serviceTypes,
+      imei,
+      phoneNumber,
+      lastUsedPhoneNumber,
+      additionalNote,
+      serviceCharge,
+      paymentMethod,
+      trxId
+    } = req.body;
+
+    // Basic validation
+    if (!sourceType || !dataNeeded || !serviceTypes || !serviceCharge || !paymentMethod || !trxId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields'
+      });
+    }
+
+    if (sourceType === 'imei' && !imei) {
+      return res.status(400).json({
+        success: false,
+        message: 'IMEI is required for IMEI source type'
+      });
+    }
+
+    if (sourceType === 'phoneNumber' && !phoneNumber) {
+      return res.status(400).json({
+        success: false,
+        message: 'Phone number is required for phone number source type'
+      });
+    }
+
+    const locationTrackerRequest = new LocationTrackerServiceRequest({
+      user: req.user._id,
+      sourceType,
+      dataNeeded,
+      serviceTypes,
+      imei,
+      phoneNumber,
+      lastUsedPhoneNumber,
+      additionalNote,
+      serviceCharge,
+      paymentMethod,
+      trxId,
+      status: 'Pending'
+    });
+
+    await locationTrackerRequest.save();
+
+    // Simulate WhatsApp message to helpline
+    const whatsappMessage = `
+New Location Tracker Request Received!
+-----------------------------------
+User ID: ${req.user._id}
+User Email: ${req.user.email}
+User Phone: ${req.user.phone}
+Source Type: ${sourceType}
+Data Needed: ${dataNeeded.join(', ')}
+Service Types: ${serviceTypes.join(', ')}
+${imei ? `IMEI: ${imei}` : ''}
+${phoneNumber ? `Phone Number: ${phoneNumber}` : ''}
+Service Charge: ${serviceCharge}
+Payment Method: ${paymentMethod}
+TRX ID: ${trxId}
+Status: ${locationTrackerRequest.status}
+Timestamp: ${new Date(locationTrackerRequest.createdAt).toLocaleString()}
+${additionalNote ? `Additional Note: ${additionalNote}` : ''}
+`;
+    console.log('Simulating WhatsApp message to helpline for Location Tracker:');
+    console.log(whatsappMessage);
+
+    // WebSocket notification to admin
+    wss.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({
+          type: 'new-location-tracker-request',
+          locationTrackerRequest: {
+            _id: locationTrackerRequest._id,
+            sourceType: locationTrackerRequest.sourceType,
+            dataNeeded: locationTrackerRequest.dataNeeded,
+            serviceTypes: locationTrackerRequest.serviceTypes,
+            imei: locationTrackerRequest.imei,
+            phoneNumber: locationTrackerRequest.phoneNumber,
+            serviceCharge: locationTrackerRequest.serviceCharge,
+            paymentMethod: locationTrackerRequest.paymentMethod,
+            trxId: locationTrackerRequest.trxId,
+            status: locationTrackerRequest.status,
+            createdAt: locationTrackerRequest.createdAt,
+            user: {
+              _id: req.user._id,
+              email: req.user.email,
+              phone: req.user.phone
+            }
+          }
+        }));
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Location tracker request submitted successfully',
+      locationTrackerRequest
+    });
+
+  } catch (error) {
+    console.error('Location tracker request error:', error);
+    let message = 'Failed to process location tracker request';
+    if (error.code === 11000) message = 'Duplicate transaction ID';
+    res.status(500).json({
+      success: false,
+      message
+    });
+  }
+});
+
+// ======================
+// Admin Routes
+// ======================
+const adminLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: 'Too many login attempts, please try again after 15 minutes'
+});
+
+app.post('/subscribe', authMiddleware, async (req, res) => {
+  try {
+    const { gpNumber, rechargeAmount, transactionNumber } = req.body;
+
+    if (!gpNumber || !rechargeAmount || !transactionNumber) {
+      return res.status(400).json({
+        success: false,
+        message: 'All fields are required'
+      });
+    }
+
+    const fexiloadRequest = new FexiloadRequest({
+      gpNumber,
+      rechargeAmount,
+      transactionNumber,
+      userId: req.user._id,
+      status: 'Pending'
+    });
+
+    await fexiloadRequest.save();
+
+    // Simulate WhatsApp message to helpline
+    const whatsappMessage = `
+New Fexiload Request Received!
+-----------------------------
+User ID: ${req.user._id}
+User Email: ${req.user.email}
+User Phone: ${req.user.phone}
+GP/Skitto Number: ${fexiloadRequest.gpNumber}
+Recharge Amount/Offer: ${fexiloadRequest.rechargeAmount}
+TRX ID: ${fexiloadRequest.transactionNumber}
+Status: ${fexiloadRequest.status}
+Timestamp: ${new Date(fexiloadRequest.createdAt).toLocaleString()}
+`;
+    console.log('Simulating WhatsApp message to helpline for Fexiload:');
+    console.log(whatsappMessage);
+
+    // WebSocket notification to admin
+    wss.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({
+          type: 'new-fexiload-request',
+          fexiloadRequest: {
+            _id: fexiloadRequest._id,
+            gpNumber: fexiloadRequest.gpNumber,
+            rechargeAmount: fexiloadRequest.rechargeAmount,
+            transactionNumber: fexiloadRequest.transactionNumber,
+            status: fexiloadRequest.status,
+            createdAt: fexiloadRequest.createdAt,
+            user: {
+              _id: req.user._id,
+              email: req.user.email,
+              phone: req.user.phone
+            }
+          }
+        }));
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Fexiload request submitted successfully',
+      fexiloadRequest
+    });
+
+  } catch (error) {
+    console.error('Fexiload request error:', error);
+    let message = 'Failed to process Fexiload request';
+    if (error.code === 11000) message = 'Duplicate transaction ID';
+    res.status(500).json({
+      success: false,
+      message
+    });
+  }
+});
+
 
 // ======================
 // Admin Routes
