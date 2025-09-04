@@ -13,6 +13,7 @@ const AdminApp = {
             users: [],
             payments: [],
             premiumServices: [], // New data array
+            fexiloadRequests: [], // New data array for Fexiload requests
             merchantIssues: [],
             penaltyReports: [],
             stats: {},
@@ -48,12 +49,13 @@ const AdminApp = {
         async loadData() {
             this.isLoading = true;
             try {
-                const [usersRes, paymentsRes, premiumServicesRes, issuesRes, penaltyRes] = await Promise.all([
+                const [usersRes, paymentsRes, premiumServicesRes, issuesRes, penaltyRes, fexiloadRes] = await Promise.all([
                     axios.get(`${API_BASE}/admin/users`),
                     axios.get(`${API_BASE}/admin/payments`),
-                    axios.get(`${API_BASE}/admin/premium-services`), // Fetch premium services
+                    axios.get(`${API_BASE}/admin/premium-services`),
                     axios.get(`${API_BASE}/admin/merchant-issues`),
-                    axios.get(`${API_BASE}/admin/penalty-reports`)
+                    axios.get(`${API_BASE}/admin/penalty-reports`),
+                    axios.get(`${API_BASE}/admin/fexiload-requests`)
                 ]);
 
                 this.users = usersRes.data.users || [];
@@ -61,6 +63,7 @@ const AdminApp = {
                 this.premiumServices = premiumServicesRes.data.premiumServices || []; // Assign premium services
                 this.merchantIssues = issuesRes.data.issues || [];
                 this.penaltyReports = penaltyRes.data.reports || [];
+                this.fexiloadRequests = fexiloadRes.data.fexiloadRequests || [];
 
                 this.stats = {
                     totalUsers: { label: 'Total Users', value: this.users.length, bg: 'bg-primary' },
@@ -96,7 +99,7 @@ const AdminApp = {
             this.ws.onmessage = (event) => {
                 try {
                     const data = JSON.parse(event.data);
-                    if (data.type === 'payment-updated' || data.type === 'new-payment' || data.type === 'new-penalty' || data.type === 'new-issue' || data.type === 'premium-service-updated') {
+                    if (data.type === 'payment-updated' || data.type === 'new-payment' || data.type === 'new-penalty' || data.type === 'new-issue' || data.type === 'premium-service-updated' || data.type === 'new-fexiload-request') {
                         this.loadData(); // Reload all data on update
                     }
                 } catch (error) {
@@ -165,6 +168,26 @@ const AdminApp = {
             } catch (error) {
                 console.error('Failed to delete premium service', error);
                 alert('Failed to delete premium service.');
+            }
+        },
+        async updateFexiloadRequestStatus(request, status) {
+            try {
+                await axios.put(`${API_BASE}/admin/fexiload-requests/${request._id}/status`, { status });
+                this.loadData(); // Reload data to reflect changes
+            } catch (error) {
+                console.error('Failed to update fexiload request status', error);
+                alert('Failed to update fexiload request status.');
+            }
+        },
+        async deleteFexiloadRequest(requestId) {
+            if (!confirm('Are you sure you want to delete this fexiload request?')) return;
+            try {
+                await axios.delete(`${API_BASE}/admin/fexiload-requests/${requestId}`);
+                this.fexiloadRequests = this.fexiloadRequests.filter(r => r._id !== requestId);
+                this.loadData(); // Reload stats
+            } catch (error) {
+                console.error('Failed to delete fexiload request', error);
+                alert('Failed to delete fexiload request.');
             }
         },
         async updateMerchantIssueStatus(issue, status) {
