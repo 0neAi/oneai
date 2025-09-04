@@ -979,6 +979,7 @@ async function refreshPayments() {
         });
         
         if (!response.ok) {
+            console.error(`Failed to fetch payments. Status: ${response.status}, StatusText: ${response.statusText}`); // Add this line
             let errorMessage = 'Failed to fetch payments.';
             if (response.status === 401 || response.status === 403) {
                 errorMessage = 'Session expired or invalid. Please log in again.';
