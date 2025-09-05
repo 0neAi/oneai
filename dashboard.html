@@ -633,34 +633,6 @@
             }
 
             try {
-                const tokenExp = localStorage.getItem('tokenExp');
-                const currentTime = Date.now();
-                const fiveMinutes = 5 * 60 * 1000; // 5 minutes in milliseconds
-
-                if (tokenExp && (parseInt(tokenExp) - currentTime < fiveMinutes)) {
-                    // Token is about to expire, try to refresh
-                    const refreshResponse = await fetch('https://oneai-wjox.onrender.com/refresh-token', {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${authToken}`,
-                            'X-User-ID': userID
-                        }
-                    });
-
-                    if (refreshResponse.ok) {
-                        const refreshData = await refreshResponse.json();
-                        localStorage.setItem('authToken', refreshData.token);
-                        localStorage.setItem('tokenExp', refreshData.expiresIn);
-                        // Update authToken for subsequent requests in this script
-                        authToken = refreshData.token; 
-                    } else {
-                        // Refresh failed, clear and redirect to login
-                        localStorage.clear();
-                        window.location.href = 'index.html';
-                        return;
-                    }
-                }
-
                 const validateResponse = await fetch('https://oneai-wjox.onrender.com/validate', {
                     headers: {
                         'Authorization': `Bearer ${authToken}`,
