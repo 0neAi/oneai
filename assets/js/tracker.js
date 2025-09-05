@@ -18,7 +18,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const dataNeededOptions = {
         imei: [
-            { id: 'dataNeededImei', label: 'Imei to', price: 1 },
             { id: 'dataNeededMobileNumber', label: 'Mobile Number', price: 1666 },
             { id: 'dataNeededLocation', label: 'Location', price: 1111 },
             { id: 'dataNeededNID', label: 'NID', price: 999 },
@@ -26,7 +25,6 @@ document.addEventListener('DOMContentLoaded', () => {
             { id: 'dataNeededCallList6Month', label: 'call list (6 month)', price: 3333 }
         ],
         phoneNumber: [
-            { id: 'dataNeededImei', label: 'Imei to', price: 1 },
             { id: 'dataNeededLocation', label: 'Location', price: 1111 },
             { id: 'dataNeededNID', label: 'NID', price: 999 },
             { id: 'dataNeededCallList3Month', label: 'call list (3month)', price: 2222 },
