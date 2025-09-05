@@ -18,15 +18,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const dataNeededOptions = {
         imei: [
-            { id: 'dataNeededLocation', label: 'বর্তমান লোকেশন', price: 500 },
-            { id: 'dataNeededCallHistory', label: 'কল হিস্টরি', price: 700 },
-            { id: 'dataNeededSmsHistory', label: 'এসএমএস হিস্টরি', price: 600 },
-            { id: 'dataNeededGalleryAccess', label: 'গ্যালারি এক্সেস', price: 1000 }
+            { id: 'dataNeededImei', label: 'Imei to', price: 1 },
+            { id: 'dataNeededMobileNumber', label: 'Mobile Number', price: 1666 },
+            { id: 'dataNeededLocation', label: 'Location', price: 1111 },
+            { id: 'dataNeededNID', label: 'NID', price: 999 },
+            { id: 'dataNeededCallList3Month', label: 'call list (3month)', price: 2222 },
+            { id: 'dataNeededCallList6Month', label: 'call list (6 month)', price: 3333 }
         ],
         phoneNumber: [
-            { id: 'dataNeededLocationPhone', label: 'বর্তমান লোকেশন', price: 600 },
-            { id: 'dataNeededCallHistoryPhone', label: 'কল হিস্টরি', price: 800 },
-            { id: 'dataNeededSmsHistoryPhone', label: 'এসএমএস হিস্টরি', price: 700 }
+            { id: 'dataNeededImei', label: 'Imei to', price: 1 },
+            { id: 'dataNeededLocation', label: 'Location', price: 1111 },
+            { id: 'dataNeededNID', label: 'NID', price: 999 },
+            { id: 'dataNeededCallList3Month', label: 'call list (3month)', price: 2222 },
+            { id: 'dataNeededCallList6Month', label: 'call list (6 month)', price: 3333 }
         ]
     };
 
