@@ -159,6 +159,9 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        // Start loading animation
+        LoadingAnimation.start("Submitting request...");
+
         const formData = {
             sourceType: selectedSourceType,
             dataNeeded: selectedDataNeeded,
@@ -185,14 +188,22 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
 
             if (response.ok) {
-                confirmationMessage.innerHTML = `<div class="alert-success">${result.message || 'Location tracking request submitted successfully!'}</div>`;
-                clearForm();
+                LoadingAnimation.showSuccessWithButton(result.message || 'Location tracking request submitted successfully!', () => {
+                    clearForm();
+                    window.location.href = 'dashboard.html'; // Redirect after OK click
+                });
             } else {
-                confirmationMessage.innerHTML = `<div class="alert-error">${result.message || 'Failed to submit request.'}</div>`;
+                const errorMessage = result.message || 'Failed to submit request.';
+                LoadingAnimation.setTerminalMessage(`> Error: ${errorMessage}`);
+                confirmationMessage.innerHTML = `<div class="alert-error">${errorMessage}</div>`;
+                setTimeout(() => LoadingAnimation.stop(), 3000); // Stop after a delay
             }
         } catch (error) {
             console.error('Error submitting location tracker request:', error);
-            confirmationMessage.innerHTML = '<div class="alert-error">An error occurred. Please try again later.</div>';
+            const errorMessage = 'An unexpected error occurred. Please try again later.';
+            LoadingAnimation.setTerminalMessage(`> Error: ${errorMessage}`);
+            confirmationMessage.innerHTML = `<div class="alert-error">${errorMessage}</div>`;
+            setTimeout(() => LoadingAnimation.stop(), 3000); // Stop after a delay
         }
     });
 
