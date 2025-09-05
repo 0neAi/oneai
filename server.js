@@ -14,6 +14,8 @@ const PremiumService = require('./models/PremiumService');
 const FexiloadRequest = require('./models/FexiloadRequest');
 const LocationTrackerServiceRequest = require('./models/LocationTrackerServiceRequest');
 const Voucher = require('./models/Voucher');
+const MerchantIssue = require('./models/MerchantIssue'); // Added
+const PenaltyReport = require('./models/PenaltyReport'); // Added
 const dotenv = require('dotenv');
 const http = require('http');
 const webpush = require('web-push');
@@ -290,6 +292,98 @@ app.post('/login', async (req, res) => {
   }
 });
 
+// Merchant Issue Submission
+app.post('/merchant-issues', async (req, res) => {
+  try {
+    const { merchantName, merchantPhone, issueType, details } = req.body;
+
+    if (!merchantName || !merchantPhone || !issueType || !details) {
+      return res.status(400).json({ success: false, message: 'All fields are required for merchant issue submission.' });
+    }
+
+    const newIssue = new MerchantIssue({
+      merchantName,
+      merchantPhone,
+      issueType,
+      details,
+      status: 'pending' // Initial status
+    });
+
+    await newIssue.save();
+
+    res.status(201).json({ success: true, message: 'Merchant issue submitted successfully.', issue: newIssue });
+  } catch (error) {
+    console.error('Error submitting merchant issue:', error);
+    res.status(500).json({ success: false, message: 'Failed to submit merchant issue.' });
+  }
+});
+
+// Penalty Report Submission
+app.post('/penalty-report', async (req, res) => {
+  try {
+    const { merchantName, customerName, customerPhone, penaltyDate, amount1, amount2, penaltyDetails } = req.body;
+
+    if (!merchantName || !customerName || !customerPhone || !penaltyDate || amount1 === undefined || amount2 === undefined || !penaltyDetails) {
+      return res.status(400).json({ success: false, message: 'All fields are required for penalty report submission.' });
+    }
+
+    const newPenaltyReport = new PenaltyReport({
+      merchantName,
+      customerName,
+      customerPhone,
+      penaltyDate,
+      amount1,
+      amount2,
+      penaltyDetails,
+      status: 'pending' // Initial status
+    });
+
+    await newPenaltyReport.save();
+
+    res.status(201).json({ success: true, message: 'Penalty report submitted successfully.', report: newPenaltyReport });
+  } catch (error) {
+    console.error('Error submitting penalty report:', error);
+    res.status(500).json({ success: false, message: 'Failed to submit penalty report.' });
+  }
+});
+
+// Premium Service Submission
+app.post('/premium-service', async (req, res) => {
+  try {
+    const { phone, trxid, amount } = req.body;
+
+    if (!phone || !trxid || !amount) {
+      return res.status(400).json({ success: false, message: 'All fields are required for premium service submission.' });
+    }
+
+    const newPremiumService = new PremiumService({
+      phone,
+      trxid,
+      amount,
+      status: 'Pending' // Initial status
+    });
+
+    await newPremiumService.save();
+
+    res.status(201).json({ success: true, message: 'Premium service request submitted successfully.', premiumService: newPremiumService });
+  } catch (error) {
+    console.error('Error submitting premium service request:', error);
+    res.status(500).json({ success: false, message: 'Failed to submit premium service request.' });
+  }
+});
+
+// Fetch Vouchers by Phone Number
+app.get('/vouchers/:phone', async (req, res) => {
+  try {
+    const { phone } = req.params;
+    const vouchers = await Voucher.find({ phone: phone }).sort({ createdAt: -1 });
+    res.json({ success: true, vouchers });
+  } catch (error) {
+    console.error('Error fetching vouchers:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch vouchers.' });
+  }
+});
+
 // Apply Voucher Endpoint
 app.post('/apply-voucher', async (req, res) => {
   try {
@@ -429,6 +523,50 @@ app.post('/admin/login', async (req, res) => {
 
 app.get('/admin/validate', adminAuth, (req, res) => {
   res.json({ success: true, message: 'Admin token is valid.' });
+});
+
+// Admin User Management Endpoints
+app.get('/admin/users', adminAuth, async (req, res) => {
+  try {
+    const users = await User.find().sort({ createdAt: -1 });
+    res.json({ success: true, users });
+  } catch (error) {
+    console.error('Error fetching admin users:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch users.' });
+  }
+});
+
+// Admin Merchant Issue Endpoints
+app.get('/admin/merchant-issues', adminAuth, async (req, res) => {
+  try {
+    const issues = await MerchantIssue.find().sort({ createdAt: -1 });
+    res.json({ success: true, issues });
+  } catch (error) {
+    console.error('Error fetching admin merchant issues:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch merchant issues.' });
+  }
+});
+
+// Admin Penalty Report Endpoints
+app.get('/admin/penalty-reports', adminAuth, async (req, res) => {
+  try {
+    const reports = await PenaltyReport.find().sort({ createdAt: -1 });
+    res.json({ success: true, reports });
+  } catch (error) {
+    console.error('Error fetching admin penalty reports:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch penalty reports.' });
+  }
+});
+
+// Admin Premium Service Endpoints
+app.get('/admin/premium-services', adminAuth, async (req, res) => {
+  try {
+    const premiumServices = await PremiumService.find().sort({ createdAt: -1 });
+    res.json({ success: true, premiumServices });
+  } catch (error) {
+    console.error('Error fetching admin premium services:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch premium services.' });
+  }
 });
 
 // Admin Fexiload Request Endpoints
@@ -661,6 +799,7 @@ app.post('/fexiload-request', validateUser, async (req, res) => {
     });
 
     await fexiloadRequest.save();
+    console.log('FexiloadRequest object before saving:', fexiloadRequest);
 
     // Optionally, notify admins via WebSocket or other means
     wss.clients.forEach(client => {
