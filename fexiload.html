@@ -10,20 +10,6 @@
   .hidden {
     display: none !important;
   }
-  .loading-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.5);
-    display: none;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    color: white;
-    font-size: 2rem;
-  }
   .alert-success {
     color: green;
     padding: 10px;
@@ -130,12 +116,8 @@
     </form>
   </section>
 
+  <script src="./assets/js/loading-animation.js"></script>
   <script>
-    const loadingOverlay = document.createElement('div');
-    loadingOverlay.className = 'loading-overlay';
-    loadingOverlay.innerHTML = '<i class="fas fa-spinner fa-spin fa-3x"></i>';
-    document.body.appendChild(loadingOverlay);
-
     let isSubmitting = false;
 
     function validateGpNumber(number) {
@@ -206,7 +188,7 @@
 
     document.getElementById('fexiload-form').addEventListener('submit', async (e) => {
       e.preventDefault();
-      if (isSubmitting) return;
+      // No need for isSubmitting flag, LoadingAnimation handles it
 
       try {
         const authToken = localStorage.getItem('authToken');
@@ -220,9 +202,8 @@
           return;
         }
 
-        isSubmitting = true;
-        loadingOverlay.style.display = 'flex';
-        document.getElementById('confirmation-message').innerHTML = '';
+        LoadingAnimation.start("Submitting Fexiload request..."); // Start loading animation
+        document.getElementById('confirmation-message').innerHTML = ''; // Clear previous messages
 
         const gpNumber = document.getElementById('gpNumber').value.trim();
         const rechargeAmount = document.getElementById('rechargeAmount').value.trim();
@@ -278,17 +259,24 @@
 
           window.open(`https://wa.me/8801568760780?text=${encodeURIComponent(whatsappMessage)}`, '_blank');
 
-          showMessage('ফ্লেক্সিলোড রিকোয়েস্ট সফলভাবে সাবমিট করা হয়েছে! রিচার্জ হতে সর্বোচ্চ ৩০ মিনিট সময় লাগতে পারে।', 'success');
-          setTimeout(() => window.location.href = 'dashboard.html', 3000);
+          LoadingAnimation.showSuccessWithButton('ফ্লেক্সিলোড রিকোয়েস্ট সফলভাবে সাবমিট করা হয়েছে! রিচার্জ হতে সর্বোচ্চ ৩০ মিনিট সময় লাগতে পারে।', () => {
+            clearForm();
+            window.location.href = 'dashboard.html'; // Redirect after OK click
+          });
         } else {
-          showMessage(responseData.message || 'ফ্লেক্সিলোড রিকোয়েস্ট ব্যর্থ হয়েছে।', 'error');
+          const errorMessage = responseData.message || 'ফ্লেক্সিলোড রিকোয়েস্ট ব্যর্থ হয়েছে।';
+          LoadingAnimation.setTerminalMessage(`> Error: ${errorMessage}`);
+          showMessage(errorMessage, 'error');
+          setTimeout(() => LoadingAnimation.stop(), 3000); // Stop after a delay
         }
       } catch (error) {
         console.error('ফ্লেক্সিলোড সাবমিশন ত্রুটি:', error);
-        showMessage(error.message || 'একটি অপ্রত্যাশিত ত্রুটি ঘটেছে।', 'error');
+        const errorMessage = error.message || 'একটি অপ্রত্যাশিত ত্রুটি ঘটেছে।';
+        LoadingAnimation.setTerminalMessage(`> Error: ${errorMessage}`);
+        showMessage(errorMessage, 'error');
+        setTimeout(() => LoadingAnimation.stop(), 3000); // Stop after a delay
       } finally {
-        isSubmitting = false;
-        loadingOverlay.style.display = 'none';
+        // LoadingAnimation.stop() is called in success/error blocks, no need here
       }
     });
 
