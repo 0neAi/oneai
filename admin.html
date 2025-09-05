@@ -1707,6 +1707,9 @@
         function parseJwt(token) {
             try {
                 const base64Url = token.split('.')[1];
+                if (!base64Url) { // Added check
+                    return null;
+                }
                 const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
                 const jsonPayload = decodeURIComponent(
                     atob(base64)
@@ -1716,6 +1719,7 @@
                 );
                 return JSON.parse(jsonPayload);
             } catch (e) {
+                console.error("Error parsing JWT:", e); // Added error logging
                 return null;
             }
         }
@@ -1747,9 +1751,15 @@
                     deliverDataModal: null, // New modal for delivering data
                     deliveredDataType: '',
                     deliveredDataContent: '',
+                    selectedPayment: null, // Initialized
+                    selectedIssue: null, // Initialized
+                    selectedPenalty: null, // Initialized
+                    selectedPremiumPayment: null, // Initialized
+                    selectedFexiloadRequest: null, // Initialized
                     selectedUserDetail: null,
                     userDetailsModal: null,
                     selectedUser: null,
+                    stats: { totalUsers: 0, totalPayments: 0, pendingPayments: 0, issueReports: 0 }, // Initialized
                     discountPercentage: 10,
                     issueDiscountPercentage: 10,
                     premiumDiscountPercentage: 0,
