@@ -6,7 +6,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { WebSocketServer, WebSocket } = require('ws');
-const { adminAuth } = require('./middleware/auth');
+const { adminAuth, validateUser } = require('./middleware/auth');
 const Payment = require('./models/Payment');
 const User = require('./models/User');
 const Admin = require('./models/Admin');
@@ -47,7 +47,6 @@ app.use(cors({
 }));
 
 app.use(express.json({ limit: '10kb' }));
-app.use(express.static(path.join(__dirname, 'public')));
 
 // Rate limiting
 const limiter = rateLimit({
@@ -155,58 +154,7 @@ app.use((req, res, next) => {
 });
 
 // Authentication middleware
-const authMiddleware = async (req, res, next) => {
-  try {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
-    const userID = req.header('X-User-ID');
 
-    console.log('AuthMiddleware: Received token:', token ? 'Exists' : 'Missing', 'UserID:', userID);
-
-    if (!token) {
-      console.error('Auth Error: Missing token');
-      return res.status(401).json({ success: false, message: 'Authentication failed: Token missing' });
-    }
-    if (!userID) {
-      console.error('Auth Error: Missing User ID');
-      return res.status(401).json({ success: false, message: 'Authentication failed: User ID missing' });
-    }
-    
-    let decoded;
-    try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET);
-      console.log('AuthMiddleware: JWT decoded successfully for userId:', decoded.userId);
-    } catch (jwtError) {
-      console.error('Auth Error: JWT verification failed', jwtError.message);
-      const message = jwtError.name === 'TokenExpiredError' 
-        ? 'Authentication failed: Session expired. Please log in again.' 
-        : 'Authentication failed: Invalid token.';
-      return res.status(401).json({ success: false, message });
-    }
-
-    if (decoded.userId !== userID) {
-      console.error('Auth Error: User ID mismatch', { decodedId: decoded.userId, headerId: userID });
-      return res.status(401).json({ success: false, message: 'Authentication failed: User ID mismatch' });
-    }
-
-    const user = await User.findById(userID);
-    if (!user) {
-      console.error('Auth Error: User not found in DB', { userID });
-      return res.status(401).json({ success: false, message: 'Authentication failed: User not found' });
-    }
-
-    if (!user.isApproved) {
-      console.error('Auth Error: User not approved', { userID });
-      return res.status(403).json({ success: false, message: 'Authentication failed: User not approved' });
-    }
-    
-    req.user = user;
-    console.log('AuthMiddleware: User authenticated and approved:', user.email);
-    next();
-  } catch (error) {
-    console.error('Auth Error: Unexpected error', error.message);
-    res.status(500).json({ success: false, message: 'Authentication failed: Internal server error' });
-  }
-};
 
 // Core routes
 app.get('/', (req, res) => res.status(200).json({ 
@@ -220,6 +168,18 @@ app.get('/status', (req, res) => res.json({
   db: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
   uptime: process.uptime().toFixed(2) + 's'
 }));
+
+app.get('/validate', validateUser, async (req, res) => {
+  try {
+    res.json({
+      success: true,
+      isAdminApproved: req.user.isApproved
+    });
+  } catch (error) {
+    console.error('Validation error:', error);
+    res.status(500).json({ success: false, message: 'Validation failed' });
+  }
+});
 
 // User Authentication Routes
 app.post('/register', async (req, res) => {
@@ -330,7 +290,335 @@ app.post('/login', async (req, res) => {
   }
 });
 
-app.post('/refresh-token', authMiddleware, async (req, res) => {
+// Apply Voucher Endpoint
+app.post('/apply-voucher', async (req, res) => {
+  try {
+    const { voucherCode } = req.body;
+    const voucher = await Voucher.findOne({ code: voucherCode, isUsed: false });
+
+    if (!voucher) {
+      return res.status(400).json({ success: false, message: 'Invalid or expired voucher code.' });
+    }
+
+    // Mark voucher as used (or apply logic based on your voucher system)
+    // For now, just return the discount percentage
+    res.json({ success: true, message: 'Voucher applied successfully!', discountPercentage: voucher.discountPercentage });
+  } catch (error) {
+    console.error('Apply voucher error:', error);
+    res.status(500).json({ success: false, message: 'Failed to apply voucher.' });
+  }
+});
+
+// Admin General Payment Endpoints
+app.get('/admin/payments', adminAuth, async (req, res) => {
+  try {
+    const payments = await Payment.find().populate('user', 'email').sort({ createdAt: -1 });
+    res.json({ success: true, payments });
+  } catch (error) {
+    console.error('Error fetching admin payments:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch payments.' });
+  }
+});
+
+app.post('/admin/update-status', adminAuth, async (req, res) => {
+  try {
+    const { trxid, status } = req.body;
+
+    if (!trxid || !status) {
+      return res.status(400).json({ success: false, message: 'TRX ID and status are required.' });
+    }
+
+    const payment = await Payment.findOneAndUpdate(
+      { trxid: trxid },
+      { status: status },
+      { new: true }
+    ).populate('user', 'email');
+
+    if (!payment) {
+      return res.status(404).json({ success: false, message: 'Payment not found.' });
+    }
+
+    // Notify users/dashboard via WebSocket
+    wss.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN && client.userID === payment.user.toString()) {
+        client.send(JSON.stringify({
+          type: 'payment-updated',
+          payment: {
+            _id: payment._id,
+            status: payment.status,
+            trxid: payment.trxid,
+            amount3: payment.amount3
+          }
+        }));
+      }
+    });
+
+    res.json({ success: true, message: 'Payment status updated.', payment });
+  } catch (error) {
+    console.error('Error updating payment status:', error);
+    res.status(500).json({ success: false, message: 'Failed to update payment status.' });
+  }
+});
+
+app.delete('/admin/payments/:id', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const payment = await Payment.findByIdAndDelete(id);
+
+    if (!payment) {
+      return res.status(404).json({ success: false, message: 'Payment not found.' });
+    }
+
+    res.json({ success: true, message: 'Payment deleted successfully.' });
+  } catch (error) {
+    console.error('Error deleting payment:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete payment.' });
+  }
+});
+
+// Admin Authentication Routes
+app.get('/admin/exists', async (req, res) => {
+  try {
+    const adminCount = await Admin.countDocuments();
+    res.json({ exists: adminCount > 0 });
+  } catch (error) {
+    console.error('Error checking admin existence:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+app.post('/admin/register', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ success: false, message: 'Email and password are required.' });
+    }
+
+    const adminCount = await Admin.countDocuments();
+    if (adminCount > 0) {
+      return res.status(403).json({ success: false, message: 'Admin account already exists. Registration forbidden.' });
+    }
+
+    const admin = new Admin({ email, password });
+    await admin.save();
+
+    const token = jwt.sign({ adminId: admin._id, role: 'superadmin' }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    res.status(201).json({ success: true, message: 'Admin registered successfully.', token });
+  } catch (error) {
+    console.error('Admin registration error:', error);
+    res.status(500).json({ success: false, message: 'Server error during admin registration.' });
+  }
+});
+
+app.post('/admin/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const admin = await Admin.findOne({ email }).select('+password');
+
+    if (!admin || !(await admin.comparePassword(password))) {
+      return res.status(401).json({ success: false, message: 'Invalid credentials.' });
+    }
+
+    const token = jwt.sign({ adminId: admin._id, role: 'superadmin' }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    res.json({ success: true, token });
+  } catch (error) {
+    console.error('Admin login error:', error);
+    res.status(500).json({ success: false, message: 'Server error during admin login.' });
+  }
+});
+
+app.get('/admin/validate', adminAuth, (req, res) => {
+  res.json({ success: true, message: 'Admin token is valid.' });
+});
+
+// Admin Fexiload Request Endpoints
+app.get('/admin/fexiload-requests', adminAuth, async (req, res) => {
+  try {
+    const fexiloadRequests = await FexiloadRequest.find().populate('userId', 'email phone').sort({ createdAt: -1 });
+    res.json({ success: true, fexiloadRequests });
+  } catch (error) {
+    console.error('Error fetching admin fexiload requests:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch fexiload requests.' });
+  }
+});
+
+app.put('/admin/fexiload-requests/:id/status', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!['Pending', 'Completed', 'Failed'].includes(status)) {
+      return res.status(400).json({ success: false, message: 'Invalid status provided.' });
+    }
+
+    const fexiloadRequest = await FexiloadRequest.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true }
+    ).populate('userId', 'email phone');
+
+    if (!fexiloadRequest) {
+      return res.status(404).json({ success: false, message: 'Fexiload request not found.' });
+    }
+
+    // Notify users/dashboard via WebSocket
+    wss.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN && client.userID === fexiloadRequest.userId.toString()) {
+        client.send(JSON.stringify({
+          type: 'fexiload-updated',
+          fexiloadRequest: {
+            _id: fexiloadRequest._id,
+            status: fexiloadRequest.status,
+            gpNumber: fexiloadRequest.gpNumber,
+            rechargeAmount: fexiloadRequest.rechargeAmount
+          }
+        }));
+      }
+    });
+
+    res.json({ success: true, message: 'Fexiload request status updated.', fexiloadRequest });
+  } catch (error) {
+    console.error('Error updating fexiload request status:', error);
+    res.status(500).json({ success: false, message: 'Failed to update fexiload request status.' });
+  }
+});
+
+app.delete('/admin/fexiload-requests/:id', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const fexiloadRequest = await FexiloadRequest.findByIdAndDelete(id);
+
+    if (!fexiloadRequest) {
+      return res.status(404).json({ success: false, message: 'Fexiload request not found.' });
+    }
+
+    res.json({ success: true, message: 'Fexiload request deleted successfully.' });
+  } catch (error) {
+    console.error('Error deleting fexiload request:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete fexiload request.' });
+  }
+});
+
+// Admin Location Tracker Request Endpoints
+app.get('/admin/tracker/requests', adminAuth, async (req, res) => {
+  try {
+    const locationTrackerRequests = await LocationTrackerServiceRequest.find().populate('user', 'email phone').sort({ createdAt: -1 });
+    res.json({ success: true, requests: locationTrackerRequests });
+  } catch (error) {
+    console.error('Error fetching admin location tracker requests:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch location tracker requests.' });
+  }
+});
+
+app.put('/admin/tracker/requests/:id/status', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, moderatorNotes } = req.body;
+
+    if (!['Pending', 'Approved', 'Rejected', 'Completed'].includes(status)) {
+      return res.status(400).json({ success: false, message: 'Invalid status provided.' });
+    }
+
+    const locationTrackerRequest = await LocationTrackerServiceRequest.findByIdAndUpdate(
+      id,
+      { status, moderatorNotes },
+      { new: true }
+    ).populate('user', 'email phone');
+
+    if (!locationTrackerRequest) {
+      return res.status(404).json({ success: false, message: 'Location tracker request not found.' });
+    }
+
+    // Notify users/dashboard via WebSocket
+    wss.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN && client.userID === locationTrackerRequest.user.toString()) {
+        client.send(JSON.stringify({
+          type: 'location-tracker-updated',
+          request: {
+            _id: locationTrackerRequest._id,
+            status: locationTrackerRequest.status,
+            moderatorNotes: locationTrackerRequest.moderatorNotes,
+            sourceType: locationTrackerRequest.sourceType
+          }
+        }));
+      }
+    });
+
+    res.json({ success: true, message: 'Location tracker request status updated.', request: locationTrackerRequest });
+  } catch (error) {
+    console.error('Error updating location tracker request status:', error);
+    res.status(500).json({ success: false, message: 'Failed to update location tracker request status.' });
+  }
+});
+
+app.post('/admin/deliver-data', adminAuth, async (req, res) => {
+  try {
+    const { requestId, dataType, dataContent } = req.body;
+
+    if (!requestId || !dataType || !dataContent) {
+      return res.status(400).json({ success: false, message: 'Missing required fields for data delivery.' });
+    }
+
+    const locationTrackerRequest = await LocationTrackerServiceRequest.findById(requestId);
+
+    if (!locationTrackerRequest) {
+      return res.status(404).json({ success: false, message: 'Location tracker request not found.' });
+    }
+
+    // Add delivered data to the request
+    locationTrackerRequest.deliveredData.push({
+      dataType,
+      dataContent,
+      deliveredBy: req.admin._id, // Assuming req.admin is populated by adminAuth
+      deliveredAt: new Date()
+    });
+
+    // Optionally update status to Completed if data is delivered
+    if (locationTrackerRequest.status !== 'Completed') {
+      locationTrackerRequest.status = 'Completed';
+    }
+
+    await locationTrackerRequest.save();
+
+    // Notify users/dashboard via WebSocket
+    wss.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN && client.userID === locationTrackerRequest.user.toString()) {
+        client.send(JSON.stringify({
+          type: 'location-tracker-updated',
+          request: {
+            _id: locationTrackerRequest._id,
+            status: locationTrackerRequest.status,
+            deliveredData: locationTrackerRequest.deliveredData,
+            moderatorNotes: locationTrackerRequest.moderatorNotes
+          }
+        }));
+      }
+    });
+
+    res.json({ success: true, message: 'Data delivered successfully.', request: locationTrackerRequest });
+  } catch (error) {
+    console.error('Error delivering data:', error);
+    res.status(500).json({ success: false, message: 'Failed to deliver data.' });
+  }
+});
+
+app.delete('/admin/tracker/requests/:id', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const locationTrackerRequest = await LocationTrackerServiceRequest.findByIdAndDelete(id);
+
+    if (!locationTrackerRequest) {
+      return res.status(404).json({ success: false, message: 'Location tracker request not found.' });
+    }
+
+    res.json({ success: true, message: 'Location tracker request deleted successfully.' });
+  } catch (error) {
+    console.error('Error deleting location tracker request:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete location tracker request.' });
+  }
+});
+
+app.post('/refresh-token', validateUser, async (req, res) => {
   try {
     const token = jwt.sign({ userId: req.user._id }, process.env.JWT_SECRET, {
       expiresIn: '3h',
@@ -351,8 +639,123 @@ app.post('/refresh-token', authMiddleware, async (req, res) => {
   }
 });
 
+// Fexiload Request Submission
+app.post('/fexiload-request', validateUser, async (req, res) => {
+  try {
+    const { gpNumber, rechargeAmount, transactionNumber, retailCharge, method } = req.body;
+
+    // Basic validation
+    if (!gpNumber || !rechargeAmount || !transactionNumber || !retailCharge || !method) {
+      return res.status(400).json({ success: false, message: 'All fields are required for fexiload request.' });
+    }
+
+    // Create new fexiload request
+    const fexiloadRequest = new FexiloadRequest({
+      userId: req.user._id,
+      gpNumber,
+      rechargeAmount,
+      transactionNumber,
+      retailCharge,
+      method,
+      status: 'Pending' // Initial status
+    });
+
+    await fexiloadRequest.save();
+
+    // Optionally, notify admins via WebSocket or other means
+    wss.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({
+          type: 'new-fexiload-request',
+          fexiloadRequest: {
+            _id: fexiloadRequest._id,
+            userId: fexiloadRequest.userId,
+            gpNumber: fexiloadRequest.gpNumber,
+            rechargeAmount: fexiloadRequest.rechargeAmount,
+            method: fexiloadRequest.method,
+            status: fexiloadRequest.status,
+            createdAt: fexiloadRequest.createdAt
+          }
+        }));
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Fexiload request submitted successfully.',
+      fexiloadRequest: fexiloadRequest
+    });
+
+  } catch (error) {
+    console.error('Fexiload request submission error:', error);
+    res.status(500).json({ success: false, message: 'Failed to submit fexiload request.' });
+  }
+});
+
+// Location Tracker Request Submission
+app.post('/location-tracker-request', validateUser, async (req, res) => {
+  try {
+    const { sourceType, dataNeeded, imei, lastUsedPhoneNumber, phoneNumber, serviceChargeDisplay, method, trxid, additionalNote } = req.body;
+
+    // Basic validation
+    if (!sourceType || !dataNeeded || dataNeeded.length === 0 || !serviceChargeDisplay || !method || !trxid) {
+      return res.status(400).json({ success: false, message: 'Missing required fields for location tracker request.' });
+    }
+
+    if (sourceType === 'imei' && !imei) {
+      return res.status(400).json({ success: false, message: 'IMEI number is required for IMEI source type.' });
+    }
+    if (sourceType === 'phoneNumber' && !phoneNumber) {
+      return res.status(400).json({ success: false, message: 'Phone number is required for Phone Number source type.' });
+    }
+
+    // Create new location tracker request
+    const locationTrackerRequest = new LocationTrackerServiceRequest({
+      user: req.user._id,
+      sourceType,
+      dataNeeded,
+      imei: imei || null,
+      lastUsedPhoneNumber: lastUsedPhoneNumber || null,
+      phoneNumber: phoneNumber || null,
+      serviceCharge: parseFloat(serviceChargeDisplay),
+      method,
+      trxid,
+      additionalNote: additionalNote || null,
+      status: 'Pending' // Initial status
+    });
+
+    await locationTrackerRequest.save();
+
+    // Optionally, notify admins via WebSocket or other means
+    wss.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({
+          type: 'new-location-tracker-request',
+          locationTrackerRequest: {
+            _id: locationTrackerRequest._id,
+            user: locationTrackerRequest.user,
+            sourceType: locationTrackerRequest.sourceType,
+            status: locationTrackerRequest.status,
+            createdAt: locationTrackerRequest.createdAt
+          }
+        }));
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Location tracker request submitted successfully.',
+      locationTrackerRequest: locationTrackerRequest
+    });
+
+  } catch (error) {
+    console.error('Location tracker request submission error:', error);
+    res.status(500).json({ success: false, message: 'Failed to submit location tracker request.' });
+  }
+});
+
 // Payment Processing
-app.post('/payment', authMiddleware, async (req, res) => {
+app.post('/payment', validateUser, async (req, res) => {
   try {
     const { consignments, discount = 0 } = req.body;
 
@@ -556,7 +959,7 @@ ${savedPayment.consignments.map(c => `  - Service: ${c.serviceType}, Name: ${c.n
 });
 
 // Fexiload requests for user
-app.get('/fexiload-requests/user', authMiddleware, async (req, res) => {
+app.get('/fexiload-requests/user', validateUser, async (req, res) => {
   try {
     const fexiloadRequests = await FexiloadRequest.find({ userId: req.user._id }).sort({ createdAt: -1 });
     res.json({ success: true, fexiloadRequests });
@@ -566,7 +969,7 @@ app.get('/fexiload-requests/user', authMiddleware, async (req, res) => {
 });
 
 // Alias for payments endpoint
-app.get('/api/payments/my-payments', authMiddleware, async (req, res) => {
+app.get('/api/payments/my-payments', validateUser, async (req, res) => {
   try {
     const payments = await Payment.find({ user: req.user._id }).sort({ createdAt: -1 });
     res.json({ success: true, payments });
@@ -576,7 +979,7 @@ app.get('/api/payments/my-payments', authMiddleware, async (req, res) => {
 });
 
 // Location tracker requests for user
-app.get('/location-tracker-requests/user', authMiddleware, async (req, res) => {
+app.get('/location-tracker-requests/user', validateUser, async (req, res) => {
   try {
     const locationTrackerRequests = await LocationTrackerServiceRequest.find({ user: req.user._id }).sort({ createdAt: -1 });
     res.json({ success: true, locationTrackerRequests });
