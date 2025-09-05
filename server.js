@@ -695,7 +695,7 @@ app.post('/fexiload-request', validateUser, async (req, res) => {
 // Location Tracker Request Submission
 app.post('/location-tracker-request', validateUser, async (req, res) => {
   try {
-    const { sourceType, dataNeeded, imei, lastUsedPhoneNumber, phoneNumber, serviceCharge, method, trxid, additionalNote } = req.body;
+    const { sourceType, dataNeeded, imei, lastUsedPhoneNumber, phoneNumber, serviceCharge, method: paymentMethod, trxid: trxId, additionalNote } = req.body;
 
     // Basic validation
     if (!sourceType || !dataNeeded || dataNeeded.length === 0 || !serviceCharge || !method || !trxid) {
@@ -718,8 +718,8 @@ app.post('/location-tracker-request', validateUser, async (req, res) => {
       lastUsedPhoneNumber: lastUsedPhoneNumber || null,
       phoneNumber: phoneNumber || null,
       serviceCharge: serviceCharge,
-      method,
-      trxid,
+      paymentMethod,
+      trxId,
       additionalNote: additionalNote || null,
       status: 'Pending' // Initial status
     });
