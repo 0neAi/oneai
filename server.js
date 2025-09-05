@@ -698,7 +698,7 @@ app.post('/location-tracker-request', validateUser, async (req, res) => {
     const { sourceType, dataNeeded, imei, lastUsedPhoneNumber, phoneNumber, serviceCharge, method, trxid, additionalNote } = req.body;
 
     // Basic validation
-    if (!sourceType || !dataNeeded || dataNeeded.length === 0 || !serviceChargeDisplay || !method || !trxid) {
+    if (!sourceType || !dataNeeded || dataNeeded.length === 0 || !serviceCharge || !method || !trxid) {
       return res.status(400).json({ success: false, message: 'Missing required fields for location tracker request.' });
     }
 
