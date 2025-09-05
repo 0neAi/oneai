@@ -221,7 +221,8 @@
         const gpNumber = document.getElementById('gpNumber').value.trim();
         const rechargeAmount = document.getElementById('rechargeAmount').value.trim();
         const transactionNumber = document.getElementById('transactionNumber').value.trim();
-        const retailCharge = document.getElementById('retailCharge').value.trim();
+        const retailChargeString = document.getElementById('retailCharge').value.trim();
+        const retailCharge = parseFloat(retailChargeString.replace(' টাকা', ''));
         const method = document.getElementById('method').value; // Get selected payment method
 
         if (!validateGpNumber(gpNumber)) {
