@@ -1842,28 +1842,49 @@
                     }
                 },
                 async login() {
+                    console.log('Attempting login...');
                     this.loginError = '';
                     this.loginLoading = true;
                     
                     try {
                         const response = await axios.post(`${API_BASE}/admin/login`, this.admin);
+                        console.log('Login response:', response.data);
                         
                         if (response.data.success) {
                             localStorage.setItem('adminToken', response.data.token);
                             this.isAuthenticated = true;
-                            this.loadData();
+                            console.log('Login successful, isAuthenticated:', this.isAuthenticated);
+                            await this.loadData();
+                        } else {
+                            this.loginError = response.data.message || 'Login failed. Please check your credentials.';
+                            console.log('Login failed:', this.loginError);
                         }
                     } catch (error) {
-                        this.loginError = (error.response && error.response.data && error.response.data.message) 
-                            || 'Invalid credentials. Please try again.';
+                        console.error('Login error caught:', error);
+                        
+                        // Improved error handling
+                        if (error.response) {
+                            // Server responded with error status
+                            this.loginError = error.response.data.message || 
+                                             `Server error: ${error.response.status}`;
+                        } else if (error.request) {
+                            // Request was made but no response received
+                            this.loginError = 'No response from server. Please check your connection.';
+                        } else {
+                            // Other errors
+                            this.loginError = 'Login failed. Please try again.';
+                        }
                     } finally {
                         this.loginLoading = false;
+                        console.log('Login process finished, loginLoading:', this.loginLoading);
                     }
                 },
                 async loadData() {
+                    console.log('Starting loadData...');
                     this.isLoading = true;
                     const token = localStorage.getItem('adminToken');
                     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                    console.log('Authorization token set.');
 
                     const promises = [
                         this.loadUsers(),
@@ -1874,12 +1895,15 @@
                         this.loadFexiloadRequests(),
                         this.loadLocationTrackerRequests()
                     ];
+                    console.log('All data loading promises initiated.');
 
                     try {
                         await Promise.all(promises);
+                        console.log('All data loaded successfully.');
                     } catch (error) {
-                        console.error('Data loading error:', error);
+                        console.error('Data loading error in loadData:', error);
                         if (error.response && error.response.status === 401) {
+                            console.log('401 error, logging out.');
                             this.logout();
                         }
                     } finally {
@@ -1892,6 +1916,7 @@
                         this.updateCharts();
                         this.loadRecentActivities();
                         this.isLoading = false;
+                        console.log('loadData finished, isLoading:', this.isLoading);
                     }
                 },
                     
