@@ -672,6 +672,7 @@ app.post('/fexiload-request', validateUser, async (req, res) => {
             userId: fexiloadRequest.userId,
             gpNumber: fexiloadRequest.gpNumber,
             rechargeAmount: fexiloadRequest.rechargeAmount,
+            rechargeAmount: fexiloadRequest.rechargeAmount,
             method: fexiloadRequest.method,
             status: fexiloadRequest.status,
             createdAt: fexiloadRequest.createdAt
