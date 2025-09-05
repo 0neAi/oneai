@@ -92,8 +92,8 @@
       </div>
 
       <div class="form-group">
-        <label for="retailCharge">রিটেইল চার্জ / পেমেন্ট চার্জ:</label>
-        <input type="text" id="retailCharge" name="retailCharge" readonly required>
+        <label for="retailCharge">রিটেইল চার্জ / পেমেন্ট চার্জ: <span id="retailChargeDisplay">0.00 টাকা</span></label>
+        <input type="hidden" id="retailCharge" name="retailCharge" readonly required>
       </div>
 
       <div class="form-group">
@@ -152,20 +152,26 @@
       if (confirm('আপনি কি নিশ্চিত যে আপনি ফর্মটি ক্লিয়ার করতে চান?')) {
         document.getElementById('fexiload-form').reset();
         document.getElementById('retailCharge').value = ''; // Clear retail charge
+        document.getElementById('retailChargeDisplay').textContent = '0.00 টাকা'; // Clear retail charge display
         document.getElementById('confirmation-message').innerHTML = '';
       }
     }
 
     function calculateRetailCharge() {
       const rechargeAmount = parseFloat(document.getElementById('rechargeAmount').value);
+      const retailChargeInput = document.getElementById('retailCharge');
+      const retailChargeDisplay = document.getElementById('retailChargeDisplay');
+
       if (isNaN(rechargeAmount) || rechargeAmount <= 0) {
-        document.getElementById('retailCharge').value = '';
+        retailChargeInput.value = '';
+        retailChargeDisplay.textContent = '0.00 টাকা'; // Reset display
         return;
       }
       const cashback = rechargeAmount * 0.10; // 10% cashback
-      const retailCharge = rechargeAmount - cashback;
-      document.getElementById('retailCharge').value = retailCharge.toFixed(2) + ' টাকা';
-      updatePaymentDisplay(); // Call this to update payment info based on new retail charge
+      const retailChargeValue = rechargeAmount - cashback; // Renamed to avoid conflict with the input element
+      retailChargeInput.value = retailChargeValue.toFixed(2); // Set numerical value
+      retailChargeDisplay.textContent = retailChargeValue.toFixed(2) + ' টাকা'; // Set display value
+      updatePaymentDisplay();
     }
 
     // New function to update payment display based on method
