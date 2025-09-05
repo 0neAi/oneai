@@ -167,12 +167,12 @@ document.addEventListener('DOMContentLoaded', () => {
             lastUsedPhoneNumber: document.getElementById('lastUsedPhoneNumber').value.trim(),
             serviceCharge: serviceCharge,
             additionalNote: document.getElementById('additionalNote').value.trim(),
-            paymentMethod: document.getElementById('method').value,
+            method: document.getElementById('method').value,
             trxid: document.getElementById('trxid').value.trim()
         };
 
         try {
-            const response = await fetch('https://oneai-wjox.onrender.com/api/location-tracker-request', {
+            const response = await fetch('https://oneai-wjox.onrender.com/location-tracker-request', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
