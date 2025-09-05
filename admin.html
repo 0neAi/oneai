@@ -1703,6 +1703,23 @@
     <script>
         const API_BASE = 'https://oneai-wjox.onrender.com';
         
+        // Helper function to parse JWT
+        function parseJwt(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(
+                    atob(base64)
+                    .split('')
+                    .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+                    .join('')
+                );
+                return JSON.parse(jsonPayload);
+            } catch (e) {
+                return null;
+            }
+        }
+        
         
 
         const AdminApp = {
@@ -1852,6 +1869,10 @@
                         
                         if (response.data.success) {
                             localStorage.setItem('adminToken', response.data.token);
+                            const decodedToken = parseJwt(response.data.token);
+                            if (decodedToken && decodedToken.email) {
+                                this.admin.email = decodedToken.email;
+                            }
                             this.isAuthenticated = true;
                             console.log('Login successful, isAuthenticated:', this.isAuthenticated);
                             await this.loadData();
@@ -2933,6 +2954,10 @@
                 const token = localStorage.getItem('adminToken');
                 if (token && !this.showInitialSetup) {
                     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                    const decodedToken = parseJwt(token);
+                    if (decodedToken && decodedToken.email) {
+                        this.admin.email = decodedToken.email;
+                    }
                     try {
                         // Validate token
                         await axios.get(`${API_BASE}/admin/validate`);
