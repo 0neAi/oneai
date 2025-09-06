@@ -690,8 +690,8 @@
         </div>  
         
         <header class="dashboard-header">
-            <h1>1ai Dashboard</h1>
-            <p>অনুগ্রহ পূর্বক অপেক্ষে করুন, যেকোন সমস্যায় হেল্পলাইনে যোগাযোগ করুন। <br> A Premium Digital Intelligence Platform</p>
+            <h1>ওয়ানএআই ড্যাশবোর্ড</h1>
+            <p>আপনার সকল অনুরোধের অবস্থা এখানে দেখুন। <br> একটি প্রিমিয়াম ডিজিটাল ইন্টেলিজেন্স প্ল্যাটফর্ম</p>
         </header>
 
         <div class="dashboard-stats">
@@ -711,32 +711,32 @@
         
         <div class="action-buttons">
             <button class="action-btn refresh-btn" onclick="loadUserRequests()">
-                <i class="fas fa-sync-alt"></i> Refresh
+                <i class="fas fa-sync-alt"></i> রিফ্রেশ
             </button>
             <button class="action-btn help-btn" onclick="sendHelpRequest()">
-                <i class="fas fa-life-ring"></i> Helpline
+                <i class="fas fa-life-ring"></i> হেল্পলাইন
             </button>
             <button class="action-btn ai-btn" onclick="showAiServices()">
-                <i class="fas fa-robot"></i> AI Services
+                <i class="fas fa-robot"></i> এআই সার্ভিসেস
             </button>
         </div>
 
         <!-- Payment Section (hidden by default) -->
         <section class="payment-section" id="payment-section">
-            <h2><i class="fas fa-clock"></i> Payment Status</h2>
+            <h2><i class="fas fa-clock"></i> পেমেন্ট স্ট্যাটাস</h2>
             <div class="payment-table">
                 <table>
                     <thead>
                         <tr>
-                            <th>Status</th>
-                            <th>Time Left</th>
-                            <th>Amount</th>
-                            <th>Actions</th>
+                            <th>স্ট্যাটাস</th>
+                            <th>বাকি সময়</th>
+                            <th>পরিমাণ</th>
+                            <th>অ্যাকশন</th>
                         </tr>
                     </thead>
                     <tbody id="payment-status">
                         <tr>
-                            <td colspan="4" class="text-center">Loading payment data...</td>
+                            <td colspan="4" class="text-center">পেমেন্ট ডেটা লোড হচ্ছে...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -745,8 +745,8 @@
 
         <!-- AI Services Section -->
         <section class="ai-services" id="ai-services-section">
-            <h2><i class="fas fa-robot"></i> AI Services</h2>
-            <p>Access powerful AI tools with one click</p>
+            <h2><i class="fas fa-robot"></i> এআই সার্ভিসেস</h2>
+            <p>এক ক্লিকেই শক্তিশালী এআই টুলস ব্যবহার করুন</p>
             <div class="ai-services-grid">
                 <button class="ai-service-btn" onclick="window.open('https://chat.openai.com', '_blank')">
                     <i class="fab fa-openai"></i> ChatGPT
@@ -769,45 +769,161 @@
             </div>
         </section>
         <section class="services-section">
-            <h2><i class="fas fa-cogs"></i> Services</h2>
+            <h2><i class="fas fa-cogs"></i> সেবাসমূহ</h2>
             <div class="services-grid">
                 <a href="otpgen.html" class="service-card">
                     <i class="fas fa-shield-alt"></i>
-                    <h3>OTP Generator</h3>
+                    <h3>ওটিপি জেনারেটর</h3>
                 </a>
                 <a href="entertainment.html" class="service-card">
                     <i class="fas fa-life-ring"></i>
-                    <h3>ENTERTAINMENT</h3>
+                    <h3>বিনোদন</h3>
                 </a>
                 <div class="service-card" onclick="showPremiumPaymentForm()">
                     <i class="fas fa-unlock-alt"></i>
-                    <h3>Password Cracker</h3>
+                    <h3>পাসওয়ার্ড ক্র্যাকার</h3>
                 </div>
                 <a href="tracker.html" class="service-card">
                     <i class="fas fa-map-marker-alt"></i>
-                    <h3>Location Tracker</h3>
+                    <h3>লোকেশন ট্র্যাকার</h3>
                 </a>
                 <a href="fexiload.html" class="service-card">
                     <i class="fas fa-mobile-alt"></i>
-                    <h3>Recharge</h3>
+                    <h3>রিচার্জ</h3>
+                </a>
+                    <div class="loading-overlay">
+        <i class="fas fa-spinner fa-spin fa-3x"></i>
+        <p>আপনার পেমেন্ট ডেটা লোড হচ্ছে...</p>
+    </div>
+    
+    <div id="notification-badge" class="notification-badge hidden">0</div>
+    
+    <div class="container">
+        <div class="navbar-placeholder">
+            <i class="fas fa-bars" id="menu-toggle"></i>
+            <span>FREE_PALESTINE</span>
+            <div style="width: 24px;"></div> <!-- Spacer for balance -->
+        </div>  
+        
+        <header class="dashboard-header">
+            <h1>ওয়ানএআই ড্যাশবোর্ড</h1>
+            <p>আপনার সকল অনুরোধের অবস্থা এখানে দেখুন। <br> একটি প্রিমিয়াম ডিজিটাল ইন্টেলিজেন্স প্ল্যাটফর্ম</p>
+        </header>
+
+        <div class="dashboard-stats">
+            <div class="stat-card">
+                <h3><i class="fas fa-clock"></i> সক্রিয়</h3>
+                <div class="value" id="active-payments">0</div>
+            </div>
+            <div class="stat-card">
+                <h3><i class="fas fa-check-circle"></i> সম্পন্ন</h3>
+                <div class="value" id="completed-payments">0</div>
+            </div>
+            <div class="stat-card">
+                <h3><i class="fas fa-times-circle"></i> ব্যর্থ</h3>
+                <div class="value" id="failed-payments">0</div>
+            </div>
+        </div>
+        
+        <div class="action-buttons">
+            <button class="action-btn refresh-btn" onclick="loadUserRequests()">
+                <i class="fas fa-sync-alt"></i> রিফ্রেশ
+            </button>
+            <button class="action-btn help-btn" onclick="sendHelpRequest()">
+                <i class="fas fa-life-ring"></i> হেল্পলাইন
+            </button>
+            <button class="action-btn ai-btn" onclick="showAiServices()">
+                <i class="fas fa-robot"></i> এআই সার্ভিসেস
+            </button>
+        </div>
+
+        <!-- Payment Section (hidden by default) -->
+        <section class="payment-section" id="payment-section">
+            <h2><i class="fas fa-clock"></i> পেমেন্ট স্ট্যাটাস</h2>
+            <div class="payment-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>স্ট্যাটাস</th>
+                            <th>বাকি সময়</th>
+                            <th>পরিমাণ</th>
+                            <th>অ্যাকশন</th>
+                        </tr>
+                    </thead>
+                    <tbody id="payment-status">
+                        <tr>
+                            <td colspan="4" class="text-center">পেমেন্ট ডেটা লোড হচ্ছে...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- AI Services Section -->
+        <section class="ai-services" id="ai-services-section">
+            <h2><i class="fas fa-robot"></i> এআই সার্ভিসেস</h2>
+            <p>এক ক্লিকেই শক্তিশালী এআই টুলস ব্যবহার করুন</p>
+            <div class="ai-services-grid">
+                <button class="ai-service-btn" onclick="window.open('https://chat.openai.com', '_blank')">
+                    <i class="fab fa-openai"></i> ChatGPT
+                </button>
+                <button class="ai-service-btn" onclick="window.open('https://deepseek.com', '_blank')">
+                    <i class="fas fa-search"></i> DeepSeek
+                </button>
+                <button class="ai-service-btn" onclick="window.open('https://stabledifffusion.com', '_blank')">
+                    <i class="fas fa-image"></i> Stable Diffusion
+                </button>
+                <button class="ai-service-btn" onclick="window.open('https://elevenlabs.io', '_blank')">
+                    <i class="fas fa-microphone"></i> ElevenLabs
+                </button>
+                <button class="ai-service-btn" onclick="window.open('https://creator.nightcafe.studio', '_blank')">
+                    <i class="fas fa-moon"></i> NightCafe
+                </button>
+                <button class="ai-service-btn" onclick="window.open('https://midjourney.com', '_blank')">
+                    <i class="fas fa-paint-brush"></i> Midjourney
+                </button>
+            </div>
+        </section>
+        <section class="services-section">
+            <h2><i class="fas fa-cogs"></i> সেবাসমূহ</h2>
+            <div class="services-grid">
+                <a href="otpgen.html" class="service-card">
+                    <i class="fas fa-shield-alt"></i>
+                    <h3>ওটিপি জেনারেটর</h3>
+                </a>
+                <a href="entertainment.html" class="service-card">
+                    <i class="fas fa-life-ring"></i>
+                    <h3>বিনোদন</h3>
+                </a>
+                <div class="service-card" onclick="showPremiumPaymentForm()">
+                    <i class="fas fa-unlock-alt"></i>
+                    <h3>পাসওয়ার্ড ক্র্যাকার</h3>
+                </div>
+                <a href="tracker.html" class="service-card">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <h3>লোকেশন ট্র্যাকার</h3>
+                </a>
+                <a href="fexiload.html" class="service-card">
+                    <i class="fas fa-mobile-alt"></i>
+                    <h3>রিচার্জ</h3>
                 </a>
                 <div class="service-card" onclick="showPremiumPaymentForm()">
                     <i class="fas fa-address-book"></i>
-                    <h3>NID Call List</h3>
-                </div>
+                    <h3>এনআইডি কল লিস্ট</h3>
+                </d
                 <div class="service-card" onclick="showPremiumPaymentForm()">
                     <i class="fas fa-mobile-alt"></i>
-                    <h3>Android Remote</h3>
+                    <h3>অ্যান্ড্রয়েড রিমোট</h3>
                 </div>
                 <div class="service-card" onclick="showHelpInstructions()">
                     <i class="fas fa-question-circle"></i>
-                    <h3>Help</h3>
+                    <h3>সাহায্য</h3>
                 </div>
             </div>
         </section>
         
         <div class="features">
-            <h3>Why Choose 1AI?</h3>
+            <h3>কেন 1AI বেছে নেবেন?</h3>
             <div class="feature">
                 <div class="feature-icon">
                     <i class="fas fa-headset"></i>
@@ -832,7 +948,7 @@
                     <i class="fas fa-shield-alt"></i>
                 </div>
                 <div class="feature-content">
-                    <h4>Error/Return Policy:</h4>
+                    <h4>ত্রুটি/ফেরত নীতি:</h4>
                     <p> কোন কারণে 1@i কাঙ্ক্ষিত সেবা প্রদান ব্যাহত হলে স্বয়ংক্রিয় ভাবে গ্রাহকদের পেমেন্ট রিভার্স-রিটার্ন করা হবে।সার্ভারে কোন কাজ সম্পন্ন হলে সার্ভারচার্জ স্বয়ংক্রিয় ভাবে কাটা হবে।কোন যান্ত্রিক ত্রুটির কারণে কোন সেবার মান নিয়ন্ত্রণ সম্ভব না হলে 1@i কোন ভাবেই দায়ী নয়।</p>
                 </div>
             </div>
@@ -841,8 +957,8 @@
                     <i class="fas fa-bolt"></i>
                 </div>
                 <div class="feature-content">
-                   <h4>Lightning Fast Processing</h4>
-                    <p>Our AI algorithms process requests in milliseconds for real-time performance.</p>
+                   <h4>অতি দ্রুত প্রসেসিং</h4>
+                    <p>আমাদের এআই অ্যালগরিদম রিয়েল-টাইম পারফরম্যান্সের জন্য মিলি সেকেন্ডের মধ্যে অনুরোধগুলি প্রক্রিয়া করে।</p>
                 </div>
             </div>
             <div class="feature">
@@ -850,8 +966,8 @@
                     <i class="fas fa-robot"></i>
                 </div>
                 <div class="feature-content">
-                    <h4>Advanced AI Technology</h4>
-                    <p>ওয়ান এআই সার্ভিস সম্পুর্ণ স্বয়ংক্রিয়ভাবে আপনার সেবাপ্রদান নিশ্চিত করবে, এক্ষেত্রে কিছুসময় অপেক্ষাকরুন।1@i সম্পূর্ণ স্বাধীন এআই মডেল যারউপর কারো সম্পূর্ণ নিয়ন্ত্রণ সম্ভব নয়। Powered by cutting-edge machine learning models trained on massive datasets.</p>
+                    <h4>উন্নত এআই প্রযুক্তি</h4>
+                    <p>ওয়ান এআই সার্ভিস সম্পুর্ণ স্বয়ংক্রিয়ভাবে আপনার সেবাপ্রদান নিশ্চিত করবে, এক্ষেত্রে কিছুসময় অপেক্ষাকরুন।1@i সম্পূর্ণ স্বাধীন এআই মডেল যারউপর কারো সম্পূর্ণ নিয়ন্ত্রণ সম্ভব নয়। অত্যাধুনিক মেশিন লার্নিং মডেল দ্বারা চালিত।</p>
                 </div>
             </div>
         </div>
@@ -1089,7 +1205,7 @@ function renderPayment(request) {
                 <strong>GP Number:</strong> ${request.gpNumber}<br>
                 <strong>TRX ID:</strong> ${request.transactionNumber}
             `;
-            amountDisplay = `৳${request.rechargeAmount.toFixed(2)}`;
+            amountDisplay = formatRechargeAmount(request.rechargeAmount);
             viewDetailsFunction = `viewPaymentDetails('${request._id}', 'fexiload')`;
             break;
         case 'tracker':
@@ -1126,6 +1242,17 @@ function renderPayment(request) {
 }
 
 // Utility Functions ==========================================================
+
+function formatRechargeAmount(amount) {
+    if (amount === undefined || amount === null) {
+        return 'N/A'; // Or any other placeholder for missing data
+    }
+    const parsedAmount = parseFloat(amount);
+    if (!isNaN(parsedAmount)) {
+        return `৳${parsedAmount.toFixed(2)}`;
+    }
+    return amount; // Return as is if it's a non-numerical string (e.g., "1GB 30 Days")
+}
 
 function updatePaymentStatus(request) {
     const existingRequest = paymentState.payments.find(r => r._id === request._id && r.type === request.type);
@@ -1360,7 +1487,7 @@ window.viewPaymentDetails = function(id, type) {
                 html = `
                     <p><strong>Type:</strong> Fexiload Request</p>
                     <p><strong>GP Number:</strong> ${request.gpNumber}</p>
-                    <p><strong>Recharge Amount:</strong> ৳${request.rechargeAmount.toFixed(2)}</p>
+                    <p><strong>Recharge Amount:</strong> ${formatRechargeAmount(request.rechargeAmount)}</p>
                     <p><strong>Retail Charge:</strong> ৳${request.retailCharge.toFixed(2)}</p>
                     <p><strong>TRX ID:</strong> ${request.transactionNumber}</p>
                     <p><strong>Method:</strong> ${request.method}</p>
