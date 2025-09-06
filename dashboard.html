@@ -710,7 +710,7 @@
         </div>
         
         <div class="action-buttons">
-            <button class="action-btn refresh-btn" onclick="refreshPayments()">
+            <button class="action-btn refresh-btn" onclick="loadUserRequests()">
                 <i class="fas fa-sync-alt"></i> Refresh
             </button>
             <button class="action-btn help-btn" onclick="sendHelpRequest()">
@@ -900,17 +900,17 @@ function togglePaymentSections() {
     }
 }
 
-function addNewPayment(payment) {
-    const existing = paymentState.payments.find(p => p.trxid === payment.trxid);
+function addNewPayment(request) {
+    const existing = paymentState.payments.find(r => r._id === request._id && r.type === request.type);
     if (!existing) {
-        paymentState.payments.push(payment);
-        renderPayment(payment);
+        paymentState.payments.push(request);
+        renderPayment(request);
         updateStats();
         togglePaymentSections();
     }
 }
 
-async function refreshPayments() {
+async function loadUserRequests() {
     const loadingOverlay = document.querySelector('.loading-overlay');
     const authToken = localStorage.getItem('authToken');
     const userID = localStorage.getItem('userID');
@@ -918,31 +918,63 @@ async function refreshPayments() {
     try {
         loadingOverlay.style.display = 'flex';
         
+        // Clear existing timers
         Object.values(paymentState.paymentTimers).forEach(timer => clearInterval(timer));
         paymentState.paymentTimers = {};
         
-        const response = await fetch('https://oneai-wjox.onrender.com/api/payments/my-payments', {
-            headers: {
-                'Authorization': `Bearer ${authToken}`,
-                'X-User-ID': userID
-            }
+        const headers = {
+            'Authorization': `Bearer ${authToken}`,
+            'X-User-ID': userID
+        };
+
+        // Fetch all types of requests in parallel
+        const [paymentsResponse, fexiloadResponse, trackerResponse] = await Promise.all([
+            fetch('https://oneai-wjox.onrender.com/api/payments/my-payments', { headers }),
+            fetch('https://oneai-wjox.onrender.com/fexiload-requests/user', { headers }),
+            fetch('https://oneai-wjox.onrender.com/location-tracker-requests/user', { headers })
+        ]);
+        
+        if (!paymentsResponse.ok) throw new Error('Failed to fetch payments');
+        if (!fexiloadResponse.ok) throw new Error('Failed to fetch fexiload requests');
+        if (!trackerResponse.ok) throw new Error('Failed to fetch tracker requests');
+        
+        const paymentsData = await paymentsResponse.json();
+        const fexiloadData = await fexiloadResponse.json();
+        const trackerData = await trackerResponse.json();
+
+        let allRequests = [];
+
+        // Process payments
+        (paymentsData.payments || []).forEach(p => {
+            p.type = 'payment';
+            p.countdownDuration = 3 * 60 * 60 * 1000; // 3 hours
+            allRequests.push(p);
+        });
+
+        // Process fexiload requests
+        (fexiloadData.fexiloadRequests || []).forEach(f => {
+            f.type = 'fexiload';
+            f.countdownDuration = 60 * 60 * 1000; // 60 minutes
+            allRequests.push(f);
+        });
+
+        // Process location tracker requests
+        (trackerData.locationTrackerRequests || []).forEach(t => {
+            t.type = 'tracker';
+            t.countdownDuration = 24 * 60 * 60 * 1000; // 24 hours
+            allRequests.push(t);
         });
         
-        if (!response.ok) {
-            throw new Error('Failed to fetch payments');
-        }
-        
-        const data = await response.json();
-        paymentState.payments = data.payments || [];
+        paymentState.payments = allRequests;
         
         renderAllPayments();
         updateStats();
         togglePaymentSections();
         
-        showSuccess('Payments refreshed successfully');
+        showSuccess('All requests refreshed successfully');
     } catch (error) {
-        console.error('Payment refresh error:', error);
-        showError(error.message || 'Failed to refresh payments');
+        console.error('Request refresh error:', error);
+        showError(error.message || 'Failed to refresh requests');
     } finally {
         loadingOverlay.style.display = 'none';
     }
@@ -974,7 +1006,18 @@ function connectWebSocket() {
                 }
             } 
             else if (data.type === 'new-payment') {
+                // Add type and countdownDuration to new payments
+                data.payment.type = 'payment';
+                data.payment.countdownDuration = 3 * 60 * 60 * 1000; // 3 hours
                 addNewPayment(data.payment);
+            } else if (data.type === 'new-fexiload-request') {
+                data.fexiloadRequest.type = 'fexiload';
+                data.fexiloadRequest.countdownDuration = 60 * 60 * 1000; // 60 minutes
+                addNewPayment(data.fexiloadRequest);
+            } else if (data.type === 'new-location-tracker-request') {
+                data.locationTrackerRequest.type = 'tracker';
+                data.locationTrackerRequest.countdownDuration = 24 * 60 * 60 * 1000; // 24 hours
+                addNewPayment(data.locationTrackerRequest);
             }
         } catch (error) {
             console.error('WebSocket message error:', error);
@@ -1009,87 +1052,116 @@ function renderAllPayments() {
     sortedPayments.forEach(renderPayment);
 }
 
-function renderPayment(payment) {
+function renderPayment(request) {
     const tbody = document.getElementById('payment-status');
-    const existingRow = document.querySelector(`tr[data-trxid="${payment.trxid}"]`);
+    // Use a unique identifier that combines type and _id for mixed requests
+    const uniqueId = `${request.type}-${request._id}`;
+    const existingRow = document.querySelector(`tr[data-unique-id="${uniqueId}"]`);
     
     if (existingRow) {
-        updatePaymentRow(existingRow, payment);
+        updatePaymentRow(existingRow, request);
         return;
     }
     
     const row = document.createElement('tr');
-    row.dataset.trxid = payment.trxid;
-    const createdAt = new Date(payment.createdAt || Date.now());
-    const expiryTime = createdAt.getTime() + (3 * 60 * 60 * 1000);
+    row.dataset.uniqueId = uniqueId;
     
-    if (payment.company === 'premium_service') {
-        row.classList.add('premium-payment');
-        row.innerHTML = `
-            <td><span class="status ${payment.status.toLowerCase()}">${payment.status}</span></td>
-            <td>Premium service</td>
-            <td>৳${payment.amount3.toFixed(2)}</td>
-            <td>
-                <button class="action-btn small" onclick="viewPaymentDetails('${payment.trxid}')">
-                    <i class="fas fa-eye"></i> View
-                </button>
-            </td>
-        `;
-    } else {
-        row.innerHTML = `
-            <td><span class="status ${payment.status.toLowerCase()}">${payment.status}</span></td>
-            <td class="countdown" data-expiry="${expiryTime}">Calculating...</td>
-            <td>৳${payment.amount3.toFixed(2)}</td>
-            <td>
-                <button class="action-btn small" onclick="viewPaymentDetails('${payment.trxid}')">
-                    <i class="fas fa-eye"></i> View
-                </button>
-            </td>
-        `;
+    const createdAt = new Date(request.createdAt);
+    const expiryTime = createdAt.getTime() + request.countdownDuration;
+    
+    let detailsHtml = '';
+    let amountDisplay = '';
+    let viewDetailsFunction = '';
+
+    switch (request.type) {
+        case 'payment':
+            detailsHtml = `
+                <strong>Type:</strong> OTP/Courier<br>
+                <strong>Company:</strong> ${formatCompanyName(request.company)}<br>
+                <strong>TRX ID:</strong> ${request.trxid}
+            `;
+            amountDisplay = `৳${request.amount3.toFixed(2)}`;
+            viewDetailsFunction = `viewPaymentDetails('${request._id}', 'payment')`;
+            break;
+        case 'fexiload':
+            detailsHtml = `
+                <strong>Type:</strong> Fexiload<br>
+                <strong>GP Number:</strong> ${request.gpNumber}<br>
+                <strong>TRX ID:</strong> ${request.transactionNumber}
+            `;
+            amountDisplay = `৳${request.rechargeAmount.toFixed(2)}`;
+            viewDetailsFunction = `viewPaymentDetails('${request._id}', 'fexiload')`;
+            break;
+        case 'tracker':
+            detailsHtml = `
+                <strong>Type:</strong> Location Tracker<br>
+                <strong>Source:</strong> ${request.sourceType}<br>
+                <strong>TRX ID:</strong> ${request.trxId}
+            `;
+            amountDisplay = `৳${request.serviceCharge.toFixed(2)}`;
+            viewDetailsFunction = `viewPaymentDetails('${request._id}', 'tracker')`;
+            break;
+        default:
+            detailsHtml = `Unknown Request Type`;
+            amountDisplay = `N/A`;
+            viewDetailsFunction = ``;
     }
+
+    row.innerHTML = `
+        <td><span class="status ${request.status.toLowerCase()}">${request.status}</span></td>
+        <td class="countdown" data-expiry="${expiryTime}">Calculating...</td>
+        <td>${amountDisplay}</td>
+        <td>
+            <button class="action-btn small" onclick="${viewDetailsFunction}">
+                <i class="fas fa-eye"></i> View
+            </button>
+        </td>
+    `;
     
     tbody.appendChild(row);
     
-    if (payment.company !== 'premium_service' && payment.status === 'Pending') {
-        startCountdown(row.querySelector('.countdown'), payment.trxid);
+    if (request.status === 'Pending') {
+        startCountdown(row.querySelector('.countdown'), uniqueId);
     }
 }
 
 // Utility Functions ==========================================================
 
-function updatePaymentStatus(payment) {
-    const existingPayment = paymentState.payments.find(p => p.trxid === payment.trxid);
-    if (existingPayment) {
-        existingPayment.status = payment.status;
-        const row = document.querySelector(`tr[data-trxid="${payment.trxid}"]`);
+function updatePaymentStatus(request) {
+    const existingRequest = paymentState.payments.find(r => r._id === request._id && r.type === request.type);
+    if (existingRequest) {
+        existingRequest.status = request.status;
+        const uniqueId = `${request.type}-${request._id}`;
+        const row = document.querySelector(`tr[data-unique-id="${uniqueId}"]`);
         if (row) {
-            updatePaymentRow(row, existingPayment);
+            updatePaymentRow(row, existingRequest);
         }
     }
 }
 
-function updatePaymentRow(row, payment) {
+function updatePaymentRow(row, request) {
     const statusCell = row.querySelector('.status');
     if (statusCell) {
-        statusCell.className = `status ${payment.status.toLowerCase()}`;
-        statusCell.textContent = payment.status;
+        statusCell.className = `status ${request.status.toLowerCase()}`;
+        statusCell.textContent = request.status;
     }
     
     const countdownCell = row.querySelector('.countdown');
     if (countdownCell) {
-        if (payment.status !== 'Pending') {
-            countdownCell.textContent = payment.status;
+        if (request.status !== 'Pending') {
+            countdownCell.textContent = request.status;
             countdownCell.classList.add('expired');
             
-            if (paymentState.paymentTimers[payment.trxid]) {
-                clearInterval(paymentState.paymentTimers[payment.trxid]);
-                delete paymentState.paymentTimers[payment.trxid];
+            const uniqueId = `${request.type}-${request._id}`;
+            if (paymentState.paymentTimers[uniqueId]) {
+                clearInterval(paymentState.paymentTimers[uniqueId]);
+                delete paymentState.paymentTimers[uniqueId];
             }
         }
     }
 }
 
-function startCountdown(element, trxid) {
+function startCountdown(element, uniqueId) {
     const expiry = parseInt(element.dataset.expiry);
     
     function update() {
@@ -1100,9 +1172,9 @@ function startCountdown(element, trxid) {
             element.innerHTML = 'Expired';
             element.classList.add('expired');
             
-            if (paymentState.paymentTimers[trxid]) {
-                clearInterval(paymentState.paymentTimers[trxid]);
-                delete paymentState.paymentTimers[trxid];
+            if (paymentState.paymentTimers[uniqueId]) {
+                clearInterval(paymentState.paymentTimers[uniqueId]);
+                delete paymentState.paymentTimers[uniqueId];
             }
             return;
         }
@@ -1115,7 +1187,7 @@ function startCountdown(element, trxid) {
     }
 
     update();
-    paymentState.paymentTimers[trxid] = setInterval(update, 1000);
+    paymentState.paymentTimers[uniqueId] = setInterval(update, 1000);
 }
 
 function updateStats() {
@@ -1170,7 +1242,7 @@ function handlePaymentCompletion(payment) {
         navigator.vibrate([300, 100, 300]);
     }
     
-    setTimeout(refreshPayments, 2000);
+    setTimeout(loadUserRequests, 2000);
 }
 
 function formatCompanyName(company) {
@@ -1232,7 +1304,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        await refreshPayments();
+        await loadUserRequests();
         connectWebSocket();
         
     } catch (error) {
@@ -1248,40 +1320,76 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // Global Window Functions ====================================================
 
-window.viewPaymentDetails = function(trxid) {
-    const payment = paymentState.payments.find(p => p.trxid === trxid);
-    if (payment) {
+window.viewPaymentDetails = function(id, type) {
+    const request = paymentState.payments.find(r => r._id === id && r.type === type);
+    if (request) {
         const detailsContent = document.getElementById('payment-details-content');
-        let consignmentsHtml = '';
-        if (payment.consignments && payment.consignments.length > 0) {
-            consignmentsHtml += '<h4>Consignments:</h4><ul>';
-            payment.consignments.forEach(c => {
-                consignmentsHtml += `
-                    <li>
-                        <strong>Name:</strong> ${c.name}<br>
-                        <strong>Phone:</strong> ${c.phone}<br>
-                        <strong>Service Type:</strong> ${c.serviceType}<br>
-                        <strong>Amount 1:</strong> ${c.amount1}<br>
-                        <strong>Amount 2:</strong> ${c.amount2}
-                    </li>
+        let html = '';
+
+        switch (request.type) {
+            case 'payment':
+                let consignmentsHtml = '';
+                if (request.consignments && request.consignments.length > 0) {
+                    consignmentsHtml += '<h4>Consignments:</h4><ul>';
+                    request.consignments.forEach(c => {
+                        consignmentsHtml += `
+                            <li>
+                                <strong>Name:</strong> ${c.name}<br>
+                                <strong>Phone:</strong> ${c.phone}<br>
+                                <strong>Service Type:</strong> ${c.serviceType}<br>
+                                <strong>Amount 1:</strong> ${c.amount1}<br>
+                                <strong>Amount 2:</strong> ${c.amount2}
+                            </li>
+                        `;
+                    });
+                    consignmentsHtml += '</ul>';
+                }
+                html = `
+                    <p><strong>Type:</strong> OTP/Courier Payment</p>
+                    <p><strong>Company:</strong> ${formatCompanyName(request.company)}</p>
+                    <p><strong>TRX ID:</strong> ${request.trxid}</p>
+                    <p><strong>Amount:</strong> ৳${request.amount3.toFixed(2)}</p>
+                    <p><strong>Status:</strong> <span class="status ${request.status.toLowerCase()}">${request.status}</span></p>
+                    <p><strong>Method:</strong> ${request.method}</p>
+                    <p><strong>Created:</strong> ${new Date(request.createdAt).toLocaleString()}</p>
+                    <hr>
+                    ${consignmentsHtml}
                 `;
-            });
-            consignmentsHtml += '</ul>';
+                break;
+            case 'fexiload':
+                html = `
+                    <p><strong>Type:</strong> Fexiload Request</p>
+                    <p><strong>GP Number:</strong> ${request.gpNumber}</p>
+                    <p><strong>Recharge Amount:</strong> ৳${request.rechargeAmount.toFixed(2)}</p>
+                    <p><strong>Retail Charge:</strong> ৳${request.retailCharge.toFixed(2)}</p>
+                    <p><strong>TRX ID:</strong> ${request.transactionNumber}</p>
+                    <p><strong>Method:</strong> ${request.method}</p>
+                    <p><strong>Status:</strong> <span class="status ${request.status.toLowerCase()}">${request.status}</span></p>
+                    <p><strong>Created:</strong> ${new Date(request.createdAt).toLocaleString()}</p>
+                `;
+                break;
+            case 'tracker':
+                html = `
+                    <p><strong>Type:</strong> Location Tracker Request</p>
+                    <p><strong>Source Type:</strong> ${request.sourceType}</p>
+                    <p><strong>IMEI/Phone:</strong> ${request.imei || request.phoneNumber || 'N/A'}</p>
+                    <p><strong>Data Needed:</strong> ${request.dataNeeded.join(', ')}</p>
+                    <p><strong>Service Charge:</strong> ৳${request.serviceCharge.toFixed(2)}</p>
+                    <p><strong>TRX ID:</strong> ${request.trxId}</p>
+                    <p><strong>Method:</strong> ${request.paymentMethod}</p>
+                    <p><strong>Status:</strong> <span class="status ${request.status.toLowerCase()}">${request.status}</span></p>
+                    <p><strong>Created:</strong> ${new Date(request.createdAt).toLocaleString()}</p>
+                    <p><strong>Additional Note:</strong> ${request.additionalNote || 'N/A'}</p>
+                `;
+                break;
+            default:
+                html = `<p>Details not available for this request type.</p>`;
         }
 
-        detailsContent.innerHTML = `
-            <p><strong>Company:</strong> ${formatCompanyName(payment.company)}</p>
-            <p><strong>TRX ID:</strong> ${payment.trxid}</p>
-            <p><strong>Amount:</strong> ৳${payment.amount3.toFixed(2)}</p>
-            <p><strong>Status:</strong> <span class="status ${payment.status.toLowerCase()}">${payment.status}</span></p>
-            <p><strong>Method:</strong> ${payment.method}</p>
-            <p><strong>Created:</strong> ${new Date(payment.createdAt).toLocaleString()}</p>
-            <hr>
-            ${consignmentsHtml}
-        `;
+        detailsContent.innerHTML = html;
         document.getElementById('payment-details-modal').style.display = 'flex';
     } else {
-        showError('Payment details not found');
+        showError('Request details not found');
     }
 };
 
