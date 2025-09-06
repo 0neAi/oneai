@@ -990,6 +990,7 @@
         <button class="action-btn" onclick="closePaymentPopup()">OK</button>
     </div>
     
+    <script src="./assets/js/utils.js"></script>
     <script>
 // Global state management
 const paymentState = {
@@ -1384,19 +1385,11 @@ function formatCompanyName(company) {
 }
 
 function showError(message) {
-    const errorDiv = document.createElement('div');
-    errorDiv.className = 'toast error';
-    errorDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
-    document.body.appendChild(errorDiv);
-    setTimeout(() => errorDiv.remove(), 3000);
+    showMessage(message, 'error');
 }
 
 function showSuccess(message) {
-    const successDiv = document.createElement('div');
-    successDiv.className = 'toast success';
-    successDiv.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
-    document.body.appendChild(successDiv);
-    setTimeout(() => successDiv.remove(), 3000);
+    showMessage(message, 'success');
 }
 
 function showAiServices() {
