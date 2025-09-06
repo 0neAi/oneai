@@ -528,7 +528,7 @@ app.get('/admin/validate', adminAuth, (req, res) => {
 // Admin User Management Endpoints
 app.get('/admin/users', adminAuth, async (req, res) => {
   try {
-    const users = await User.find().sort({ createdAt: -1 });
+    const users = await User.find().populate('referredBy', 'name').sort({ createdAt: -1 });
     res.json({ success: true, users });
   } catch (error) {
     console.error('Error fetching admin users:', error);
@@ -1095,6 +1095,25 @@ ${savedPayment.consignments.map(c => `  - Service: ${c.serviceType}, Name: ${c.n
       success: false,
       message: error.message || 'Payment processing failed'
     });
+  }
+});
+
+app.get('/users/:userID', validateUser, async (req, res) => {
+  try {
+    // Ensure the requested userID matches the authenticated user's ID
+    if (req.params.userID !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, message: 'Unauthorized: You can only view your own profile.' });
+    }
+
+    const user = await User.findById(req.params.userID).select('-password'); // Exclude password
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    res.json({ success: true, user });
+  } catch (error) {
+    console.error('Error fetching user details:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch user details.' });
   }
 });
 
