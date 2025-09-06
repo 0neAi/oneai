@@ -791,10 +791,6 @@
                     <i class="fas fa-mobile-alt"></i>
                     <h3>রিচার্জ</h3>
                 </a>
-                    <div class="loading-overlay">
-        <i class="fas fa-spinner fa-spin fa-3x"></i>
-        <p>আপনার পেমেন্ট ডেটা লোড হচ্ছে...</p>
-    </div>
     
     <div id="notification-badge" class="notification-badge hidden">0</div>
     
@@ -1028,12 +1024,14 @@ function addNewPayment(request) {
 }
 
 async function loadUserRequests() {
+    console.log('loadUserRequests: Started');
     const loadingOverlay = document.querySelector('.loading-overlay');
     const authToken = localStorage.getItem('authToken');
     const userID = localStorage.getItem('userID');
     
     try {
         loadingOverlay.style.display = 'flex';
+        console.log('loadUserRequests: Loading overlay shown');
         
         // Clear existing timers
         Object.values(paymentState.paymentTimers).forEach(timer => clearInterval(timer));
@@ -1050,6 +1048,7 @@ async function loadUserRequests() {
             fetch('https://oneai-wjox.onrender.com/fexiload-requests/user', { headers }),
             fetch('https://oneai-wjox.onrender.com/location-tracker-requests/user', { headers })
         ]);
+        console.log('loadUserRequests: All fetch calls initiated');
         
         if (!paymentsResponse.ok) throw new Error('Failed to fetch payments');
         if (!fexiloadResponse.ok) throw new Error('Failed to fetch fexiload requests');
@@ -1058,6 +1057,7 @@ async function loadUserRequests() {
         const paymentsData = await paymentsResponse.json();
         const fexiloadData = await fexiloadResponse.json();
         const trackerData = await trackerResponse.json();
+        console.log('loadUserRequests: All fetch calls completed');
 
         let allRequests = [];
 
@@ -1081,19 +1081,21 @@ async function loadUserRequests() {
             t.countdownDuration = 24 * 60 * 60 * 1000; // 24 hours
             allRequests.push(t);
         });
+        console.log('loadUserRequests: Requests processed, total:', allRequests.length);
         
         paymentState.payments = allRequests;
         
         renderAllPayments();
         updateStats();
         togglePaymentSections();
-        
         showSuccess('All requests refreshed successfully');
+        console.log('loadUserRequests: Completed successfully');
     } catch (error) {
-        console.error('Request refresh error:', error);
+        console.error('loadUserRequests: Error during refresh:', error);
         showError(error.message || 'Failed to refresh requests');
     } finally {
         loadingOverlay.style.display = 'none';
+        console.log('loadUserRequests: Loading overlay hidden');
     }
 }
 
