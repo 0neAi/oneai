@@ -335,7 +335,7 @@ function updateVoucherDisplay(reports) {
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', async () => {
-  displayMerchants();
+  // Removed displayMerchants() call as it's not defined here
   
   // Set today's date as default for penalty date
   const today = new Date().toISOString().split('T')[0];
