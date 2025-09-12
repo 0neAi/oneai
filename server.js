@@ -536,6 +536,31 @@ app.get('/admin/users', adminAuth, async (req, res) => {
   }
 });
 
+app.post('/admin/users/:id/approve', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { commissionPercentage, name, zilla, officeLocation } = req.body;
+
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    user.isApproved = true;
+    user.name = name || user.name;
+    user.zilla = zilla || user.zilla;
+    user.officeLocation = officeLocation || user.officeLocation;
+    user.referralCommissionPercentage = commissionPercentage !== undefined ? commissionPercentage : user.referralCommissionPercentage;
+
+    await user.save();
+
+    res.json({ success: true, message: 'User approved successfully.', user });
+  } catch (error) {
+    console.error('Error approving user:', error);
+    res.status(500).json({ success: false, message: 'Failed to approve user.' });
+  }
+});
+
 // Admin Merchant Issue Endpoints
 app.get('/admin/merchant-issues', adminAuth, async (req, res) => {
   try {
@@ -566,6 +591,101 @@ app.get('/admin/premium-services', adminAuth, async (req, res) => {
   } catch (error) {
     console.error('Error fetching admin premium services:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch premium services.' });
+  }
+});
+
+app.post('/admin/generate-premium-voucher', adminAuth, async (req, res) => {
+  try {
+    const { phone, discountPercentage, validity } = req.body;
+
+    if (!phone || discountPercentage === undefined || !validity) {
+      return res.status(400).json({ success: false, message: 'Phone, discount percentage, and validity are required.' });
+    }
+
+    const user = await User.findOne({ phone });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User with this phone number not found.' });
+    }
+
+    let validUntil = null;
+    if (validity !== 'lifetime') {
+      const num = parseInt(validity.slice(0, -1));
+      const unit = validity.slice(-1);
+      validUntil = new Date();
+      if (unit === 'd') {
+        validUntil.setDate(validUntil.getDate() + num);
+      } else if (unit === 'm') {
+        validUntil.setMonth(validUntil.getMonth() + num);
+      }
+    }
+
+    const voucherCode = `PREMIUM-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+
+    const newVoucher = new Voucher({
+      phone: user.phone,
+      code: voucherCode,
+      discountPercentage,
+      validUntil,
+      report: user._id,
+      reportModel: 'User' // Associating with the user who receives the voucher
+    });
+
+    await newVoucher.save();
+
+    res.status(201).json({ success: true, message: 'Premium voucher generated successfully.', voucherCode, discountPercentage, validUntil });
+  } catch (error) {
+    console.error('Error generating premium voucher:', error);
+    res.status(500).json({ success: false, message: 'Failed to generate premium voucher.' });
+  }
+});
+
+app.post('/admin/premium-payments/:id/process', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { discountPercentage, validity } = req.body;
+
+    const premiumService = await PremiumService.findById(id);
+    if (!premiumService) {
+      return res.status(404).json({ success: false, message: 'Premium service request not found.' });
+    }
+
+    if (premiumService.status !== 'Pending') {
+      return res.status(400).json({ success: false, message: 'Premium service request is not pending.' });
+    }
+
+    premiumService.status = 'Completed';
+
+    let validUntil = null;
+    if (validity !== 'lifetime') {
+      const num = parseInt(validity.slice(0, -1));
+      const unit = validity.slice(-1);
+      validUntil = new Date();
+      if (unit === 'd') {
+        validUntil.setDate(validUntil.getDate() + num);
+      } else if (unit === 'm') {
+        validUntil.setMonth(validUntil.getMonth() + num);
+      }
+    }
+    premiumService.validUntil = validUntil;
+
+    const voucherCode = `PREMIUM-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+
+    const newVoucher = new Voucher({
+      phone: premiumService.phone,
+      code: voucherCode,
+      discountPercentage,
+      validUntil,
+      report: premiumService._id,
+      reportModel: 'PremiumService'
+    });
+
+    await newVoucher.save();
+    await premiumService.save();
+
+    res.json({ success: true, message: 'Premium payment processed and voucher generated.', premiumService, voucher: newVoucher });
+  } catch (error) {
+    console.error('Error processing premium payment:', error);
+    res.status(500).json({ success: false, message: 'Failed to process premium payment.' });
   }
 });
 
@@ -1095,6 +1215,40 @@ ${savedPayment.consignments.map(c => `  - Service: ${c.serviceType}, Name: ${c.n
       success: false,
       message: error.message || 'Payment processing failed'
     });
+  }
+});
+
+app.get('/admin/users/:id/details', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findById(id)
+      .populate('referredBy', 'name email')
+      .populate('referrals', 'name email')
+      .select('-password'); // Exclude password
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    // Fetch payments for this user
+    const payments = await Payment.find({ user: id }).sort({ createdAt: -1 });
+
+    // Calculate total payments and total amount
+    const totalPayments = payments.filter(p => p.status === 'Completed').length;
+    const totalAmount = payments.filter(p => p.status === 'Completed').reduce((sum, p) => sum + p.amount3, 0);
+
+    // Attach payments and calculated totals to the user object
+    const userWithDetails = {
+      ...user.toObject(),
+      payments,
+      totalPayments,
+      totalAmount
+    };
+
+    res.json({ success: true, user: userWithDetails });
+  } catch (error) {
+    console.error('Error fetching admin user details:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch user details.' });
   }
 });
 
