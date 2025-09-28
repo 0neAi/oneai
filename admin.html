@@ -1782,7 +1782,15 @@
                     paymentEndDate: '',
                     paymentFilter: 'all', // Initialized
                     issueFilter: 'all', // Initialized
-                    penaltyFilter: 'all' // Initialized
+                    penaltyFilter: 'all', // Initialized
+
+                    // Page Data Management
+                    pageNameUpdate: '',
+                    pageStatusUpdate: '',
+                    pagePriceChangeCountUpdate: 0,
+                    pageUpdateMessage: '',
+                    pageUpdateSuccess: false,
+                    updatingPageData: false
                 };
             },
             computed: {
@@ -2895,6 +2903,43 @@
                         this.userPaymentError = (error.response && error.response.data && error.response.data.message) || 'Could not fetch user payment data.';
                     } finally {
                         this.isLoading = false;
+                    }
+                },
+                async updatePageData() {
+                    this.updatingPageData = true;
+                    this.pageUpdateMessage = '';
+                    this.pageUpdateSuccess = false;
+
+                    if (!this.pageNameUpdate || !this.pageStatusUpdate) {
+                        this.pageUpdateMessage = 'Page Name and Status are required.';
+                        this.pageUpdateSuccess = false;
+                        this.updatingPageData = false;
+                        return;
+                    }
+
+                    try {
+                        const response = await axios.post(`${API_BASE}/admin/page-data/update`, {
+                            pageName: this.pageNameUpdate,
+                            status: this.pageStatusUpdate,
+                            count: this.pagePriceChangeCountUpdate
+                        });
+
+                        if (response.data.success) {
+                            this.pageUpdateMessage = `Page '${this.pageNameUpdate}' updated successfully!`;
+                            this.pageUpdateSuccess = true;
+                            // Optionally clear form fields
+                            this.pageNameUpdate = '';
+                            this.pageStatusUpdate = '';
+                            this.pagePriceChangeCountUpdate = 0;
+                        } else {
+                            this.pageUpdateMessage = response.data.message || 'Failed to update page data.';
+                            this.pageUpdateSuccess = false;
+                        }
+                    } catch (error) {
+                        this.pageUpdateMessage = (error.response && error.response.data && error.response.data.message) || 'Error updating page data.';
+                        this.pageUpdateSuccess = false;
+                    } finally {
+                        this.updatingPageData = false;
                     }
                 }
             },
