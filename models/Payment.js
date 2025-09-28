@@ -32,6 +32,11 @@ const consignmentSchema = new mongoose.Schema({
       values: ['pricecng', 'partial', 'drto', 'delivery', 'return', 'list'],
       message: '{VALUE} is not a valid service type'
     }
+  },
+  pageName: { // New field
+    type: String,
+    required: function() { return this.serviceType === 'pricecng'; }, // Required only for pricecng
+    trim: true
   }
 });
 
