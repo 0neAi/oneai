@@ -461,6 +461,12 @@
             </select>
           </div>
 
+          <div class="form-group page-name-group hidden">
+            <label for="pageName">পেজের নাম:</label>
+            <input type="text" class="page-name" name="consignments[0][pageName]" list="page-name-suggestions-0" placeholder="পেজের নাম লিখুন অথবা সিলেক্ট করুন">
+            <datalist id="page-name-suggestions-0"></datalist>
+          </div>
+
           <div class="amount-group">
             <div class="form-group original-amount-group">
               <label>প্রোডাক্টের বর্তমান মূল্য:</label>
@@ -564,12 +570,14 @@
       const originalAmountGroup = group.querySelector('.original-amount-group');
       const updatedAmountGroup = group.querySelector('.updated-amount-group');
       const amountGroup = group.querySelector('.amount-group');
+      const pageNameGroup = group.querySelector('.page-name-group');
       const serviceType = select.value;
       
       // Reset all fields first
       originalAmountGroup.classList.remove('hidden');
       updatedAmountGroup.classList.remove('hidden');
       amountGroup.classList.remove('hidden');
+      pageNameGroup.classList.add('hidden'); // New line: hide page name by default
       
       // Hide appropriate fields based on service type
       if (serviceType === 'delivery' || serviceType === 'return') {
@@ -578,6 +586,9 @@
       else if (serviceType === 'drto') {
         originalAmountGroup.classList.add('hidden');
       } 
+      else if (serviceType === 'pricecng') {
+        pageNameGroup.classList.remove('hidden');
+      }
       
       calculateTotalCharge();
     }
@@ -775,6 +786,23 @@
                 amount2: parseFloat(group.querySelector('.amount2').value) || 0
             };
 
+            // Add pageName if serviceType is pricecng
+            if (serviceType === 'pricecng') {
+                let pageName = group.querySelector('.page-name').value;
+                // Extract the base page name by removing tags and counts
+                const match = pageName.match(/^(.*?)(?: \(Issue-Less\)|\s\(Issueless-Pending\)|\s\(Issue-Prone\)|\s\(New Listed\))?(?: \(\d+ changes\))?$/);
+                if (match && match[1]) {
+                    pageName = match[1].trim();
+                } else {
+                    pageName = pageName.trim(); // Fallback if regex doesn't match
+                }
+
+                if (!pageName) {
+                    throw new Error(`Consignment ${index + 1}: Page name is required for Price Change service`);
+                }
+                consignment.pageName = pageName.toUpperCase();
+            }
+
             // Validate consignment data
             if (!consignment.name || !validatePhone(consignment.phone)) {
                 throw new Error(`Consignment ${index + 1} has invalid data`);
@@ -906,33 +934,109 @@ ${formData.consignments.map((c, index) => `
         }
     });
 
+    // Function to populate page name dropdowns with tags and counts
+    function populatePageNameDropdowns() {
+        document.querySelectorAll('.consignment-group').forEach((group, index) => {
+            const inputElement = group.querySelector('.page-name');
+            const datalistElement = group.querySelector(`#page-name-suggestions-${index}`); // Get datalist by ID
+
+            if (!inputElement || !datalistElement) return;
+
+            const currentSelectedValue = inputElement.value; // Preserve current input value
+            datalistElement.innerHTML = ''; // Clear existing options
+
+            const allPageNames = new Set();
+
+            // Add page names from page statuses
+            window.pageStatuses.forEach(pageStatus => allPageNames.add(pageStatus.pageName));
+            // Add pages from price change counts (in case some exist but don't have a status yet)
+            window.pagePriceChangeCounts.forEach(item => allPageNames.add(item.pageName));
+
+            const sortedPageNames = Array.from(allPageNames).sort();
+
+            sortedPageNames.forEach(pageName => {
+                const pageStatus = window.pageStatuses.find(ps => ps.pageName === pageName);
+                let tag = '';
+                if (pageStatus) {
+                    switch (pageStatus.status) {
+                        case 'issueless':
+                            tag = ' (Issue-Less)';
+                            break;
+                        case 'issueless-pending':
+                            tag = ' (Issueless-Pending)';
+                            break;
+                        case 'issue-prone':
+                            tag = ' (Issue-Prone)';
+                            break;
+                        case 'new-listed':
+                            tag = ' (New Listed)';
+                            break;
+                    }
+                } else {
+                    tag = ' (New Listed)'; // Default for pages not yet in PageStatus
+                }
+
+                const priceChangeItem = window.pagePriceChangeCounts.find(item => item.pageName === pageName);
+                const count = priceChangeItem ? priceChangeItem.count : 0;
+                const countText = count > 0 ? ` (${count} changes)` : '';
+
+                const option = document.createElement('option');
+                option.value = pageName;
+                option.textContent = `${pageName}${tag}${countText}`;
+            });
+
+            // Restore previous input value
+            if (currentSelectedValue) {
+                inputElement.value = currentSelectedValue;
+            }
+        });
+    }
+
     // Add consignment functionality
     function addConsignment() {
         const container = document.getElementById('consignments-container');
         const template = document.querySelector('.consignment-group');
         const newGroup = template.cloneNode(true);
         newGroup.dataset.index = consignmentIndex;
-        
+
         // Update all input names with new index
         newGroup.querySelectorAll('[name]').forEach(input => {
             const name = input.getAttribute('name');
             input.setAttribute('name', name.replace(/\[0\]/, `[${consignmentIndex}]`));
         });
-        
+
+        // Update datalist id and input list attribute
+        const pageNameInput = newGroup.querySelector('.page-name');
+        if (pageNameInput) {
+            pageNameInput.setAttribute('list', `page-name-suggestions-${consignmentIndex}`);
+            const datalist = document.createElement('datalist');
+            datalist.id = `page-name-suggestions-${consignmentIndex}`;
+            pageNameInput.parentNode.appendChild(datalist);
+        }
+
         // Update counter text
         newGroup.querySelector('.consignment-counter').textContent = `Consignment #${consignmentIndex + 1}`;
-        
+
         // Clear input values
         newGroup.querySelectorAll('input').forEach(input => input.value = '');
-        newGroup.querySelector('select').selectedIndex = 0;
-        
-        // Make sure amount fields are visible
+        // For the service-type select, reset to default
+        const serviceTypeSelect = newGroup.querySelector('.service-type');
+        if (serviceTypeSelect) {
+            serviceTypeSelect.selectedIndex = 0;
+        }
+
+        // Make sure amount fields are visible and page-name-group is hidden initially
         newGroup.querySelector('.amount-group').classList.remove('hidden');
         newGroup.querySelector('.original-amount-group').classList.remove('hidden');
         newGroup.querySelector('.updated-amount-group').classList.remove('hidden');
-        
+        const pageNameGroup = newGroup.querySelector('.page-name-group');
+        if (pageNameGroup) {
+            pageNameGroup.classList.add('hidden');
+        }
+
         container.appendChild(newGroup);
         consignmentIndex++;
+        populatePageNameDropdowns(); // Populate datalist for the new group
     }
 
     // Remove consignment functionality
@@ -1008,7 +1112,34 @@ ${formData.consignments.map((c, index) => `
     }
 
     // Initialize form
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => { // Made async
+        // New global variables to store fetched data
+        window.pagePriceChangeCounts = [];
+        window.pageStatuses = []; // New variable for page statuses
+
+        try {
+            // Fetch merchant data (now PageStatus)
+            const merchantResponse = await fetch('https://oneai-wjox.onrender.com/api/merchant-data');
+            const merchantJson = await merchantResponse.json();
+            if (merchantJson.success) {
+                window.pageStatuses = merchantJson.pageStatuses; // Store page statuses
+            } else {
+                console.error('Failed to fetch merchant data:', merchantJson.message);
+            }
+
+            // Fetch page price change counts
+            const priceChangeResponse = await fetch('https://oneai-wjox.onrender.com/api/page-price-change-counts');
+            const priceChangeJson = await priceChangeResponse.json();
+            if (priceChangeJson.success) {
+                window.pagePriceChangeCounts = priceChangeJson.counts;
+            } else {
+                console.error('Failed to fetch page price change counts:', priceChangeJson.message);
+            }
+        } catch (error) {
+            console.error('Error fetching initial data:', error);
+            showMessage('Failed to load some data. Please refresh.', 'error');
+        }
+
         // Set up event listeners for dynamic elements
         document.getElementById('consignments-container').addEventListener('input', (e) => {
             if (e.target.classList.contains('amount1') || 
@@ -1033,6 +1164,7 @@ ${formData.consignments.map((c, index) => `
         calculateTotalCharge();
         updatePaymentDisplay();
         updateFreeConsignmentDisplay();
+        populatePageNameDropdowns(); // New function call to populate dropdowns
     });
 
     // Add this function to handle the scope dialog
