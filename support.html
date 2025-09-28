@@ -710,62 +710,131 @@
   </div>
 
   <script>
-    // Merchant data
-    const merchantData = {
-      issueless: [
-        "ApoonShop.com", "AK Online", "AlimShopBD", "Arogga", "Ayan Express", "Believers Shop", "Chahua", "Chatga Shop", "Chutki.com", "Daily Buy BD", 
-        "Deen Fashion2", "Delux Shop", "Dhaka Hat", "Digital Bazar", "Dream Heaven", "Dream Outlet", "EZICLICK", "Edaza BD",
-        "Fabrilife", "Faria Hair Care", "Flare Brand BD", "Giftbd.com", "HT Bazar", "Haramin Store", "Head Gear",
-        "La'am", "LS Online", "Manzile BD", "Maxfit Food", "Mehendi By MiMi", "Miash Corporation", "Orderkori.com",
-        "My Bazar BD", "Noba Global", "Online Shopping", "Organic Plus", "Ponno BD", "Pro Dokan",
-        "Renix Unani Labrotories Limited", "Rise Up", "Robi Shop BD", "Sellery BD", "Shirin Fashion", "Shopno Mart", "Shopping BD Top Score", "Smooth Life", "Tonny Fashion",
-        "Sunnah Sqr", "Tanhas Collection", "Tasnim Aurthy", "TickMart", "Trusted BD", "US Bangla Bazar BD",
-        "XPRESS IN TOWN", "e-cart.com.bd", "Malihas Room"
-      ],
-      issueProne: ["BD Beponi", "BonoBhumi", "CareMe", "Live Shopping", "Shajgoj"]
-    };
+
 
     // Initialize loading overlay
     const loadingOverlay = document.querySelector('.loading-overlay');
 
-    // Display merchants in the UI
-    function displayMerchants() {
+    async function displayMerchantAndPriceChangeData() {
       const issuelessContainer = document.getElementById('issueless-container');
+      const issueProneContainer = document.getElementById('issue-prone-container');
+
       if (issuelessContainer) {
-        issuelessContainer.innerHTML = '';
-        const chunkSize = 8;
-        if (merchantData.issueless && merchantData.issueless.length > 0) {
-          for (let i = 0; i < merchantData.issueless.length; i += chunkSize) {
-            const chunk = merchantData.issueless.slice(i, i + chunkSize);
+        issuelessContainer.innerHTML = ''; // Clear existing content
+      }
+      if (issueProneContainer) {
+        issueProneContainer.innerHTML = ''; // Clear existing content
+      }
+
+      let pageStatuses = [];
+      let pagePriceChangeCounts = [];
+
+      try {
+        // Fetch page statuses
+        const statusResponse = await fetch('https://oneai-wjox.onrender.com/api/merchant-data');
+        const statusJson = await statusResponse.json();
+        if (statusJson.success) {
+          pageStatuses = statusJson.pageStatuses;
+        } else {
+          console.error('Failed to fetch page statuses:', statusJson.message);
+        }
+
+        // Fetch page price change counts
+        const priceChangeResponse = await fetch('https://oneai-wjox.onrender.com/api/page-price-change-counts');
+        const priceChangeJson = await priceChangeResponse.json();
+        if (priceChangeJson.success) {
+          pagePriceChangeCounts = priceChangeJson.counts;
+        } else {
+          console.error('Failed to fetch page price change counts:', priceChangeJson.message);
+        }
+      } catch (error) {
+        console.error('Error fetching initial data for support page:', error);
+        if (issuelessContainer) issuelessContainer.innerHTML += '<p>ডেটা লোড করতে সমস্যা হয়েছে।</p>';
+        if (issueProneContainer) issueProneContainer.innerHTML += '<p>ডেটা লোড করতে সমস্যা হয়েছে।</p>';
+        return;
+      }
+
+      // Combine data and categorize
+      const issuelessPages = [];
+      const issuelessPendingPages = [];
+      const issuePronePages = [];
+      const newListedPages = [];
+
+      const allPageNames = new Set();
+      pageStatuses.forEach(ps => allPageNames.add(ps.pageName));
+      pagePriceChangeCounts.forEach(pc => allPageNames.add(pc.pageName));
+
+      Array.from(allPageNames).sort().forEach(pageName => {
+        const pageStatus = pageStatuses.find(ps => ps.pageName === pageName);
+        const priceChangeCount = pagePriceChangeCounts.find(pc => pc.pageName === pageName);
+        const count = priceChangeCount ? priceChangeCount.count : 0;
+
+        let statusText = '';
+        let targetList;
+
+        if (pageStatus) {
+          switch (pageStatus.status) {
+            case 'issueless':
+              statusText = 'Issue-Less';
+              targetList = issuelessPages;
+              break;
+            case 'issueless-pending':
+              statusText = 'Issueless-Pending';
+              targetList = issuelessPendingPages;
+              break;
+            case 'issue-prone':
+              statusText = 'Issue-Prone';
+              targetList = issuePronePages;
+              break;
+            case 'new-listed':
+              statusText = 'New Listed';
+              targetList = newListedPages;
+              break;
+          }
+        } else {
+          statusText = 'New Listed'; // Default if no status found
+          targetList = newListedPages;
+        }
+
+        targetList.push({ pageName, status: statusText, count });
+      });
+
+      // Display Issueless and Issueless-Pending pages
+      if (issuelessContainer) {
+        if (issuelessPages.length > 0 || issuelessPendingPages.length > 0 || newListedPages.length > 0) {
+          const allIssuelessRelated = [...issuelessPages, ...issuelessPendingPages, ...newListedPages];
+          const chunkSize = 8; // Display in chunks for better readability
+
+          for (let i = 0; i < allIssuelessRelated.length; i += chunkSize) {
+            const chunk = allIssuelessRelated.slice(i, i + chunkSize);
             const card = document.createElement('div');
             card.className = 'merchant-card';
             card.innerHTML = `
-              <h3>মার্চেন্ট তালিকা <span class="status issueless">Issue-Less-Safe</span></h3>
+              <h3>ইস্যু বিহীন/নতুন তালিকাভুক্ত পেইজ <span class="status issueless">Safe/Pending</span></h3>
               <ul>
-                ${chunk.map(merchant => `<li>${merchant}</li>`).join('')}
+                ${chunk.map(item => `<li>${item.pageName} (${item.status}) - ${item.count} changes</li>`).join('')}
               </ul>
             `;
             issuelessContainer.appendChild(card);
           }
         } else {
-          issuelessContainer.innerHTML = '<p>কোন ইস্যু বিহীন মার্চেন্ট পাওয়া যায়নি।</p>';
+          issuelessContainer.innerHTML = '<p>কোন ইস্যু বিহীন বা নতুন তালিকাভুক্ত পেইজ পাওয়া যায়নি।</p>';
         }
       }
 
-      const issueProneContainer = document.getElementById('issue-prone-container');
+      // Display Issue-Prone pages
       if (issueProneContainer) {
-        issueProneContainer.innerHTML = '';
-        const chunkSize = 8;
-        if (merchantData.issueProne && merchantData.issueProne.length > 0) {
-          for (let i = 0; i < merchantData.issueProne.length; i += chunkSize) {
-            const chunk = merchantData.issueProne.slice(i, i + chunkSize);
+        if (issuePronePages.length > 0) {
+          const chunkSize = 8;
+          for (let i = 0; i < issuePronePages.length; i += chunkSize) {
+            const chunk = issuePronePages.slice(i, i + chunkSize);
             const card = document.createElement('div');
             card.className = 'merchant-card';
             card.style.border = '1px solid var(--danger-color)';
             card.innerHTML = `
               <h3 style="color: var(--danger-color);">ঝুঁকিপূর্ণ মার্চেন্ট <span class="status issue">High-Risk</span></h3>
               <ul>
-                ${chunk.map(merchant => `<li>${merchant}</li>`).join('')}
+                ${chunk.map(item => `<li>${item.pageName} (${item.status}) - ${item.count} changes</li>`).join('')}
               </ul>
             `;
             issueProneContainer.appendChild(card);
@@ -1072,7 +1141,7 @@ Amount: ${formData.amount}
 
     // Event listeners
     document.addEventListener('DOMContentLoaded', () => {
-      displayMerchants();
+      displayMerchantAndPriceChangeData(); // Updated function call
       
       const issueForm = document.getElementById('issue-report-form');
       if (issueForm) {
