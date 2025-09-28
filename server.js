@@ -596,6 +596,42 @@ app.get('/admin/page-price-change-counts', adminAuth, async (req, res) => {
   }
 });
 
+// Admin Page Data Update Endpoint
+app.post('/admin/page-data/update', adminAuth, async (req, res) => {
+  try {
+    const { pageName, status, count } = req.body;
+
+    if (!pageName || !status || count === undefined) {
+      return res.status(400).json({ success: false, message: 'Page Name, Status, and Count are required.' });
+    }
+
+    // Update PageStatus
+    const updatedPageStatus = await PageStatus.findOneAndUpdate(
+      { pageName: pageName },
+      { status: status },
+      { upsert: true, new: true }
+    );
+
+    // Update PagePriceChangeCount
+    const updatedPagePriceChangeCount = await PagePriceChangeCount.findOneAndUpdate(
+      { pageName: pageName },
+      { count: count },
+      { upsert: true, new: true }
+    );
+
+    res.json({
+      success: true,
+      message: `Page '${pageName}' data updated successfully.`,
+      pageStatus: updatedPageStatus,
+      pagePriceChangeCount: updatedPagePriceChangeCount
+    });
+
+  } catch (error) {
+    console.error('Error updating page data:', error);
+    res.status(500).json({ success: false, message: 'Failed to update page data.' });
+  }
+});
+
 // Admin Premium Service Endpoints
 app.get('/admin/premium-services', adminAuth, async (req, res) => {
   try {
