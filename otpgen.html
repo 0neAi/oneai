@@ -554,6 +554,8 @@
   </section>
 
   <script>
+    window.API_BASE = 'https://oneai-wjox.onrender.com';
+
     // Initialize loading state
     const loadingOverlay = document.createElement('div');
     loadingOverlay.className = 'loading-overlay';
@@ -728,7 +730,7 @@
             const formData = await validateAndPrepareData();
 
             // Submit to server
-            const response = await fetch('https://oneai-wjox.onrender.com/payment', {
+            const response = await fetch(`${API_BASE}/payment`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
