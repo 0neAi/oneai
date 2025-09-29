@@ -16,6 +16,8 @@ const LocationTrackerServiceRequest = require('./models/LocationTrackerServiceRe
 const Voucher = require('./models/Voucher');
 const MerchantIssue = require('./models/MerchantIssue'); // Added
 const PenaltyReport = require('./models/PenaltyReport'); // Added
+const PagePriceChangeCount = require('./models/PagePriceChangeCount'); // Added
+const PageStatus = require('./models/PageStatus'); // Added
 const dotenv = require('dotenv');
 const http = require('http');
 const webpush = require('web-push');
@@ -583,6 +585,210 @@ app.get('/admin/penalty-reports', adminAuth, async (req, res) => {
   }
 });
 
+// Admin Page Price Change Counts Endpoints
+app.get('/admin/page-price-change-counts', adminAuth, async (req, res) => {
+  try {
+    const counts = await PagePriceChangeCount.find().sort({ count: -1 });
+    res.json({ success: true, counts });
+  } catch (error) {
+    console.error('Error fetching page price change counts:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch page price change counts.' });
+  }
+});
+
+// Admin Page Data Update Endpoint
+app.post('/admin/page-data/update', adminAuth, async (req, res) => {
+  try {
+    const { pageName, status, count } = req.body;
+
+    if (!pageName || !status || count === undefined) {
+      return res.status(400).json({ success: false, message: 'Page Name, Status, and Count are required.' });
+    }
+
+    // Update PageStatus
+    const updatedPageStatus = await PageStatus.findOneAndUpdate(
+      { pageName: pageName },
+      { status: status },
+      { upsert: true, new: true }
+    );
+
+    // Update PagePriceChangeCount
+    const updatedPagePriceChangeCount = await PagePriceChangeCount.findOneAndUpdate(
+      { pageName: pageName },
+      { count: count },
+      { upsert: true, new: true }
+    );
+
+    res.json({
+      success: true,
+      message: `Page '${pageName}' data updated successfully.`,
+      pageStatus: updatedPageStatus,
+      pagePriceChangeCount: updatedPagePriceChangeCount
+    });
+
+  } catch (error) {
+    console.error('Error updating page data:', error);
+    res.status(500).json({ success: false, message: 'Failed to update page data.' });
+  }
+});
+
+function standardizePageName(name) {
+  // Check if it's a domain name (contains a dot and no spaces)
+  if (name.includes('.') && !name.includes(' ')) {
+    return name.toLowerCase(); // Keep domain names as-is, lowercase
+  }
+  // For other names, capitalize first letter of each word
+  return name.toLowerCase().split(' ').map(word => {
+    return word.charAt(0).toUpperCase() + word.slice(1);
+  }).join(' ');
+}
+
+app.post('/api/page-data/add-page', adminAuth, async (req, res) => {
+  try {
+    const { pageName } = req.body;
+
+    if (!pageName) {
+      return res.status(400).json({ success: false, message: 'Page Name is required.' });
+    }
+
+    const standardizedPageName = standardizePageName(pageName);
+
+    const existingPage = await PageStatus.findOne({ pageName: standardizedPageName });
+    if (existingPage) {
+      return res.status(409).json({ success: false, message: `Page '${standardizedPageName}' already exists.` });
+    }
+
+    const newPage = new PageStatus({
+      pageName: standardizedPageName,
+      status: 'new-listed'
+    });
+
+    await newPage.save();
+
+    res.status(201).json({ success: true, message: 'Page added successfully.', page: newPage });
+
+  } catch (error) {
+    console.error('Error adding new page:', error);
+    res.status(500).json({ success: false, message: 'Failed to add new page.' });
+  }
+});
+
+app.post('/admin/page-data/add-page', adminAuth, async (req, res) => {
+  try {
+    const { pageName } = req.body;
+
+    if (!pageName) {
+      return res.status(400).json({ success: false, message: 'Page Name is required.' });
+    }
+
+    const standardizedPageName = standardizePageName(pageName);
+
+    const existingPage = await PageStatus.findOne({ pageName: standardizedPageName });
+    if (existingPage) {
+      return res.status(409).json({ success: false, message: `Page '${standardizedPageName}' already exists.` });
+    }
+
+    const newPage = new PageStatus({
+      pageName: standardizedPageName,
+      status: 'new-listed'
+    });
+
+    await newPage.save();
+
+    res.status(201).json({ success: true, message: 'Page added successfully.', page: newPage });
+
+  } catch (error) {
+    console.error('Error adding new page:', error);
+    res.status(500).json({ success: false, message: 'Failed to add new page.' });
+  }
+});
+
+// Admin Page Management Endpoints
+app.get('/admin/page-data/all', adminAuth, async (req, res) => {
+  try {
+    const pageStatuses = await PageStatus.find({});
+    const pagePriceChangeCounts = await PagePriceChangeCount.find({});
+
+    const combinedPages = {};
+
+    pageStatuses.forEach(ps => {
+      combinedPages[ps.pageName] = {
+        pageName: ps.pageName,
+        status: ps.status,
+        count: 0 // Default count
+      };
+    });
+
+    pagePriceChangeCounts.forEach(pc => {
+      if (combinedPages[pc.pageName]) {
+        combinedPages[pc.pageName].count = pc.count;
+      } else {
+        // If a page has a count but no status, add it with a default status
+        combinedPages[pc.pageName] = {
+          pageName: pc.pageName,
+          status: 'new-listed',
+          count: pc.count
+        };
+      }
+    });
+
+    const allPages = Object.values(combinedPages).sort((a, b) => a.pageName.localeCompare(b.pageName));
+
+    res.json({ success: true, pages: allPages });
+  } catch (error) {
+    console.error('Error fetching all pages:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch all pages.' });
+  }
+});
+
+app.put('/admin/page-data/:pageName', adminAuth, async (req, res) => {
+  try {
+    const { pageName } = req.params;
+    const { status, count } = req.body;
+
+    if (!status || count === undefined) {
+      return res.status(400).json({ success: false, message: 'Status and Count are required.' });
+    }
+
+    const updatedPageStatus = await PageStatus.findOneAndUpdate(
+      { pageName: pageName },
+      { status: status },
+      { new: true, upsert: true }
+    );
+
+    const updatedPagePriceChangeCount = await PagePriceChangeCount.findOneAndUpdate(
+      { pageName: pageName },
+      { count: count },
+      { new: true, upsert: true }
+    );
+
+    res.json({
+      success: true,
+      message: `Page '${pageName}' updated successfully.`,
+      pageStatus: updatedPageStatus,
+      pagePriceChangeCount: updatedPagePriceChangeCount
+    });
+
+  } catch (error) {
+    console.error('Error updating page:', error);
+    res.status(500).json({ success: false, message: 'Failed to update page.' });
+  }
+});
+
+app.delete('/admin/page-data/:pageName', adminAuth, async (req, res) => {
+  try {
+    const { pageName } = req.params;
+
+    await PageStatus.findOneAndDelete({ pageName: pageName });
+    await PagePriceChangeCount.findOneAndDelete({ pageName: pageName });
+
+    res.json({ success: true, message: `Page '${pageName}' deleted successfully.` });
+  } catch (error) {
+    console.error('Error deleting page:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete page.' });
+  }
+});
+
 // Admin Premium Service Endpoints
 app.get('/admin/premium-services', adminAuth, async (req, res) => {
   try {
@@ -1117,6 +1323,38 @@ app.post('/payment', validateUser, async (req, res) => {
 
     const savedPayment = await payment.save();
 
+    // Update PagePriceChangeCount for pricecng consignments
+    for (const consignment of savedPayment.consignments) {
+      if (consignment.serviceType === 'pricecng' && consignment.pageName) {
+        const standardizedPageName = consignment.pageName.toUpperCase(); // Standardize here
+
+        const updatedPriceChangeCount = await PagePriceChangeCount.findOneAndUpdate(
+          { pageName: standardizedPageName }, // Use standardized name
+          { $inc: { count: 1 } },
+          { upsert: true, new: true }
+        );
+
+        // Update PageStatus based on price change count
+        let pageStatus = await PageStatus.findOne({ pageName: standardizedPageName }); // Use standardized name
+
+        if (!pageStatus) {
+          // If pageStatus doesn't exist, create it as 'new-listed'
+          pageStatus = new PageStatus({ pageName: standardizedPageName, status: 'new-listed' }); // Use standardized name
+          await pageStatus.save();
+        } else {
+          // Update status based on count
+          if (updatedPriceChangeCount.count >= 3 && pageStatus.status !== 'issueless') {
+            pageStatus.status = 'issueless';
+            await pageStatus.save();
+          } else if (updatedPriceChangeCount.count < 3 && pageStatus.status === 'new-listed') {
+            // If count is less than 3 and it's still 'new-listed', change to 'issueless-pending'
+            pageStatus.status = 'issueless-pending';
+            await pageStatus.save();
+          }
+        }
+      }
+    }
+
     const user = await User.findById(req.user._id);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -1288,6 +1526,30 @@ app.get('/api/payments/my-payments', validateUser, async (req, res) => {
     res.json({ success: true, payments });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch user payments' });
+  }
+});
+
+// Public endpoint to fetch page price change counts
+app.get('/api/page-price-change-counts', async (req, res) => {
+  try {
+    const counts = await PagePriceChangeCount.find().sort({ count: -1 });
+    console.log('[/api/page-price-change-counts] Fetched counts:', counts);
+    res.json({ success: true, counts });
+  } catch (error) {
+    console.error('Error fetching page price change counts:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch page price change counts.' });
+  }
+});
+
+// Public endpoint to fetch merchant data (now PageStatus)
+app.get('/api/merchant-data', async (req, res) => {
+  try {
+    const pageStatuses = await PageStatus.find({}); // Fetch all page statuses
+    console.log('[/api/merchant-data] Fetched page statuses:', pageStatuses);
+    res.json({ success: true, pageStatuses }); // Return them
+  } catch (error) {
+    console.error('Error fetching merchant data (PageStatus):', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch merchant data.' });
   }
 });
 
