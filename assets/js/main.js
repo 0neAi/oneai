@@ -338,11 +338,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Removed displayMerchants() call as it's not defined here
   
   // Set today's date as default for penalty date
-  const penaltyDateElement = document.getElementById('penalty-date');
-  if (penaltyDateElement) {
-    const today = new Date().toISOString().split('T')[0];
-    penaltyDateElement.value = today;
-  }
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('penalty-date').value = today;
   
   // Load reports on page load
   const userPhone = localStorage.getItem('lastCheckedPhone');
