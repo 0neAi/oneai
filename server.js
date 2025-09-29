@@ -1404,6 +1404,7 @@ app.get('/api/payments/my-payments', validateUser, async (req, res) => {
 app.get('/api/page-price-change-counts', async (req, res) => {
   try {
     const counts = await PagePriceChangeCount.find().sort({ count: -1 });
+    console.log('[/api/page-price-change-counts] Fetched counts:', counts);
     res.json({ success: true, counts });
   } catch (error) {
     console.error('Error fetching page price change counts:', error);
@@ -1415,6 +1416,7 @@ app.get('/api/page-price-change-counts', async (req, res) => {
 app.get('/api/merchant-data', async (req, res) => {
   try {
     const pageStatuses = await PageStatus.find({}); // Fetch all page statuses
+    console.log('[/api/merchant-data] Fetched page statuses:', pageStatuses);
     res.json({ success: true, pageStatuses }); // Return them
   } catch (error) {
     console.error('Error fetching merchant data (PageStatus):', error);
