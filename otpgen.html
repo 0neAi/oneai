@@ -1001,6 +1001,7 @@ ${formData.consignments.map((c, index) => `
                 option.value = pageName;
                 option.textContent = `${pageName}${tag}${countText}`;
                 selectElement.appendChild(option);
+                selectElement.appendChild(option);
             });
 
             // Restore previous selection or set to default if not found
@@ -1072,16 +1073,20 @@ ${formData.consignments.map((c, index) => `
     // Add this function to fetch page data (statuses and counts)
     async function fetchPageData() {
         try {
+            console.log('Fetching merchant data from ${API_BASE}/api/merchant-data');
             const merchantResponse = await fetch(`${API_BASE}/api/merchant-data`);
             const merchantJson = await merchantResponse.json();
+            console.log('Merchant data response:', merchantJson);
             if (merchantJson.success) {
                 window.pageStatuses = merchantJson.pageStatuses;
             } else {
                 console.error('Failed to fetch merchant data:', merchantJson.message);
             }
 
+            console.log('Fetching page price change counts from ${API_BASE}/api/page-price-change-counts');
             const priceChangeResponse = await fetch(`${API_BASE}/api/page-price-change-counts`);
             const priceChangeJson = await priceChangeResponse.json();
+            console.log('Page price change counts response:', priceChangeJson);
             if (priceChangeJson.success) {
                 window.pagePriceChangeCounts = priceChangeJson.counts;
             } else {
