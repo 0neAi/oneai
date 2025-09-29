@@ -632,6 +632,34 @@ app.post('/admin/page-data/update', adminAuth, async (req, res) => {
   }
 });
 
+app.post('/api/page-data/add-page', adminAuth, async (req, res) => {
+  try {
+    const { pageName } = req.body;
+
+    if (!pageName) {
+      return res.status(400).json({ success: false, message: 'Page Name is required.' });
+    }
+
+    const existingPage = await PageStatus.findOne({ pageName: pageName.toUpperCase() });
+    if (existingPage) {
+      return res.status(409).json({ success: false, message: 'Page with this name already exists.' });
+    }
+
+    const newPage = new PageStatus({
+      pageName: pageName.toUpperCase(),
+      status: 'new-listed'
+    });
+
+    await newPage.save();
+
+    res.status(201).json({ success: true, message: 'Page added successfully.', page: newPage });
+
+  } catch (error) {
+    console.error('Error adding new page:', error);
+    res.status(500).json({ success: false, message: 'Failed to add new page.' });
+  }
+});
+
 // Admin Premium Service Endpoints
 app.get('/admin/premium-services', adminAuth, async (req, res) => {
   try {
