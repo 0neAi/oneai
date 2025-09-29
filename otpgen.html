@@ -17,7 +17,7 @@
     width: 100%;
     height: 100%;
     background: rgba(0,0,0,0.5);
-    display: flex; /* Changed to flex to be visible by default */
+    display: none;
     justify-content: center;
     align-items: center;
     z-index: 1000;
@@ -373,67 +373,24 @@
       margin-top: 15px;
     }
 
-    .paste-button {
-    background-color: #00ff00; /* Bright green */
-    color: #000000; /* Black text */
-    font-family: 'monospace', 'Courier New', Courier, monospace; /* Monospace font */
-    border: 1px solid #00ff00;
-    padding: 0.5em 1em;
-    border-radius: 3px;
-    cursor: pointer;
-    transition: background-color 0.2s, color 0.2s;
+    .confirmation-ok:hover {
+      background: linear-gradient(135deg, #5a2d91 0%, #4a2477 100%);
+      transform: translateY(-2px);
+    }
   }
-
-  .paste-button:hover {
-    background-color: #00cc00;
-    color: #ffffff;
-  }
-
-  .page-name-suggestions-list {
-    background-color: #1a1a1a; /* Dark background */
-    border: 1px solid #00ff00; /* Green border */
-    max-height: 150px;
-    overflow-y: auto;
-    position: absolute; /* Position relative to its parent */
-    width: calc(100% - 70px); /* Adjust width to match input field */
-    z-index: 100; /* Ensure it appears above other elements */
-    margin-top: 5px;
-    border-radius: 3px;
-  }
-
-  .page-name-suggestions-list.hidden {
-    display: none;
-  }
-
-  .suggestion-item {
-    padding: 8px 10px;
-    color: #00ff00; /* Green text */
-    font-family: 'monospace', 'Courier New', Courier, monospace;
-    cursor: pointer;
-    border-bottom: 1px solid rgba(0, 255, 0, 0.2);
-  }
-
-  .suggestion-item:last-child {
-    border-bottom: none;
-  }
-
-  .suggestion-item:hover {
-    background-color: #004400; /* Darker green on hover */
-    color: #ffffff; /* White text on hover */
-  }
+</style>
 </head>
-<body class="is-preload" style="background-color: #0a0a15; color: #f0f0f0;">
+<body class="is-preload">
   <div id="bg"></div>
-  <div style="position: relative; z-index: 2; background-color: #0a0a15; padding: 2em;">
-    <h1>One Ai Otp Generator</h1>
+  <h1>One Ai Otp Generator</h1>
 
-    <header id="header">
-      <h3>Service Payment</h3>
-      <p>সঠিক ভাবে বিস্তারিত তথ্য প্রদান করুন এবং সার্ভারচার্জ প্রদানের মাধ্যমে সার্ভিসটি এক্টিভ করুন</p>
-    </header>
+  <header id="header">
+    <h3>Service Payment</h3>
+    <p>সঠিক ভাবে বিস্তারিত তথ্য প্রদান করুন এবং সার্ভারচার্জ প্রদানের মাধ্যমে সার্ভিসটি এক্টিভ করুন</p>
+  </header>
 
-    <section>
-          <!-- Scope Premium Service Section -->
+  <section>
+        <!-- Scope Premium Service Section -->
 <a href="support.html" class="button icon solid fa-crown scope-btn">
   <span>প্রিমিয়াম_বোনাসঃ ইস্যুবিহীন পেইজ গুলোর লিষ্ট দেখুন এখুনি!</span>
 </a>
@@ -484,10 +441,6 @@
         <div class="consignment-group" data-index="0">
           <div class="consignment-counter">Consignment #1</div>
           <span class="remove-consignment" onclick="removeConsignment(this)">✕</span>
-          <div class="consignment-actions" style="position: absolute; top: 1rem; right: 3rem;">
-            <button type="button" class="button small ok-consignment-btn" onclick="lockConsignment(this)">OK</button>
-            <button type="button" class="button small edit-consignment-btn hidden" onclick="unlockConsignment(this)">Edit</button>
-          </div>
           
           <div class="form-group">
             <label>কাষ্টমার ডিটেইলস:</label>
@@ -506,20 +459,6 @@
               <option value="delivery">Delivery</option>
               <option value="return">Return</option>
             </select>
-          </div>
-
-          <div class="form-group page-name-group hidden">
-            <label for="pageName">পেজের নাম:</label>
-            <div style="display: flex; gap: 10px;">
-              <select class="page-name-select" name="consignments[0][pageName]" onchange="handlePageNameChange(this)" required>
-                <option value="">Select Page</option>
-                <option value="__add_new__">Add New Page...</option>
-              </select>
-              <button type="button" class="button small" onclick="addNewPage(this)">Add New</button>
-            </div>
-            <input type="text" class="new-page-name-input hidden" placeholder="Enter new page name" oninput="suggestPageNames(this)">
-            <button type="button" class="paste-button button small" onclick="pastePageName(this)">Paste</button>
-            <div class="page-name-suggestions-list hidden"></div>
           </div>
 
           <div class="amount-group">
@@ -600,15 +539,9 @@
     </form>
  <p>আপনার এপ/ওয়েবসাইট লগ আউট হলে কমপক্ষে ২৫ মিনিট লগইন করা থেকে বিরত থাকুন। অনুগ্রহ পূর্বক কিছুক্ষণ অপেক্ষা করুন পেমেন্ট সম্পন্ন হলে আপনার সার্ভিসটি স্বয়ংক্রিয় ভাবে প্রক্রিয়াকরণ শুরু হবে।</p>
     <div id="confirmation-message" style="margin-top: 20px;"></div>
-    <div id="helpline-section" class="form-group hidden" style="text-align: center; margin-top: 20px;">
-        <p class="alert-error">Failed to load essential data. Please contact support.</p>
-        <a href="https://wa.me/8801568760780" target="_blank" class="button primary">Contact Helpline</a>
-    </div>
   </section>
 
   <script>
-    window.API_BASE = 'https://oneai-wjox.onrender.com';
-
     // Initialize loading state
     const loadingOverlay = document.createElement('div');
     loadingOverlay.className = 'loading-overlay';
@@ -631,27 +564,21 @@
       const originalAmountGroup = group.querySelector('.original-amount-group');
       const updatedAmountGroup = group.querySelector('.updated-amount-group');
       const amountGroup = group.querySelector('.amount-group');
-      const pageNameGroup = group.querySelector('.page-name-group');
       const serviceType = select.value;
       
       // Reset all fields first
       originalAmountGroup.classList.remove('hidden');
       updatedAmountGroup.classList.remove('hidden');
       amountGroup.classList.remove('hidden');
-      pageNameGroup.classList.add('hidden'); // New line: hide page name by default
       
       // Hide appropriate fields based on service type
       if (serviceType === 'delivery' || serviceType === 'return') {
-        originalAmountGroup.classList.remove('hidden'); // Show original amount
-        updatedAmountGroup.classList.add('hidden'); // Hide updated amount
+        amountGroup.classList.add('hidden');
       } 
       else if (serviceType === 'drto') {
-        originalAmountGroup.classList.remove('hidden'); // Show original amount
-        updatedAmountGroup.classList.remove('hidden'); // Show updated amount
+        originalAmountGroup.classList.add('hidden');
       } 
-      else if (serviceType === 'pricecng') {
-        pageNameGroup.classList.remove('hidden');
-      }
+      
       calculateTotalCharge();
     }
 
@@ -758,143 +685,6 @@
         });
     }
 
-    // Function to paste into new page name input
-    async function pastePageName(buttonElement) {
-        const group = buttonElement.closest('.consignment-group');
-        const newPageNameInput = group.querySelector('.new-page-name-input');
-        try {
-            const text = await navigator.clipboard.readText();
-            if (text) {
-                newPageNameInput.value = text.trim();
-                newPageNameInput.classList.remove('hidden'); // Ensure input is visible
-                newPageNameInput.focus();
-                showMessage('Pasted from clipboard!', 'success');
-                suggestPageNames(newPageNameInput); // Trigger suggestions after pasting
-            } else {
-                showMessage('Clipboard is empty or contains no text.', 'error');
-            }
-        } catch (err) {
-            console.error('Failed to read clipboard contents:', err);
-            showMessage('Failed to access clipboard. Please ensure you have granted permission.', 'error');
-        }
-    }
-
-    // Function to suggest page names as user types
-    function suggestPageNames(inputElement) {
-        const group = inputElement.closest('.consignment-group');
-        const suggestionsList = group.querySelector('.page-name-suggestions-list');
-        const selectElement = group.querySelector('.page-name-select');
-        const inputValue = inputElement.value.trim();
-        suggestionsList.innerHTML = '';
-
-        if (inputValue.length < 2) {
-            suggestionsList.classList.add('hidden');
-            return;
-        }
-
-        const normalizedInputValue = normalizePageName(inputValue);
-        const matchingPages = window.pageStatuses.filter(ps => 
-            normalizePageName(ps.pageName).includes(normalizedInputValue)
-        ).slice(0, 5); // Limit to 5 suggestions
-
-        if (matchingPages.length > 0) {
-            matchingPages.forEach(page => {
-                const suggestionItem = document.createElement('div');
-                suggestionItem.classList.add('suggestion-item');
-                suggestionItem.textContent = page.pageName;
-                suggestionItem.addEventListener('click', () => {
-                    inputElement.value = ''; // Clear new page input
-                    inputElement.classList.add('hidden');
-                    group.querySelector('.paste-button').classList.add('hidden');
-                    selectElement.value = page.pageName;
-                    suggestionsList.classList.add('hidden');
-                    handlePageNameChange(selectElement); // Update visibility
-                });
-                suggestionsList.appendChild(suggestionItem);
-            });
-            suggestionsList.classList.remove('hidden');
-        } else {
-            suggestionsList.classList.add('hidden');
-        }
-    }
-
-    // New function to show helpline button
-    function showHelplineButton() {
-        document.getElementById('helpline-section').classList.remove('hidden');
-    }
-
-    // Function to lock a consignment
-    function lockConsignment(buttonElement) {
-        const group = buttonElement.closest('.consignment-group');
-        group.querySelectorAll('input, select, textarea').forEach(field => {
-            if (!field.classList.contains('ok-consignment-btn') && !field.classList.contains('edit-consignment-btn')) {
-                field.setAttribute('readonly', 'readonly');
-                field.setAttribute('disabled', 'disabled');
-            }
-        });
-        buttonElement.classList.add('hidden');
-        group.querySelector('.edit-consignment-btn').classList.remove('hidden');
-        showMessage('Consignment locked.', 'success');
-    }
-
-    // Function to unlock a consignment
-    function unlockConsignment(buttonElement) {
-        const group = buttonElement.closest('.consignment-group');
-        group.querySelectorAll('input, select, textarea').forEach(field => {
-            field.removeAttribute('readonly');
-            field.removeAttribute('disabled');
-        });
-        buttonElement.classList.add('hidden');
-        group.querySelector('.ok-consignment-btn').classList.remove('hidden');
-        showMessage('Consignment unlocked for editing.', 'success');
-    }
-
-    // Add consignment functionality
-    function addConsignment() {
-        const container = document.getElementById('consignments-container');
-        const template = document.querySelector('.consignment-group');
-        const newGroup = template.cloneNode(true);
-        newGroup.dataset.index = consignmentIndex;
-
-        // Update all input names with new index
-        newGroup.querySelectorAll('[name]').forEach(input => {
-            const name = input.getAttribute('name');
-            input.setAttribute('name', name.replace(/\[0\]/, `[${consignmentIndex}]`));
-        });
-
-        // Clear input values and reset select
-        newGroup.querySelectorAll('input').forEach(input => input.value = '');
-        const serviceTypeSelect = newGroup.querySelector('.service-type');
-        if (serviceTypeSelect) {
-            serviceTypeSelect.selectedIndex = 0;
-        }
-        const pageNameSelect = newGroup.querySelector('.page-name-select');
-        if (pageNameSelect) {
-            pageNameSelect.selectedIndex = 0;
-            handlePageNameChange(pageNameSelect); // Hide new page input
-        }
-
-        // Update counter text
-        newGroup.querySelector('.consignment-counter').textContent = `Consignment #${consignmentIndex + 1}`;
-
-        // Ensure OK button is visible and Edit button is hidden for new consignments
-        newGroup.querySelector('.ok-consignment-btn').classList.remove('hidden');
-        newGroup.querySelector('.edit-consignment-btn').classList.add('hidden');
-
-        // Make sure amount fields are visible and page-name-group is hidden initially
-        newGroup.querySelector('.amount-group').classList.remove('hidden');
-        newGroup.querySelector('.original-amount-group').classList.remove('hidden');
-        newGroup.querySelector('.updated-amount-group').classList.remove('hidden');
-        const pageNameGroup = newGroup.querySelector('.page-name-group');
-        if (pageNameGroup) {
-            pageNameGroup.classList.add('hidden');
-        }
-
-        container.appendChild(newGroup);
-        consignmentIndex++;
-        populatePageNameDropdowns(); // Populate dropdown for the new group
-    }
-
     // Enhanced Form Submission Handler
     document.getElementById('payment-form').addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -922,7 +712,7 @@
             const formData = await validateAndPrepareData();
 
             // Submit to server
-            const response = await fetch(`${API_BASE}/payment`, {
+            const response = await fetch('https://oneai-wjox.onrender.com/payment', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -986,13 +776,9 @@
             };
 
             // Validate consignment data
-            if (!consignment.name) {
-                throw new Error(`Consignment ${index + 1}: Customer name is required`);
+            if (!consignment.name || !validatePhone(consignment.phone)) {
+                throw new Error(`Consignment ${index + 1} has invalid data`);
             }
-            if (!validatePhone(consignment.phone)) {
-                throw new Error(`Consignment ${index + 1}: Invalid 11-digit phone number`);
-            }
-
 
             // Service-specific validation
             if (serviceType === 'pricecng') {
@@ -1009,9 +795,8 @@
                 totalCharge += 15;
             }
             else if (serviceType === 'drto') {
-                if (!validateAmount(consignment.amount1) || 
-                    !validateAmount(consignment.amount2)) {
-                    throw new Error(`Consignment ${index + 1} has invalid amounts`);
+                if (consignment.amount2 > 0 && !validateAmount(consignment.amount2)) {
+                    throw new Error(`Consignment ${index + 1} has invalid amount`);
                 }
                 if (consignment.amount2 > 99) {
                     totalCharge += 10;
@@ -1022,12 +807,6 @@
                 } else if (consignment.amount2 === 0) {
                     totalCharge += 10;
                 }
-            }
-            else if (serviceType === 'delivery' || serviceType === 'return') {
-                if (!validateAmount(consignment.amount1)) {
-                    throw new Error(`Consignment ${index + 1} has invalid original amount`);
-                }
-                // amount2 is hidden and not used for calculation here
             }
 
             formData.consignments.push(consignment);
@@ -1127,367 +906,33 @@ ${formData.consignments.map((c, index) => `
         }
     });
 
-    // Helper function to standardize page names (first letter of each word capitalized, rest small, except for domains)
-    function standardizePageName(name) {
-        // Check if it's a domain name (contains a dot and no spaces)
-        if (name.includes('.') && !name.includes(' ')) {
-            return name.toLowerCase(); // Keep domain names as-is, lowercase
-        }
-        // For other names, capitalize first letter of each word
-        return name.toLowerCase().split(' ').map(word => {
-            return word.charAt(0).toUpperCase() + word.slice(1);
-        }).join(' ');
-    }
-
-    // Helper function to normalize page names for comparison (case and space insensitive)
-    function normalizePageName(name) {
-        return name.replace(/\s/g, '').toLowerCase();
-    }
-
-    // Function to populate page name dropdowns with tags and counts
-    async function populatePageNameDropdowns() {
-        // Fetch latest page data before populating
-        await fetchPageData();
-
-        document.querySelectorAll('.consignment-group').forEach((group, index) => {
-            const selectElement = group.querySelector('.page-name-select');
-            if (!selectElement) return;
-
-            const currentSelectedValue = selectElement.value; // Preserve current selection
-            selectElement.innerHTML = ''; // Clear existing options
-
-            const defaultOption = document.createElement('option');
-            defaultOption.value = '';
-            defaultOption.textContent = 'Select Page';
-            selectElement.appendChild(defaultOption);
-
-            const addNewOption = document.createElement('option');
-            addNewOption.value = '__add_new__';
-            addNewOption.textContent = 'Add New Page...';
-            selectElement.appendChild(addNewOption);
-
-            const allPageNames = new Set();
-
-            // Add page names from page statuses
-            if (window.pageStatuses && window.pageStatuses.length > 0) {
-                window.pageStatuses.forEach(pageStatus => allPageNames.add(pageStatus.pageName));
-            }
-            // Add pages from price change counts (in case some exist but don't have a status yet)
-            if (window.pagePriceChangeCounts && window.pagePriceChangeCounts.length > 0) {
-                window.pagePriceChangeCounts.forEach(item => allPageNames.add(item.pageName));
-            }
-
-            const sortedPageNames = Array.from(allPageNames).sort();
-
-            if (sortedPageNames.length === 0) {
-                const noPagesOption = document.createElement('option');
-                noPagesOption.value = '';
-                noPagesOption.textContent = 'No pages available';
-                noPagesOption.disabled = true;
-                selectElement.appendChild(noPagesOption);
-            } else {
-                sortedPageNames.forEach(pageName => {
-                    const pageStatus = window.pageStatuses.find(ps => ps.pageName === pageName);
-                    let tag = '';
-                    if (pageStatus) {
-                        switch (pageStatus.status) {
-                            case 'issueless':
-                                tag = ' (Issue-Less)';
-                                break;
-                            case 'issueless-pending':
-                                tag = ' (Issueless-Pending)';
-                                break;
-                            case 'issue-prone':
-                                tag = ' (Issue-Prone)';
-                                break;
-                            case 'new-listed':
-                                tag = ' (New Listed)';
-                                break;
-                        }
-                    } else {
-                        tag = ' (New Listed)'; // Default for pages not yet in PageStatus
-                    }
-
-                    const priceChangeItem = window.pagePriceChangeCounts.find(item => item.pageName === pageName);
-                    const count = priceChangeItem ? priceChangeItem.count : 0;
-                    const countText = count > 0 ? ` (${count} PC)` : '';
-
-                    const option = document.createElement('option');
-                    option.value = pageName;
-                    option.textContent = `${pageName}${tag}${countText}`;
-                    selectElement.appendChild(option);
-                });
-            }
-
-            // Restore previous selection or set to default if not found
-            if (currentSelectedValue && Array.from(selectElement.options).some(opt => opt.value === currentSelectedValue)) {
-                selectElement.value = currentSelectedValue;
-            } else {
-                selectElement.value = ''; // Select "Select Page"
-            }
-            // Trigger change handler in case '__add_new__' was previously selected
-            handlePageNameChange(selectElement);
-        });
-    }
-
-    function handlePageNameChange(selectElement) {
-        const group = selectElement.closest('.consignment-group');
-        const newPageNameInput = group.querySelector('.new-page-name-input');
-        const pasteButton = group.querySelector('.paste-button');
-
-        if (selectElement.value === '__add_new__') {
-            newPageNameInput.classList.remove('hidden');
-            newPageNameInput.setAttribute('required', 'required');
-            pasteButton.classList.remove('hidden');
-            newPageNameInput.focus();
-        } else {
-            newPageNameInput.classList.add('hidden');
-            newPageNameInput.removeAttribute('required');
-            newPageNameInput.value = ''; // Clear value when hidden
-            pasteButton.classList.add('hidden');
-        }
-    }
-
-    async function addNewPage(buttonElement) {
-        const group = buttonElement.closest('.consignment-group');
-        const newPageNameInput = group.querySelector('.new-page-name-input');
-        const selectElement = group.querySelector('.page-name-select');
-        const rawNewPageName = newPageNameInput.value.trim();
-
-        if (!rawNewPageName) {
-            showMessage('Please enter a page name to add.', 'error');
-            return;
-        }
-
-        const standardizedNewPageName = standardizePageName(rawNewPageName);
-        const normalizedNewPageName = normalizePageName(standardizedNewPageName);
-
-        const existingPage = window.pageStatuses.find(ps => normalizePageName(ps.pageName) === normalizedNewPageName);
-
-        if (existingPage) {
-            showMessage(`Page '${existingPage.pageName}' already exists. Selecting it instead.`, 'success');
-            newPageNameInput.value = '';
-            newPageNameInput.classList.add('hidden');
-            group.querySelector('.paste-button').classList.add('hidden');
-            selectElement.value = existingPage.pageName;
-            handlePageNameChange(selectElement); // Update visibility
-            return;
-        }
-
-        try {
-            loadingOverlay.style.display = 'flex';
-            const response = await fetch(`${window.API_BASE}/api/page-data/add-page`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}` // Assuming auth token is needed
-                },
-                body: JSON.stringify({ pageName: standardizedNewPageName })
-            });
-
-            const responseData = await response.json();
-
-            if (response.ok && responseData.success) {
-                showMessage(`Page '${responseData.page.pageName}' added successfully!`, 'success');
-                newPageNameInput.value = ''; // Clear input
-                newPageNameInput.classList.add('hidden'); // Hide input
-                group.querySelector('.paste-button').classList.add('hidden');
-                await populatePageNameDropdowns(); // Refresh all dropdowns
-                // Select the newly added page in the current dropdown
-                selectElement.value = responseData.page.pageName; // Use the standardized name from server
-            } else {
-                showMessage(responseData.message || 'Failed to add new page.', 'error');
-            }
-        } catch (error) {
-            console.error('Error adding new page:', error);
-            showMessage('Network error. Failed to add new page.', 'error');
-        } finally {
-            loadingOverlay.style.display = 'none';
-        }
-    }
-
-    // Add this function to fetch page data (statuses and counts)
-    async function fetchPageData() {
-        try {
-            console.log('Fetching merchant data from ${API_BASE}/api/merchant-data');
-            const merchantResponse = await fetch(`${API_BASE}/api/merchant-data`);
-            const merchantJson = await merchantResponse.json();
-            console.log('Merchant data response:', merchantJson);
-            if (merchantJson.success) {
-                window.pageStatuses = merchantJson.pageStatuses;
-            } else {
-                console.error('Failed to fetch merchant data:', merchantJson.message);
-            }
-
-            console.log('Fetching page price change counts from ${API_BASE}/api/page-price-change-counts');
-            const priceChangeResponse = await fetch(`${API_BASE}/api/page-price-change-counts`);
-            const priceChangeJson = await priceChangeResponse.json();
-            console.log('Page price change counts response:', priceChangeJson);
-            if (priceChangeJson.success) {
-                window.pagePriceChangeCounts = priceChangeJson.counts;
-            } else {
-                console.error('Failed to fetch page price change counts:', priceChangeJson.message);
-            }
-        } catch (error) {
-            console.error('Error fetching initial page data:', error);
-            showMessage('Failed to load some page data. Please refresh.', 'error');
-        }
-    }
-
-    // Updated validateAndPrepareData to use the select element
-    async function validateAndPrepareData() {
-        const form = document.getElementById('payment-form');
-        const formData = {
-            company: form.company.value,
-            phone: form.phone.value.replace(/\\D/g, ''),
-            password: form.password.value.trim(),
-            method: form.method.value,
-            trxid: form.trxid.value.trim(),
-            consignments: [],
-            discount: parseInt(localStorage.getItem('activeDiscount')) || 0
-        };
-
-        // Validate core fields
-        if (!validatePhone(formData.phone)) {
-            throw new Error('Invalid phone number format');
-        }
-
-        if (formData.trxid.length < 8) {
-            throw new Error('TRX ID must be at least 8 characters');
-        }
-
-        // Process consignments
-        let totalCharge = 0;
-        document.querySelectorAll('.consignment-group').forEach((group, index) => {
-            const serviceType = group.querySelector('.service-type').value;
-            const validServiceTypes = ['pricecng', 'partial', 'drto', 'delivery', 'return', 'list'];
-            if (!validServiceTypes.includes(serviceType)) {
-              throw new Error(`Consignment ${index + 1}: Invalid service type`);
-            }
-
-            const consignment = {
-                serviceType: serviceType,
-                name: group.querySelector('.name').value.trim(),
-                phone: group.querySelector('.phone1').value.replace(/\\D/g, ''),
-                amount1: parseFloat(group.querySelector('.amount1').value) || 0,
-                amount2: parseFloat(group.querySelector('.amount2').value) || 0
-            };
-
-            // Add pageName if serviceType is pricecng
-            if (serviceType === 'pricecng') {
-                const pageSelect = group.querySelector('.page-name-select');
-                const newPageInput = group.querySelector('.new-page-name-input');
-                let pageName = '';
-
-                if (pageSelect.value === '__add_new__') {
-                    pageName = newPageInput.value.trim();
-                } else {
-                    pageName = pageSelect.value;
-                }
-                
-                if (!pageName) {
-                    throw new Error(`Consignment ${index + 1}: Page name is required for Price Change service`);
-                }
-                consignment.pageName = pageName.toUpperCase();
-            }
-
-            // Validate consignment data
-            if (!consignment.name || !validatePhone(consignment.phone)) {
-                throw new Error(`Consignment ${index + 1} has invalid data`);
-            }
-
-            // Service-specific validation
-            if (serviceType === 'pricecng') {
-                if (!validateAmount(consignment.amount1) || 
-                    !validateAmount(consignment.amount2)) {
-                    throw new Error(`Consignment ${index + 1} has invalid amounts`);
-                }
-                if (consignment.amount2 >= consignment.amount1) {
-                    throw new Error(`Consignment ${index + 1}: Updated amount must be less than original`);
-                }
-                totalCharge += (consignment.amount1 - consignment.amount2) / 2;
-            } 
-            else if (serviceType === 'partial') {
-                totalCharge += 15;
-            }
-            else if (serviceType === 'drto') {
-                if (consignment.amount2 > 0 && !validateAmount(consignment.amount2)) {
-                    throw new Error(`Consignment ${index + 1} has invalid amount`);
-                }
-                if (consignment.amount2 > 99) {
-                    totalCharge += 10;
-                } else if (consignment.amount2 > 51) {
-                    totalCharge += 15;
-                } else if (consignment.amount2 > 1) {
-                    totalCharge += 25;
-                } else if (consignment.amount2 === 0) {
-                    totalCharge += 10;
-                }
-            }
-
-            formData.consignments.push(consignment);
-        });
-
-        // Apply discount
-        const voucherCode = document.getElementById('voucher-code').value.trim();
-        if (voucherCode) {
-            formData.voucherCode = voucherCode;
-        }
-        if (formData.discount > 0) {
-            totalCharge *= (1 - formData.discount / 100);
-        }
-
-        // Set final amount
-        formData.amount3 = parseFloat(totalCharge.toFixed(2));
-
-        // Validate total server charge
-        const minAmount = formData.voucherCode ? 0 : 100; // 0 if voucher, 100 otherwise
-        if (formData.amount3 < minAmount) {
-            throw new Error(`Total server charge is too low. Minimum ${minAmount} BDT required.`);
-        }
-        return formData;
-    }
-
     // Add consignment functionality
     function addConsignment() {
         const container = document.getElementById('consignments-container');
         const template = document.querySelector('.consignment-group');
         const newGroup = template.cloneNode(true);
         newGroup.dataset.index = consignmentIndex;
-
+        
         // Update all input names with new index
         newGroup.querySelectorAll('[name]').forEach(input => {
             const name = input.getAttribute('name');
             input.setAttribute('name', name.replace(/\[0\]/, `[${consignmentIndex}]`));
         });
-
-        // Clear input values and reset select
-        newGroup.querySelectorAll('input').forEach(input => input.value = '');
-        const serviceTypeSelect = newGroup.querySelector('.service-type');
-        if (serviceTypeSelect) {
-            serviceTypeSelect.selectedIndex = 0;
-        }
-        const pageNameSelect = newGroup.querySelector('.page-name-select');
-        if (pageNameSelect) {
-            pageNameSelect.selectedIndex = 0;
-            handlePageNameChange(pageNameSelect); // Hide new page input
-        }
-
+        
         // Update counter text
         newGroup.querySelector('.consignment-counter').textContent = `Consignment #${consignmentIndex + 1}`;
-
-        // Make sure amount fields are visible and page-name-group is hidden initially
+        
+        // Clear input values
+        newGroup.querySelectorAll('input').forEach(input => input.value = '');
+        newGroup.querySelector('select').selectedIndex = 0;
+        
+        // Make sure amount fields are visible
         newGroup.querySelector('.amount-group').classList.remove('hidden');
         newGroup.querySelector('.original-amount-group').classList.remove('hidden');
         newGroup.querySelector('.updated-amount-group').classList.remove('hidden');
-        const pageNameGroup = newGroup.querySelector('.page-name-group');
-        if (pageNameGroup) {
-            pageNameGroup.classList.add('hidden');
-        }
-
+        
         container.appendChild(newGroup);
         consignmentIndex++;
-        populatePageNameDropdowns(); // Populate dropdown for the new group
     }
 
     // Remove consignment functionality
@@ -1504,7 +949,7 @@ ${formData.consignments.map((c, index) => `
                 // Update all input names with new index
                 group.querySelectorAll('[name]').forEach(input => {
                     const name = input.getAttribute('name');
-                    input.setAttribute('name', name.replace(/\[\\d+\\]/, `[${index}]`));
+                    input.setAttribute('name', name.replace(/\[\d+\]/, `[${index}]`));
                 });
             });
             consignmentIndex = groups.length - 1;
@@ -1525,12 +970,7 @@ ${formData.consignments.map((c, index) => `
             }
             // Reset the first consignment group
             container.querySelector('.consignment-group').querySelectorAll('input').forEach(input => input.value = '');
-            container.querySelector('.consignment-group').querySelector('.service-type').selectedIndex = 0;
-            const pageNameSelect = container.querySelector('.consignment-group').querySelector('.page-name-select');
-            if (pageNameSelect) {
-                pageNameSelect.selectedIndex = 0;
-                handlePageNameChange(pageNameSelect); // Hide new page input
-            }
+            container.querySelector('.consignment-group').querySelector('select').selectedIndex = 0;
             consignmentIndex = 1;
             calculateTotalCharge();
         }
@@ -1545,7 +985,7 @@ ${formData.consignments.map((c, index) => `
         }
 
         try {
-            const response = await fetch(`${window.API_BASE}/apply-voucher`, {
+            const response = await fetch('https://oneai-wjox.onrender.com/apply-voucher', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1568,46 +1008,7 @@ ${formData.consignments.map((c, index) => `
     }
 
     // Initialize form
-    document.addEventListener('DOMContentLoaded', async () => { // Made async
-        // New global variables to store fetched data
-        window.pagePriceChangeCounts = [];
-        window.pageStatuses = []; // New variable for page statuses
-
-        const initialLoadTimeout = 30000; // 30 seconds
-        let initialLoadSuccessful = false;
-
-        try {
-            loadingOverlay.style.display = 'flex'; // Show loading overlay
-            
-            const timeoutPromise = new Promise((resolve, reject) =>
-                setTimeout(() => reject(new Error('Initial data load timed out.')), initialLoadTimeout)
-            );
-
-            await Promise.race([
-                (async () => {
-                    await fetchPageData();
-                    populatePageNameDropdowns();
-                    // Call updateAmountFields for the initial consignment after dropdowns are populated
-                    const initialServiceTypeSelect = document.querySelector('.consignment-group .service-type');
-                    if (initialServiceTypeSelect) {
-                        updateAmountFields(initialServiceTypeSelect);
-                    }
-                    initialLoadSuccessful = true;
-                })(),
-                timeoutPromise
-            ]);
-
-        } catch (error) {
-            console.error('Critical error during initial page load:', error);
-            showMessage('Failed to load essential page data. Please contact support.', 'error');
-            showHelplineButton();
-            // If initial load failed or timed out, attempt a hidden fetch
-            console.log('Attempting hidden background fetch for page data...');
-            hiddenFetchPageData();
-        } finally {
-            loadingOverlay.style.display = 'none'; // Hide loading overlay
-        }
-
+    document.addEventListener('DOMContentLoaded', () => {
         // Set up event listeners for dynamic elements
         document.getElementById('consignments-container').addEventListener('input', (e) => {
             if (e.target.classList.contains('amount1') || 
@@ -1633,31 +1034,6 @@ ${formData.consignments.map((c, index) => `
         updatePaymentDisplay();
         updateFreeConsignmentDisplay();
     });
-
-    // New function for hidden background fetch
-    async function hiddenFetchPageData() {
-        try {
-            const merchantResponse = await fetch(`${window.API_BASE}/api/merchant-data`);
-            const merchantJson = await merchantResponse.json();
-            if (merchantJson.success) {
-                window.pageStatuses = merchantJson.pageStatuses;
-            } else {
-                console.error('Hidden fetch: Failed to fetch merchant data:', merchantJson.message);
-            }
-
-            const priceChangeResponse = await fetch(`${window.API_BASE}/api/page-price-change-counts`);
-            const priceChangeJson = await priceChangeResponse.json();
-            if (priceChangeJson.success) {
-                window.pagePriceChangeCounts = priceChangeJson.counts;
-            } else {
-                console.error('Hidden fetch: Failed to fetch page price change counts:', priceChangeJson.message);
-            }
-            // Re-populate dropdowns if hidden fetch is successful
-            populatePageNameDropdowns();
-        } catch (error) {
-            console.error('Hidden fetch: Error fetching page data:', error);
-        }
-    }
 
     // Add this function to handle the scope dialog
     function showScopeDialog() {
