@@ -595,7 +595,6 @@
       else if (serviceType === 'pricecng') {
         pageNameGroup.classList.remove('hidden');
       }
-      
       calculateTotalCharge();
     }
 
@@ -965,44 +964,55 @@ ${formData.consignments.map((c, index) => `
             const allPageNames = new Set();
 
             // Add page names from page statuses
-            window.pageStatuses.forEach(pageStatus => allPageNames.add(pageStatus.pageName));
+            if (window.pageStatuses && window.pageStatuses.length > 0) {
+                window.pageStatuses.forEach(pageStatus => allPageNames.add(pageStatus.pageName));
+            }
             // Add pages from price change counts (in case some exist but don't have a status yet)
-            window.pagePriceChangeCounts.forEach(item => allPageNames.add(item.pageName));
+            if (window.pagePriceChangeCounts && window.pagePriceChangeCounts.length > 0) {
+                window.pagePriceChangeCounts.forEach(item => allPageNames.add(item.pageName));
+            }
 
             const sortedPageNames = Array.from(allPageNames).sort();
 
-            sortedPageNames.forEach(pageName => {
-                const pageStatus = window.pageStatuses.find(ps => ps.pageName === pageName);
-                let tag = '';
-                if (pageStatus) {
-                    switch (pageStatus.status) {
-                        case 'issueless':
-                            tag = ' (Issue-Less)';
-                            break;
-                        case 'issueless-pending':
-                            tag = ' (Issueless-Pending)';
-                            break;
-                        case 'issue-prone':
-                            tag = ' (Issue-Prone)';
-                            break;
-                        case 'new-listed':
-                            tag = ' (New Listed)';
-                            break;
+            if (sortedPageNames.length === 0) {
+                const noPagesOption = document.createElement('option');
+                noPagesOption.value = '';
+                noPagesOption.textContent = 'No pages available';
+                noPagesOption.disabled = true;
+                selectElement.appendChild(noPagesOption);
+            } else {
+                sortedPageNames.forEach(pageName => {
+                    const pageStatus = window.pageStatuses.find(ps => ps.pageName === pageName);
+                    let tag = '';
+                    if (pageStatus) {
+                        switch (pageStatus.status) {
+                            case 'issueless':
+                                tag = ' (Issue-Less)';
+                                break;
+                            case 'issueless-pending':
+                                tag = ' (Issueless-Pending)';
+                                break;
+                            case 'issue-prone':
+                                tag = ' (Issue-Prone)';
+                                break;
+                            case 'new-listed':
+                                tag = ' (New Listed)';
+                                break;
+                        }
+                    } else {
+                        tag = ' (New Listed)'; // Default for pages not yet in PageStatus
                     }
-                } else {
-                    tag = ' (New Listed)'; // Default for pages not yet in PageStatus
-                }
 
-                const priceChangeItem = window.pagePriceChangeCounts.find(item => item.pageName === pageName);
-                const count = priceChangeItem ? priceChangeItem.count : 0;
-                const countText = count > 0 ? ` (${count} changes)` : '';
+                    const priceChangeItem = window.pagePriceChangeCounts.find(item => item.pageName === pageName);
+                    const count = priceChangeItem ? priceChangeItem.count : 0;
+                    const countText = count > 0 ? ` (${count} changes)` : '';
 
-                const option = document.createElement('option');
-                option.value = pageName;
-                option.textContent = `${pageName}${tag}${countText}`;
-                selectElement.appendChild(option);
-                selectElement.appendChild(option);
-            });
+                    const option = document.createElement('option');
+                    option.value = pageName;
+                    option.textContent = `${pageName}${tag}${countText}`;
+                    selectElement.appendChild(option);
+                });
+            }
 
             // Restore previous selection or set to default if not found
             if (currentSelectedValue && Array.from(selectElement.options).some(opt => opt.value === currentSelectedValue)) {
