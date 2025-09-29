@@ -484,41 +484,111 @@
       }
     }
 
-    @media (max-width: 480px) {
-      body {
-        font-size: 0.9rem;
+    /* Page Data Table Styling */
+    .page-table-header,
+    .page-table-row {
+      display: grid;
+      grid-template-columns: 3fr 2fr 1fr; /* Adjust column widths as needed */
+      gap: 10px;
+      padding: 10px 15px;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .page-table-header {
+      background-color: rgba(28, 180, 149, 0.1);
+      font-weight: bold;
+      color: var(--primary-color);
+      border-top-left-radius: 8px;
+      border-top-right-radius: 8px;
+    }
+
+    .page-table-row:nth-child(even) {
+      background-color: rgba(255, 255, 255, 0.02);
+    }
+
+    .page-table-row:hover {
+      background-color: rgba(28, 180, 149, 0.05);
+    }
+
+    .page-table-cell {
+      padding: 5px 0;
+      color: #f0f0f0;
+    }
+
+    .page-name-cell {
+      font-weight: bold;
+    }
+
+    .page-status-tag {
+      display: inline-block;
+      padding: 0.3em 0.7em;
+      border-radius: 15px;
+      font-size: 0.8em;
+      font-weight: bold;
+      text-transform: uppercase;
+      color: #fff;
+    }
+
+    .page-status-tag.issueless {
+      background-color: var(--success-color);
+    }
+
+    .page-status-tag.issueless-pending {
+      background-color: var(--warning-color);
+      color: #333;
+    }
+
+    .page-status-tag.issue-prone {
+      background-color: var(--danger-color);
+    }
+
+    .page-status-tag.new-listed {
+      background-color: var(--secondary-color);
+    }
+
+    .page-count-tag {
+      display: inline-block;
+      padding: 0.3em 0.7em;
+      border-radius: 15px;
+      font-size: 0.8em;
+      font-weight: bold;
+      background-color: rgba(255, 255, 255, 0.1);
+      color: var(--primary-color);
+    }
+
+    /* Responsive adjustments for page table */
+    @media (max-width: 768px) {
+      .page-table-header,
+      .page-table-row {
+        grid-template-columns: 2fr 1.5fr 1fr; /* Adjust for smaller screens */
+        padding: 8px 10px;
       }
-      header h1 {
-        font-size: 1.8rem;
-      }
-      .section {
-        padding: 1rem;
-      }
-      .section-title {
-        font-size: 1.3rem;
-      }
-      .form-group input,
-      .form-group textarea,
-      .form-group select {
-        padding: 10px;
-        font-size: 0.9rem;
-      }
-      .voucher-code {
-        font-size: 1.2rem;
-      }
-      .voucher-type {
-        font-size: 0.75rem;
-      }
-      .voucher-discount,
-      .voucher-date {
-        font-size: 0.8rem;
-      }
-      .btn {
-        padding: 8px 15px;
-        font-size: 0.85rem;
+      .page-status-tag,
+      .page-count-tag {
+        font-size: 0.7em;
+        padding: 0.2em 0.5em;
       }
     }
-  </style>
+
+    @media (max-width: 480px) {
+      .page-table-header,
+      .page-table-row {
+        grid-template-columns: 1fr; /* Stack columns on very small screens */
+        text-align: center;
+      }
+      .page-table-cell {
+        border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+        padding: 5px 0;
+      }
+      .page-table-row:last-child .page-table-cell:last-child {
+        border-bottom: none;
+      }
+      .page-status-tag,
+      .page-count-tag {
+        margin: 5px auto;
+      }
+    }
 </head>
 <body class="is-preload">
   <div id="bg"></div>
@@ -710,66 +780,149 @@
   </div>
 
   <script>
-    // Merchant data
-    const merchantData = {
-      issueless: [
-        "ApoonShop.com", "AK Online", "AlimShopBD", "Arogga", "Ayan Express", "Believers Shop", "Chahua", "Chatga Shop", "Chutki.com", "Daily Buy BD", 
-        "Deen Fashion2", "Delux Shop", "Dhaka Hat", "Digital Bazar", "Dream Heaven", "Dream Outlet", "EZICLICK", "Edaza BD",
-        "Fabrilife", "Faria Hair Care", "Flare Brand BD", "Giftbd.com", "HT Bazar", "Haramin Store", "Head Gear",
-        "La'am", "LS Online", "Manzile BD", "Maxfit Food", "Mehendi By MiMi", "Miash Corporation", "Orderkori.com",
-        "My Bazar BD", "Noba Global", "Online Shopping", "Organic Plus", "Ponno BD", "Pro Dokan",
-        "Renix Unani Labrotories Limited", "Rise Up", "Robi Shop BD", "Sellery BD", "Shirin Fashion", "Shopno Mart", "Shopping BD Top Score", "Smooth Life", "Tonny Fashion",
-        "Sunnah Sqr", "Tanhas Collection", "Tasnim Aurthy", "TickMart", "Trusted BD", "US Bangla Bazar BD",
-        "XPRESS IN TOWN", "e-cart.com.bd", "Malihas Room"
-      ],
-      issueProne: ["BD Beponi", "BonoBhumi", "CareMe", "Live Shopping", "Shajgoj"]
-    };
+
 
     // Initialize loading overlay
     const loadingOverlay = document.querySelector('.loading-overlay');
 
-    // Display merchants in the UI
-    function displayMerchants() {
+    async function displayMerchantAndPriceChangeData() {
       const issuelessContainer = document.getElementById('issueless-container');
+      const issueProneContainer = document.getElementById('issue-prone-container');
+
       if (issuelessContainer) {
-        issuelessContainer.innerHTML = '';
-        const chunkSize = 8;
-        if (merchantData.issueless && merchantData.issueless.length > 0) {
-          for (let i = 0; i < merchantData.issueless.length; i += chunkSize) {
-            const chunk = merchantData.issueless.slice(i, i + chunkSize);
-            const card = document.createElement('div');
-            card.className = 'merchant-card';
-            card.innerHTML = `
-              <h3>মার্চেন্ট তালিকা <span class="status issueless">Issue-Less-Safe</span></h3>
-              <ul>
-                ${chunk.map(merchant => `<li>${merchant}</li>`).join('')}
-              </ul>
-            `;
-            issuelessContainer.appendChild(card);
+        issuelessContainer.innerHTML = ''; // Clear existing content
+      }
+      if (issueProneContainer) {
+        issueProneContainer.innerHTML = ''; // Clear existing content
+      }
+
+      let pageStatuses = [];
+      let pagePriceChangeCounts = [];
+
+      try {
+        // Fetch page statuses
+        const statusResponse = await fetch('https://oneai-wjox.onrender.com/api/merchant-data');
+        const statusJson = await statusResponse.json();
+        if (statusJson.success) {
+          pageStatuses = statusJson.pageStatuses;
+        } else {
+          console.error('Failed to fetch page statuses:', statusJson.message);
+        }
+
+        // Fetch page price change counts
+        const priceChangeResponse = await fetch('https://oneai-wjox.onrender.com/api/page-price-change-counts');
+        const priceChangeJson = await priceChangeResponse.json();
+        if (priceChangeJson.success) {
+          pagePriceChangeCounts = priceChangeJson.counts;
+        } else {
+          console.error('Failed to fetch page price change counts:', priceChangeJson.message);
+        }
+      } catch (error) {
+        console.error('Error fetching initial data for support page:', error);
+        if (issuelessContainer) issuelessContainer.innerHTML += '<p>ডেটা লোড করতে সমস্যা হয়েছে।</p>';
+        if (issueProneContainer) issueProneContainer.innerHTML += '<p>ডেটা লোড করতে সমস্যা হয়েছে।</p>';
+        return;
+      }
+
+      // Combine data and categorize
+      const issuelessPages = [];
+      const issuelessPendingPages = [];
+      const issuePronePages = [];
+      const newListedPages = [];
+
+      const allPageNames = new Set();
+      pageStatuses.forEach(ps => allPageNames.add(ps.pageName));
+      pagePriceChangeCounts.forEach(pc => allPageNames.add(pc.pageName));
+
+      Array.from(allPageNames).sort().forEach(pageName => {
+        const pageStatus = pageStatuses.find(ps => ps.pageName === pageName);
+        const priceChangeCount = pagePriceChangeCounts.find(pc => pc.pageName === pageName);
+        const count = priceChangeCount ? priceChangeCount.count : 0;
+
+        let statusText = '';
+        let targetList;
+
+        if (pageStatus) {
+          switch (pageStatus.status) {
+            case 'issueless':
+              statusText = 'Issue-Less';
+              targetList = issuelessPages;
+              break;
+            case 'issueless-pending':
+              statusText = 'Issueless-Pending';
+              targetList = issuelessPendingPages;
+              break;
+            case 'issue-prone':
+              statusText = 'Issue-Prone';
+              targetList = issuePronePages;
+              break;
+            case 'new-listed':
+              statusText = 'New Listed';
+              targetList = newListedPages;
+              break;
           }
         } else {
-          issuelessContainer.innerHTML = '<p>কোন ইস্যু বিহীন মার্চেন্ট পাওয়া যায়নি।</p>';
+          statusText = 'New Listed'; // Default if no status found
+          targetList = newListedPages;
+        }
+
+        targetList.push({ pageName, status: statusText, count });
+      });
+
+      // Display Issueless and Issueless-Pending pages
+      if (issuelessContainer) {
+        if (issuelessPages.length > 0 || issuelessPendingPages.length > 0 || newListedPages.length > 0) {
+          const allIssuelessRelated = [...issuelessPages, ...issuelessPendingPages, ...newListedPages];
+          
+          // Create a table-like structure using divs
+          const tableHeader = document.createElement('div');
+          tableHeader.className = 'page-table-header';
+          tableHeader.innerHTML = `
+            <div class="page-table-cell">পেইজের নাম</div>
+            <div class="page-table-cell">স্ট্যাটাস</div>
+            <div class="page-table-cell">পরিবর্তন</div>
+          `;
+          issuelessContainer.appendChild(tableHeader);
+
+          allIssuelessRelated.forEach(item => {
+            const row = document.createElement('div');
+            row.className = 'page-table-row';
+            const statusClass = item.status.toLowerCase().replace(' ', '-');
+            row.innerHTML = `
+              <div class="page-table-cell page-name-cell">${item.pageName}</div>
+              <div class="page-table-cell status-cell"><span class="page-status-tag ${statusClass}">${item.status}</span></div>
+              <div class="page-table-cell count-cell"><span class="page-count-tag">${item.count} PC</span></div>
+            `;
+            issuelessContainer.appendChild(row);
+          });
+        } else {
+          issuelessContainer.innerHTML = '<p>কোন ইস্যু বিহীন বা নতুন তালিকাভুক্ত পেইজ পাওয়া যায়নি।</p>';
         }
       }
 
-      const issueProneContainer = document.getElementById('issue-prone-container');
+      // Display Issue-Prone pages
       if (issueProneContainer) {
-        issueProneContainer.innerHTML = '';
-        const chunkSize = 8;
-        if (merchantData.issueProne && merchantData.issueProne.length > 0) {
-          for (let i = 0; i < merchantData.issueProne.length; i += chunkSize) {
-            const chunk = merchantData.issueProne.slice(i, i + chunkSize);
-            const card = document.createElement('div');
-            card.className = 'merchant-card';
-            card.style.border = '1px solid var(--danger-color)';
-            card.innerHTML = `
-              <h3 style="color: var(--danger-color);">ঝুঁকিপূর্ণ মার্চেন্ট <span class="status issue">High-Risk</span></h3>
-              <ul>
-                ${chunk.map(merchant => `<li>${merchant}</li>`).join('')}
-              </ul>
+        if (issuePronePages.length > 0) {
+          const tableHeader = document.createElement('div');
+          tableHeader.className = 'page-table-header';
+          tableHeader.innerHTML = `
+            <div class="page-table-cell">পেইজের নাম</div>
+            <div class="page-table-cell">স্ট্যাটাস</div>
+            <div class="page-table-cell">পরিবর্তন</div>
+          `;
+          issueProneContainer.appendChild(tableHeader);
+
+          issuePronePages.forEach(item => {
+            const row = document.createElement('div');
+            row.className = 'page-table-row';
+            const statusClass = item.status.toLowerCase().replace(' ', '-');
+            row.innerHTML = `
+              <div class="page-table-cell page-name-cell">${item.pageName}</div>
+              <div class="page-table-cell status-cell"><span class="page-status-tag ${statusClass}">${item.status}</span></div>
+              <div class="page-table-cell count-cell"><span class="page-count-tag">${item.count} PC</span></div>
             `;
-            issueProneContainer.appendChild(card);
-          }
+            issueProneContainer.appendChild(row);
+          });
         } else {
           issueProneContainer.innerHTML = '<p>কোন ইস্যু প্রবণ মার্চেন্ট পাওয়া যায়নি।</p>';
         }
@@ -1072,7 +1225,7 @@ Amount: ${formData.amount}
 
     // Event listeners
     document.addEventListener('DOMContentLoaded', () => {
-      displayMerchants();
+      displayMerchantAndPriceChangeData(); // Updated function call
       
       const issueForm = document.getElementById('issue-report-form');
       if (issueForm) {
