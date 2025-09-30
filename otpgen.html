@@ -566,18 +566,29 @@
       const amountGroup = group.querySelector('.amount-group');
       const serviceType = select.value;
       
-      // Reset all fields first
-      originalAmountGroup.classList.remove('hidden');
-      updatedAmountGroup.classList.remove('hidden');
-      amountGroup.classList.remove('hidden');
+      // Reset all fields/groups to hidden first
+      amountGroup.classList.add('hidden');
+      originalAmountGroup.classList.add('hidden');
+      updatedAmountGroup.classList.add('hidden');
       
-      // Hide appropriate fields based on service type
+      // Show appropriate fields based on service type
       if (serviceType === 'delivery' || serviceType === 'return') {
-        amountGroup.classList.add('hidden');
+        amountGroup.classList.remove('hidden'); // Show the container for amounts
+        originalAmountGroup.classList.remove('hidden'); // Show original amount
+        // updatedAmountGroup remains hidden
       } 
       else if (serviceType === 'drto') {
-        originalAmountGroup.classList.add('hidden');
+        amountGroup.classList.remove('hidden'); // Show the container for amounts
+        originalAmountGroup.classList.remove('hidden'); // Show original amount
+        updatedAmountGroup.classList.remove('hidden'); // Show updated amount
       } 
+      else if (serviceType === 'pricecng') {
+        amountGroup.classList.remove('hidden'); // Show the container for amounts
+        originalAmountGroup.classList.remove('hidden'); // Show original amount
+        updatedAmountGroup.classList.remove('hidden'); // Show updated amount
+        // pageNameGroup is handled by handlePageNameChange
+      }
+      // For 'partial' and other types, amountGroup remains hidden.
       
       calculateTotalCharge();
     }
