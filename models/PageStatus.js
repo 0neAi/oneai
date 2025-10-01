@@ -9,9 +9,13 @@ const pageStatusSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['new-listed', 'issueless-pending', 'issueless', 'issue-prone'],
+    enum: ['new-listed', 'issueless-pending', 'issueless', 'issue-rising'],
     default: 'new-listed',
     required: true
+  },
+  issueCount: {
+    type: Number,
+    default: 0
   }
 }, { timestamps: true });
 
