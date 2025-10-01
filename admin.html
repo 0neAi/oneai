@@ -844,7 +844,7 @@
                             <tr v-for="page in pages" :key="page.pageName">
                                 <td>{{ page.pageName }}</td>
                                 <td>
-                                    <span :class="{'badge bg-success': page.status === 'issueless', 'badge bg-warning': page.status === 'issueless-pending', 'badge bg-danger': page.status === 'issue-prone', 'badge bg-info': page.status === 'new-listed'}">{{ page.status }}</span>
+                                    <span :class="{'badge bg-success': page.status === 'issueless', 'badge bg-warning': page.status === 'issueless-pending', 'badge bg-danger': page.status === 'issue-rising', 'badge bg-info': page.status === 'new-listed'}">{{ page.status }}</span>
                                 </td>
                                 <td>{{ page.count }}</td>
                                 <td>{{ page.issueCount }}</td>
