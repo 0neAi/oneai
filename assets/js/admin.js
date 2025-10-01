@@ -85,7 +85,6 @@ const AdminApp = {
                 localStorage.setItem('adminToken', response.data.token);
                 axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
                 this.authenticated = true;
-                console.log('Admin authenticated:', this.authenticated); // Added log
                 this.loadData();
                 this.initWebSocket();
             } catch (error) {
@@ -342,7 +341,6 @@ const AdminApp = {
         if (token) {
             axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
             this.authenticated = true;
-            console.log('Admin authenticated from token:', this.authenticated); // Added log
             this.loadData();
             this.initWebSocket();
         }
