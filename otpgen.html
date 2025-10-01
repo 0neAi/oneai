@@ -820,17 +820,6 @@
 
             // Service-specific validation
             if (serviceType === 'pricecng') {
-                // Fetch page status to check for 'issue-rising'
-                const pageName = consignment.pageName;
-                if (pageName) {
-                    const response = await fetch(`${window.API_BASE}/api/page-status/${encodeURIComponent(pageName)}`);
-                    const data = await response.json();
-
-                    if (data.success && data.pageStatus && data.pageStatus.status === 'issue-rising') {
-                        throw new Error(`Consignment ${index + 1}: এই পেইজটি ইস্যু-রাইজিং অবস্থায় আছে, তাই প্রাইস চেঞ্জ করা যাবে না।`);
-                    }
-                }
-
                 if (!validateAmount(consignment.amount1) || 
                     !validateAmount(consignment.amount2)) {
                     throw new Error(`Consignment ${index + 1} has invalid amounts`);
@@ -1271,8 +1260,8 @@ ${formData.consignments.map((c, index) => `
                             case 'issueless-pending':
                                 tag = ' (Issueless-Pending)';
                                 break;
-                            case 'issue-rising':
-                                tag = ' (Issue-Rising)';
+                            case 'issue-prone':
+                                tag = ' (Issue-Prone)';
                                 break;
                             case 'new-listed':
                                 tag = ' (New Listed)';
