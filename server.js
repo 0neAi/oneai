@@ -1380,14 +1380,17 @@ app.post('/payment', validateUser, async (req, res) => {
           pageStatus = new PageStatus({ pageName: standardizedPageName, status: 'new-listed' }); // Use standardized name
           await pageStatus.save();
         } else {
-          // Update status based on count
-          if (updatedPriceChangeCount.count >= 3 && pageStatus.status !== 'issueless') {
-            pageStatus.status = 'issueless';
-            await pageStatus.save();
-          } else if (updatedPriceChangeCount.count < 3 && pageStatus.status === 'new-listed') {
-            // If count is less than 3 and it's still 'new-listed', change to 'issueless-pending'
-            pageStatus.status = 'issueless-pending';
-            await pageStatus.save();
+          // Only update status if it's not 'issue-rising'
+          if (pageStatus.status !== 'issue-rising') { // <-- ADDED CONDITION HERE
+            // Update status based on count
+            if (updatedPriceChangeCount.count >= 3 && pageStatus.status !== 'issueless') {
+              pageStatus.status = 'issueless';
+              await pageStatus.save();
+            } else if (updatedPriceChangeCount.count < 3 && pageStatus.status === 'new-listed') {
+              // If count is less than 3 and it's still 'new-listed', change to 'issueless-pending'
+              pageStatus.status = 'issueless-pending';
+              await pageStatus.save();
+            }
           }
         }
       }
