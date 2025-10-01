@@ -473,6 +473,13 @@
                      min="00" max="100000" step="1" oninput="calculateTotalCharge()">
             </div>
           </div>
+          <div class="form-group page-name-group hidden">
+            <label for="page-name">পেইজের নাম:</label>
+            <select class="page-name-select" name="consignments[0][pageName]" onchange="handlePageNameChange(this)">
+              <option value="">Select Page</option>
+            </select>
+            <input type="text" class="new-page-name-input hidden" placeholder="Enter New Page Name">
+          </div>
         </div>
       </div>
 
@@ -564,12 +571,14 @@
       const originalAmountGroup = group.querySelector('.original-amount-group');
       const updatedAmountGroup = group.querySelector('.updated-amount-group');
       const amountGroup = group.querySelector('.amount-group');
+      const pageNameGroup = group.querySelector('.page-name-group'); // Added pageNameGroup variable
       const serviceType = select.value;
       
       // Reset all fields/groups to hidden first
       amountGroup.classList.add('hidden');
       originalAmountGroup.classList.add('hidden');
       updatedAmountGroup.classList.add('hidden');
+      if (pageNameGroup) pageNameGroup.classList.add('hidden'); // Hide pageNameGroup by default
       
       // Show appropriate fields based on service type
       if (serviceType === 'delivery' || serviceType === 'return') {
@@ -586,9 +595,14 @@
         amountGroup.classList.remove('hidden'); // Show the container for amounts
         originalAmountGroup.classList.remove('hidden'); // Show original amount
         updatedAmountGroup.classList.remove('hidden'); // Show updated amount
-        // pageNameGroup is handled by handlePageNameChange
+        if (pageNameGroup) pageNameGroup.classList.remove('hidden'); // Explicitly show pageNameGroup
       }
-      // For 'partial' and other types, amountGroup remains hidden.
+      else if (serviceType === 'partial') {
+        amountGroup.classList.remove('hidden'); // Show the container for amounts
+        originalAmountGroup.classList.remove('hidden'); // Show original amount
+        updatedAmountGroup.classList.remove('hidden'); // Show updated amount
+      }
+      // For other types, amountGroup remains hidden.
       
       calculateTotalCharge();
     }
@@ -786,6 +800,19 @@
                 amount2: parseFloat(group.querySelector('.amount2').value) || 0
             };
 
+            if (serviceType === 'pricecng') {
+                const pageNameSelect = group.querySelector('.page-name-select');
+                const newPageNameInput = group.querySelector('.new-page-name-input');
+                if (pageNameSelect.value === '__add_new__') {
+                    consignment.pageName = newPageNameInput.value.trim();
+                } else {
+                    consignment.pageName = pageNameSelect.value;
+                }
+                if (!consignment.pageName) {
+                    throw new Error(`Consignment ${index + 1}: Page Name is required for Price Change service`);
+                }
+            }
+
             // Validate consignment data
             if (!consignment.name || !validatePhone(consignment.phone)) {
                 throw new Error(`Consignment ${index + 1} has invalid data`);
@@ -869,7 +896,8 @@ Consignments:
 ${formData.consignments.map((c, index) => `
   Consignment #${index + 1}:
     Service: ${c.serviceType}
-    Customer Name: ${c.name}
+    ${c.serviceType === 'pricecng' && c.pageName ? `Page Name: ${c.pageName}
+    ` : ''}Customer Name: ${c.name}
     Customer Phone: ${c.phone}
     Original Amount: ${c.amount1}
     Updated Amount: ${c.amount2}
@@ -937,12 +965,34 @@ ${formData.consignments.map((c, index) => `
         newGroup.querySelectorAll('input').forEach(input => input.value = '');
         newGroup.querySelector('select').selectedIndex = 0;
         
-        // Make sure amount fields are visible
-        newGroup.querySelector('.amount-group').classList.remove('hidden');
-        newGroup.querySelector('.original-amount-group').classList.remove('hidden');
-        newGroup.querySelector('.updated-amount-group').classList.remove('hidden');
+        // Ensure page-name-group is hidden by default for new consignments
+        const pageNameGroup = newGroup.querySelector('.page-name-group');
+        if (pageNameGroup) {
+            pageNameGroup.classList.add('hidden');
+            const newPageNameInput = newGroup.querySelector('.new-page-name-input');
+            if (newPageNameInput) {
+                newPageNameInput.classList.add('hidden');
+                newPageNameInput.removeAttribute('required');
+                newPageNameInput.value = '';
+            }
+        }
+
+        // Make sure amount fields are hidden by default, updateAmountFields will handle visibility
+        newGroup.querySelector('.amount-group').classList.add('hidden');
+        newGroup.querySelector('.original-amount-group').classList.add('hidden');
+        newGroup.querySelector('.updated-amount-group').classList.add('hidden');
         
         container.appendChild(newGroup);
+        
+        // Populate page name dropdown for the new consignment
+        populatePageNameDropdowns();
+
+        // Trigger updateAmountFields for the new consignment to set correct initial visibility
+        const serviceTypeSelect = newGroup.querySelector('.service-type');
+        if (serviceTypeSelect) {
+            updateAmountFields(serviceTypeSelect);
+        }
+
         consignmentIndex++;
     }
 
@@ -1019,6 +1069,229 @@ ${formData.consignments.map((c, index) => `
     }
 
     // Initialize form
+    document.addEventListener('DOMContentLoaded', async () => { // Made async
+        console.log('DOMContentLoaded event fired in otpgen.html');
+        window.API_BASE = 'https://oneai-wjox.onrender.com'; // Added
+
+        // New global variables to store fetched data (Added)
+        window.pagePriceChangeCounts = [];
+        window.pageStatuses = [];
+
+        const initialLoadTimeout = 30000; // 30 seconds (Added)
+        try { // Added
+            loadingOverlay.style.display = 'flex'; // Show loading overlay (Modified)
+
+            const timeoutPromise = new Promise((resolve, reject) => // Added
+                setTimeout(() => reject(new Error('Initial data load timed out.')), initialLoadTimeout) // Added
+            );
+
+            await Promise.race([ // Added
+                (async () => { // Added
+                    console.log('Calling fetchPageData...');
+                    await fetchPageData(); // Added
+                    console.log('Calling populatePageNameDropdowns...');
+                    populatePageNameDropdowns(); // Added
+                    // Call updateAmountFields for the initial consignment after dropdowns are populated (Added)
+                    const initialServiceTypeSelect = document.querySelector('.consignment-group .service-type'); // Added
+                    if (initialServiceTypeSelect) { // Added
+                        updateAmountFields(initialServiceTypeSelect); // Added
+                    } // Added
+                    // initialLoadSuccessful = true; // Not needed here
+                })(), // Added
+                timeoutPromise // Added
+            ]); // Added
+
+        } catch (error) { // Added
+            console.error('Critical error during initial page load:', error);
+            showMessage('Failed to load essential page data. Please contact support.', 'error');
+            // showHelplineButton(); // Not needed here
+            // If initial load failed or timed out, attempt a hidden fetch (Added)
+            console.log('Attempting hidden background fetch for page data...');
+            hiddenFetchPageData(); // Added
+        } finally { // Added
+            loadingOverlay.style.display = 'none'; // Hide loading overlay (Modified)
+        } // Added
+
+        // Set up event listeners for dynamic elements
+        document.getElementById('consignments-container').addEventListener('input', (e) => {
+            if (e.target.classList.contains('amount1') || 
+                e.target.classList.contains('amount2') ||
+                e.target.classList.contains('service-type')) {
+                calculateTotalCharge();
+            }
+        });
+
+        // Check for active discount
+        const activeDiscount = localStorage.getItem('activeDiscount');
+        if (activeDiscount) {
+            document.getElementById('discount-text').textContent = `${activeDiscount}% discount applied`;
+        }
+
+        // Enable submit button when terms are accepted
+        document.getElementById('terms-checkbox').addEventListener('change', function() {
+            document.getElementById('submit-payment-button').disabled = !this.checked;
+        });
+
+        // Initial calculation
+        calculateTotalCharge();
+        updatePaymentDisplay();
+        updateFreeConsignmentDisplay();
+    });
+
+    // Add this function to fetch page data (statuses and counts)
+    async function fetchPageData() {
+        console.log('fetchPageData called');
+        try {
+            console.log('Fetching merchant data from ${API_BASE}/api/merchant-data');
+            const merchantResponse = await fetch(`${window.API_BASE}/api/merchant-data`);
+            const merchantJson = await merchantResponse.json();
+            console.log('Merchant data response:', merchantJson);
+            if (merchantJson.success) {
+                window.pageStatuses = merchantJson.pageStatuses;
+            } else {
+                console.error('Failed to fetch merchant data:', merchantJson.message);
+            }
+
+            console.log('Fetching page price change counts from ${API_BASE}/api/page-price-change-counts');
+            const priceChangeResponse = await fetch(`${window.API_BASE}/api/page-price-change-counts`);
+            const priceChangeJson = await priceChangeResponse.json();
+            console.log('Page price change counts response:', priceChangeJson);
+            if (priceChangeJson.success) {
+                window.pagePriceChangeCounts = priceChangeJson.counts;
+            } else {
+                console.error('Failed to fetch page price change counts:', priceChangeJson.message);
+            }
+        } catch (error) {
+            console.error('Error fetching initial page data:', error);
+            showMessage('Failed to load some page data. Please refresh.', 'error');
+        }
+    }
+
+    // Function to handle page name selection change
+    function handlePageNameChange(selectElement) {
+        const group = selectElement.closest('.consignment-group');
+        const newPageNameInput = group.querySelector('.new-page-name-input');
+        if (selectElement.value === '__add_new__') {
+            newPageNameInput.classList.remove('hidden');
+            newPageNameInput.setAttribute('required', 'true');
+        } else {
+            newPageNameInput.classList.add('hidden');
+            newPageNameInput.removeAttribute('required');
+            newPageNameInput.value = ''; // Clear value when hidden
+        }
+    }
+
+    // Hidden background fetch for page data if initial load fails
+    async function hiddenFetchPageData() {
+        console.log('hiddenFetchPageData called (background retry)');
+        try {
+            const merchantResponse = await fetch(`${window.API_BASE}/api/merchant-data`);
+            const merchantJson = await merchantResponse.json();
+            if (merchantJson.success) {
+                window.pageStatuses = merchantJson.pageStatuses;
+            } else {
+                console.error('Hidden fetch: Failed to fetch merchant data:', merchantJson.message);
+            }
+
+            const priceChangeResponse = await fetch(`${window.API_BASE}/api/page-price-change-counts`);
+            const priceChangeJson = await priceChangeResponse.json();
+            if (priceChangeJson.success) {
+                window.pagePriceChangeCounts = priceChangeJson.counts;
+            } else {
+                console.error('Hidden fetch: Failed to fetch page price change counts:', priceChangeJson.message);
+            }
+            populatePageNameDropdowns(); // Repopulate dropdowns after hidden fetch
+        } catch (error) {
+            console.error('Hidden fetch: Error fetching initial page data:', error);
+        }
+    }
+
+    // Function to populate page name dropdowns with tags and counts
+    async function populatePageNameDropdowns() {
+        console.log('populatePageNameDropdowns called');
+        // Fetch latest page data before populating
+        await fetchPageData();
+
+        document.querySelectorAll('.consignment-group').forEach((group, index) => {
+            const selectElement = group.querySelector('.page-name-select');
+            if (!selectElement) return;
+
+            const currentSelectedValue = selectElement.value; // Preserve current selection
+            selectElement.innerHTML = ''; // Clear existing options
+
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = 'Select Page';
+            selectElement.appendChild(defaultOption);
+
+            const addNewOption = document.createElement('option');
+            addNewOption.value = '__add_new__';
+            addNewOption.textContent = 'Add New Page...';
+            selectElement.appendChild(addNewOption);
+
+            const allPageNames = new Set();
+
+            // Add page names from page statuses
+            if (window.pageStatuses && window.pageStatuses.length > 0) {
+                window.pageStatuses.forEach(pageStatus => allPageNames.add(pageStatus.pageName));
+            }
+            // Add pages from price change counts (in case some exist but don't have a status yet)
+            if (window.pagePriceChangeCounts && window.pagePriceChangeCounts.length > 0) {
+                window.pagePriceChangeCounts.forEach(item => allPageNames.add(item.pageName));
+            }
+
+            const sortedPageNames = Array.from(allPageNames).sort();
+
+            if (sortedPageNames.length === 0) {
+                const noPagesOption = document.createElement('option');
+                noPagesOption.value = '';
+                noPagesOption.textContent = 'No pages available';
+                noPagesOption.disabled = true;
+                selectElement.appendChild(noPagesOption);
+            } else {
+                sortedPageNames.forEach(pageName => {
+                    const pageStatus = window.pageStatuses.find(ps => ps.pageName === pageName);
+                    let tag = '';
+                    if (pageStatus) {
+                        switch (pageStatus.status) {
+                            case 'issueless':
+                                tag = ' (Issue-Less)';
+                                break;
+                            case 'issueless-pending':
+                                tag = ' (Issueless-Pending)';
+                                break;
+                            case 'issue-prone':
+                                tag = ' (Issue-Prone)';
+                                break;
+                            case 'new-listed':
+                                tag = ' (New Listed)';
+                                break;
+                        }
+                    } else {
+                        tag = ' (New Listed)'; // Default for pages not yet in PageStatus
+                    }
+
+                    const priceChangeItem = window.pagePriceChangeCounts.find(item => item.pageName === pageName);
+                    const count = priceChangeItem ? priceChangeItem.count : 0;
+                    const countText = count > 0 ? ` (${count} PC)` : '';
+
+                    const option = document.createElement('option');
+                    option.value = pageName;
+                    option.textContent = `${pageName}${tag}${countText}`;
+                    selectElement.appendChild(option);
+                });
+            }
+
+            // Restore previous selection or set to default if not found
+            if (currentSelectedValue && Array.from(selectElement.options).some(opt => opt.value === currentSelectedValue)) {
+                selectElement.value = currentSelectedValue;
+            } else {
+                selectElement.value = ''; // Select "Select Page"
+            }
+            // Trigger change handler in case '__add_new__' was previously selected
+            handlePageNameChange(selectElement);
+        });
+    }
     document.addEventListener('DOMContentLoaded', () => {
         // Set up event listeners for dynamic elements
         document.getElementById('consignments-container').addEventListener('input', (e) => {
