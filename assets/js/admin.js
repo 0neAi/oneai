@@ -21,10 +21,63 @@ const AdminApp = {
             charts: {
                 paymentsChart: null,
                 usersIssuesChart: null
-            }
+            },
+            pages: [], // New data array for pages
+            newPage: { pageName: '' }, // For adding new pages
+            editingPage: null // To store the page being edited
         };
     },
     methods: {
+        async loadPages() {
+            try {
+                const response = await axios.get(`${API_BASE}/admin/page-data/all`);
+                this.pages = response.data.pages || [];
+            } catch (error) {
+                console.error('Failed to load pages:', error);
+                alert('Failed to load pages.');
+            }
+        },
+        async addPage() {
+            if (!this.newPage.pageName) {
+                alert('Page Name cannot be empty.');
+                return;
+            }
+            try {
+                await axios.post(`${API_BASE}/admin/page-data/add-page`, { pageName: this.newPage.pageName });
+                this.newPage.pageName = ''; // Clear input
+                this.loadPages(); // Reload pages
+            } catch (error) {
+                console.error('Failed to add page:', error);
+                alert(error.response?.data?.message || 'Failed to add page.');
+            }
+        },
+        editPage(page) {
+            this.editingPage = { ...page }; // Create a copy for editing
+        },
+        async updatePage() {
+            if (!this.editingPage || !this.editingPage.pageName || !this.editingPage.status || this.editingPage.count === undefined || this.editingPage.issueCount === undefined) {
+                alert('All fields are required for updating a page.');
+                return;
+            }
+            try {
+                await axios.post(`${API_BASE}/admin/page-data/update`, this.editingPage);
+                this.editingPage = null; // Exit editing mode
+                this.loadPages(); // Reload pages
+            } catch (error) {
+                console.error('Failed to update page:', error);
+                alert(error.response?.data?.message || 'Failed to update page.');
+            }
+        },
+        async deletePage(pageName) {
+            if (!confirm(`Are you sure you want to delete page '${pageName}'?`)) return;
+            try {
+                await axios.delete(`${API_BASE}/admin/page-data/${pageName}`);
+                this.loadPages(); // Reload pages
+            } catch (error) {
+                console.error('Failed to delete page:', error);
+                alert('Failed to delete page.');
+            }
+        },
         async login() {
             this.loginError = '';
             try {
@@ -49,13 +102,14 @@ const AdminApp = {
         async loadData() {
             this.isLoading = true;
             try {
-                const [usersRes, paymentsRes, premiumServicesRes, issuesRes, penaltyRes, fexiloadRes] = await Promise.all([
+                const [usersRes, paymentsRes, premiumServicesRes, issuesRes, penaltyRes, fexiloadRes, pagesRes] = await Promise.all([
                     axios.get(`${API_BASE}/admin/users`),
                     axios.get(`${API_BASE}/admin/payments`),
                     axios.get(`${API_BASE}/admin/premium-services`),
                     axios.get(`${API_BASE}/admin/merchant-issues`),
                     axios.get(`${API_BASE}/admin/penalty-reports`),
-                    axios.get(`${API_BASE}/admin/fexiload-requests`)
+                    axios.get(`${API_BASE}/admin/fexiload-requests`),
+                    axios.get(`${API_BASE}/admin/page-data/all`) // Fetch pages data
                 ]);
 
                 this.users = usersRes.data.users || [];
@@ -64,6 +118,7 @@ const AdminApp = {
                 this.merchantIssues = issuesRes.data.issues || [];
                 this.penaltyReports = penaltyRes.data.reports || [];
                 this.fexiloadRequests = fexiloadRes.data.fexiloadRequests || [];
+                this.pages = pagesRes.data.pages || []; // Assign pages data
 
                 this.stats = {
                     totalUsers: { label: 'Total Users', value: this.users.length, bg: 'bg-primary' },
