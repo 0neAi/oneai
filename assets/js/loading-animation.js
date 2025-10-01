@@ -71,7 +71,7 @@ const LoadingAnimation = (function() {
                 left: 0;
                 width: 100%;
                 height: 100%;
-                background: rgba(0, 0, 0, 0.95);
+                background: rgba(0, 0, 0, 0.5);
                 display: none;
                 flex-direction: column;
                 justify-content: center;
