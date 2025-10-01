@@ -40,7 +40,7 @@ function standardizePageName(name) {
 // Initialize express app
 const app = express();
 const PORT = process.env.PORT || 10000;
-app.use(express.static(__dirname));
+app.use(express.static(path.join(__dirname, 'public')));
 // Security middlewar
 app.set('trust proxy', 1);
 app.use(helmet({
@@ -1576,6 +1576,23 @@ app.get('/api/page-price-change-counts', async (req, res) => {
   } catch (error) {
     console.error('Error fetching page price change counts:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch page price change counts.' });
+  }
+});
+
+app.get('/api/page-status/:pageName', async (req, res) => {
+  try {
+    const { pageName } = req.params;
+    const standardizedPageName = standardizePageName(pageName);
+    const pageStatus = await PageStatus.findOne({ pageName: standardizedPageName });
+
+    if (!pageStatus) {
+      return res.status(404).json({ success: false, message: 'Page not found.' });
+    }
+
+    res.json({ success: true, pageStatus });
+  } catch (error) {
+    console.error('Error fetching page status:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch page status.' });
   }
 });
 
