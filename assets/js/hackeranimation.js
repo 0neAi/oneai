@@ -10,7 +10,7 @@
         hackerContainer.style.width = '100%';
         hackerContainer.style.height = '100%';
         hackerContainer.style.pointerEvents = 'none';
-        hackerContainer.style.zIndex = '-1';
+        hackerContainer.style.zIndex = '-9999';
         hackerContainer.style.overflow = 'hidden';
         document.body.appendChild(hackerContainer);
 
@@ -19,7 +19,7 @@
         overlay.style.position = 'absolute';
         overlay.style.width = '100%';
         overlay.style.height = '100%';
-        overlay.style.background = 'radial-gradient(ellipse at center, rgba(0, 15, 0, 0.85) 0%, rgba(0, 5, 0, 0.95) 100%)';
+        overlay.style.background = 'radial-gradient(ellipse at center, rgba(0, 15, 0, 0.2) 0%, rgba(0, 5, 0, 0.3) 100%)';
         hackerContainer.appendChild(overlay);
 
         // Create optimized matrix rain
