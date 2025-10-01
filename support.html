@@ -546,7 +546,7 @@
       color: #333;
     }
 
-    .page-status-tag.issue-prone {
+    .page-status-tag.issue-rising {
       background-color: var(--danger-color);
     }
 
@@ -652,12 +652,12 @@
       </div>
     </section>
 
-    <!-- Issue Prone Merchants Section -->
+    <!-- Issue Rising Merchants Section -->
     <section class="section">
-      <h2 class="section-title" style="color: var(--danger-color);"><i class="fas fa-exclamation-triangle"></i> ইস্যু প্রবণ মার্চেন্টস</h2>
-      <p style="color: var(--warning-color);">এই পেইজ গুলো ওয়ান'এআই দ্বারা ইস্যু প্রবণ হিসেবে যাচাই করা হয়েছে। এইসকল পেইজের বিরুদ্ধে ইস্যু দেওয়ার রেকর্ড পাওয়া গিয়েছে। পূর্ববর্তী রেকর্ড থেকে যাচাই করে ওয়ান এআই এই পেইজ গুলোকে ইস্যু প্রবণ হিসেবে ডিটেক্ট করেছে।</p>
+      <h2 class="section-title" style="color: var(--danger-color);"><i class="fas fa-exclamation-triangle"></i> ইস্যু-রাইজিং মার্চেন্টস</h2>
+      <p style="color: var(--warning-color);">এই পেইজ গুলো ওয়ান'এআই দ্বারা ইস্যু-রাইজিং হিসেবে যাচাই করা হয়েছে। এইসকল পেইজের বিরুদ্ধে ইস্যু দেওয়ার রেকর্ড পাওয়া গিয়েছে। পূর্ববর্তী রেকর্ড থেকে যাচাই করে ওয়ান এআই এই পেইজ গুলোকে ইস্যু-রাইজিং হিসেবে ডিটেক্ট করেছে।</p>
       
-      <div class="merchant-list-container" id="issue-prone-container">
+      <div class="merchant-list-container" id="issue-rising-container">
         <!-- Dynamic content will be inserted here -->
       </div>
     </section>
@@ -809,13 +809,13 @@
 
     async function displayMerchantAndPriceChangeData() {
       const issuelessContainer = document.getElementById('issueless-container');
-      const issueProneContainer = document.getElementById('issue-prone-container');
+      const issueRisingContainer = document.getElementById('issue-rising-container'); // Updated ID
 
       if (issuelessContainer) {
         issuelessContainer.innerHTML = ''; // Clear existing content
       }
-      if (issueProneContainer) {
-        issueProneContainer.innerHTML = ''; // Clear existing content
+      if (issueRisingContainer) { // Updated ID
+        issueRisingContainer.innerHTML = ''; // Clear existing content
       }
 
       let pageStatuses = [];
@@ -875,9 +875,9 @@
               statusText = 'Issueless-Pending';
               targetList = issuelessPendingPages;
               break;
-            case 'issue-prone':
-              statusText = 'Issue-Prone';
-              targetList = issuePronePages;
+            case 'issue-rising':
+              statusText = 'Issue-Rising';
+              targetList = issueRisingPages; // Updated variable name
               break;
             case 'new-listed':
               statusText = 'New Listed';
@@ -925,9 +925,9 @@
         }
       }
 
-      // Display Issue-Prone pages
-      if (issueProneContainer) {
-        if (issuePronePages.length > 0) {
+      // Display Issue-Rising pages
+      if (issueRisingContainer) { // Updated ID
+        if (issueRisingPages.length > 0) { // Updated variable name
           const tableHeader = document.createElement('div');
           tableHeader.className = 'page-table-header';
           tableHeader.innerHTML = `
@@ -936,9 +936,9 @@
             <div class="page-table-cell">পরিবর্তন</div>
             <div class="page-table-cell">ইস্যু</div> <!-- Added Issue column -->
           `;
-          issueProneContainer.appendChild(tableHeader);
+          issueRisingContainer.appendChild(tableHeader); // Updated ID
 
-          issuePronePages.forEach(item => {
+          issueRisingPages.forEach(item => { // Updated variable name
             const row = document.createElement('div');
             row.className = 'page-table-row';
             const statusClass = item.status.toLowerCase().replace(' ', '-');
@@ -948,10 +948,10 @@
               <div class="page-table-cell count-cell"><span class="page-count-tag">${item.count} PC</span></div>
               <div class="page-table-cell issue-count-cell"><span class="page-count-tag">${item.issueCount} Issues</span></div> <!-- Display Issue Count -->
             `;
-            issueProneContainer.appendChild(row);
+            issueRisingContainer.appendChild(row); // Updated ID
           });
         } else {
-          issueProneContainer.innerHTML = '<p>কোন ইস্যু প্রবণ মার্চেন্ট পাওয়া যায়নি।</p>';
+          issueRisingContainer.innerHTML = '<p>কোন ইস্যু-রাইজিং মার্চেন্ট পাওয়া যায়নি।</p>'; // Updated text
         }
       }
     }
