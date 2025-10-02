@@ -499,14 +499,12 @@
                                                     @click="showIssueDetails(issue)">
                                                 <i class="bi bi-eye me-1"></i>Details
                                             </button>
-                                            <button class="btn btn-sm btn-outline-success me-2" 
-                                                    @click="updateIssueStatus(issue, 'in-progress')"
-                                                    v-if="issue.status === 'pending'">
+                                            <button v-if="issue.status === 'pending'" class="btn btn-sm btn-outline-success me-2" 
+                                                    @click="updateIssueStatus(issue, 'in-progress')">
                                                 <i class="bi bi-play me-1"></i>Start Progress
                                             </button>
-                                            <button class="btn btn-sm btn-outline-success me-2" 
-                                                    @click="showApproveIssueModal(issue)"
-                                                    v-if="issue.status === 'in-progress'">
+                                            <button v-if="issue.status === 'in-progress'" class="btn btn-sm btn-outline-success me-2" 
+                                                    @click="showApproveIssueModal(issue)">
                                                 <i class="bi bi-check me-1"></i>Approve
                                             </button>
                                             <button class="btn btn-sm btn-outline-danger" 
@@ -1105,7 +1103,8 @@
                                 <div class="col-md-4">
                                     <div class="mb-3">
                                         <label class="form-label">Discount Percentage</label>
-                                        <input type="text" class="form-control" :value="selectedPayment.discount + '%'" readonly>
+                                        <input type="text" class="form-control" :value="selectedPayment.discount + '%'
+                                        " readonly>
                                     </div>
                                 </div>
                             </div>
@@ -1197,7 +1196,8 @@
                             </div>
                             <div v-if="selectedIssue.voucherCode" class="mb-3">
                                 <label class="form-label">Discount Percentage</label>
-                                <input type="text" class="form-control" :value="selectedIssue.discountPercentage + '%'" readonly>
+                                <input type="text" class="form-control" :value="selectedIssue.discountPercentage + '%'
+                                " readonly>
                             </div>
                         </div>
                     </div>
@@ -1988,7 +1988,7 @@
                     }
                 },
                 validateEmail(email) {
-                    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+                    return /^[^\s @]+@[^\s @]+\.[^\s @]+$/.test(email);
                 },
                 validatePassword(password) {
                     return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/.test(password);
@@ -2203,7 +2203,7 @@
                     }
                 },
                 editPage(page) {
-                    this.selectedPage = { ...page };
+                    this.selectedPage = { ...page }; // Create a copy for editing
                     this.showModal('editPageModal');
                 },
                 async savePageChanges() {
@@ -2214,8 +2214,7 @@
                             pageName: this.selectedPage.pageName,
                             status: this.selectedPage.status,
                             count: this.selectedPage.count,
-                            issueCount: this.selectedPage.issueCount,
-                            note: this.selectedPage.note
+                            issueCount: this.selectedPage.issueCount
                         });
                         this.hideModal('editPageModal');
                         this.loadPages();
@@ -2623,8 +2622,6 @@
                     } catch (error) {
                         this.premiumVoucherMessage = error.response?.data?.message || 'Failed to generate voucher.';
                         this.premiumVoucherSuccess = false;
-                    } finally {
-                        this.generatingPremiumVoucher = false;
                     }
                 },
                 // Chart and activity methods
