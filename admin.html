@@ -839,15 +839,18 @@
                         <table class="table table-hover mb-0">
                             <thead class="bg-light">
                                 <tr>
+                                    <th>Short ID</th>
                                     <th>Page Name</th>
                                     <th>Status</th>
                                     <th>P.C. Count</th>
                                     <th>Issue Count</th>
+                                    <th>Note</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                                            <tr v-for="page in pages" :key="page.pageName">
+                                                            <tr v-for="page in pages" :key="page.shortId">
+                                                                <td>{{ page.shortId }}</td>
                                                                 <td>{{ page.pageName }}</td>
                                                                 <td>
                                                                     <span class="status-badge" :class="statusClass(page.status)">
@@ -856,17 +859,18 @@
                                                                 </td>
                                                                 <td>{{ page.count }}</td>
                                                                 <td>{{ page.issueCount }}</td>
+                                                                <td>{{ page.note }}</td>
                                                                 <td>
                                                                     <button class="btn btn-sm btn-outline-primary me-1" @click="editPage(page)">
                                                                         <i class="bi bi-pencil-square"></i> Edit
                                                                     </button>
-                                                                    <button class="btn btn-sm btn-outline-danger" @click="deletePage(page.pageName)">
+                                                                    <button class="btn btn-sm btn-outline-danger" @click="deletePage(page.shortId)">
                                                                         <i class="bi bi-trash"></i> Delete
                                                                     </button>
                                                                 </td>
                                                             </tr>
                                                             <tr v-if="pages.length === 0">
-                                                                <td colspan="5" class="text-center py-4 text-muted">
+                                                                <td colspan="7" class="text-center py-4 text-muted">
                                                                     No pages found
                                                                 </td>
                                                             </tr>                            </tbody>
@@ -875,10 +879,13 @@
                 </div>
                 <div class="card-footer">
                     <h5 class="mb-3">Add New Page</h5>
-                    <div class="input-group">
+                    <div class="input-group mb-3">
                         <input type="text" class="form-control" placeholder="New Page Name" v-model="newPage.pageName">
-                        <button class="btn btn-primary" @click="addPage">Add Page</button>
                     </div>
+                    <div class="input-group mb-3">
+                        <textarea class="form-control" placeholder="Note (optional)" v-model="newPage.note"></textarea>
+                    </div>
+                    <button class="btn btn-primary" @click="addPage">Add Page</button>
                 </div>
             </div>
 
@@ -1817,8 +1824,12 @@
                     </div>
                     <div class="modal-body" v-if="selectedPage">
                         <div class="mb-3">
+                            <label for="edit-page-shortid" class="form-label">Short ID</label>
+                            <input type="text" class="form-control" id="edit-page-shortid" v-model="selectedPage.shortId" readonly>
+                        </div>
+                        <div class="mb-3">
                             <label for="edit-page-name" class="form-label">Page Name</label>
-                            <input type="text" class="form-control" id="edit-page-name" v-model="selectedPage.pageName" readonly>
+                            <input type="text" class="form-control" id="edit-page-name" v-model="selectedPage.pageName">
                         </div>
                         <div class="mb-3">
                             <label for="edit-page-status" class="form-label">Page Status</label>
@@ -1826,7 +1837,7 @@
                                 <option value="new-listed">New Listed</option>
                                 <option value="issueless-pending">Issueless Pending</option>
                                 <option value="issueless">Issueless</option>
-                                <option value="issue-prone">Issue Prone</option>
+                                <option value="issue-rising">Issue Prone</option>
                             </select>
                         </div>
                         <div class="mb-3">
@@ -1836,6 +1847,10 @@
                         <div class="mb-3">
                             <label for="edit-page-issue-count" class="form-label">Issue Count</label>
                             <input type="number" class="form-control" id="edit-page-issue-count" v-model.number="selectedPage.issueCount" min="0">
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-page-note" class="form-label">Note</label>
+                            <textarea class="form-control" id="edit-page-note" rows="3" v-model="selectedPage.note"></textarea>
                         </div>
                     </div>
                     <div class="modal-footer">
