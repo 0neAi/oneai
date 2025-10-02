@@ -77,7 +77,6 @@
     .merchant-list-container {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 1.5rem;
     }
     
     .merchant-card {
@@ -495,11 +494,13 @@
     .page-table-header,
     .page-table-row {
       display: grid;
-      grid-template-columns: 3fr 2fr 1fr; /* Adjust column widths as needed */
+      grid-template-columns: 3fr 2fr 1fr 1fr 2fr; /* Adjusted for 5 columns */
       gap: 10px;
       padding: 10px 15px;
       align-items: center;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--primary-color); /* Green border */
+      border-radius: 8px; /* Rounded corners */
+      margin-bottom: 10px; /* Space between cards */
     }
 
     .page-table-header {
@@ -508,6 +509,8 @@
       color: var(--primary-color);
       border-top-left-radius: 8px;
       border-top-right-radius: 8px;
+      grid-template-columns: 3fr 2fr 1fr 1fr 2fr; /* Adjusted for 5 columns */
+      border-bottom: none; /* Remove border-bottom */
     }
 
     .page-table-row:nth-child(even) {
@@ -568,7 +571,7 @@
     @media (max-width: 768px) {
       .page-table-header,
       .page-table-row {
-        grid-template-columns: 2fr 1.5fr 1fr; /* Adjust for smaller screens */
+        grid-template-columns: 1.5fr 1fr 0.5fr 0.5fr 1fr; /* Adjusted for 5 columns on smaller screens */
         padding: 8px 10px;
       }
       .page-status-tag,
@@ -581,19 +584,16 @@
     @media (max-width: 480px) {
       .page-table-header,
       .page-table-row {
-        grid-template-columns: 1fr; /* Stack columns on very small screens */
-        text-align: center;
+        grid-template-columns: 1fr 0.8fr 0.4fr 0.4fr 0.8fr; /* Compact horizontal layout for 5 columns */
+        padding: 5px;
       }
       .page-table-cell {
-        border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
-        padding: 5px 0;
-      }
-      .page-table-row:last-child .page-table-cell:last-child {
-        border-bottom: none;
+        padding: 3px 0;
       }
       .page-status-tag,
       .page-count-tag {
-        margin: 5px auto;
+        font-size: 0.6em;
+        padding: 0.1em 0.3em;
       }
     }
 </style>
