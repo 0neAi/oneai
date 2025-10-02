@@ -802,6 +802,26 @@
     </section>
   </div>
 
+    <!-- Page Details Modal -->
+    <div class="modal fade" id="pageDetailsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="pageDetailsModalLabel">Page Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="page-details-content">
+                        <!-- Page details will be loaded here -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
   <script>
 
 
@@ -809,35 +829,26 @@
 
     async function displayMerchantAndPriceChangeData() {
       const issuelessContainer = document.getElementById('issueless-container');
-      const issueRisingContainer = document.getElementById('issue-rising-container'); // Updated ID
+      const issueRisingContainer = document.getElementById('issue-rising-container');
 
       if (issuelessContainer) {
         issuelessContainer.innerHTML = ''; // Clear existing content
       }
-      if (issueRisingContainer) { // Updated ID
+      if (issueRisingContainer) {
         issueRisingContainer.innerHTML = ''; // Clear existing content
       }
 
-      let pageStatuses = [];
-      let pagePriceChangeCounts = [];
+      let allPages = [];
 
       try {
-        // Fetch page statuses
-        const statusResponse = await fetch('https://oneai-wjox.onrender.com/api/merchant-data');
-        const statusJson = await statusResponse.json();
-        if (statusJson.success) {
-          pageStatuses = statusJson.pageStatuses;
+        // Fetch all pages from the new combined endpoint
+        const response = await fetch('https://oneai-wjox.onrender.com/api/pages');
+        const json = await response.json();
+        if (json.success) {
+          allPages = json.pages;
+          console.log('Fetched all pages:', allPages);
         } else {
-          console.error('Failed to fetch page statuses:', statusJson.message);
-        }
-
-        // Fetch page price change counts
-        const priceChangeResponse = await fetch('https://oneai-wjox.onrender.com/api/page-price-change-counts');
-        const priceChangeJson = await priceChangeResponse.json();
-        if (priceChangeJson.success) {
-          pagePriceChangeCounts = priceChangeJson.counts;
-        } else {
-          console.error('Failed to fetch page price change counts:', priceChangeJson.message);
+          console.error('Failed to fetch pages:', json.message);
         }
       } catch (error) {
         console.error('Error fetching initial data for support page:', error);
@@ -846,116 +857,115 @@
         return;
       }
 
-      // Combine data and categorize
+      // Categorize pages
       const issuelessPages = [];
-      const issuelessPendingPages = [];
       const issueRisingPages = [];
-      const newListedPages = [];
 
-      const allPageNames = new Set();
-      pageStatuses.forEach(ps => allPageNames.add(ps.pageName));
-      pagePriceChangeCounts.forEach(pc => allPageNames.add(pc.pageName));
-
-      Array.from(allPageNames).sort().forEach(pageName => {
-        const pageStatus = pageStatuses.find(ps => ps.pageName === pageName);
-        const priceChangeCount = pagePriceChangeCounts.find(pc => pc.pageName === pageName);
-        const count = priceChangeCount ? priceChangeCount.count : 0;
-        const issueCount = pageStatus ? pageStatus.issueCount || 0 : 0; // Added issueCount
-
-        let statusText = '';
-        let targetList;
-
-        if (pageStatus) {
-          switch (pageStatus.status) {
-            case 'issueless':
-              statusText = 'Issue-Less';
-              targetList = issuelessPages;
-              break;
-            case 'issueless-pending':
-              statusText = 'Issueless-Pending';
-              targetList = issuelessPendingPages;
-              break;
-            case 'issue-rising':
-              statusText = 'Issue-Rising';
-              targetList = issueRisingPages; // Updated variable name
-              break;
-            case 'new-listed':
-              statusText = 'New Listed';
-              targetList = newListedPages;
-              break;
-          }
-        } else {
-          statusText = 'New Listed'; // Default if no status found
-          targetList = newListedPages;
+      allPages.sort((a, b) => a.pageName.localeCompare(b.pageName)).forEach(page => {
+        if (page.status === 'issueless' || page.status === 'issueless-pending' || page.status === 'new-listed') {
+          issuelessPages.push(page);
+        } else if (page.status === 'issue-rising') {
+          issueRisingPages.push(page);
         }
-
-        targetList.push({ pageName, status: statusText, count, issueCount }); // Added issueCount
       });
 
       // Display Issueless and Issueless-Pending pages
       if (issuelessContainer) {
-        if (issuelessPages.length > 0 || issuelessPendingPages.length > 0 || newListedPages.length > 0) {
-          const allIssuelessRelated = [...issuelessPages, ...issuelessPendingPages, ...newListedPages];
-          
-          // Create a table-like structure using divs
+        if (issuelessPages.length > 0) {
           const tableHeader = document.createElement('div');
           tableHeader.className = 'page-table-header';
           tableHeader.innerHTML = `
             <div class="page-table-cell">পেইজের নাম</div>
             <div class="page-table-cell">স্ট্যাটাস</div>
             <div class="page-table-cell">পরিবর্তন</div>
-            <div class="page-table-cell">ইস্যু</div> <!-- Added Issue column -->
+            <div class="page-table-cell">ইস্যু</div>
+            <div class="page-table-cell">নোট</div>
           `;
           issuelessContainer.appendChild(tableHeader);
 
-          allIssuelessRelated.forEach(item => {
-            const row = document.createElement('div');
-            row.className = 'page-table-row';
-            const statusClass = item.status.toLowerCase().replace(' ', '-');
-            row.innerHTML = `
-              <div class="page-table-cell page-name-cell">${item.pageName}</div>
-              <div class="page-table-cell status-cell"><span class="page-status-tag ${statusClass}">${item.status}</span></div>
-              <div class="page-table-cell count-cell"><span class="page-count-tag">${item.count} PC</span></div>
-              <div class="page-table-cell issue-count-cell"><span class="page-count-tag">${item.issueCount} Issues</span></div> <!-- Display Issue Count -->
-            `;
-            issuelessContainer.appendChild(row);
-          });
-        } else {
-          issuelessContainer.innerHTML = '<p>কোন ইস্যু বিহীন বা নতুন তালিকাভুক্ত পেইজ পাওয়া যায়নি।</p>';
-        }
-      }
-
-      // Display Issue-Rising pages
-      if (issueRisingContainer) { // Updated ID
-        if (issueRisingPages.length > 0) { // Updated variable name
-          const tableHeader = document.createElement('div');
-          tableHeader.className = 'page-table-header';
-          tableHeader.innerHTML = `
-            <div class="page-table-cell">পেইজের নাম</div>
-            <div class="page-table-cell">স্ট্যাটাস</div>
-            <div class="page-table-cell">পরিবর্তন</div>
-            <div class="page-table-cell">ইস্যু</div> <!-- Added Issue column -->
-          `;
-          issueRisingContainer.appendChild(tableHeader); // Updated ID
-
-          issueRisingPages.forEach(item => { // Updated variable name
-            const row = document.createElement('div');
-            row.className = 'page-table-row';
-            const statusClass = item.status.toLowerCase().replace(' ', '-');
-            row.innerHTML = `
-              <div class="page-table-cell page-name-cell">${item.pageName}</div>
-              <div class="page-table-cell status-cell"><span class="page-status-tag ${statusClass}">${item.status}</span></div>
-              <div class="page-table-cell count-cell"><span class="page-count-tag">${item.count} PC</span></div>
-              <div class="page-table-cell issue-count-cell"><span class="page-count-tag">${item.issueCount} Issues</span></div> <!-- Display Issue Count -->
-            `;
-            issueRisingContainer.appendChild(row); // Updated ID
-          });
-        } else {
-          issueRisingContainer.innerHTML = '<p>কোন ইস্যু-রাইজিং মার্চেন্ট পাওয়া যায়নি।</p>'; // Updated text
-        }
-      }
-    }
-
+                      issuelessPages.forEach(item => {
+                      const row = document.createElement('div');
+                      row.className = 'page-table-row';
+                      row.dataset.shortid = item.shortId; // Store shortId for easy retrieval
+                      row.addEventListener('click', () => showPageDetails(item.shortId));
+                      const statusClass = item.status.toLowerCase().replace(' ', '-');
+                      row.innerHTML = `
+                        <div class="page-table-cell page-name-cell">${item.pageName}</div>
+                        <div class="page-table-cell status-cell"><span class="page-status-tag ${statusClass}">${item.status}</span></div>
+                        <div class="page-table-cell count-cell"><span class="page-count-tag">${item.count} PC</span></div>
+                        <div class="page-table-cell issue-count-cell"><span class="page-count-tag">${item.issueCount} Issues</span></div>
+                        <div class="page-table-cell note-cell">${item.note || 'N/A'}</div>
+                      `;
+                      issuelessContainer.appendChild(row);
+                    });
+                  } else {
+                    issuelessContainer.innerHTML = '<p>কোন ইস্যু বিহীন বা নতুন তালিকাভুক্ত পেইজ পাওয়া যায়নি।</p>';
+                  }
+                }
+          
+                // Display Issue-Rising pages
+                if (issueRisingContainer) {
+                  if (issueRisingPages.length > 0) {
+                    const tableHeader = document.createElement('div');
+                    tableHeader.className = 'page-table-header';
+                    tableHeader.innerHTML = `
+                      <div class="page-table-cell">পেইজের নাম</div>
+                      <div class="page-table-cell">স্ট্যাটাস</div>
+                      <div class="page-table-cell">পরিবর্তন</div>
+                      <div class="page-table-cell">ইস্যু</div>
+                      <div class="page-table-cell">নোট</div>
+                    `;
+                    issueRisingContainer.appendChild(tableHeader);
+          
+                    issueRisingPages.forEach(item => {
+                      const row = document.createElement('div');
+                      row.className = 'page-table-row';
+                      row.dataset.shortid = item.shortId; // Store shortId for easy retrieval
+                      row.addEventListener('click', () => showPageDetails(item.shortId));
+                      const statusClass = item.status.toLowerCase().replace(' ', '-');
+                      row.innerHTML = `
+                        <div class="page-table-cell page-name-cell">${item.pageName}</div>
+                        <div class="page-table-cell status-cell"><span class="page-status-tag ${statusClass}">${item.status}</span></div>
+                        <div class="page-table-cell count-cell"><span class="page-count-tag">${item.count} PC</span></div>
+                        <div class="page-table-cell issue-count-cell"><span class="page-count-tag">${item.issueCount} Issues</span></div>
+                        <div class="page-table-cell note-cell">${item.note || 'N/A'}</div>
+                      `;
+                      issueRisingContainer.appendChild(row);
+                    });
+                  } else {
+                    issueRisingContainer.innerHTML = '<p>কোন ইস্যু-রাইজিং মার্চেন্ট পাওয়া যায়নি।</p>';
+                  }
+                }
+              }
+          
+              async function showPageDetails(shortId) {
+                try {
+                  const response = await fetch(`https://oneai-wjox.onrender.com/api/pages/${shortId}`);
+                  const json = await response.json();
+          
+                  if (json.success) {
+                    const page = json.page;
+                    const modalBody = document.getElementById('page-details-content');
+                    modalBody.innerHTML = `
+                      <p><strong>Page Name:</strong> ${page.pageName}</p>
+                      <p><strong>Short ID:</strong> ${page.shortId}</p>
+                      <p><strong>Status:</strong> <span class="page-status-tag ${page.status.toLowerCase().replace(' ', '-')}">${page.status}</span></p>
+                      <p><strong>Price Change Count:</strong> <span class="page-count-tag">${page.count} PC</span></p>
+                      <p><strong>Issue Count:</strong> <span class="page-count-tag">${page.issueCount} Issues</span></p>
+                      <p><strong>Note:</strong> ${page.note || 'N/A'}</p>
+                      <p><strong>Created At:</strong> ${formatDate(page.createdAt)}</p>
+                      <p><strong>Last Updated:</strong> ${formatDate(page.updatedAt)}</p>
+                    `;
+                    const pageDetailsModal = new bootstrap.Modal(document.getElementById('pageDetailsModal'));
+                    pageDetailsModal.show();
+                  } else {
+                    showConfirmation(json.message || 'Failed to fetch page details.', false);
+                  }
+                } catch (error) {
+                  console.error('Error fetching page details:', error);
+                  showConfirmation('Error fetching page details.', false);
+                }
+              }
     // Show confirmation message
     function showConfirmation(message, isSuccess = true) {
       const container = document.getElementById('confirmation-container');
