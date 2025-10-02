@@ -59,7 +59,7 @@ adminSchema.methods.toSafeObject = function() {
   return admin;
 };
 
-// Static method for registration
+// Static method for registration.
 adminSchema.statics.register = async function(email, password) {
   // Check if registration is allowed
   if (!await this.canRegister()) {
