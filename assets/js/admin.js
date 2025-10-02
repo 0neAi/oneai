@@ -139,6 +139,7 @@ const AdminApp = {
                 if (error.response && error.response.status === 401) {
                     this.logout();
                 }
+                alert('Failed to load admin data. Please try logging in again or contact support.');
             } finally {
                 this.isLoading = false;
             }
