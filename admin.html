@@ -2095,6 +2095,9 @@
                         if (error.response && error.response.status === 401) {
                             console.log('401 error, logging out.');
                             this.logout();
+                            alert('Session expired or unauthorized. Please log in again.');
+                        } else {
+                            alert('Failed to load some dashboard data. Please check your connection or try again.');
                         }
                     } finally {
                         this.stats = {
@@ -2116,6 +2119,7 @@
                     } catch (error) {
                         console.error('Error loading users:', error);
                         this.users = [];
+                        alert('Failed to load registered users.');
                     }
                 },
                 async loadPayments() {
@@ -2125,6 +2129,7 @@
                     } catch (error) {
                         console.error('Error loading payments:', error);
                         this.payments = [];
+                        alert('Failed to load recent payments.');
                     }
                 },
                 async loadMerchantIssues() {
@@ -2134,6 +2139,7 @@
                     } catch (error) {
                         console.error('Error loading merchant issues:', error);
                         this.merchantIssues = [];
+                        alert('Failed to load merchant issues.');
                     }
                 },
                 async loadPenaltyReports() {
@@ -2143,6 +2149,7 @@
                     } catch (error) {
                         console.error('Error loading penalty reports:', error);
                         this.penaltyReports = [];
+                        alert('Failed to load penalty reports.');
                     }
                 },
                 async loadPremiumPayments() {
@@ -2152,6 +2159,7 @@
                     } catch (error) {
                         console.error('Error loading premium payments:', error);
                         this.premiumPayments = [];
+                        alert('Failed to load premium payments.');
                     }
                 },
                 async loadFexiloadRequests() {
@@ -2161,6 +2169,7 @@
                     } catch (error) {
                         console.error('Error loading fexiload requests:', error);
                         this.fexiloadRequests = [];
+                        alert('Failed to load fexiload requests.');
                     }
                 },
                 async loadLocationTrackerRequests() {
@@ -2170,6 +2179,7 @@
                     } catch (error) {
                         console.error('Error loading location tracker requests:', error);
                         this.locationTrackerRequests = [];
+                        alert('Failed to load location tracker requests.');
                     }
                 },
                 async loadPages() {
@@ -2179,6 +2189,7 @@
                     } catch (error) {
                         console.error('Error loading pages:', error);
                         this.pages = [];
+                        alert('Failed to load pages data.');
                     }
                 },
                 async refreshPages() {
@@ -2391,7 +2402,7 @@
                 },
                 async viewUserDetails(userId) {
                     try {
-                        const response = await axios.get(`${API_BASE}/admin/users/${userId}`);
+                        const response = await axios.get(`${API_BASE}/admin/users/${userId}/details`);
                         this.selectedUserDetail = response.data.user;
                         this.showModal('userDetailsModal');
                     } catch (error) {
