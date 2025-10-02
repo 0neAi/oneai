@@ -17,7 +17,8 @@
     "express-rate-limit": "^6.10.0",
     "ws": "^8.14.2",
     "web-push": "^3.6.4",
-    "dotenv": "^16.3.1"
+    "dotenv": "^16.3.1",
+    "shortid": "^2.2.16"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
