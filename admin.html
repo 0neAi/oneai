@@ -841,7 +841,7 @@
                             </tr>
                         </thead>
                         <tbody id="pages-table-body">
-                            <tr v-for="page in pages" :key="page.pageName">
+                            <tr v-for="page in allPages" :key="page.pageName">
                                 <td>{{ page.pageName }}</td>
                                 <td>
                                     <span :class="{'badge bg-success': page.status === 'issueless', 'badge bg-warning': page.status === 'issueless-pending', 'badge bg-danger': page.status === 'issue-rising', 'badge bg-info': page.status === 'new-listed'}">{{ page.status }}</span>
@@ -2114,7 +2114,8 @@
                         this.loadPenaltyReports(),
                         this.loadPremiumPayments(),
                         this.loadFexiloadRequests(),
-                        this.loadLocationTrackerRequests()
+                        this.loadLocationTrackerRequests(),
+                        this.loadAllPages()
                     ];
                     console.log('All data loading promises initiated.');
 
@@ -2201,13 +2202,44 @@
                         }
                     },
 
-                    async loadLocationTrackerRequests() {
+                    async loadAllPages() {
                         try {
-                            const response = await axios.get(`${API_BASE}/admin/tracker/requests`);
-                            this.locationTrackerRequests = response.data.requests || [];
+                            const [statusResponse, countResponse] = await Promise.all([
+                                axios.get(`${API_BASE}/api/merchant-data`),
+                                axios.get(`${API_BASE}/api/page-price-change-counts`)
+                            ]);
+
+                            const pageStatuses = statusResponse.data.pageStatuses || [];
+                            const pagePriceChangeCounts = countResponse.data.counts || [];
+
+                            const combinedPages = {};
+
+                            pageStatuses.forEach(ps => {
+                                combinedPages[ps.pageName] = {
+                                    pageName: ps.pageName,
+                                    status: ps.status,
+                                    count: 0, // Default price change count
+                                    issueCount: ps.issueCount || 0 // Added issueCount, assuming it comes from merchant-data
+                                };
+                            });
+
+                            pagePriceChangeCounts.forEach(pc => {
+                                if (combinedPages[pc.pageName]) {
+                                    combinedPages[pc.pageName].count = pc.count;
+                                } else {
+                                    combinedPages[pc.pageName] = {
+                                        pageName: pc.pageName,
+                                        status: 'new-listed', // Default status if only count exists
+                                        count: pc.count,
+                                        issueCount: 0 // Default issue count
+                                    };
+                                }
+                            });
+
+                            this.allPages = Object.values(combinedPages).sort((a, b) => a.pageName.localeCompare(b.pageName));
                         } catch (error) {
-                            console.error('Error loading location tracker requests:', error);
-                            this.locationTrackerRequests = [];
+                            console.error('Error loading all pages:', error);
+                            this.allPages = []; // Ensure it's empty on error
                         }
                     },
                 async refreshPayments() {
@@ -3146,42 +3178,10 @@
                 async showManagePagesModal() {
                     this.isLoading = true;
                     try {
-                        const [statusResponse, countResponse] = await Promise.all([
-                            axios.get(`${API_BASE}/api/merchant-data`),
-                            axios.get(`${API_BASE}/api/page-price-change-counts`)
-                        ]);
-
-                        const pageStatuses = statusResponse.data.pageStatuses || [];
-                        const pagePriceChangeCounts = countResponse.data.counts || [];
-
-                        const combinedPages = {};
-
-                        pageStatuses.forEach(ps => {
-                            combinedPages[ps.pageName] = {
-                                pageName: ps.pageName,
-                                status: ps.status,
-                                count: 0, // Default price change count
-                                issueCount: ps.issueCount || 0 // Added issueCount, assuming it comes from merchant-data
-                            };
-                        });
-
-                        pagePriceChangeCounts.forEach(pc => {
-                            if (combinedPages[pc.pageName]) {
-                                combinedPages[pc.pageName].count = pc.count;
-                            } else {
-                                combinedPages[pc.pageName] = {
-                                    pageName: pc.pageName,
-                                    status: 'new-listed', // Default status if only count exists
-                                    count: pc.count,
-                                    issueCount: 0 // Default issue count
-                                };
-                            }
-                        });
-
-                        this.allPages = Object.values(combinedPages).sort((a, b) => a.pageName.localeCompare(b.pageName));
+                        await this.loadAllPages(); // Load data first
                         this.managePagesModal.show();
                     } catch (error) {
-                        console.error('Error fetching all pages:', error);
+                        console.error('Error showing manage pages modal:', error);
                         alert('Failed to load page data for management.');
                     } finally {
                         this.isLoading = false;
