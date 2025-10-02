@@ -3227,66 +3227,6 @@
                 }
             },
             async mounted() {
-                // Initialize modals
-                this.paymentModal = new bootstrap.Modal(
-                    document.getElementById('paymentModal'), 
-                    { keyboard: false }
-                );
-                
-                this.issueModal = new bootstrap.Modal(
-                    document.getElementById('issueModal'), 
-                    { keyboard: false }
-                );
-                
-                this.penaltyModal = new bootstrap.Modal(
-                    document.getElementById('penaltyModal'), 
-                    { keyboard: false }
-                );
-
-                this.processPenaltyModal = new bootstrap.Modal(
-                    document.getElementById('processPenaltyModal'),
-                    { keyboard: false }
-                );
-
-                this.approveIssueModal = new bootstrap.Modal(
-                    document.getElementById('approveIssueModal'),
-                    { keyboard: false }
-                );
-
-                this.processPremiumModal = new bootstrap.Modal(
-                    document.getElementById('processPremiumModal'),
-                    { keyboard: false }
-                );
-
-                this.fexiloadRequestModal = new bootstrap.Modal(
-                    document.getElementById('fexiloadRequestModal'),
-                    { keyboard: false }
-                );
-
-                this.locationTrackerRequestModal = new bootstrap.Modal(
-                    document.getElementById('locationTrackerRequestModal'),
-                    { keyboard: false }
-                );
-
-                this.deliverDataModal = new bootstrap.Modal(
-                    document.getElementById('deliverDataModal'),
-                    { keyboard: false }
-                );
-
-                this.userDetailsModal = new bootstrap.Modal(
-                    document.getElementById('userDetailsModal'),
-                    { keyboard: false }
-                );
-
-                this.managePagesModal = new bootstrap.Modal(
-                    document.getElementById('managePagesModal'),
-                    { keyboard: false }
-                );
-
-                this.editPageModal = new bootstrap.Modal(
-                    document.getElementById('editPageModal'),
-                    { keyboard: false }
-                );
                 
                 // Initialize tabs
                 const triggerTabList = [].slice.call(document.querySelectorAll('#issueTabs button'));
