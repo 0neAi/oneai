@@ -277,7 +277,7 @@
         </div>
 
         <!-- Login Form -->
-        <div v-else-if="!isAuthenticated" class="d-flex align-items-center justify-content-center vh-100">
+        <div v-else-if="!authenticated" class="d-flex align-items-center justify-content-center vh-100">
             <div class="card p-4" style="width: 100%; max-width: 400px;">
                 <h3 class="card-title text-center">Admin Login</h3>
                 <div v-if="loginError" class="alert alert-danger">{{ loginError }}</div>
@@ -827,84 +827,60 @@
                 </div>
 
             <!-- Manage Pages Section -->
-            <section id="manage-pages" class="admin-section" v-if="authenticated">
-                <h2>Manage Pages</h2>
-                <div class="table-responsive">
-                    <table class="table table-dark table-striped">
-                        <thead>
-                            <tr>
-                                <th>Page Name</th>
-                                <th>Status</th>
-                                <th>P.C. Count</th>
-                                <th>Issue Count</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="pages-table-body">
-                            <tr v-for="page in allPages" :key="page.pageName">
-                                <td>{{ page.pageName }}</td>
-                                <td>
-                                    <span :class="{'badge bg-success': page.status === 'issueless', 'badge bg-warning': page.status === 'issueless-pending', 'badge bg-danger': page.status === 'issue-rising', 'badge bg-info': page.status === 'new-listed'}">{{ page.status }}</span>
-                                </td>
-                                <td>{{ page.count }}</td>
-                                <td>{{ page.issueCount }}</td>
-                                <td>
-                                    <button class="btn btn-sm btn-info me-2" @click="editPage(page)">Edit</button>
-                                    <button class="btn btn-sm btn-danger" @click="deletePage(page.pageName)">Delete</button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+            <div class="card shadow-sm mt-5" v-if="isAuthenticated">
+                <div class="card-header d-flex justify-content-between align-items-center py-3">
+                    <h5 class="mb-0"><i class="bi bi-file-earmark-text me-2"></i>Manage Pages</h5>
+                    <button class="btn btn-sm btn-outline-primary" @click="refreshPages">
+                        <i class="bi bi-arrow-clockwise"></i> Refresh
+                    </button>
                 </div>
-
-                <!-- Add New Page Form -->
-                <div class="mt-3">
-                    <h4>Add New Page</h4>
-                    <div class="input-group mb-3">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>Page Name</th>
+                                    <th>Status</th>
+                                    <th>P.C. Count</th>
+                                    <th>Issue Count</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                                            <tr v-for="page in pages" :key="page.pageName">
+                                                                <td>{{ page.pageName }}</td>
+                                                                <td>
+                                                                    <span class="status-badge" :class="statusClass(page.status)">
+                                                                        {{ page.status }}
+                                                                    </span>
+                                                                </td>
+                                                                <td>{{ page.count }}</td>
+                                                                <td>{{ page.issueCount }}</td>
+                                                                <td>
+                                                                    <button class="btn btn-sm btn-outline-primary me-1" @click="editPage(page)">
+                                                                        <i class="bi bi-pencil-square"></i> Edit
+                                                                    </button>
+                                                                    <button class="btn btn-sm btn-outline-danger" @click="deletePage(page.pageName)">
+                                                                        <i class="bi bi-trash"></i> Delete
+                                                                    </button>
+                                                                </td>
+                                                            </tr>
+                                                            <tr v-if="pages.length === 0">
+                                                                <td colspan="5" class="text-center py-4 text-muted">
+                                                                    No pages found
+                                                                </td>
+                                                            </tr>                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <h5 class="mb-3">Add New Page</h5>
+                    <div class="input-group">
                         <input type="text" class="form-control" placeholder="New Page Name" v-model="newPage.pageName">
                         <button class="btn btn-primary" @click="addPage">Add Page</button>
                     </div>
                 </div>
-
-                <!-- Edit Page Modal/Form -->
-                <div v-if="editingPage" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
-                    <div class="modal-dialog">
-                        <div class="modal-content bg-dark text-white">
-                            <div class="modal-header">
-                                <h5 class="modal-title">Edit Page: {{ editingPage.pageName }}</h5>
-                                <button type="button" class="btn-close btn-close-white" @click="editingPage = null"></button>
-                            </div>
-                            <div class="modal-body">
-                                <div class="mb-3">
-                                    <label for="editPageName" class="form-label">Page Name</label>
-                                    <input type="text" class="form-control" id="editPageName" v-model="editingPage.pageName" disabled>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="editPageStatus" class="form-label">Status</label>
-                                    <select class="form-select" id="editPageStatus" v-model="editingPage.status">
-                                        <option value="issueless">issueless</option>
-                                        <option value="issueless-pending">issueless-pending</option>
-                                        <option value="issue-rising">issue-rising</option>
-                                        <option value="new-listed">new-listed</option>
-                                    </select>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="editPageCount" class="form-label">P.C. Count</label>
-                                    <input type="number" class="form-control" id="editPageCount" v-model.number="editingPage.count">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="editIssueCount" class="form-label">Issue Count</label>
-                                    <input type="number" class="form-control" id="editIssueCount" v-model.number="editingPage.issueCount">
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" @click="editingPage = null">Cancel</button>
-                                <button type="button" class="btn btn-primary" @click="updatePage">Save changes</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
+            </div>
 
                 <!-- Fexiload Requests Section -->
                 <div class="card shadow-sm mt-5">
@@ -1779,7 +1755,7 @@
         </div>
 
         <!-- Manage Pages Modal -->
-        <div class="modal fade" id="managePagesModal" tabindex="-1" aria-hidden="true">
+        <div class="modal fade" id="managePagesModal" tabindex="-1" aria-hidden="true" v-if="authenticated">
             <div class="modal-dialog modal-xl">
                 <div class="modal-content">
                     <div class="modal-header">
@@ -1787,7 +1763,7 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <div v-if="allPages.length === 0" class="text-center py-4 text-muted">
+                        <div v-if="pages.length === 0" class="text-center py-4 text-muted">
                             No pages found.
                         </div>
                         <div v-else class="table-responsive">
@@ -1802,7 +1778,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-for="page in allPages" :key="page.pageName">
+                                    <tr v-for="page in pages" :key="page.pageName">
                                         <td>{{ page.pageName }}</td>
                                         <td>
                                             <span class="status-badge" :class="statusClass(page.status)">
@@ -1832,7 +1808,7 @@
         </div>
 
         <!-- Edit Page Modal (for individual page editing) -->
-        <div class="modal fade" id="editPageModal" tabindex="-1" aria-hidden="true">
+        <div class="modal fade" id="editPageModal" tabindex="-1" aria-hidden="true" v-if="authenticated">
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
