@@ -23,14 +23,17 @@ const AdminApp = {
                 usersIssuesChart: null
             },
             pages: [], // New data array for pages
-            newPage: { pageName: '' }, // For adding new pages
+            newPage: { pageName: '', note: '' }, // For adding new pages
             editingPage: null // To store the page being edited
         };
     },
     methods: {
+        refreshPages() {
+            this.loadPages();
+        },
         async loadPages() {
             try {
-                const response = await axios.get(`${API_BASE}/admin/page-data/all`);
+                const response = await axios.get(`${API_BASE}/api/pages`);
                 this.pages = response.data.pages || [];
             } catch (error) {
                 console.error('Failed to load pages:', error);
@@ -43,8 +46,9 @@ const AdminApp = {
                 return;
             }
             try {
-                await axios.post(`${API_BASE}/admin/page-data/add-page`, { pageName: this.newPage.pageName });
+                await axios.post(`${API_BASE}/admin/pages`, { pageName: this.newPage.pageName, note: this.newPage.note });
                 this.newPage.pageName = ''; // Clear input
+                this.newPage.note = ''; // Clear note
                 this.loadPages(); // Reload pages
             } catch (error) {
                 console.error('Failed to add page:', error);
@@ -60,7 +64,7 @@ const AdminApp = {
                 return;
             }
             try {
-                await axios.post(`${API_BASE}/admin/page-data/update`, this.editingPage);
+                await axios.put(`${API_BASE}/admin/pages/${this.editingPage.shortId}`, this.editingPage);
                 this.editingPage = null; // Exit editing mode
                 this.loadPages(); // Reload pages
             } catch (error) {
@@ -68,10 +72,10 @@ const AdminApp = {
                 alert(error.response?.data?.message || 'Failed to update page.');
             }
         },
-        async deletePage(pageName) {
-            if (!confirm(`Are you sure you want to delete page '${pageName}'?`)) return;
+        async deletePage(shortId) {
+            if (!confirm(`Are you sure you want to delete page with Short ID '${shortId}'?`)) return;
             try {
-                await axios.delete(`${API_BASE}/admin/page-data/${pageName}`);
+                await axios.delete(`${API_BASE}/admin/pages/${shortId}`);
                 this.loadPages(); // Reload pages
             } catch (error) {
                 console.error('Failed to delete page:', error);
@@ -109,7 +113,7 @@ const AdminApp = {
                     axios.get(`${API_BASE}/admin/merchant-issues`),
                     axios.get(`${API_BASE}/admin/penalty-reports`),
                     axios.get(`${API_BASE}/admin/fexiload-requests`),
-                    axios.get(`${API_BASE}/admin/page-data/all`) // Fetch pages data
+                    axios.get(`${API_BASE}/api/pages`) // Fetch pages data from new endpoint
                 ]);
 
                 this.users = usersRes.data.users || [];
