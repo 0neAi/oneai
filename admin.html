@@ -827,7 +827,7 @@
                 </div>
 
             <!-- Manage Pages Section -->
-            <div class="card shadow-sm mt-5" v-if="isAuthenticated">
+            <div class="card shadow-sm mt-5" v-if="authenticated">
                 <div class="card-header d-flex justify-content-between align-items-center py-3">
                     <h5 class="mb-0"><i class="bi bi-file-earmark-text me-2"></i>Manage Pages</h5>
                     <button class="btn btn-sm btn-outline-primary" @click="refreshPages">
@@ -849,31 +849,32 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                                            <tr v-for="page in pages" :key="page.shortId">
-                                                                <td>{{ page.shortId }}</td>
-                                                                <td>{{ page.pageName }}</td>
-                                                                <td>
-                                                                    <span class="status-badge" :class="statusClass(page.status)">
-                                                                        {{ page.status }}
-                                                                    </span>
-                                                                </td>
-                                                                <td>{{ page.count }}</td>
-                                                                <td>{{ page.issueCount }}</td>
-                                                                <td>{{ page.note }}</td>
-                                                                <td>
-                                                                    <button class="btn btn-sm btn-outline-primary me-1" @click="editPage(page)">
-                                                                        <i class="bi bi-pencil-square"></i> Edit
-                                                                    </button>
-                                                                    <button class="btn btn-sm btn-outline-danger" @click="deletePage(page.shortId)">
-                                                                        <i class="bi bi-trash"></i> Delete
-                                                                    </button>
-                                                                </td>
-                                                            </tr>
-                                                            <tr v-if="pages.length === 0">
-                                                                <td colspan="7" class="text-center py-4 text-muted">
-                                                                    No pages found
-                                                                </td>
-                                                            </tr>                            </tbody>
+                                <tr v-for="page in pages" :key="page.shortId">
+                                    <td>{{ page.shortId }}</td>
+                                    <td>{{ page.pageName }}</td>
+                                    <td>
+                                        <span class="status-badge" :class="statusClass(page.status)">
+                                            {{ page.status }}
+                                        </span>
+                                    </td>
+                                    <td>{{ page.count }}</td>
+                                    <td>{{ page.issueCount }}</td>
+                                    <td>{{ page.note }}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary me-1" @click="editPage(page)">
+                                            <i class="bi bi-pencil-square"></i> Edit
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger" @click="deletePage(page.shortId)">
+                                            <i class="bi bi-trash"></i> Delete
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr v-if="pages.length === 0">
+                                    <td colspan="7" class="text-center py-4 text-muted">
+                                        No pages found
+                                    </td>
+                                </tr>
+                            </tbody>
                         </table>
                     </div>
                 </div>
@@ -1886,15 +1887,13 @@
                 return null;
             }
         }
-        
-        
 
         const AdminApp = {
             data() {
                 return {
                     isLoading: true,
                     showInitialSetup: false,
-                    isAuthenticated: false,
+                    authenticated: false,
                     admin: { email: '', password: '' },
                     loginError: '',
                     loginLoading: false,
@@ -1906,23 +1905,20 @@
                     merchantIssues: [],
                     penaltyReports: [],
                     premiumPayments: [],
-                    fexiloadRequests: [], // New data array for Fexiload requests
+                    fexiloadRequests: [],
+                    locationTrackerRequests: [],
                     commissionPercentage: 5,
-                    locationTrackerRequests: [], // New data array for Location Tracker requests
-                    selectedLocationTrackerRequest: null, // New data for selected Location Tracker request
-                    locationTrackerRequestModal: null, // New modal for Location Tracker requests
-                    deliverDataModal: null, // New modal for delivering data
+                    selectedLocationTrackerRequest: null,
                     deliveredDataType: '',
                     deliveredDataContent: '',
-                    selectedPayment: null, // Initialized
-                    selectedIssue: null, // Initialized
-                    selectedPenalty: null, // Initialized
-                    selectedPremiumPayment: null, // Initialized
-                    selectedFexiloadRequest: null, // Initialized
+                    selectedPayment: null,
+                    selectedIssue: null,
+                    selectedPenalty: null,
+                    selectedPremiumPayment: null,
+                    selectedFexiloadRequest: null,
                     selectedUserDetail: null,
-                    userDetailsModal: null,
                     selectedUser: null,
-                    stats: { totalUsers: 0, totalPayments: 0, pendingPayments: 0, issueReports: 0 }, // Initialized
+                    stats: { totalUsers: 0, totalPayments: 0, pendingPayments: 0, issueReports: 0 },
                     discountPercentage: 10,
                     issueDiscountPercentage: 10,
                     premiumDiscountPercentage: 0,
@@ -1943,24 +1939,12 @@
                     userPaymentError: '',
                     paymentStartDate: '',
                     paymentEndDate: '',
-                    paymentFilter: 'all', // Initialized
-                    issueFilter: 'all', // Initialized
-                    penaltyFilter: 'all', // Initialized
-
-                    // Page Data Management
-                    pageNameUpdate: '',
-                    pageStatusUpdate: '',
-                    pagePriceChangeCountUpdate: 0,
-                    pageIssueCountUpdate: 0, // New: for issue count
-                    pageUpdateMessage: '',
-                    pageUpdateSuccess: false,
-                    updatingPageData: false,
-
-                    // Page Management
-                    allPages: [],
-                    managePagesModal: null,
-                    selectedPage: null,
-                    editPageModal: null
+                    paymentFilter: 'all',
+                    issueFilter: 'all',
+                    penaltyFilter: 'all',
+                    pages: [],
+                    newPage: { pageName: '', note: '' },
+                    selectedPage: null
                 };
             },
             computed: {
@@ -2036,7 +2020,7 @@
                             this.registerSuccess = 'Admin account created! Redirecting...';
                             setTimeout(() => {
                                 this.showInitialSetup = false;
-                                this.isAuthenticated = true;
+                                this.authenticated = true;
                                 this.loadData();
                             }, 1500);
                         } else {
@@ -2064,8 +2048,8 @@
                             if (decodedToken && decodedToken.email) {
                                 this.admin.email = decodedToken.email;
                             }
-                            this.isAuthenticated = true;
-                            console.log('Login successful, isAuthenticated:', this.isAuthenticated);
+                            this.authenticated = true;
+                            console.log('Login successful, authenticated:', this.authenticated);
                             await this.loadData();
                         } else {
                             this.loginError = response.data.message || 'Login failed. Please check your credentials.';
@@ -2074,16 +2058,12 @@
                     } catch (error) {
                         console.error('Login error caught:', error);
                         
-                        // Improved error handling
                         if (error.response) {
-                            // Server responded with error status
                             this.loginError = error.response.data.message || 
                                              `Server error: ${error.response.status}`;
                         } else if (error.request) {
-                            // Request was made but no response received
                             this.loginError = 'No response from server. Please check your connection.';
                         } else {
-                            // Other errors
                             this.loginError = 'Login failed. Please try again.';
                         }
                     } finally {
@@ -2098,20 +2078,17 @@
                     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
                     console.log('Authorization token set.');
 
-                    const promises = [
-                        this.loadUsers(),
-                        this.loadPayments(),
-                        this.loadMerchantIssues(),
-                        this.loadPenaltyReports(),
-                        this.loadPremiumPayments(),
-                        this.loadFexiloadRequests(),
-                        this.loadLocationTrackerRequests(),
-                        this.loadAllPages()
-                    ];
-                    console.log('All data loading promises initiated.');
-
                     try {
-                        await Promise.all(promises);
+                        await Promise.all([
+                            this.loadUsers(),
+                            this.loadPayments(),
+                            this.loadMerchantIssues(),
+                            this.loadPenaltyReports(),
+                            this.loadPremiumPayments(),
+                            this.loadFexiloadRequests(),
+                            this.loadLocationTrackerRequests(),
+                            this.loadPages()
+                        ]);
                         console.log('All data loaded successfully.');
                     } catch (error) {
                         console.error('Data loading error in loadData:', error);
@@ -2132,1112 +2109,571 @@
                         console.log('loadData finished, isLoading:', this.isLoading);
                     }
                 },
-                    
-                    async loadUsers() {
-                        try {
-                            const response = await axios.get(`${API_BASE}/admin/users`);
-                            this.users = response.data.users || [];
-                        } catch (error) {
-                            console.error('Error loading users:', error);
-                            this.users = [];
-                        }
-                    },
-                    
-                    async loadPayments() {
-                        try {
-                            const response = await axios.get(`${API_BASE}/admin/payments`);
-                            this.payments = response.data.payments || [];
-                        } catch (error) {
-                            console.error('Error loading payments:', error);
-                            this.payments = [];
-                        }
-                    },
-                    
-                    async loadMerchantIssues() {
-                        try {
-                            const response = await axios.get(`${API_BASE}/admin/merchant-issues`);
-                            this.merchantIssues = response.data.issues || [];
-                        } catch (error) {
-                            console.error('Error loading merchant issues:', error);
-                            this.merchantIssues = [];
-                        }
-                    },
-                    
-                    async loadPenaltyReports() {
-                        try {
-                            const response = await axios.get(`${API_BASE}/admin/penalty-reports`);
-                            this.penaltyReports = response.data.reports || [];
-                        } catch (error) {
-                            console.error('Error loading penalty reports:', error);
-                            this.penaltyReports = [];
-                        }
-                    },
-
-                    async loadPremiumPayments() {
-                        try {
-                            const response = await axios.get(`${API_BASE}/admin/premium-services`);
-                            this.premiumPayments = response.data.premiumServices || [];
-                        } catch (error) {
-                            console.error('Error loading premium payments:', error);
-                            this.premiumPayments = [];
-                        }
-                    },
-
-                    async loadFexiloadRequests() {
-                        try {
-                            const response = await axios.get(`${API_BASE}/admin/fexiload-requests`);
-                            this.fexiloadRequests = response.data.fexiloadRequests || [];
-                        } catch (error) {
-                            console.error('Error loading fexiload requests:', error);
-                            this.fexiloadRequests = [];
-                        }
-                    },
-
-                    async loadAllPages() {
-                        try {
-                            const [statusResponse, countResponse] = await Promise.all([
-                                axios.get(`${API_BASE}/api/merchant-data`),
-                                axios.get(`${API_BASE}/api/page-price-change-counts`)
-                            ]);
-
-                            const pageStatuses = statusResponse.data.pageStatuses || [];
-                            const pagePriceChangeCounts = countResponse.data.counts || [];
-
-                            const combinedPages = {};
-
-                            pageStatuses.forEach(ps => {
-                                combinedPages[ps.pageName] = {
-                                    pageName: ps.pageName,
-                                    status: ps.status,
-                                    count: 0, // Default price change count
-                                    issueCount: ps.issueCount || 0 // Added issueCount, assuming it comes from merchant-data
-                                };
-                            });
-
-                            pagePriceChangeCounts.forEach(pc => {
-                                if (combinedPages[pc.pageName]) {
-                                    combinedPages[pc.pageName].count = pc.count;
-                                } else {
-                                    combinedPages[pc.pageName] = {
-                                        pageName: pc.pageName,
-                                        status: 'new-listed', // Default status if only count exists
-                                        count: pc.count,
-                                        issueCount: 0 // Default issue count
-                                    };
-                                }
-                            });
-
-                            this.allPages = Object.values(combinedPages).sort((a, b) => a.pageName.localeCompare(b.pageName));
-                        } catch (error) {
-                            console.error('Error loading all pages:', error);
-                            this.allPages = []; // Ensure it's empty on error
-                        }
-                    },
-                async refreshPayments() {
+                async loadUsers() {
                     try {
-                        this.isLoading = true;
-                        const response = await axios.get(`${API_BASE}/admin/payments`);
-                        this.payments = response.data.payments || [];
-                        this.stats.pendingPayments = this.payments.filter(p => p.status === 'Pending').length;
-                    } catch (error) {
-                        console.error('Refresh payments error:', error);
-                    } finally {
-                        this.isLoading = false;
-                    }
-                },
-                async refreshUsers() {
-                    try {
-                        this.isLoading = true;
                         const response = await axios.get(`${API_BASE}/admin/users`);
                         this.users = response.data.users || [];
-                        this.stats.totalUsers = this.users.length;
                     } catch (error) {
-                        console.error('Refresh users error:', error);
-                    } finally {
-                        this.isLoading = false;
+                        console.error('Error loading users:', error);
+                        this.users = [];
                     }
                 },
-                async refreshIssues() {
+                async loadPayments() {
                     try {
-                        this.isLoading = true;
+                        const response = await axios.get(`${API_BASE}/admin/payments`);
+                        this.payments = response.data.payments || [];
+                    } catch (error) {
+                        console.error('Error loading payments:', error);
+                        this.payments = [];
+                    }
+                },
+                async loadMerchantIssues() {
+                    try {
                         const response = await axios.get(`${API_BASE}/admin/merchant-issues`);
                         this.merchantIssues = response.data.issues || [];
-                        this.stats.issueReports = this.merchantIssues.length;
-                        this.updateCharts();
                     } catch (error) {
-                        console.error('Refresh issues error:', error);
-                    } finally {
-                        this.isLoading = false;
+                        console.error('Error loading merchant issues:', error);
+                        this.merchantIssues = [];
                     }
                 },
-                async refreshPenalties() {
+                async loadPenaltyReports() {
                     try {
-                        this.isLoading = true;
                         const response = await axios.get(`${API_BASE}/admin/penalty-reports`);
                         this.penaltyReports = response.data.reports || [];
                     } catch (error) {
-                        console.error('Refresh penalties error:', error);
-                    } finally {
-                        this.isLoading = false;
+                        console.error('Error loading penalty reports:', error);
+                        this.penaltyReports = [];
                     }
                 },
-
-                async refreshPremiumPayments() {
+                async loadPremiumPayments() {
                     try {
-                        this.isLoading = true;
-                        await this.loadPremiumPayments();
+                        const response = await axios.get(`${API_BASE}/admin/premium-services`);
+                        this.premiumPayments = response.data.premiumServices || [];
                     } catch (error) {
-                        console.error('Refresh premium payments error:', error);
-                    } finally {
-                        this.isLoading = false;
+                        console.error('Error loading premium payments:', error);
+                        this.premiumPayments = [];
                     }
                 },
-                async refreshFexiloadRequests() {
+                async loadFexiloadRequests() {
                     try {
-                        this.isLoading = true;
-                        await this.loadFexiloadRequests();
+                        const response = await axios.get(`${API_BASE}/admin/fexiload-requests`);
+                        this.fexiloadRequests = response.data.fexiloadRequests || [];
                     } catch (error) {
-                        console.error('Refresh fexiload requests error:', error);
-                    } finally {
-                        this.isLoading = false;
+                        console.error('Error loading fexiload requests:', error);
+                        this.fexiloadRequests = [];
                     }
                 },
-                async refreshLocationTrackerRequests() {
+                async loadLocationTrackerRequests() {
                     try {
-                        this.isLoading = true;
-                        await this.loadLocationTrackerRequests();
+                        const response = await axios.get(`${API_BASE}/admin/tracker/requests`);
+                        this.locationTrackerRequests = response.data.requests || [];
                     } catch (error) {
-                        console.error('Refresh location tracker requests error:', error);
-                    } finally {
-                        this.isLoading = false;
+                        console.error('Error loading location tracker requests:', error);
+                        this.locationTrackerRequests = [];
                     }
                 },
-                statusClass(status) {
-                    const classes = {
-                        'Pending': 'bg-warning',
-                        'Completed': 'bg-success',
-                        'Failed': 'bg-danger',
-                        'pending': 'bg-warning',
-                        'in progress': 'bg-info',
-                        'resolved': 'bg-success',
-                        'rejected': 'bg-danger'
-                    };
-                    return classes[status] || 'bg-secondary';
-                },
-                shortId(id) {
-                    return id ? `${id.substring(0, 6)}...` : '';
-                },
-                formatDate(dateString) {
-                    if (!dateString) return '';
-                    const date = new Date(dateString);
-                    return date.toLocaleDateString();
-                },
-                formatDateTime(dateString) {
-                    if (!dateString) return '';
-                    const date = new Date(dateString);
-                    return date.toLocaleString();
-                },
-                logout() {
-                    if (confirm('Are you sure you want to logout?')) {
-                        localStorage.removeItem('adminToken');
-                        this.isAuthenticated = false;
-                        this.admin = { email: '', password: '' };
+                async loadPages() {
+                    try {
+                        const response = await axios.get(`${API_BASE}/api/pages`);
+                        this.pages = response.data.pages || [];
+                    } catch (error) {
+                        console.error('Error loading pages:', error);
+                        this.pages = [];
                     }
+                },
+                async refreshPages() {
+                    await this.loadPages();
+                },
+                async addPage() {
+                    if (!this.newPage.pageName) {
+                        alert('Page Name cannot be empty.');
+                        return;
+                    }
+                    try {
+                        await axios.post(`${API_BASE}/admin/pages`, { 
+                            pageName: this.newPage.pageName, 
+                            note: this.newPage.note 
+                        });
+                        this.newPage.pageName = '';
+                        this.newPage.note = '';
+                        this.loadPages();
+                    } catch (error) {
+                        console.error('Failed to add page:', error);
+                        alert(error.response?.data?.message || 'Failed to add page.');
+                    }
+                },
+                editPage(page) {
+                    this.selectedPage = { ...page };
+                    this.showModal('editPageModal');
+                },
+                async savePageChanges() {
+                    if (!this.selectedPage) return;
+                    
+                    try {
+                        await axios.put(`${API_BASE}/admin/pages/${this.selectedPage.shortId}`, {
+                            pageName: this.selectedPage.pageName,
+                            status: this.selectedPage.status,
+                            count: this.selectedPage.count,
+                            issueCount: this.selectedPage.issueCount,
+                            note: this.selectedPage.note
+                        });
+                        this.hideModal('editPageModal');
+                        this.loadPages();
+                    } catch (error) {
+                        console.error('Failed to update page:', error);
+                        alert(error.response?.data?.message || 'Failed to update page.');
+                    }
+                },
+                async deletePage(shortId) {
+                    if (!confirm('Are you sure you want to delete this page?')) return;
+                    try {
+                        await axios.delete(`${API_BASE}/admin/pages/${shortId}`);
+                        this.loadPages();
+                    } catch (error) {
+                        console.error('Failed to delete page:', error);
+                        alert('Failed to delete page.');
+                    }
+                },
+                // Modal helper methods
+                showModal(modalId) {
+                    const modalElement = document.getElementById(modalId);
+                    if (modalElement) {
+                        const modal = new bootstrap.Modal(modalElement);
+                        modal.show();
+                    }
+                },
+                hideModal(modalId) {
+                    const modalElement = document.getElementById(modalId);
+                    if (modalElement) {
+                        const modal = bootstrap.Modal.getInstance(modalElement);
+                        if (modal) {
+                            modal.hide();
+                        }
+                    }
+                },
+                // Payment methods
+                async refreshPayments() {
+                    await this.loadPayments();
                 },
                 async approvePayment(payment) {
-                    await this.updatePaymentStatus(payment, 'Completed');
-                },
-
-                async rejectPayment(payment) {
-                    await this.updatePaymentStatus(payment, 'Failed');
-                },
-
-                async updatePaymentStatus(payment, status) {
                     try {
-                        this.isLoading = true;
-                        
-                        const response = await axios.post(
-                            `${API_BASE}/admin/update-status`,
-                            { trxid: payment.trxid, status: status }
-                        );
-
-                        if (response.data.success) {
-                            const index = this.payments.findIndex(p => p._id === payment._id);
-                            if (index > -1) {
-                                this.payments.splice(index, 1, response.data.payment);
-                            }
-                            this.stats.pendingPayments = this.payments.filter(p => p.status === 'Pending').length;
-                        }
+                        await axios.put(`${API_BASE}/admin/payments/${payment._id}/approve`);
+                        payment.status = 'Completed';
+                        this.$forceUpdate();
                     } catch (error) {
-                        console.error('Update status error:', error);
-                    } finally {
-                        this.isLoading = false;
+                        console.error('Error approving payment:', error);
+                        alert('Failed to approve payment.');
+                    }
+                },
+                async rejectPayment(payment) {
+                    try {
+                        await axios.put(`${API_BASE}/admin/payments/${payment._id}/reject`);
+                        payment.status = 'Failed';
+                        this.$forceUpdate();
+                    } catch (error) {
+                        console.error('Error rejecting payment:', error);
+                        alert('Failed to reject payment.');
                     }
                 },
                 showPaymentDetails(payment) {
                     this.selectedPayment = payment;
-                    if (!this.paymentModal) {
-                        this.paymentModal = new bootstrap.Modal(
-                            document.getElementById('paymentModal')
-                        );
-                    }
-                    this.paymentModal.show();
+                    this.showModal('paymentModal');
                 },
-                async viewUserDetails(userId) {
-                    try {
-                        this.isLoading = true;
-                        const response = await axios.get(`${API_BASE}/admin/users/${userId}/details`);
-                        if (response.data.success) {
-                            this.selectedUserDetail = response.data.user;
-                            this.userDetailsModal.show();
-                        }
-                    } catch (error) {
-                        console.error('Error fetching user details:', error);
-                        alert('Failed to load user details.');
-                        console.error('Full error response:', error.response);
-                    } finally {
-                        this.isLoading = false;
-                    }
-                },
-                showApproveUserModal(user) {
-                    this.selectedUser = { ...user }; // Create a copy to avoid direct mutation
-                    if (!this.approveUserModal) {
-                        this.approveUserModal = new bootstrap.Modal(
-                            document.getElementById('approveUserModal')
-                        );
-                    }
-                    this.approveUserModal.show();
-                },
-                async approveUser() {
-                    this.isLoading = true;
-                    try {
-                        const response = await axios.post(`${API_BASE}/admin/users/${this.selectedUser._id}/approve`, {
-                            commissionPercentage: this.commissionPercentage,
-                            name: this.selectedUser.name,
-                            zilla: this.selectedUser.zilla,
-                            officeLocation: this.selectedUser.officeLocation
-                        });
-                        if (response.data.success) {
-                            const index = this.users.findIndex(u => u._id === this.selectedUser._id);
-                            if (index > -1) {
-                                this.users.splice(index, 1, response.data.user);
-                            }
-                            this.approveUserModal.hide();
-                            alert('User approved and commission set successfully!'); // Success message
-                        } else {
-                            alert(response.data.message || 'Failed to approve user.'); // Error message
-                        }
-                    } catch (error) {
-                        console.error('Approve user error:', error);
-                        alert('Error approving user.'); // Generic error
-                    } finally {
-                        this.isLoading = false;
-                    }
-                },
-                async generateReferralCode(user) {
-                    this.isLoading = true;
-                    try {
-                        const response = await axios.post(`${API_BASE}/admin/users/${user._id}/generate-referral-code`);
-                        if (response.data.success) {
-                            const index = this.users.findIndex(u => u._id === user._id);
-                            if (index > -1) {
-                                this.users.splice(index, 1, response.data.user);
-                            }
-                            alert('Referral code generated successfully!'); // Success message
-                        } else {
-                            alert(response.data.message || 'Failed to generate referral code.'); // Error message
-                        }
-                    } catch (error) {
-                        console.error('Generate referral code error:', error);
-                        alert('Error generating referral code.'); // Generic error
-                    } finally {
-                        this.isLoading = false;
-                    }
+                // Issue methods
+                async refreshIssues() {
+                    await this.loadMerchantIssues();
                 },
                 async updateIssueStatus(issue, status) {
                     try {
-                        this.isLoading = true;
-                        const response = await axios.put(
-                            `${API_BASE}/admin/merchant-issues/${issue._id}/status`,
-                            { status }
-                        );
-
-                        if (response.data.success) {
-                            const index = this.merchantIssues.findIndex(i => i._id === issue._id);
-                            if (index > -1) {
-                                this.merchantIssues[index] = response.data.issue;
-                            }
-                            this.stats.issueReports = this.merchantIssues.length;
-                            this.updateCharts();
-                        }
+                        await axios.put(`${API_BASE}/admin/merchant-issues/${issue._id}/status`, { status });
+                        issue.status = status;
+                        this.$forceUpdate();
                     } catch (error) {
-                        console.error('Update issue status error:', error);
-                    } finally {
-                        this.isLoading = false;
+                        console.error('Error updating issue status:', error);
+                        alert('Failed to update issue status.');
                     }
                 },
                 showIssueDetails(issue) {
-                    this.selectedIssue = {...issue};
-                    if (!this.issueModal) {
-                        this.issueModal = new bootstrap.Modal(
-                            document.getElementById('issueModal')
-                        );
-                    }
-                    this.issueModal.show();
+                    this.selectedIssue = { ...issue };
+                    this.showModal('issueModal');
                 },
                 async saveIssueChanges() {
+                    if (!this.selectedIssue) return;
                     try {
-                        this.isLoading = true;
-                        const response = await axios.put(
-                            `${API_BASE}/admin/merchant-issues/${this.selectedIssue._id}`,
-                            this.selectedIssue
-                        );
-
-                        if (response.data.success) {
-                            const index = this.merchantIssues.findIndex(i => i._id === this.selectedIssue._id);
-                            if (index > -1) {
-                                this.merchantIssues[index] = response.data.issue;
-                            }
-                            this.issueModal.hide();
-                            this.updateCharts();
-                        }
+                        await axios.put(`${API_BASE}/admin/merchant-issues/${this.selectedIssue._id}`, {
+                            status: this.selectedIssue.status
+                        });
+                        this.hideModal('issueModal');
+                        this.refreshIssues();
                     } catch (error) {
-                        console.error('Save issue changes error:', error);
-                    } finally {
-                        this.isLoading = false;
-                    }
-                },
-                showPenaltyDetails(penalty) {
-                    this.selectedPenalty = {...penalty};
-                    if (!this.penaltyModal) {
-                        this.penaltyModal = new bootstrap.Modal(
-                            document.getElementById('penaltyModal')
-                        );
-                    }
-                    this.penaltyModal.show();
-                },
-                async savePenaltyChanges() {
-                    try {
-                        this.isLoading = true;
-                        const response = await axios.put(
-                            `${API_BASE}/admin/penalty-reports/${this.selectedPenalty._id}`,
-                            this.selectedPenalty
-                        );
-
-                        if (response.data.success) {
-                            const index = this.penaltyReports.findIndex(r => r._id === this.selectedPenalty._id);
-                            if (index > -1) {
-                                this.penaltyReports[index] = response.data.report;
-                            }
-                            this.penaltyModal.hide();
-                        }
-                    } catch (error) {
-                        console.error('Save penalty changes error:', error);
-                    } finally {
-                        this.isLoading = false;
+                        console.error('Error saving issue changes:', error);
+                        alert('Failed to save issue changes.');
                     }
                 },
                 showApproveIssueModal(issue) {
                     this.selectedIssue = issue;
-                    this.issueDiscountPercentage = 10; // Default discount
-                    if (!this.approveIssueModal) {
-                        this.approveIssueModal = new bootstrap.Modal(
-                            document.getElementById('approveIssueModal')
-                        );
-                    }
-                    this.approveIssueModal.show();
+                    this.issueDiscountPercentage = 10;
+                    this.showModal('approveIssueModal');
                 },
                 async approveIssue() {
+                    if (!this.selectedIssue) return;
                     try {
-                        this.isLoading = true;
-                        const response = await axios.post(`${API_BASE}/admin/issue-reports/${this.selectedIssue._id}/approve`, {
+                        await axios.post(`${API_BASE}/admin/merchant-issues/${this.selectedIssue._id}/approve`, {
                             discountPercentage: this.issueDiscountPercentage
                         });
-                        if (response.data.success) {
-                            const index = this.merchantIssues.findIndex(i => i._id === this.selectedIssue._id);
-                            if (index > -1) {
-                                this.merchantIssues[index] = response.data.issue;
-                            }
-                            this.approveIssueModal.hide();
-                        }
+                        this.hideModal('approveIssueModal');
+                        this.refreshIssues();
                     } catch (error) {
-                        console.error('Approve issue error:', error);
-                    } finally {
-                        this.isLoading = false;
+                        console.error('Error approving issue:', error);
+                        alert('Failed to approve issue.');
+                    }
+                },
+                // Penalty methods
+                async refreshPenalties() {
+                    await this.loadPenaltyReports();
+                },
+                async updatePenaltyStatus(penalty, status) {
+                    try {
+                        await axios.put(`${API_BASE}/admin/penalty-reports/${penalty._id}/status`, { status });
+                        penalty.status = status;
+                        this.$forceUpdate();
+                    } catch (error) {
+                        console.error('Error updating penalty status:', error);
+                        alert('Failed to update penalty status.');
+                    }
+                },
+                showPenaltyDetails(penalty) {
+                    this.selectedPenalty = { ...penalty };
+                    this.showModal('penaltyModal');
+                },
+                async savePenaltyChanges() {
+                    if (!this.selectedPenalty) return;
+                    try {
+                        await axios.put(`${API_BASE}/admin/penalty-reports/${this.selectedPenalty._id}`, {
+                            status: this.selectedPenalty.status
+                        });
+                        this.hideModal('penaltyModal');
+                        this.refreshPenalties();
+                    } catch (error) {
+                        console.error('Error saving penalty changes:', error);
+                        alert('Failed to save penalty changes.');
                     }
                 },
                 showProcessPenaltyModal(penalty) {
                     this.selectedPenalty = penalty;
                     this.discountPercentage = 10;
-                    if (!this.processPenaltyModal) {
-                        this.processPenaltyModal = new bootstrap.Modal(
-                            document.getElementById('processPenaltyModal')
-                        );
-                    }
-                    this.processPenaltyModal.show();
+                    this.showModal('processPenaltyModal');
                 },
                 async processPenalty() {
+                    if (!this.selectedPenalty) return;
                     try {
-                        this.isLoading = true;
-                        const response = await axios.post(`${API_BASE}/admin/penalty-reports/${this.selectedPenalty._id}/process`, {
+                        await axios.post(`${API_BASE}/admin/penalty-reports/${this.selectedPenalty._id}/process`, {
                             discountPercentage: this.discountPercentage
                         });
-                        if (response.data.success) {
-                            const index = this.penaltyReports.findIndex(r => r._id === this.selectedPenalty._id);
-                            if (index > -1) {
-                                this.penaltyReports[index] = response.data.report;
-                            }
-                            this.processPenaltyModal.hide();
-                        }
+                        this.hideModal('processPenaltyModal');
+                        this.refreshPenalties();
                     } catch (error) {
-                        console.error('Process penalty error:', error);
-                    } finally {
-                        this.isLoading = false;
+                        console.error('Error processing penalty:', error);
+                        alert('Failed to process penalty.');
                     }
                 },
-                async updatePenaltyStatus(penalty, status) {
+                // User methods
+                async refreshUsers() {
+                    await this.loadUsers();
+                },
+                async generateReferralCode(user) {
                     try {
-                        this.isLoading = true;
-                        const response = await axios.put(
-                            `${API_BASE}/admin/penalty-reports/${penalty._id}/status`,
-                            { status }
-                        );
-
-                        if (response.data.success) {
-                            const index = this.penaltyReports.findIndex(r => r._id === penalty._id);
-                            if (index > -1) {
-                                this.penaltyReports[index] = response.data.report;
-                            }
-                        }
+                        await axios.post(`${API_BASE}/admin/users/${user._id}/generate-referral`);
+                        this.refreshUsers();
                     } catch (error) {
-                        console.error('Update penalty status error:', error);
-                    } finally {
-                        this.isLoading = false;
+                        console.error('Error generating referral code:', error);
+                        alert('Failed to generate referral code.');
                     }
                 },
-
+                async viewUserDetails(userId) {
+                    try {
+                        const response = await axios.get(`${API_BASE}/admin/users/${userId}`);
+                        this.selectedUserDetail = response.data.user;
+                        this.showModal('userDetailsModal');
+                    } catch (error) {
+                        console.error('Error loading user details:', error);
+                        alert('Failed to load user details.');
+                    }
+                },
+                showApproveUserModal(user) {
+                    this.selectedUser = { ...user };
+                    this.commissionPercentage = user.referralCommissionPercentage || 5;
+                    this.showModal('approveUserModal');
+                },
+                async approveUser() {
+                    if (!this.selectedUser) return;
+                    try {
+                        await axios.put(`${API_BASE}/admin/users/${this.selectedUser._id}/approve`, {
+                            name: this.selectedUser.name,
+                            zilla: this.selectedUser.zilla,
+                            officeLocation: this.selectedUser.officeLocation,
+                            commissionPercentage: this.commissionPercentage
+                        });
+                        this.hideModal('approveUserModal');
+                        this.refreshUsers();
+                    } catch (error) {
+                        console.error('Error approving user:', error);
+                        alert('Failed to approve user.');
+                    }
+                },
+                // Premium payment methods
+                async refreshPremiumPayments() {
+                    await this.loadPremiumPayments();
+                },
                 showProcessPremiumModal(payment) {
                     this.selectedPremiumPayment = payment;
-                    this.premiumDiscountPercentage = 0;
-                    if (!this.processPremiumModal) {
-                        this.processPremiumModal = new bootstrap.Modal(
-                            document.getElementById('processPremiumModal')
-                        );
-                    }
-                    this.processPremiumModal.show();
+                    this.premiumDiscountPercentage = payment.discount || 0;
+                    this.showModal('processPremiumModal');
                 },
-
                 async processPremiumPayment() {
+                    if (!this.selectedPremiumPayment) return;
                     try {
-                        this.isLoading = true;
-                        const response = await axios.post(`${API_BASE}/admin/premium-payments/${this.selectedPremiumPayment._id}/process`, {
+                        await axios.post(`${API_BASE}/admin/premium-services/${this.selectedPremiumPayment._id}/process`, {
                             discountPercentage: this.premiumDiscountPercentage,
                             validity: this.premiumValidity
                         });
-                        if (response.data.success) {
-                            const index = this.premiumPayments.findIndex(p => p._id === this.selectedPremiumPayment._id);
-                            if (index > -1) {
-                                this.premiumPayments[index] = response.data.premiumService;
-                            }
-                            this.processPremiumModal.hide();
-                        }
+                        this.hideModal('processPremiumModal');
+                        this.refreshPremiumPayments();
                     } catch (error) {
-                        console.error('Process premium payment error:', error);
-                    } finally {
-                        this.isLoading = false;
+                        console.error('Error processing premium payment:', error);
+                        alert('Failed to process premium payment.');
                     }
                 },
-
                 async updatePremiumPaymentStatus(payment, status) {
                     try {
-                        this.isLoading = true;
-                        const response = await axios.put(
-                            `${API_BASE}/admin/premium-services/${payment._id}/status`,
-                            { status }
-                        );
-
-                        if (response.data.success) {
-                            const index = this.premiumPayments.findIndex(p => p._id === payment._id);
-                            if (index > -1) {
-                                this.premiumPayments[index] = response.data.premiumService;
-                            }
-                        }
+                        await axios.put(`${API_BASE}/admin/premium-services/${payment._id}/status`, { status });
+                        payment.status = status;
+                        this.$forceUpdate();
                     } catch (error) {
-                        console.error('Update premium payment status error:', error);
-                    } finally {
-                        this.isLoading = false;
+                        console.error('Error updating premium payment status:', error);
+                        alert('Failed to update premium payment status.');
+                    }
+                },
+                // Fexiload methods
+                async refreshFexiloadRequests() {
+                    await this.loadFexiloadRequests();
+                },
+                async updateFexiloadRequestStatus(request, status) {
+                    try {
+                        await axios.put(`${API_BASE}/admin/fexiload-requests/${request._id}/status`, { status });
+                        request.status = status;
+                        this.$forceUpdate();
+                    } catch (error) {
+                        console.error('Error updating fexiload request status:', error);
+                        alert('Failed to update fexiload request status.');
                     }
                 },
                 showFexiloadRequestDetails(request) {
                     this.selectedFexiloadRequest = { ...request };
-                    if (!this.fexiloadRequestModal) {
-                        this.fexiloadRequestModal = new bootstrap.Modal(
-                            document.getElementById('fexiloadRequestModal')
-                        );
-                    }
-                    this.fexiloadRequestModal.show();
+                    this.showModal('fexiloadRequestModal');
                 },
                 async saveFexiloadRequestChanges() {
+                    if (!this.selectedFexiloadRequest) return;
                     try {
-                        this.isLoading = true;
-                        const response = await axios.put(
-                            `${API_BASE}/admin/fexiload-requests/${this.selectedFexiloadRequest._id}/status`,
-                            { status: this.selectedFexiloadRequest.status }
-                        );
-
-                        if (response.data.success) {
-                            const index = this.fexiloadRequests.findIndex(r => r._id === this.selectedFexiloadRequest._id);
-                            if (index > -1) {
-                                this.fexiloadRequests[index] = response.data.fexiloadRequest;
-                            }
-                            this.fexiloadRequestModal.hide();
-                        }
+                        await axios.put(`${API_BASE}/admin/fexiload-requests/${this.selectedFexiloadRequest._id}`, {
+                            status: this.selectedFexiloadRequest.status
+                        });
+                        this.hideModal('fexiloadRequestModal');
+                        this.refreshFexiloadRequests();
                     } catch (error) {
-                        console.error('Save fexiload request changes error:', error);
-                    } finally {
-                        this.isLoading = false;
+                        console.error('Error saving fexiload request changes:', error);
+                        alert('Failed to save fexiload request changes.');
                     }
                 },
-                async showLocationTrackerRequestDetails(request) {
-                    this.isLoading = true;
-                    try {
-                        const response = await axios.get(`${API_BASE}/api/location-tracker/delivered-data/${request._id}`);
-                        if (response.data.success) {
-                            this.selectedLocationTrackerRequest = { ...request, deliveredData: response.data.deliveredData };
-                            if (!this.locationTrackerRequestModal) {
-                                this.locationTrackerRequestModal = new bootstrap.Modal(
-                                    document.getElementById('locationTrackerRequestModal')
-                                );
-                            }
-                            this.locationTrackerRequestModal.show();
-                        }
-                    } catch (error) {
-                        console.error('Error fetching location tracker request details:', error);
-                        alert('Failed to load location tracker request details.');
-                    } finally {
-                        this.isLoading = false;
-                    }
+                // Location tracker methods
+                async refreshLocationTrackerRequests() {
+                    await this.loadLocationTrackerRequests();
                 },
-
-                async saveLocationTrackerRequestChanges() {
-                    this.isLoading = true;
-                    try {
-                        const response = await axios.put(
-                            `${API_BASE}/admin/tracker/requests/${this.selectedLocationTrackerRequest._id}/status`,
-                            { status: this.selectedLocationTrackerRequest.status, moderatorNotes: this.selectedLocationTrackerRequest.moderatorNotes }
-                        );
-
-                        if (response.data.success) {
-                            const index = this.locationTrackerRequests.findIndex(r => r._id === this.selectedLocationTrackerRequest._id);
-                            if (index > -1) {
-                                this.locationTrackerRequests.splice(index, 1, response.data.request);
-                            }
-                            this.locationTrackerRequestModal.hide();
-                        }
-                    } catch (error) {
-                        console.error('Save location tracker request changes error:', error);
-                    } finally {
-                        this.isLoading = false;
-                    }
-                },
-
                 async updateLocationTrackerRequestStatus(request, status) {
-                    this.isLoading = true;
                     try {
-                        const response = await axios.put(
-                            `${API_BASE}/admin/tracker/requests/${request._id}/status`,
-                            { status: status }
-                        );
-
-                        if (response.data.success) {
-                            const index = this.locationTrackerRequests.findIndex(r => r._id === request._id);
-                            if (index > -1) {
-                                this.locationTrackerRequests.splice(index, 1, response.data.request);
-                            }
-                        }
+                        await axios.put(`${API_BASE}/admin/tracker/requests/${request._id}/status`, { status });
+                        request.status = status;
+                        this.$forceUpdate();
                     } catch (error) {
-                        console.error('Update location tracker request status error:', error);
-                    } finally {
-                        this.isLoading = false;
+                        console.error('Error updating location tracker request status:', error);
+                        alert('Failed to update location tracker request status.');
                     }
                 },
-
-                showDeliverDataModal(request) {
+                showLocationTrackerRequestDetails(request) {
                     this.selectedLocationTrackerRequest = { ...request };
+                    this.showModal('locationTrackerRequestModal');
+                },
+                async saveLocationTrackerRequestChanges() {
+                    if (!this.selectedLocationTrackerRequest) return;
+                    try {
+                        await axios.put(`${API_BASE}/admin/tracker/requests/${this.selectedLocationTrackerRequest._id}`, {
+                            status: this.selectedLocationTrackerRequest.status,
+                            moderatorNotes: this.selectedLocationTrackerRequest.moderatorNotes
+                        });
+                        this.hideModal('locationTrackerRequestModal');
+                        this.refreshLocationTrackerRequests();
+                    } catch (error) {
+                        console.error('Error saving location tracker request changes:', error);
+                        alert('Failed to save location tracker request changes.');
+                    }
+                },
+                showDeliverDataModal(request) {
+                    this.selectedLocationTrackerRequest = request;
                     this.deliveredDataType = '';
                     this.deliveredDataContent = '';
-                    if (!this.deliverDataModal) {
-                        this.deliverDataModal = new bootstrap.Modal(
-                            document.getElementById('deliverDataModal')
-                        );
-                    }
-                    this.deliverDataModal.show();
+                    this.showModal('deliverDataModal');
                 },
-
                 async submitDeliveredData() {
-                    this.isLoading = true;
+                    if (!this.selectedLocationTrackerRequest || !this.deliveredDataType || !this.deliveredDataContent) {
+                        alert('Please fill all fields.');
+                        return;
+                    }
                     try {
-                        let dataContentParsed = this.deliveredDataContent;
+                        let dataContent;
                         try {
-                            dataContentParsed = JSON.parse(this.deliveredDataContent);
+                            dataContent = JSON.parse(this.deliveredDataContent);
                         } catch (e) {
-                            // If not JSON, keep as string
+                            dataContent = this.deliveredDataContent;
                         }
-
-                        const response = await axios.post(`${API_BASE}/admin/deliver-data`, {
-                            requestId: this.selectedLocationTrackerRequest._id,
+                        
+                        await axios.post(`${API_BASE}/admin/tracker/requests/${this.selectedLocationTrackerRequest._id}/deliver-data`, {
                             dataType: this.deliveredDataType,
-                            dataContent: dataContentParsed
+                            dataContent: dataContent
                         });
-
-                        if (response.data.success) {
-                            alert('Data delivered successfully!');
-                            this.deliverDataModal.hide();
-                            // Refresh the specific request to show delivered data and updated status
-                            await this.showLocationTrackerRequestDetails(this.selectedLocationTrackerRequest);
-                            // Also refresh the main list
-                            await this.loadLocationTrackerRequests();
-                        } else {
-                            alert(response.data.message || 'Failed to deliver data.');
-                        }
+                        this.hideModal('deliverDataModal');
+                        this.refreshLocationTrackerRequests();
                     } catch (error) {
-                        console.error('Submit delivered data error:', error);
-                        alert('Error submitting data.');
-                    } finally {
-                        this.isLoading = false;
+                        console.error('Error delivering data:', error);
+                        alert('Failed to deliver data.');
+                    }
+                },
+                // Utility methods
+                async deleteItem(type, id) {
+                    if (!confirm(`Are you sure you want to delete this ${type}?`)) return;
+                    
+                    let endpoint;
+                    switch (type) {
+                        case 'payment':
+                            endpoint = `${API_BASE}/admin/payments/${id}`;
+                            break;
+                        case 'merchant issue':
+                            endpoint = `${API_BASE}/admin/merchant-issues/${id}`;
+                            break;
+                        case 'penalty report':
+                            endpoint = `${API_BASE}/admin/penalty-reports/${id}`;
+                            break;
+                        case 'user':
+                            endpoint = `${API_BASE}/admin/users/${id}`;
+                            break;
+                        case 'fexiload request':
+                            endpoint = `${API_BASE}/admin/fexiload-requests/${id}`;
+                            break;
+                        case 'location tracker request':
+                            endpoint = `${API_BASE}/admin/tracker/requests/${id}`;
+                            break;
+                        default:
+                            console.error('Unknown item type:', type);
+                            return;
+                    }
+                    
+                    try {
+                        await axios.delete(endpoint);
+                        this.loadData(); // Refresh all data
+                    } catch (error) {
+                        console.error(`Error deleting ${type}:`, error);
+                        alert(`Failed to delete ${type}.`);
+                    }
+                },
+                async calculateUserPayments() {
+                    if (!this.userEmailQuery) {
+                        this.userPaymentError = 'Please enter a user email.';
+                        return;
+                    }
+                    
+                    try {
+                        const params = {
+                            email: this.userEmailQuery
+                        };
+                        if (this.paymentStartDate) params.startDate = this.paymentStartDate;
+                        if (this.paymentEndDate) params.endDate = this.paymentEndDate;
+                        
+                        const response = await axios.get(`${API_BASE}/admin/user-payments`, { params });
+                        this.userPaymentData = response.data;
+                        this.userPaymentError = '';
+                    } catch (error) {
+                        console.error('Error calculating user payments:', error);
+                        this.userPaymentError = error.response?.data?.message || 'Failed to calculate user payments.';
+                        this.userPaymentData = null;
                     }
                 },
                 async generatePremiumVoucher() {
                     this.generatingPremiumVoucher = true;
                     this.premiumVoucherMessage = '';
-                    this.premiumVoucherSuccess = false;
+                    
                     try {
                         const response = await axios.post(`${API_BASE}/admin/generate-premium-voucher`, {
-                            phone: this.manualPremiumPhoneNumber,
+                            phoneNumber: this.manualPremiumPhoneNumber,
                             discountPercentage: this.manualPremiumDiscountPercentage,
                             validity: this.manualPremiumValidity
                         });
-                        if (response.data.success) {
-                            this.premiumVoucherMessage = `Voucher generated: ${response.data.voucherCode} (Discount: ${response.data.discountPercentage}%, Valid until: ${new Date(response.data.validUntil).toLocaleDateString()})`;
-                            this.premiumVoucherSuccess = true;
-                        } else {
-                            this.premiumVoucherMessage = response.data.message || 'Failed to generate voucher.';
-                            this.premiumVoucherSuccess = false;
-                        }
+                        
+                        this.premiumVoucherMessage = `Voucher generated successfully! Code: ${response.data.voucherCode}`;
+                        this.premiumVoucherSuccess = true;
+                        this.manualPremiumPhoneNumber = '';
                     } catch (error) {
-                        this.premiumVoucherMessage = (error.response && error.response.data && error.response.data.message) || 'Error generating voucher.';
+                        this.premiumVoucherMessage = error.response?.data?.message || 'Failed to generate voucher.';
                         this.premiumVoucherSuccess = false;
                     } finally {
                         this.generatingPremiumVoucher = false;
                     }
                 },
-                async deleteItem(type, id) {
-                    const confirmation = prompt(`Type 'confirm' to delete this ${type}:`);
-                    if (confirmation !== 'confirm') {
-                        alert('Deletion cancelled.');
-                        return;
-                    }
-
-                    try {
-                        this.isLoading = true;
-                        let url = '';
-                        let successMessage = '';
-                        let errorMessage = '';
-
-                        switch (type) {
-                            case 'user':
-                                url = `${API_BASE}/admin/users/${id}`;
-                                successMessage = 'User deleted successfully!';
-                                errorMessage = 'Failed to delete user.';
-                                break;
-                            case 'payment':
-                                url = `${API_BASE}/admin/payments/${id}`;
-                                successMessage = 'Payment deleted successfully!';
-                                errorMessage = 'Failed to delete payment.';
-                                break;
-                            case 'merchant issue':
-                                url = `${API_BASE}/admin/merchant-issues/${id}`;
-                                successMessage = 'Merchant issue deleted successfully!';
-                                errorMessage = 'Failed to delete merchant issue.';
-                                break;
-                            case 'penalty report':
-                                url = `${API_BASE}/admin/penalty-reports/${id}`;
-                                successMessage = 'Penalty report deleted successfully!';
-                                errorMessage = 'Failed to delete penalty report.';
-                                break;
-                            case 'fexiload request':
-                                url = `${API_BASE}/admin/fexiload-requests/${id}`;
-                                successMessage = 'Fexiload request deleted successfully!';
-                                errorMessage = 'Failed to delete fexiload request.';
-                                break;
-                            case 'location tracker request':
-                                url = `${API_BASE}/admin/tracker/requests/${id}`;
-                                successMessage = 'Location tracker request deleted successfully!';
-                                errorMessage = 'Failed to delete location tracker request.';
-                                break;
-                            default:
-                                alert('Invalid item type for deletion.');
-                                return;
-                        }
-
-                        const response = await axios.delete(url);
-
-                        if (response.data.success) {
-                            alert(successMessage);
-                            // Refresh the relevant list
-                            switch (type) {
-                                case 'user':
-                                    await this.loadUsers();
-                                    break;
-                                case 'payment':
-                                    await this.loadPayments();
-                                    break;
-                                case 'merchant issue':
-                                    await this.loadMerchantIssues();
-                                    break;
-                                case 'penalty report':
-                                    await this.loadPenaltyReports();
-                                    break;
-                                case 'fexiload request':
-                                    await this.loadFexiloadRequests();
-                                    break;
-                                case 'location tracker request':
-                                    await this.loadLocationTrackerRequests();
-                                    break;
-                            }
-                        } else {
-                            alert(response.data.message || errorMessage);
-                        }
-                    } catch (error) {
-                        console.error(`Error deleting ${type}:`, error);
-                        alert(`Error deleting ${type}.`);
-                    } finally {
-                        this.isLoading = false;
-                    }
+                // Chart and activity methods
+                updateCharts() {
+                    // Implementation for charts would go here
+                    console.log('Updating charts...');
                 },
                 loadRecentActivities() {
-                    // This would normally come from an API
-                    this.recentActivities = [
-                        { id: 'act001', message: 'Updated payment status for TRX123456', timestamp: new Date() },
-                        { id: 'act002', message: 'Resolved issue with Shop C', timestamp: new Date(Date.now() - 3600000) },
-                        { id: 'act003', message: 'Added new admin note to issue ISS001', timestamp: new Date(Date.now() - 7200000) }
-                    ];
+                    // Implementation for recent activities would go here
+                    console.log('Loading recent activities...');
+                    this.recentActivities = [];
                 },
-                updateCharts() {
-                    // Issue status chart
-                    const statusCounts = {
-                        'pending': this.merchantIssues.filter(i => i.status === 'pending').length,
-                        'in progress': this.merchantIssues.filter(i => i.status === 'in progress').length,
-                        'resolved': this.merchantIssues.filter(i => i.status === 'resolved').length,
-                        'rejected': this.merchantIssues.filter(i => i.status === 'rejected').length
+                // Helper methods
+                statusClass(status) {
+                    const statusMap = {
+                        'Pending': 'bg-warning',
+                        'Completed': 'bg-success',
+                        'Failed': 'bg-danger',
+                        'Approved': 'bg-success',
+                        'Rejected': 'bg-danger',
+                        'pending': 'bg-warning',
+                        'in-progress': 'bg-info',
+                        'resolved': 'bg-success',
+                        'rejected': 'bg-danger',
+                        'processed': 'bg-success'
                     };
-                    
-                    const statusCtx = document.getElementById('issueStatusChart');
-                    if (this.issueStatusChart) {
-                        this.issueStatusChart.destroy();
-                    }
-                    this.issueStatusChart = new Chart(statusCtx, {
-                        type: 'doughnut',
-                        data: {
-                            labels: ['Pending', 'In Progress', 'Resolved', 'Rejected'],
-                            datasets: [{
-                                data: Object.values(statusCounts),
-                                backgroundColor: [
-                                    'rgba(255, 193, 7, 0.8)',
-                                    'rgba(23, 162, 184, 0.8)',
-                                    'rgba(40, 167, 69, 0.8)',
-                                    'rgba(220, 53, 69, 0.8)'
-                                ],
-                                borderWidth: 1
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: {
-                                    position: 'bottom'
-                                }
-                            }
-                        }
-                    });
-                    
-                    // Issue type chart
-                    const types = [...new Set(this.merchantIssues.map(i => i.issueType))];
-                    const typeCounts = types.map(type => 
-                        this.merchantIssues.filter(i => i.issueType === type).length
-                    );
-                    
-                    const typeCtx = document.getElementById('issueTypeChart');
-                    if (this.issueTypeChart) {
-                        this.issueTypeChart.destroy();
-                    }
-                    this.issueTypeChart = new Chart(typeCtx, {
-                        type: 'bar',
-                        data: {
-                            labels: types,
-                            datasets: [{
-                                label: 'Number of Issues',
-                                data: typeCounts,
-                                backgroundColor: 'rgba(78, 115, 223, 0.8)',
-                                borderColor: 'rgba(78, 115, 223, 1)',
-                                borderWidth: 1
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            scales: {
-                                y: {
-                                    beginAtZero: true,
-                                    ticks: {
-                                        precision: 0
-                                    }
-                                }
-                            }
-                        }
-                    });
+                    return statusMap[status] || 'bg-secondary';
                 },
-                initWebSocket() {
-                    if (this.ws) {
-                        this.ws.close();
-                        this.ws = null;
-                    }
-
-                    this.ws = new WebSocket('wss://oneai-wjox.onrender.com');
-                    this.wsConnectionAttempts++;
-
-                    this.ws.onopen = () => {
-                        console.log('WebSocket connected');
-                        const token = localStorage.getItem('adminToken');
-                        this.wsConnectionAttempts = 0;
-                        
-                        if (token) {
-                            this.ws.send(JSON.stringify({
-                                type: 'auth',
-                                token: token
-                            }));
-                        }
-                    };
-
-                    this.ws.onmessage = (event) => {
-                        try {
-                            const data = JSON.parse(event.data);
-                            
-                            if (data.type === 'payment-updated') {
-                                const index = this.payments.findIndex(p => p.trxid === data.payment.trxid);
-                                if (index > -1) {
-                                    this.payments.splice(index, 1, {
-                                        ...this.payments[index],
-                                        status: data.payment.status
-                                    });
-                                }
-                            } else if (data.type === 'new-payment') {
-                                this.payments.unshift(data.payment);
-                                this.stats.totalPayments = this.payments.length;
-                                this.stats.pendingPayments = this.payments.filter(p => p.status === 'Pending').length;
-                            } else if (data.type === 'new-issue') {
-                                this.merchantIssues.unshift(data.issue);
-                                this.stats.issueReports = this.merchantIssues.length;
-                                this.updateCharts();
-                            } else if (data.type === 'new-penalty') {
-                                this.penaltyReports.unshift(data.report);
-                            } else if (data.type === 'new-fexiload-request') {
-                                this.fexiloadRequests.unshift(data.fexiloadRequest);
-                            } else if (data.type === 'fexiload-updated') {
-                                const index = this.fexiloadRequests.findIndex(r => r._id === data.fexiloadRequest._id);
-                                if (index > -1) {
-                                    this.fexiloadRequests.splice(index, 1, {
-                                        ...this.fexiloadRequests[index],
-                                        status: data.fexiloadRequest.status
-                                    });
-                                }
-                            } else if (data.type === 'new-location-tracker-request') {
-                                this.locationTrackerRequests.unshift(data.request);
-                            } else if (data.type === 'location-tracker-updated') {
-                                const index = this.locationTrackerRequests.findIndex(r => r._id === data.request._id);
-                                if (index > -1) {
-                                    this.locationTrackerRequests.splice(index, 1, {
-                                        ...this.locationTrackerRequests[index],
-                                        status: data.request.status,
-                                        moderatorNotes: data.request.moderatorNotes
-                                    });
-                                }
-                            }
-                        } catch (error) {
-                            console.error('WebSocket message error:', error);
-                        }
-                    };
-
-                    this.ws.onerror = (error) => {
-                        console.error('WebSocket error:', error);
-                    };
-
-                    this.ws.onclose = (event) => {
-                        console.log('WebSocket disconnected:', event.reason);
-                        
-                        if (this.wsConnectionAttempts < 5) {
-                            console.log(`Reconnecting attempt ${this.wsConnectionAttempts}/5...`);
-                            setTimeout(() => this.initWebSocket(), 3000);
-                        } else {
-                            console.error('Max WebSocket reconnection attempts reached');
-                            this.wsConnectionAttempts = 0;
-                        }
-                    };
+                formatDateTime(dateString) {
+                    if (!dateString) return 'N/A';
+                    const date = new Date(dateString);
+                    return date.toLocaleString();
                 },
-                async calculateUserPayments() {
-                    this.userPaymentData = null;
-                    this.userPaymentError = '';
-                    if (!this.userEmailQuery) {
-                        this.userPaymentError = 'Please enter a user email.';
-                        return;
-                    }
-                    try {
-                        this.isLoading = true;
-                        const params = {
-                            email: this.userEmailQuery,
-                            startDate: this.paymentStartDate,
-                            endDate: this.paymentEndDate
-                        };
-                        const response = await axios.get(`${API_BASE}/admin/user-payments/${this.userEmailQuery}`, { params });
-                        this.userPaymentData = response.data;
-                    } catch (error) {
-                        this.userPaymentError = (error.response && error.response.data && error.response.data.message) || 'Could not fetch user payment data.';
-                    } finally {
-                        this.isLoading = false;
-                    }
+                formatDate(dateString) {
+                    if (!dateString) return 'N/A';
+                    const date = new Date(dateString);
+                    return date.toLocaleDateString();
                 },
-                async updatePageData() {
-                    this.updatingPageData = true;
-                    this.pageUpdateMessage = '';
-                    this.pageUpdateSuccess = false;
-
-                    if (!this.pageNameUpdate || !this.pageStatusUpdate) {
-                        this.pageUpdateMessage = 'Page Name and Status are required.';
-                        this.pageUpdateSuccess = false;
-                        this.updatingPageData = false;
-                        return;
-                    }
-
-                    try {
-                        const response = await axios.post(`${API_BASE}/admin/page-data/update`, {
-                            pageName: this.pageNameUpdate,
-                            status: this.pageStatusUpdate,
-                            count: this.pagePriceChangeCountUpdate,
-                            issueCount: this.pageIssueCountUpdate // Added issueCount
-                        });
-
-                        if (response.data.success) {
-                            this.pageUpdateMessage = `Page '${this.pageNameUpdate}' updated successfully!`;
-                            this.pageUpdateSuccess = true;
-                            // Optionally clear form fields
-                            this.pageNameUpdate = '';
-                            this.pageStatusUpdate = '';
-                            this.pagePriceChangeCountUpdate = 0;
-                            this.pageIssueCountUpdate = 0; // Clear issueCount
-                        } else {
-                            this.pageUpdateMessage = response.data.message || 'Failed to update page data.';
-                            this.pageUpdateSuccess = false;
-                        }
-                    } catch (error) {
-                        this.pageUpdateMessage = (error.response && error.response.data && error.response.data.message) || 'Error updating page data.';
-                        this.pageUpdateSuccess = false;
-                    } finally {
-                        this.updatingPageData = false;
-                    }
+                shortId(id) {
+                    if (!id) return 'N/A';
+                    return id.substring(0, 8) + '...';
                 },
-                async loadPageData() {
-                    try {
-                        const response = await axios.get(`${API_BASE}/admin/page-data`);
-                        if (response.data.success) {
-                            // Assuming the API returns an array of page data
-                            // You might want to store this in a new data property, e.g., `this.pageDataList`
-                            // For now, let's just log it or use it to pre-fill the form if needed
-                            console.log('Loaded page data:', response.data.pageData);
-                            // Example: if you want to load a specific page's data into the form
-                            // const specificPage = response.data.pageData.find(p => p.pageName === 'index.html');
-                            // if (specificPage) {
-                            //     this.pageNameUpdate = specificPage.pageName;
-                            //     this.pageStatusUpdate = specificPage.status;
-                            //     this.pagePriceChangeCountUpdate = specificPage.count;
-                            // }
-                        }
-                    } catch (error) {
-                        console.error('Error loading page data:', error);
-                    }
-                },
-                async showManagePagesModal() {
-                    this.isLoading = true;
-                    try {
-                        await this.loadAllPages(); // Load data first
-                        this.managePagesModal.show();
-                    } catch (error) {
-                        console.error('Error showing manage pages modal:', error);
-                        alert('Failed to load page data for management.');
-                    } finally {
-                        this.isLoading = false;
-                    }
-                },
-                editPage(page) {
-                    this.selectedPage = { ...page }; // Create a copy for editing
-                    this.editPageModal.show();
-                },
-                async savePageChanges() {
-                    this.isLoading = true;
-                    try {
-                        const response = await axios.put(`${API_BASE}/admin/page-data/${this.selectedPage.pageName}`, {
-                            status: this.selectedPage.status,
-                            count: this.selectedPage.count,
-                            issueCount: this.selectedPage.issueCount // Added issueCount
-                        });
-
-                        if (response.data.success) {
-                            alert('Page updated successfully!');
-                            this.editPageModal.hide();
-                            await this.showManagePagesModal(); // Refresh the list
-                        } else {
-                            alert(response.data.message || 'Failed to update page.');
-                        }
-                    } catch (error) {
-                        console.error('Error saving page changes:', error);
-                        alert('Error saving page changes.');
-                    } finally {
-                        this.isLoading = false;
-                    }
-                },
-                async deletePage(pageName) {
-                    if (!confirm(`Are you sure you want to delete page '${pageName}'? This action cannot be undone.`)) {
-                        return;
-                    }
-                    this.isLoading = true;
-                    try {
-                        const response = await axios.delete(`${API_BASE}/admin/page-data/${pageName}`);
-                        if (response.data.success) {
-                            alert('Page deleted successfully!');
-                            await this.showManagePagesModal(); // Refresh the list
-                        } else {
-                            alert(response.data.message || 'Failed to delete page.');
-                        }
-                    } catch (error) {
-                        console.error('Error deleting page:', error);
-                        alert('Error deleting page.');
-                    } finally {
-                        this.isLoading = false;
-                    }
+                logout() {
+                    localStorage.removeItem('adminToken');
+                    this.authenticated = false;
+                    this.admin = { email: '', password: '' };
                 }
             },
             async mounted() {
-                
-                // Initialize tabs
-                const triggerTabList = [].slice.call(document.querySelectorAll('#issueTabs button'));
-                triggerTabList.forEach(triggerEl => {
-                    const tabTrigger = new bootstrap.Tab(triggerEl);
-                    triggerEl.addEventListener('click', event => {
-                        event.preventDefault();
-                        tabTrigger.show();
-                    });
-                });
-                
                 // Check initial setup
                 await this.checkInitialSetup();
                 
@@ -3252,28 +2688,21 @@
                     try {
                         // Validate token
                         await axios.get(`${API_BASE}/admin/validate`);
-                        this.isAuthenticated = true;
+                        this.authenticated = true;
                         
                         // Load data
                         this.loadData();
-                        
-                        // Init WebSocket
-                        this.initWebSocket();
                     } catch (error) {
                         console.error('Authentication check failed:', error);
                         localStorage.removeItem('adminToken');
                     }
                 }
-            },
-            beforeUnmount() {
-                if (this.ws) {
-                    this.ws.close();
-                    this.ws = null;
-                }
             }
         };
 
-        Vue.createApp(AdminApp).mount('#admin-app');
+        // Create and mount the Vue app
+        const app = Vue.createApp(AdminApp);
+        app.mount('#admin-app');
     </script>
 </body>
 </html>
