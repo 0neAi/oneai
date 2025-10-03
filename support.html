@@ -1011,6 +1011,7 @@
         if (!phone) return;
         localStorage.setItem('lastCheckedPhone', phone);
       }
+      console.log('Fetching vouchers for phone:', phone); // Added log
       document.getElementById('vouchers-section').style.display = 'none';
       LoadingAnimation.start();
       
@@ -1018,6 +1019,7 @@
         // Fetch all vouchers (including premium service vouchers)
         const vouchersResponse = await fetch(`https://oneai-wjox.onrender.com/vouchers/${phone}`);
         const vouchersData = await vouchersResponse.json();
+        console.log('Raw vouchers data from backend:', vouchersData); // Added log
         
         let allVouchers = [];
         if (vouchersResponse.ok && vouchersData.success && Array.isArray(vouchersData.vouchers)) {
