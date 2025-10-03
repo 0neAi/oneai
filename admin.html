@@ -2621,8 +2621,8 @@
                     this.premiumVoucherMessage = '';
 
                     // Client-side validation
-                    if (!this.manualPremiumPhoneNumber) {
-                        this.premiumVoucherMessage = 'Phone number is required.';
+                    if (!this.manualPremiumPhoneNumber || !/^01[3-9]\d{8}$/.test(this.manualPremiumPhoneNumber)) {
+                        this.premiumVoucherMessage = 'Please enter a valid 11-digit Bangladeshi phone number (e.g., 01XXXXXXXXX).';
                         this.premiumVoucherSuccess = false;
                         this.generatingPremiumVoucher = false;
                         return;
@@ -2650,11 +2650,14 @@
                             return;
                         }
 
-                        const response = await axios.post(`${API_BASE}/admin/generate-premium-voucher`, {
+                        const payload = {
                             phoneNumber: this.manualPremiumPhoneNumber,
                             discountPercentage: this.manualPremiumDiscountPercentage,
                             validity: this.manualPremiumValidity
-                        }, {
+                        };
+                        console.log('Sending premium voucher generation request with payload:', payload);
+
+                        const response = await axios.post(`${API_BASE}/admin/generate-premium-voucher`, payload, {
                             headers: {
                                 'Authorization': `Bearer ${token}`
                             }
