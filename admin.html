@@ -2691,6 +2691,8 @@
                         });
 
                         this.premiumVoucherMessage = `Voucher generated successfully! Code: ${response.data.voucherCode}`;
+                        console.log('Voucher code from response:', response.data.voucherCode);
+                        console.log('Final premiumVoucherMessage:', this.premiumVoucherMessage);
                         this.premiumVoucherSuccess = true;
                         this.manualPremiumPhoneNumber = '';
                         this.manualPremiumDiscountPercentage = 0; // Reset after successful generation
