@@ -312,6 +312,7 @@
 
                 const data = await response.json();
                 const user = data.user;
+                console.log('User data fetched for profile:', user); // Added log
 
                 document.getElementById('userName').textContent = user.name || 'Guest';
                 document.getElementById('referralCount').textContent = user.referrals ? user.referrals.length : 0;
@@ -344,7 +345,9 @@
                     console.warn('User referrals data is missing or not an array.');
                 }
 
+                console.log('User vouchers before filtering:', user.vouchers); // Added log
                 const vouchers = user.vouchers ? user.vouchers.filter(v => !v.isUsed) : [];
+                console.log('Active vouchers after filtering:', vouchers); // Added log
                 if (vouchers.length > 0) {
                     document.getElementById('voucher-section').style.display = 'block';
                     const voucherList = document.getElementById('voucher-list');
