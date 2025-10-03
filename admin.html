@@ -2442,16 +2442,43 @@
                 },
                 async processPremiumPayment() {
                     if (!this.selectedPremiumPayment) return;
+
+                    // Client-side validation for premium payment processing
+                    if (this.premiumDiscountPercentage === null || this.premiumDiscountPercentage === undefined || this.premiumDiscountPercentage < 0 || this.premiumDiscountPercentage > 100) {
+                        alert('Discount percentage must be between 0 and 100.');
+                        return;
+                    }
+                    if (!this.premiumValidity) {
+                        alert('Validity period is required.');
+                        return;
+                    }
+
                     try {
+                        const token = localStorage.getItem('adminToken');
+                        if (!token) {
+                            alert('Authentication token missing. Please log in again.');
+                            this.logout();
+                            return;
+                        }
+
                         await axios.post(`${API_BASE}/admin/premium-services/${this.selectedPremiumPayment._id}/process`, {
                             discountPercentage: this.premiumDiscountPercentage,
                             validity: this.premiumValidity
+                        }, {
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
                         });
                         this.hideModal('processPremiumModal');
                         this.refreshPremiumPayments();
                     } catch (error) {
                         console.error('Error processing premium payment:', error);
-                        alert('Failed to process premium payment.');
+                        if (error.response && error.response.status === 401) {
+                            alert('Session expired or unauthorized. Please log in again.');
+                            this.logout();
+                        } else {
+                            alert(error.response?.data?.message || 'Failed to process premium payment.');
+                        }
                     }
                 },
                 async updatePremiumPaymentStatus(payment, status) {
@@ -2651,7 +2678,7 @@
                         }
 
                         const payload = {
-                            phoneNumber: this.manualPremiumPhoneNumber,
+                            phone: this.manualPremiumPhoneNumber,
                             discountPercentage: this.manualPremiumDiscountPercentage,
                             validity: this.manualPremiumValidity
                         };
