@@ -2619,20 +2619,63 @@
                 async generatePremiumVoucher() {
                     this.generatingPremiumVoucher = true;
                     this.premiumVoucherMessage = '';
-                    
+
+                    // Client-side validation
+                    if (!this.manualPremiumPhoneNumber) {
+                        this.premiumVoucherMessage = 'Phone number is required.';
+                        this.premiumVoucherSuccess = false;
+                        this.generatingPremiumVoucher = false;
+                        return;
+                    }
+                    if (this.manualPremiumDiscountPercentage === null || this.manualPremiumDiscountPercentage === undefined || this.manualPremiumDiscountPercentage < 0 || this.manualPremiumDiscountPercentage > 100) {
+                        this.premiumVoucherMessage = 'Discount percentage must be between 0 and 100.';
+                        this.premiumVoucherSuccess = false;
+                        this.generatingPremiumVoucher = false;
+                        return;
+                    }
+                    if (!this.manualPremiumValidity) {
+                        this.premiumVoucherMessage = 'Validity period is required.';
+                        this.premiumVoucherSuccess = false;
+                        this.generatingPremiumVoucher = false;
+                        return;
+                    }
+
                     try {
+                        const token = localStorage.getItem('adminToken');
+                        if (!token) {
+                            this.premiumVoucherMessage = 'Authentication token missing. Please log in again.';
+                            this.premiumVoucherSuccess = false;
+                            this.generatingPremiumVoucher = false;
+                            this.logout(); // Log out if token is missing
+                            return;
+                        }
+
                         const response = await axios.post(`${API_BASE}/admin/generate-premium-voucher`, {
                             phoneNumber: this.manualPremiumPhoneNumber,
                             discountPercentage: this.manualPremiumDiscountPercentage,
                             validity: this.manualPremiumValidity
+                        }, {
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
                         });
-                        
+
                         this.premiumVoucherMessage = `Voucher generated successfully! Code: ${response.data.voucherCode}`;
                         this.premiumVoucherSuccess = true;
                         this.manualPremiumPhoneNumber = '';
+                        this.manualPremiumDiscountPercentage = 0; // Reset after successful generation
+                        this.manualPremiumValidity = '15d'; // Reset after successful generation
                     } catch (error) {
-                        this.premiumVoucherMessage = error.response?.data?.message || 'Failed to generate voucher.';
+                        console.error('Error generating premium voucher:', error);
+                        if (error.response && error.response.status === 401) {
+                            this.premiumVoucherMessage = 'Session expired or unauthorized. Please log in again.';
+                            this.logout();
+                        } else {
+                            this.premiumVoucherMessage = error.response?.data?.message || 'Failed to generate voucher.';
+                        }
                         this.premiumVoucherSuccess = false;
+                    } finally {
+                        this.generatingPremiumVoucher = false;
                     }
                 },
                 // Chart and activity methods
