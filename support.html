@@ -795,6 +795,11 @@
           </select>
         </div>
         
+        <div class="form-group">
+          <label for="display-service-type">সার্ভিস টাইপ</label>
+          <input type="text" id="display-service-type" name="displayServiceType" readonly>
+        </div>
+        
         <button type="submit" class="btn btn-secondary btn-full">
           <i class="fas fa-lock"></i> প্রিমিয়াম অ্যাক্সেস পান
         </button>
@@ -1297,6 +1302,35 @@ Amount: ${formData.amount}
       const premiumForm = document.getElementById('premium-service-form');
       if (premiumForm) {
         premiumForm.addEventListener('submit', submitPremiumService);
+      }
+
+      const scopeAmountSelect = document.getElementById('scope-amount');
+      const displayServiceTypeInput = document.getElementById('display-service-type');
+
+      function updateDisplayServiceType() {
+        const amount = scopeAmountSelect.value;
+        let serviceType = '';
+        switch (amount) {
+          case '500':
+            serviceType = '15day_15merchant';
+            break;
+          case '1000':
+            serviceType = '1month_30merchant';
+            break;
+          case '2000':
+            serviceType = '3month_full_db';
+            break;
+          case '5000':
+            serviceType = 'lifetime_full_db';
+            break;
+        }
+        displayServiceTypeInput.value = serviceType;
+      }
+
+      if (scopeAmountSelect && displayServiceTypeInput) {
+        scopeAmountSelect.addEventListener('change', updateDisplayServiceType);
+        // Set initial value on load
+        updateDisplayServiceType();
       }
       
       // Automatically load reports if phone number is in local storage
