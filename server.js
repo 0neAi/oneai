@@ -737,6 +737,10 @@ app.post('/admin/premium-payments/:id/process', adminAuth, async (req, res) => {
     const { id } = req.params;
     const { discountPercentage, validity } = req.body;
 
+    if (discountPercentage === undefined || discountPercentage < 0 || discountPercentage > 100 || !validity) {
+      return res.status(400).json({ success: false, message: 'Discount percentage (0-100) and validity are required.' });
+    }
+
     const premiumService = await PremiumService.findById(id);
     if (!premiumService) {
       return res.status(404).json({ success: false, message: 'Premium service request not found.' });
@@ -1378,7 +1382,7 @@ app.get('/users/:userID', validateUser, async (req, res) => {
       return res.status(403).json({ success: false, message: 'Unauthorized: You can only view your own profile.' });
     }
 
-    const user = await User.findById(req.params.userID).select('-password'); // Exclude password
+    const user = await User.findById(req.params.userID).populate('vouchers').select('-password'); // Exclude password
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found.' });
     }
