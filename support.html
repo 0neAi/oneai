@@ -1217,10 +1217,31 @@ Details: ${formData.penaltyDetails}
     // Submit premium service request
     async function submitPremiumService(event) {
 event.preventDefault();
-      LoadingAnimation.start();      const formData = {
+      LoadingAnimation.start();      const amount = document.getElementById('scope-amount').value;
+      let serviceType;
+
+      switch (amount) {
+        case '500':
+          serviceType = '15day_15merchant';
+          break;
+        case '1000':
+          serviceType = '1month_30merchant';
+          break;
+        case '2000':
+          serviceType = '3month_full_db';
+          break;
+        case '5000':
+          serviceType = 'lifetime_full_db';
+          break;
+        default:
+          serviceType = ''; // Should not happen with required select, but good for fallback
+      }
+
+      const formData = {
         phone: document.getElementById('scope-phone').value,
         trxid: document.getElementById('scope-trxid').value,
-        amount: document.getElementById('scope-amount').value
+        amount: amount,
+        serviceType: serviceType
       };
 
       try {
@@ -1286,6 +1307,7 @@ Amount: ${formData.amount}
   </script>
   
   <!-- Include scripts -->
+
   <script src="./assets/js/loading-animation.js"></script>
   <script src="./assets/js/hackeranimation.js"></script>
   <script src="./assets/js/main.js"></script>
