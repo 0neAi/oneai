@@ -2225,7 +2225,8 @@
                             pageName: this.selectedPage.pageName,
                             status: this.selectedPage.status,
                             count: this.selectedPage.count,
-                            issueCount: this.selectedPage.issueCount
+                            issueCount: this.selectedPage.issueCount,
+                            note: this.selectedPage.note
                         });
                         this.hideModal('editPageModal');
                         this.loadPages();
@@ -2694,6 +2695,10 @@
                         console.log('Voucher code from response:', response.data.voucherCode);
                         console.log('Final premiumVoucherMessage:', this.premiumVoucherMessage);
                         this.premiumVoucherSuccess = true;
+                        // Clear message after 5 seconds
+                        setTimeout(() => {
+                            this.premiumVoucherMessage = '';
+                        }, 5000);
                         this.manualPremiumPhoneNumber = '';
                         this.manualPremiumDiscountPercentage = 0; // Reset after successful generation
                         this.manualPremiumValidity = '15d'; // Reset after successful generation
