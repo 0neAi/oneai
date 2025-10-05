@@ -370,9 +370,9 @@ app.post('/penalty-report', async (req, res) => {
 // Premium Service Submission
 app.post('/premium-service', async (req, res) => {
   try {
-    const { phone, trxid, amount } = req.body;
+    const { phone, trxid, amount, serviceType } = req.body;
 
-    if (!phone || !trxid || !amount) {
+    if (!phone || !trxid || !amount || !serviceType) {
       return res.status(400).json({ success: false, message: 'All fields are required for premium service submission.' });
     }
 
@@ -380,6 +380,7 @@ app.post('/premium-service', async (req, res) => {
       phone,
       trxid,
       amount,
+      serviceType,
       status: 'Pending' // Initial status
     });
 
@@ -434,17 +435,12 @@ app.get('/admin/payments', adminAuth, async (req, res) => {
   }
 });
 
-app.post('/admin/update-status', adminAuth, async (req, res) => {
+app.put('/admin/payments/:id/approve', adminAuth, async (req, res) => {
   try {
-    const { trxid, status } = req.body;
-
-    if (!trxid || !status) {
-      return res.status(400).json({ success: false, message: 'TRX ID and status are required.' });
-    }
-
-    const payment = await Payment.findOneAndUpdate(
-      { trxid: trxid },
-      { status: status },
+    const { id } = req.params;
+    const payment = await Payment.findByIdAndUpdate(
+      id,
+      { status: 'Completed' },
       { new: true }
     ).populate('user', 'email');
 
@@ -467,10 +463,45 @@ app.post('/admin/update-status', adminAuth, async (req, res) => {
       }
     });
 
-    res.json({ success: true, message: 'Payment status updated.', payment });
+    res.json({ success: true, message: 'Payment approved successfully.', payment });
   } catch (error) {
-    console.error('Error updating payment status:', error);
-    res.status(500).json({ success: false, message: 'Failed to update payment status.' });
+    console.error('Error approving payment:', error);
+    res.status(500).json({ success: false, message: 'Failed to approve payment.' });
+  }
+});
+
+app.put('/admin/payments/:id/reject', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const payment = await Payment.findByIdAndUpdate(
+      id,
+      { status: 'Failed' },
+      { new: true }
+    ).populate('user', 'email');
+
+    if (!payment) {
+      return res.status(404).json({ success: false, message: 'Payment not found.' });
+    }
+
+    // Notify users/dashboard via WebSocket
+    wss.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN && client.userID === payment.user.toString()) {
+        client.send(JSON.stringify({
+          type: 'payment-updated',
+          payment: {
+            _id: payment._id,
+            status: payment.status,
+            trxid: payment.trxid,
+            amount3: payment.amount3
+          }
+        }));
+      }
+    });
+
+    res.json({ success: true, message: 'Payment rejected successfully.', payment });
+  } catch (error) {
+    console.error('Error rejecting payment:', error);
+    res.status(500).json({ success: false, message: 'Failed to reject payment.' });
   }
 });
 
@@ -514,9 +545,7 @@ app.post('/admin/register', async (req, res) => {
     }
 
     const admin = new Admin({ email, password });
-    await admin.save();
-
-    const token = jwt.sign({ adminId: admin._id, role: 'superadmin' }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign({ adminId: admin._id, role: 'superadmin' }, process.env.JWT_SECRET, { expiresIn: '8h' });
     res.status(201).json({ success: true, message: 'Admin registered successfully.', token });
   } catch (error) {
     console.error('Admin registration error:', error);
@@ -533,7 +562,7 @@ app.post('/admin/login', async (req, res) => {
       return res.status(401).json({ success: false, message: 'Invalid credentials.' });
     }
 
-    const token = jwt.sign({ adminId: admin._id, role: 'superadmin' }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign({ adminId: admin._id, role: 'superadmin' }, process.env.JWT_SECRET, { expiresIn: '8h' });
     res.json({ success: true, token });
   } catch (error) {
     console.error('Admin login error:', error);
