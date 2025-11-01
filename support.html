@@ -662,6 +662,42 @@
       </div>
     </section>
     
+    <!-- Top P.C. Completed Section -->
+    <section class="section">
+      <h2 class="section-title"><i class="fas fa-trophy"></i> টপ পি.সি. সম্পন্ন</h2>
+      <p>সর্বোচ্চ প্রাইস চেঞ্জ সম্পন্ন হওয়া পেইজগুলো দেখুন।</p>
+      <div class="merchant-list-container" id="top-pc-completed-container">
+        <!-- Dynamic content will be inserted here -->
+      </div>
+    </section>
+
+    <!-- New Listed Pages Section -->
+    <section class="section">
+      <h2 class="section-title"><i class="fas fa-certificate"></i> নতুন তালিকাভুক্ত পেইজ</h2>
+      <p>সম্প্রতি তালিকাভুক্ত হওয়া নতুন পেইজগুলো দেখুন।</p>
+      <div class="merchant-list-container" id="new-listed-container">
+        <!-- Dynamic content will be inserted here -->
+      </div>
+    </section>
+
+    <!-- Descending P.C. Order List Section -->
+    <section class="section">
+      <h2 class="section-title"><i class="fas fa-sort-numeric-down"></i> ডিসেন্ডিং পি.সি. অর্ডার</h2>
+      <p>প্রাইস চেঞ্জ সংখ্যা অনুযায়ী সকল পেইজ দেখুন (সর্বোচ্চ থেকে সর্বনিম্ন)।</p>
+      <div class="merchant-list-container" id="descending-pc-container">
+        <!-- Dynamic content will be inserted here -->
+      </div>
+    </section>
+
+    <!-- Trending Pages Section -->
+    <section class="section">
+      <h2 class="section-title"><i class="fas fa-fire"></i> ট্রেন্ডিং পেইজ</h2>
+      <p>বর্তমানে জনপ্রিয় এবং বেশি প্রাইস চেঞ্জ সম্পন্ন হওয়া পেইজগুলো দেখুন।</p>
+      <div class="merchant-list-container" id="trending-pages-container">
+        <!-- Dynamic content will be inserted here -->
+      </div>
+    </section>
+
     <!-- Issue Reporting Section -->
     <section class="section">
       <h2 class="section-title"><i class="fas fa-bug"></i> মার্চেন্ট রিপোর্ট দিনঃ </h2>
@@ -835,18 +871,19 @@
     async function displayMerchantAndPriceChangeData() {
       const issuelessContainer = document.getElementById('issueless-container');
       const issueRisingContainer = document.getElementById('issue-rising-container');
+      const topPcCompletedContainer = document.getElementById('top-pc-completed-container');
+      const newListedContainer = document.getElementById('new-listed-container');
+      const descendingPcContainer = document.getElementById('descending-pc-container');
+      const trendingPagesContainer = document.getElementById('trending-pages-container');
 
-      if (issuelessContainer) {
-        issuelessContainer.innerHTML = ''; // Clear existing content
-      }
-      if (issueRisingContainer) {
-        issueRisingContainer.innerHTML = ''; // Clear existing content
-      }
+      // Clear existing content in all containers
+      [issuelessContainer, issueRisingContainer, topPcCompletedContainer, newListedContainer, descendingPcContainer, trendingPagesContainer].forEach(container => {
+        if (container) container.innerHTML = '';
+      });
 
       let allPages = [];
 
       try {
-        // Fetch all pages from the new combined endpoint
         const response = await fetch('https://oneai-wjox.onrender.com/api/pages');
         const json = await response.json();
         if (json.success) {
@@ -857,26 +894,16 @@
         }
       } catch (error) {
         console.error('Error fetching initial data for support page:', error);
-        if (issuelessContainer) issuelessContainer.innerHTML += '<p>ডেটা লোড করতে সমস্যা হয়েছে।</p>';
-        if (issueRisingContainer) issueRisingContainer.innerHTML += '<p>ডেটা লোড করতে সমস্যা হয়েছে।</p>';
+        [issuelessContainer, issueRisingContainer, topPcCompletedContainer, newListedContainer, descendingPcContainer, trendingPagesContainer].forEach(container => {
+          if (container) container.innerHTML += '<p>ডেটা লোড করতে সমস্যা হয়েছে।</p>';
+        });
         return;
       }
 
-      // Categorize pages
-      const issuelessPages = [];
-      const issueRisingPages = [];
-
-      allPages.sort((a, b) => a.pageName.localeCompare(b.pageName)).forEach(page => {
-        if (page.status === 'issueless' || page.status === 'issueless-pending' || page.status === 'new-listed') {
-          issuelessPages.push(page);
-        } else if (page.status === 'issue-rising') {
-          issueRisingPages.push(page);
-        }
-      });
-
-      // Display Issueless and Issueless-Pending pages
-      if (issuelessContainer) {
-        if (issuelessPages.length > 0) {
+      // Helper function to render pages into a container
+      const renderPages = (container, pages, noDataMessage) => {
+        if (!container) return;
+        if (pages.length > 0) {
           const tableHeader = document.createElement('div');
           tableHeader.className = 'page-table-header';
           tableHeader.innerHTML = `
@@ -886,62 +913,47 @@
             <div class="page-table-cell">ইস্যু</div>
             <div class="page-table-cell">নোট</div>
           `;
-          issuelessContainer.appendChild(tableHeader);
+          container.appendChild(tableHeader);
 
-                      issuelessPages.forEach(item => {
-                      const row = document.createElement('div');
-                      row.className = 'page-table-row';
-                      row.dataset.shortid = item.shortId; // Store shortId for easy retrieval
-                      row.addEventListener('click', () => showPageDetails(item.shortId));
-                      const statusClass = item.status.toLowerCase().replace(' ', '-');
-                      row.innerHTML = `
-                        <div class="page-table-cell page-name-cell">${item.pageName}</div>
-                        <div class="page-table-cell status-cell"><span class="page-status-tag ${statusClass}">${item.status}</span></div>
-                        <div class="page-table-cell count-cell"><span class="page-count-tag">${item.count} PC</span></div>
-                        <div class="page-table-cell issue-count-cell"><span class="page-count-tag">${item.issueCount} Issues</span></div>
-                        <div class="page-table-cell note-cell">${item.note || 'N/A'}</div>
-                      `;
-                      issuelessContainer.appendChild(row);
-                    });
-                  } else {
-                    issuelessContainer.innerHTML = '<p>কোন ইস্যু বিহীন বা নতুন তালিকাভুক্ত পেইজ পাওয়া যায়নি।</p>';
-                  }
-                }
-          
-                // Display Issue-Rising pages
-                if (issueRisingContainer) {
-                  if (issueRisingPages.length > 0) {
-                    const tableHeader = document.createElement('div');
-                    tableHeader.className = 'page-table-header';
-                    tableHeader.innerHTML = `
-                      <div class="page-table-cell">পেইজের নাম</div>
-                      <div class="page-table-cell">স্ট্যাটাস</div>
-                      <div class="page-table-cell">পরিবর্তন</div>
-                      <div class="page-table-cell">ইস্যু</div>
-                      <div class="page-table-cell">নোট</div>
-                    `;
-                    issueRisingContainer.appendChild(tableHeader);
-          
-                    issueRisingPages.forEach(item => {
-                      const row = document.createElement('div');
-                      row.className = 'page-table-row';
-                      row.dataset.shortid = item.shortId; // Store shortId for easy retrieval
-                      row.addEventListener('click', () => showPageDetails(item.shortId));
-                      const statusClass = item.status.toLowerCase().replace(' ', '-');
-                      row.innerHTML = `
-                        <div class="page-table-cell page-name-cell">${item.pageName}</div>
-                        <div class="page-table-cell status-cell"><span class="page-status-tag ${statusClass}">${item.status}</span></div>
-                        <div class="page-table-cell count-cell"><span class="page-count-tag">${item.count} PC</span></div>
-                        <div class="page-table-cell issue-count-cell"><span class="page-count-tag">${item.issueCount} Issues</span></div>
-                        <div class="page-table-cell note-cell">${item.note || 'N/A'}</div>
-                      `;
-                      issueRisingContainer.appendChild(row);
-                    });
-                  } else {
-                    issueRisingContainer.innerHTML = '<p>কোন ইস্যু-রাইজিং মার্চেন্ট পাওয়া যায়নি।</p>';
-                  }
-                }
-              }
+          pages.forEach(item => {
+            const row = document.createElement('div');
+            row.className = 'page-table-row';
+            row.dataset.shortid = item.shortId;
+            row.addEventListener('click', () => showPageDetails(item.shortId));
+            const statusClass = item.status.toLowerCase().replace(' ', '-');
+            row.innerHTML = `
+              <div class="page-table-cell page-name-cell">${item.pageName}</div>
+              <div class="page-table-cell status-cell"><span class="page-status-tag ${statusClass}">${item.status}</span></div>
+              <div class="page-table-cell count-cell"><span class="page-count-tag">${item.count} PC</span></div>
+              <div class="page-table-cell issue-count-cell"><span class="page-count-tag">${item.issueCount} Issues</span></div>
+              <div class="page-table-cell note-cell">${item.note || 'N/A'}</div>
+            `;
+            container.appendChild(row);
+          });
+        } else {
+          container.innerHTML = `<p>${noDataMessage}</p>`;
+        }
+      };
+
+      // Categorize and sort pages for each section
+      const issuelessPages = allPages.filter(page => page.status === 'issueless' || page.status === 'issueless-pending');
+      const issueRisingPages = allPages.filter(page => page.status === 'issue-rising');
+      const newListedPages = allPages.filter(page => page.status === 'new-listed');
+
+      // Sort all pages by PC count descending for 'Top PC Completed' and 'Descending PC Order' and 'Trending'
+      const sortedByPcCount = [...allPages].sort((a, b) => b.count - a.count);
+      const topPcCompletedPages = sortedByPcCount.slice(0, 10); // Top 10 for example
+      const descendingPcOrderPages = sortedByPcCount; // All pages sorted by PC count
+      const trendingPages = sortedByPcCount.slice(0, 10); // For now, same as top PC completed
+
+      // Render each section
+      renderPages(issuelessContainer, issuelessPages.sort((a, b) => a.pageName.localeCompare(b.pageName)), 'কোন ইস্যু বিহীন বা নতুন তালিকাভুক্ত পেইজ পাওয়া যায়নি।');
+      renderPages(issueRisingContainer, issueRisingPages.sort((a, b) => a.pageName.localeCompare(b.pageName)), 'কোন ইস্যু-রাইজিং মার্চেন্ট পাওয়া যায়নি।');
+      renderPages(topPcCompletedContainer, topPcCompletedPages, 'কোন টপ পি.সি. সম্পন্ন পেইজ পাওয়া যায়নি।');
+      renderPages(newListedContainer, newListedPages.sort((a, b) => a.pageName.localeCompare(b.pageName)), 'কোন নতুন তালিকাভুক্ত পেইজ পাওয়া যায়নি।');
+      renderPages(descendingPcContainer, descendingPcOrderPages, 'কোন পেইজ পাওয়া যায়নি।');
+      renderPages(trendingPagesContainer, trendingPages, 'কোন ট্রেন্ডিং পেইজ পাওয়া যায়নি।');
+    }
           
               async function showPageDetails(shortId) {
                 try {
