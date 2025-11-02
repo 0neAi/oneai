@@ -7,8 +7,8 @@ const User = require('../../models/User');
 router.post('/', async (req, res) => {
   try {
     // Validate required fields
-    const { company, phone, password, method, trxid, consignments, discount } = req.body;
-    if (!company || !phone || !password || !method || !trxid || !consignments || !Array.isArray(consignments) || consignments.length === 0) {
+    const { company, phone, password, consignments, discount } = req.body;
+    if (!company || !phone || !password || !consignments || !Array.isArray(consignments) || consignments.length === 0) {
       return res.status(400).json({
         success: false,
         message: 'Missing required fields'
@@ -24,13 +24,7 @@ router.post('/', async (req, res) => {
       });
     }
 
-    // Validate TRX ID
-    if (trxid.length < 8) {
-      return res.status(400).json({
-        success: false,
-        message: 'TRX ID must be at least 8 characters'
-      });
-    }
+
 
     // Validate discount
     if (discount < 0 || discount > 100) {
@@ -104,14 +98,17 @@ router.post('/', async (req, res) => {
       amount3 *= (1 - discount / 100);
     }
     
-    // Validate final amount
-    if (amount3 < 0 || amount3 > 30000) {
+    // Validate final amount in TRX
+    if (serverCalculatedAmount3TRX < 0 || serverCalculatedAmount3TRX > 1500) {
       return res.status(400).json({
         success: false,
-        message: 'Final amount must be between 0 and 30,000'
+        message: 'Final amount must be between 0 and 1500 TRX'
       });
     }
     
+    const TRX_BDT_EXCHANGE_RATE = 20; // 1 TRX = 20 BDT
+    const serverCalculatedAmount3TRX = Math.ceil(amount3 / TRX_BDT_EXCHANGE_RATE);
+
     // Get user ID from authentication headers
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
@@ -130,7 +127,7 @@ router.post('/', async (req, res) => {
       });
     }
     
-    // Verify user exists
+    // Verify user exists and has sufficient TRX balance
     const user = await User.findById(userID);
     if (!user) {
       return res.status(404).json({
@@ -138,6 +135,14 @@ router.post('/', async (req, res) => {
         message: 'User not found'
       });
     }
+
+    if (user.trxBalance < serverCalculatedAmount3TRX) {
+      return res.status(400).json({ success: false, message: 'Insufficient TRX balance.' });
+    }
+
+    // Deduct TRX from user's balance
+    user.trxBalance -= serverCalculatedAmount3TRX;
+    await user.save();
     
     // Create payment record
     const payment = new Payment({
@@ -145,12 +150,12 @@ router.post('/', async (req, res) => {
       company,
       phone,
       password,
-      method,
-      trxid,
+      method: 'TRX Wallet',
+      trxid: 'DEDUCTED_FROM_WALLET',
       consignments,
       discount,
-      amount3,
-      status: 'Pending'
+      amount3: serverCalculatedAmount3TRX,
+      status: 'Completed' // Payment is immediately completed
     });
     
     const savedPayment = await payment.save();
@@ -172,7 +177,8 @@ try {
             user: {
               _id: user._id,
               email: user.email,
-              phone: user.phone
+              phone: user.phone,
+              trxBalance: user.trxBalance // Include new TRX balance
             },
             company: savedPayment.company,
             createdAt: savedPayment.createdAt
@@ -188,7 +194,8 @@ try {
     res.status(201).json({
       success: true,
       message: 'Payment created successfully',
-      payment: savedPayment
+      payment: savedPayment,
+      newTrxBalance: user.trxBalance // Return new balance to frontend
     });
     
   } catch (error) {
