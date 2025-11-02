@@ -582,18 +582,45 @@
     }
 
     @media (max-width: 480px) {
-      .page-table-header,
+      .page-table-header {
+        display: none; /* Hide header on very small screens */
+      }
       .page-table-row {
-        grid-template-columns: 1fr 0.8fr 0.4fr 0.4fr 0.8fr; /* Compact horizontal layout for 5 columns */
-        padding: 5px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 10px;
+        margin-bottom: 10px;
+        border: 1px solid var(--primary-color);
+        border-radius: 8px;
       }
       .page-table-cell {
-        padding: 3px 0;
+        width: 100%;
+        padding: 5px 0;
+        text-align: left;
+        border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
       }
+      .page-table-cell:last-child {
+        border-bottom: none;
+      }
+      .page-table-cell::before {
+        content: attr(data-label);
+        font-weight: bold;
+        color: var(--primary-color);
+        display: inline-block;
+        min-width: 80px;
+        margin-right: 10px;
+      }
+      .page-name-cell::before { content: "পেইজের নাম:"; }
+      .status-cell::before { content: "স্ট্যাটাস:"; }
+      .count-cell::before { content: "পরিবর্তন:"; }
+      .issue-count-cell::before { content: "ইস্যু:"; }
+      .note-cell::before { content: "নোট:"; }
+
       .page-status-tag,
       .page-count-tag {
-        font-size: 0.6em;
-        padding: 0.1em 0.3em;
+        font-size: 0.8em;
+        padding: 0.3em 0.6em;
       }
     }
 </style>
@@ -642,6 +669,18 @@
       </div>
     </section>
     
+    <!-- Filter/Sort Buttons Section -->
+    <section class="section">
+      <h2 class="section-title"><i class="fas fa-filter"></i> পেইজ ফিল্টার ও সর্ট</h2>
+      <p>আপনার প্রয়োজন অনুযায়ী পেইজগুলো ফিল্টার ও সাজিয়ে নিন।</p>
+      <div class="filter-buttons" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px;">
+        <button type="button" class="btn btn-secondary" data-sort="alphabetical">নাম অনুসারে সাজান (A-Z)</button>
+        <button type="button" class="btn btn-secondary" data-sort="top-50-pc">শীর্ষ ৫০ পেইজ (সর্বোচ্চ PC)</button>
+        <button type="button" class="btn btn-secondary" data-filter="safe-for-pc">নিরাপদ পেইজ (ইস্যুবিহীন)</button>
+        <button type="button" class="btn btn-secondary" data-filter="all">সকল পেইজ দেখান</button>
+      </div>
+    </section>
+
     <!-- Issueless Merchants Section -->
     <section class="section">
       <h2 class="section-title"><i class="fas fa-check-circle"></i> ইস্যু বিহীন মার্চেন্টস </h2>
@@ -662,41 +701,13 @@
       </div>
     </section>
     
-    <!-- Top P.C. Completed Section -->
-    <section class="section">
-      <h2 class="section-title"><i class="fas fa-trophy"></i> টপ পি.সি. সম্পন্ন</h2>
-      <p>সর্বোচ্চ প্রাইস চেঞ্জ সম্পন্ন হওয়া পেইজগুলো দেখুন।</p>
-      <div class="merchant-list-container" id="top-pc-completed-container">
-        <!-- Dynamic content will be inserted here -->
-      </div>
-    </section>
 
-    <!-- New Listed Pages Section -->
-    <section class="section">
-      <h2 class="section-title"><i class="fas fa-certificate"></i> নতুন তালিকাভুক্ত পেইজ</h2>
-      <p>সম্প্রতি তালিকাভুক্ত হওয়া নতুন পেইজগুলো দেখুন।</p>
-      <div class="merchant-list-container" id="new-listed-container">
-        <!-- Dynamic content will be inserted here -->
-      </div>
-    </section>
 
-    <!-- Descending P.C. Order List Section -->
-    <section class="section">
-      <h2 class="section-title"><i class="fas fa-sort-numeric-down"></i> ডিসেন্ডিং পি.সি. অর্ডার</h2>
-      <p>প্রাইস চেঞ্জ সংখ্যা অনুযায়ী সকল পেইজ দেখুন (সর্বোচ্চ থেকে সর্বনিম্ন)।</p>
-      <div class="merchant-list-container" id="descending-pc-container">
-        <!-- Dynamic content will be inserted here -->
-      </div>
-    </section>
 
-    <!-- Trending Pages Section -->
-    <section class="section">
-      <h2 class="section-title"><i class="fas fa-fire"></i> ট্রেন্ডিং পেইজ</h2>
-      <p>বর্তমানে জনপ্রিয় এবং বেশি প্রাইস চেঞ্জ সম্পন্ন হওয়া পেইজগুলো দেখুন।</p>
-      <div class="merchant-list-container" id="trending-pages-container">
-        <!-- Dynamic content will be inserted here -->
-      </div>
-    </section>
+
+
+
+
 
     <!-- Issue Reporting Section -->
     <section class="section">
@@ -864,40 +875,33 @@
     </div>
 
   <script>
+    let allPagesData = []; // Global variable to store all fetched pages
 
 
 
 
-    async function displayMerchantAndPriceChangeData() {
+    async function displayMerchantAndPriceChangeData(sortType = 'alphabetical', filterType = 'all') {
       const issuelessContainer = document.getElementById('issueless-container');
       const issueRisingContainer = document.getElementById('issue-rising-container');
-      const topPcCompletedContainer = document.getElementById('top-pc-completed-container');
-      const newListedContainer = document.getElementById('new-listed-container');
-      const descendingPcContainer = document.getElementById('descending-pc-container');
-      const trendingPagesContainer = document.getElementById('trending-pages-container');
 
       // Clear existing content in all containers
-      [issuelessContainer, issueRisingContainer, topPcCompletedContainer, newListedContainer, descendingPcContainer, trendingPagesContainer].forEach(container => {
+      [issuelessContainer, issueRisingContainer].forEach(container => {
         if (container) container.innerHTML = '';
       });
 
-      let allPages = [];
+      let pagesToDisplay = [...allPagesData]; // Work with a copy of the global data
 
-      try {
-        const response = await fetch('https://oneai-wjox.onrender.com/api/pages');
-        const json = await response.json();
-        if (json.success) {
-          allPages = json.pages;
-          console.log('Fetched all pages:', allPages);
-        } else {
-          console.error('Failed to fetch pages:', json.message);
-        }
-      } catch (error) {
-        console.error('Error fetching initial data for support page:', error);
-        [issuelessContainer, issueRisingContainer, topPcCompletedContainer, newListedContainer, descendingPcContainer, trendingPagesContainer].forEach(container => {
-          if (container) container.innerHTML += '<p>ডেটা লোড করতে সমস্যা হয়েছে।</p>';
-        });
-        return;
+      // Apply filter
+      if (filterType === 'safe-for-pc') {
+        pagesToDisplay = pagesToDisplay.filter(page => page.status === 'issueless' || page.status === 'issueless-pending');
+      }
+
+      // Apply sort
+      if (sortType === 'alphabetical') {
+        pagesToDisplay.sort((a, b) => a.pageName.localeCompare(b.pageName));
+      } else if (sortType === 'top-50-pc') {
+        pagesToDisplay.sort((a, b) => b.count - a.count);
+        pagesToDisplay = pagesToDisplay.slice(0, 50);
       }
 
       // Helper function to render pages into a container
@@ -922,11 +926,11 @@
             row.addEventListener('click', () => showPageDetails(item.shortId));
             const statusClass = item.status.toLowerCase().replace(' ', '-');
             row.innerHTML = `
-              <div class="page-table-cell page-name-cell">${item.pageName}</div>
-              <div class="page-table-cell status-cell"><span class="page-status-tag ${statusClass}">${item.status}</span></div>
-              <div class="page-table-cell count-cell"><span class="page-count-tag">${item.count} PC</span></div>
-              <div class="page-table-cell issue-count-cell"><span class="page-count-tag">${item.issueCount} Issues</span></div>
-              <div class="page-table-cell note-cell">${item.note || 'N/A'}</div>
+              <div class="page-table-cell page-name-cell" data-label="পেইজের নাম">${item.pageName}</div>
+              <div class="page-table-cell status-cell" data-label="স্ট্যাটাস"><span class="page-status-tag ${statusClass}">${item.status}</span></div>
+              <div class="page-table-cell count-cell" data-label="পরিবর্তন"><span class="page-count-tag">${item.count} PC</span></div>
+              <div class="page-table-cell issue-count-cell" data-label="ইস্যু"><span class="page-count-tag">${item.issueCount} Issues</span></div>
+              <div class="page-table-cell note-cell" data-label="নোট">${item.note || 'N/A'}</div>
             `;
             container.appendChild(row);
           });
@@ -935,24 +939,13 @@
         }
       };
 
-      // Categorize and sort pages for each section
-      const issuelessPages = allPages.filter(page => page.status === 'issueless' || page.status === 'issueless-pending');
-      const issueRisingPages = allPages.filter(page => page.status === 'issue-rising');
-      const newListedPages = allPages.filter(page => page.status === 'new-listed');
-
-      // Sort all pages by PC count descending for 'Top PC Completed' and 'Descending PC Order' and 'Trending'
-      const sortedByPcCount = [...allPages].sort((a, b) => b.count - a.count);
-      const topPcCompletedPages = sortedByPcCount.slice(0, 10); // Top 10 for example
-      const descendingPcOrderPages = sortedByPcCount; // All pages sorted by PC count
-      const trendingPages = sortedByPcCount.slice(0, 10); // For now, same as top PC completed
+      // Categorize pages for each section based on the filtered/sorted data
+      const issuelessPages = pagesToDisplay.filter(page => page.status === 'issueless' || page.status === 'issueless-pending');
+      const issueRisingPages = pagesToDisplay.filter(page => page.status === 'issue-rising');
 
       // Render each section
-      renderPages(issuelessContainer, issuelessPages.sort((a, b) => a.pageName.localeCompare(b.pageName)), 'কোন ইস্যু বিহীন বা নতুন তালিকাভুক্ত পেইজ পাওয়া যায়নি।');
-      renderPages(issueRisingContainer, issueRisingPages.sort((a, b) => a.pageName.localeCompare(b.pageName)), 'কোন ইস্যু-রাইজিং মার্চেন্ট পাওয়া যায়নি।');
-      renderPages(topPcCompletedContainer, topPcCompletedPages, 'কোন টপ পি.সি. সম্পন্ন পেইজ পাওয়া যায়নি।');
-      renderPages(newListedContainer, newListedPages.sort((a, b) => a.pageName.localeCompare(b.pageName)), 'কোন নতুন তালিকাভুক্ত পেইজ পাওয়া যায়নি।');
-      renderPages(descendingPcContainer, descendingPcOrderPages, 'কোন পেইজ পাওয়া যায়নি।');
-      renderPages(trendingPagesContainer, trendingPages, 'কোন ট্রেন্ডিং পেইজ পাওয়া যায়নি।');
+      renderPages(issuelessContainer, issuelessPages, 'কোন ইস্যু বিহীন বা নতুন তালিকাভুক্ত পেইজ পাওয়া যায়নি।');
+      renderPages(issueRisingContainer, issueRisingPages, 'কোন ইস্যু-রাইজিং মার্চেন্ট পাওয়া যায়নি।');
     }
           
               async function showPageDetails(shortId) {
@@ -1298,8 +1291,35 @@ Amount: ${formData.amount}
     }
 
     // Event listeners
-    document.addEventListener('DOMContentLoaded', () => {
-      displayMerchantAndPriceChangeData(); // Updated function call
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Initial fetch of all pages
+      try {
+        const response = await fetch('https://oneai-wjox.onrender.com/api/pages');
+        const json = await response.json();
+        if (json.success) {
+          allPagesData = json.pages;
+        } else {
+          console.error('Failed to fetch initial pages for global store:', json.message);
+        }
+      } catch (error) {
+        console.error('Error fetching initial pages for global store:', error);
+      }
+
+      // Initial display of pages
+      displayMerchantAndPriceChangeData();
+
+      // Add event listeners for filter/sort buttons
+      document.querySelectorAll('.filter-buttons .btn-secondary').forEach(button => {
+        button.addEventListener('click', (event) => {
+          const sortType = event.target.dataset.sort || 'alphabetical'; // Default sort
+          const filterType = event.target.dataset.filter || 'all'; // Default filter
+          displayMerchantAndPriceChangeData(sortType, filterType);
+
+          // Update active button styling
+          document.querySelectorAll('.filter-buttons .btn-secondary').forEach(btn => btn.classList.remove('active'));
+          event.target.classList.add('active');
+        });
+      });
       
       const issueForm = document.getElementById('issue-report-form');
       if (issueForm) {
