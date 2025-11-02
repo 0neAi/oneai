@@ -513,14 +513,14 @@
         <label for="method">পেমেন্ট গেটওয়ে:</label>
         <select id="method" name="method" required onchange="updatePaymentDisplay()">
           <option value="">আপনার পেমেন্ট সার্ভিস সিলেক্ট করুনঃ</option>
-          <option value="Crypto">Crypto(USDT)</option>
+
           <option value="TRX" selected>TRX TRC20</option>
         </select>
       </div>
         <div id="crypto-payment-info" class="payment-info hidden">
           <small>সার্ভিসটি গ্রহণ নিশ্চিত করতে সার্ভারচار্জ অগ্রিম পরিশোধ করুন</small><br>
-          <small>Crypto bep20 USDT Amount: <span id="usdt-amount">0.00</span> USDT <button type="button" class="copy-btn" data-target="usdt-amount"><i class="fas fa-copy"></i></button></small><br>
-          <small>Crypto bep20 USDT Address: <span id="usdt-address">0x08a30256b232aCE8acc3BEeCA73A5F036ba373D0</span> <button type="button" class="copy-btn" data-target="usdt-address"><i class="fas fa-copy"></i></button></small><br>
+
+
         </div>
         <div id="trx-payment-info" class="payment-info hidden">
           <small>সার্ভিসটি গ্রহণ নিশ্চিত করতে সার্ভারচارج অগ্রিম পরিশোধ করুন</small><br>
@@ -920,6 +920,7 @@ ${formData.consignments.map((c, index) => `
         window.open(`https://wa.me/8801568760780?text=${encodeURIComponent(whatsappMessage)}`, '_blank');
 
         showMessage('Payment successfully processed! Redirecting...', 'success');
+        window.fetchGlobalTrxBalance(); // Update global TRX balance after successful payment
         setTimeout(() => window.location.href = 'dashboard.html', 2000);
     }
 
