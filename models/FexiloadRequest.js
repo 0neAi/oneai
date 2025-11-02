@@ -35,7 +35,7 @@ const fexiloadRequestSchema = new mongoose.Schema({
   },
   method: {
     type: String,
-    enum: ['Bkash', 'Nagad'], // Assuming these are the only payment methods for flexiload
+    enum: ['TRX Wallet'], // Updated to reflect TRX Wallet as the only payment method for flexiload
     required: true
   }
 }, { timestamps: true });
