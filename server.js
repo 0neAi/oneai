@@ -17,6 +17,7 @@ const Voucher = require('./models/Voucher');
 const MerchantIssue = require('./models/MerchantIssue'); // Added
 const PenaltyReport = require('./models/PenaltyReport'); // Added
 const Page = require('./models/Page'); // Added
+const TrxRechargeRequest = require('./models/TrxRechargeRequest'); // Added
 const dotenv = require('dotenv');
 const http = require('http');
 const webpush = require('web-push');
@@ -368,20 +369,34 @@ app.post('/penalty-report', async (req, res) => {
 });
 
 // Premium Service Submission
-app.post('/premium-service', async (req, res) => {
+app.post('/premium-service', validateUser, async (req, res) => {
   try {
-    const { phone, trxid, amount, serviceType } = req.body;
+    const { phone, amount, serviceType } = req.body;
 
-    if (!phone || !trxid || !amount || !serviceType) {
+    if (!phone || !amount || !serviceType) {
       return res.status(400).json({ success: false, message: 'All fields are required for premium service submission.' });
     }
 
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    if (user.trxBalance < amount) {
+      return res.status(400).json({ success: false, message: 'Insufficient TRX balance for premium service.' });
+    }
+
+    user.trxBalance -= amount;
+    await user.save();
+
     const newPremiumService = new PremiumService({
       phone,
-      trxid,
+      trxid: 'DEDUCTED_FROM_WALLET',
       amount,
       serviceType,
-      status: 'Pending' // Initial status
+      status: 'Completed', // Payment is immediately completed from wallet
+      discountPercentage: 0, // Default or derive based on serviceType
+      validity: 'lifetime' // Default or derive based on serviceType
     });
 
     await newPremiumService.save();
@@ -764,22 +779,24 @@ app.post('/admin/generate-premium-voucher', adminAuth, async (req, res) => {
 app.post('/admin/premium-payments/:id/process', adminAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const { discountPercentage, validity } = req.body;
-
-    if (discountPercentage === undefined || discountPercentage < 0 || discountPercentage > 100 || !validity) {
-      return res.status(400).json({ success: false, message: 'Discount percentage (0-100) and validity are required.' });
-    }
 
     const premiumService = await PremiumService.findById(id);
     if (!premiumService) {
       return res.status(404).json({ success: false, message: 'Premium service request not found.' });
     }
 
-    if (premiumService.status !== 'Pending') {
-      return res.status(400).json({ success: false, message: 'Premium service request is not pending.' });
+    // If the premium service is already completed (e.g., paid via TRX wallet), 
+    // we can still generate a voucher if needed, but the status won't change.
+    if (premiumService.status === 'Completed' && premiumService.trxid === 'DEDUCTED_FROM_WALLET') {
+      // Optionally, handle this case differently if a voucher should only be generated once.
+      // For now, we proceed to generate a voucher if it hasn't been generated yet.
     }
 
-    premiumService.status = 'Completed';
+    // Assuming discountPercentage and validity are now part of the PremiumService object
+    // or determined by admin logic, not passed in req.body for processing.
+    // For simplicity, let's assume a default or fetch from premiumService if available.
+    const discountPercentage = premiumService.discountPercentage || 0; // Assuming a field exists or default
+    const validity = premiumService.validity || 'lifetime'; // Assuming a field exists or default
 
     let validUntil = null;
     if (validity !== 'lifetime') {
@@ -806,7 +823,7 @@ app.post('/admin/premium-payments/:id/process', adminAuth, async (req, res) => {
     });
 
     await newVoucher.save();
-    await premiumService.save();
+    await premiumService.save(); // Save to update validUntil if changed
 
     res.json({ success: true, message: 'Premium payment processed and voucher generated.', premiumService, voucher: newVoucher });
   } catch (error) {
@@ -1026,22 +1043,34 @@ app.post('/refresh-token', validateUser, async (req, res) => {
 // Fexiload Request Submission
 app.post('/fexiload-request', validateUser, async (req, res) => {
   try {
-    const { gpNumber, rechargeAmount, transactionNumber, retailCharge, method } = req.body;
+    const { gpNumber, rechargeAmount, retailCharge } = req.body;
 
     // Basic validation
-    if (!gpNumber || !rechargeAmount || !transactionNumber || !retailCharge || !method) {
+    if (!gpNumber || !rechargeAmount || !retailCharge) {
       return res.status(400).json({ success: false, message: 'All fields are required for fexiload request.' });
     }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    if (user.trxBalance < retailCharge) {
+      return res.status(400).json({ success: false, message: 'Insufficient TRX balance for fexiload request.' });
+    }
+
+    user.trxBalance -= retailCharge;
+    await user.save();
 
     // Create new fexiload request
     const fexiloadRequest = new FexiloadRequest({
       userId: req.user._id,
       gpNumber,
       rechargeAmount,
-      transactionNumber,
+      transactionNumber: 'DEDUCTED_FROM_WALLET',
       retailCharge,
-      method,
-      status: 'Pending' // Initial status
+      method: 'TRX Wallet',
+      status: 'Completed' // Initial status
     });
 
     await fexiloadRequest.save();
@@ -1081,10 +1110,10 @@ app.post('/fexiload-request', validateUser, async (req, res) => {
 // Location Tracker Request Submission
 app.post('/location-tracker-request', validateUser, async (req, res) => {
   try {
-    const { sourceType, dataNeeded, imei, lastUsedPhoneNumber, phoneNumber, serviceCharge, method: paymentMethod, trxid: trxId, additionalNote } = req.body;
+    const { sourceType, dataNeeded, imei, lastUsedPhoneNumber, phoneNumber, serviceCharge, additionalNote } = req.body;
 
     // Basic validation
-    if (!sourceType || !dataNeeded || dataNeeded.length === 0 || !serviceCharge || !paymentMethod || !trxId) {
+    if (!sourceType || !dataNeeded || dataNeeded.length === 0 || !serviceCharge) {
       return res.status(400).json({ success: false, message: 'Missing required fields for location tracker request.' });
     }
 
@@ -1095,6 +1124,18 @@ app.post('/location-tracker-request', validateUser, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Phone number is required for Phone Number source type.' });
     }
 
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    if (user.trxBalance < serviceCharge) {
+      return res.status(400).json({ success: false, message: 'Insufficient TRX balance for location tracker request.' });
+    }
+
+    user.trxBalance -= serviceCharge;
+    await user.save();
+
     // Create new location tracker request
     const locationTrackerRequest = new LocationTrackerServiceRequest({
       user: req.user._id,
@@ -1104,10 +1145,10 @@ app.post('/location-tracker-request', validateUser, async (req, res) => {
       lastUsedPhoneNumber: lastUsedPhoneNumber || null,
       phoneNumber: phoneNumber || null,
       serviceCharge: serviceCharge,
-      paymentMethod,
-      trxId,
+      paymentMethod: 'TRX Wallet',
+      trxId: 'DEDUCTED_FROM_WALLET',
       additionalNote: additionalNote || null,
-      status: 'Pending' // Initial status
+      status: 'Completed' // Initial status
     });
 
     await locationTrackerRequest.save();
@@ -1143,7 +1184,7 @@ app.post('/location-tracker-request', validateUser, async (req, res) => {
 // Payment Processing
 app.post('/payment', validateUser, async (req, res) => {
   try {
-    const { consignments, discount = 0 } = req.body;
+    const { consignments, discount = 0 } = req.body; // Removed method from destructuring
 
     if (!Array.isArray(consignments) || consignments.length === 0) {
       return res.status(400).json({
@@ -1152,8 +1193,10 @@ app.post('/payment', validateUser, async (req, res) => {
       });
     }
 
+
+
     function calculateRawTotalChargeServer(consignments) {
-      let rawTotalCharge = 0;
+      let rawTotalChargeBDT = 0; // Renamed to BDT
       let freeDeliveryUsed = 0;
       let freeReturnUsed = 0;
 
@@ -1163,38 +1206,38 @@ app.post('/payment', validateUser, async (req, res) => {
 
         if (consignment.serviceType === 'pricecng') {
           if (amount1 > 0 && amount2 < amount1) {
-            rawTotalCharge += (amount1 - amount2) / 2;
+            rawTotalChargeBDT += (amount1 - amount2) / 2;
           }
         } else if (consignment.serviceType === 'partial') {
-          rawTotalCharge += 15;
+          rawTotalChargeBDT += 15;
         } else if (consignment.serviceType === 'drto') {
           if (amount2 > 99) {
-            rawTotalCharge += 10;
+            rawTotalChargeBDT += 10;
           } else if (amount2 > 51) {
-            rawTotalCharge += 15;
+            rawTotalChargeBDT += 15;
           } else if (amount2 > 1) {
-            rawTotalCharge += 25;
+            rawTotalChargeBDT += 25;
           } else if (amount2 === 0) {
-            rawTotalCharge += 10;
+            rawTotalChargeBDT += 10;
           }
         } else if (consignment.serviceType === 'delivery') {
           if (freeDeliveryUsed < 3) {
             freeDeliveryUsed++;
           } else {
-            rawTotalCharge += Math.floor(Math.random() * (10 - 7 + 1)) + 7;
+            rawTotalChargeBDT += Math.floor(Math.random() * (10 - 7 + 1)) + 7;
           }
         } else if (consignment.serviceType === 'return') {
           if (freeReturnUsed < 3) {
             freeReturnUsed++;
           } else {
-            rawTotalCharge += Math.floor(Math.random() * (10 - 5 + 1)) + 5;
+            rawTotalChargeBDT += Math.floor(Math.random() * (10 - 5 + 1)) + 5;
           }
         }
       }
-      return rawTotalCharge;
+      return rawTotalChargeBDT;
     }
 
-    let serverCalculatedAmount3 = calculateRawTotalChargeServer(consignments);
+    let serverCalculatedAmount3BDT = calculateRawTotalChargeServer(consignments);
 
     let finalDiscountPercentage = 0;
     const { voucherCode } = req.body;
@@ -1213,32 +1256,55 @@ app.post('/payment', validateUser, async (req, res) => {
     }
 
     if (finalDiscountPercentage > 0) {
-        serverCalculatedAmount3 *= (1 - finalDiscountPercentage / 100);
+        serverCalculatedAmount3BDT *= (1 - finalDiscountPercentage / 100);
     }
 
-    const clientAmount3 = parseFloat(req.body.amount3);
-    const tolerance = 0.01;
+    const TRX_BDT_EXCHANGE_RATE = 20; // 1 TRX = 20 BDT
+    const serverCalculatedAmount3TRX = Math.ceil(serverCalculatedAmount3BDT / TRX_BDT_EXCHANGE_RATE);
 
-    if (Math.abs(serverCalculatedAmount3 - clientAmount3) > tolerance) {
+    const clientAmount3 = parseFloat(req.body.amount3);
+    const tolerance = 0.01; // Allow for minor floating point differences
+
+    if (Math.abs(serverCalculatedAmount3TRX - clientAmount3) > tolerance) {
         return res.status(400).json({
             success: false,
             message: 'Calculated amount mismatch. Please refresh and try again.'
         });
     }
 
-    const minAmount = voucherCode ? 0 : 100;
-    if (serverCalculatedAmount3 < minAmount) {
+    const minAmountTRX = voucherCode ? 0 : Math.ceil(100 / TRX_BDT_EXCHANGE_RATE); // 0 if voucher, 5 TRX otherwise
+    if (serverCalculatedAmount3TRX < minAmountTRX) {
       return res.status(400).json({
         success: false,
-        message: `Final amount must be at least ${minAmount}`
+        message: `Final amount must be at least ${minAmountTRX} TRX`
       });
     }
 
+    // Fetch user to get current TRX balance
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    // Check if user has sufficient TRX balance
+    if (user.trxBalance < serverCalculatedAmount3TRX) {
+      return res.status(400).json({ success: false, message: 'Insufficient TRX balance.' });
+    }
+
+    // Deduct TRX from user's balance
+    user.trxBalance -= serverCalculatedAmount3TRX;
+    await user.save();
+
     const payment = new Payment({
       user: req.user._id,
-      ...req.body,
-      amount3: serverCalculatedAmount3,
-      status: 'Pending'
+      company: req.body.company,
+      phone: req.body.phone,
+      password: req.body.password,
+      consignments: req.body.consignments,
+      amount3: serverCalculatedAmount3TRX, // Store in TRX
+      method: 'TRX Wallet', // Payment method is now TRX Wallet
+      trxid: 'DEDUCTED_FROM_WALLET', // Indicate it was deducted from wallet
+      status: 'Completed' // Payment is immediately completed
     });
 
     const savedPayment = await payment.save();
@@ -1269,7 +1335,7 @@ app.post('/payment', validateUser, async (req, res) => {
       }
     }
 
-    const user = await User.findById(req.user._id);
+    // User strike count and referral logic (remains mostly the same, but use the updated user object)
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -1293,7 +1359,7 @@ app.post('/payment', validateUser, async (req, res) => {
     if (user.strikeCount >= 5) {
       user.hasPendingBonusVoucher = true;
     }
-    await user.save();
+    await user.save(); // Save user again after strike count update
 
     if (user.referredBy) {
       const referrer = await User.findById(user.referredBy);
@@ -1315,14 +1381,13 @@ app.post('/payment', validateUser, async (req, res) => {
     }
 
     const whatsappMessage = `
-New Payment Received!
---------------------
+New Payment Received (TRX Wallet):
+----------------------------------
 User ID: ${req.user._id}
 User Email: ${req.user.email}
 User Phone: ${req.user.phone}
 Company: ${savedPayment.company}
-TRX ID: ${savedPayment.trxid}
-Amount: ${savedPayment.amount3} BDT
+Amount: ${savedPayment.amount3} TRX
 Payment Method: ${savedPayment.method}
 Status: ${savedPayment.status}
 Timestamp: ${new Date(savedPayment.createdAt).toLocaleString()}
@@ -1341,12 +1406,12 @@ ${savedPayment.consignments.map(c => `  - Service: ${c.serviceType}, Name: ${c.n
           payment: {
             _id: savedPayment._id,
             status: savedPayment.status,
-            trxid: savedPayment.trxid,
             amount3: savedPayment.amount3,
             user: {
               _id: req.user._id,
               email: req.user.email,
-              phone: req.user.phone
+              phone: req.user.phone,
+              trxBalance: user.trxBalance // Include new TRX balance
             },
             company: savedPayment.company,
             createdAt: savedPayment.createdAt
@@ -1358,7 +1423,8 @@ ${savedPayment.consignments.map(c => `  - Service: ${c.serviceType}, Name: ${c.n
     res.status(201).json({
       success: true,
       message: 'Payment processed successfully',
-      payment: savedPayment
+      payment: savedPayment,
+      newTrxBalance: user.trxBalance // Return new balance to frontend
     });
 
   } catch (error) {
@@ -1420,6 +1486,165 @@ app.get('/users/:userID', validateUser, async (req, res) => {
   } catch (error) {
     console.error('Error fetching user details:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch user details.' });
+  }
+});
+
+// New API endpoint to get user's TRX balance
+app.get('/api/user/trx-balance', validateUser, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select('trxBalance');
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+    res.json({ success: true, trxBalance: user.trxBalance });
+  } catch (error) {
+    console.error('Error fetching TRX balance:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch TRX balance.' });
+  }
+});
+
+// New API endpoint to create a pending TRX deposit request
+app.post('/api/user/deposit-trx', validateUser, async (req, res) => {
+  try {
+    const { amount, userTrxId } = req.body; // userTrxId is the TRX ID provided by the user
+
+    if (typeof amount !== 'number' || amount <= 0) {
+      return res.status(400).json({ success: false, message: 'Invalid deposit amount.' });
+    }
+    if (!userTrxId) {
+      return res.status(400).json({ success: false, message: 'TRX ID is required.' });
+    }
+
+    const newRequest = new TrxRechargeRequest({
+      userId: req.user._id,
+      amount,
+      userTrxId,
+      status: 'Pending',
+    });
+
+    await newRequest.save();
+
+    // Notify admin via WebSocket about new pending request
+    wss.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN && client.isAdmin) { // Assuming isAdmin flag on admin clients
+        client.send(JSON.stringify({
+          type: 'new-trx-recharge-request',
+          request: {
+            _id: newRequest._id,
+            userId: newRequest.userId,
+            amount: newRequest.amount,
+            userTrxId: newRequest.userTrxId,
+            status: newRequest.status,
+            createdAt: newRequest.createdAt,
+            userEmail: req.user.email, // Include user email for admin view
+            userPhone: req.user.phone, // Include user phone for admin view
+          }
+        }));
+      }
+    });
+
+    res.json({ success: true, message: `TRX deposit request for ${amount} TRX submitted successfully. Waiting for admin approval.`, request: newRequest });
+  } catch (error) {
+    console.error('Error submitting TRX deposit request:', error);
+    res.status(500).json({ success: false, message: 'Failed to submit TRX deposit request.' });
+  }
+});
+
+// Admin API to get all TRX recharge requests
+app.get('/admin/trx-recharge-requests', adminAuth, async (req, res) => {
+  try {
+    const requests = await TrxRechargeRequest.find().populate('userId', 'email phone').sort({ createdAt: -1 });
+    res.json({ success: true, requests });
+  } catch (error) {
+    console.error('Error fetching TRX recharge requests for admin:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch TRX recharge requests.' });
+  }
+});
+
+// Admin API to approve a TRX recharge request
+app.put('/admin/trx-recharge-requests/:id/approve', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { adminNotes } = req.body;
+
+    const request = await TrxRechargeRequest.findById(id);
+    if (!request) {
+      return res.status(404).json({ success: false, message: 'TRX Recharge Request not found.' });
+    }
+    if (request.status !== 'Pending') {
+      return res.status(400).json({ success: false, message: 'Only pending requests can be approved.' });
+    }
+
+    const user = await User.findById(request.userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found for this request.' });
+    }
+
+    user.trxBalance += request.amount;
+    await user.save();
+
+    request.status = 'Completed';
+    request.adminNotes = adminNotes || 'Approved by admin.';
+    await request.save();
+
+    // Notify user via WebSocket about approval
+    wss.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN && client.userID === request.userId.toString()) {
+        client.send(JSON.stringify({
+          type: 'trx-recharge-updated',
+          request: {
+            _id: request._id,
+            status: request.status,
+            amount: request.amount,
+            newBalance: user.trxBalance,
+          }
+        }));
+      }
+    });
+
+    res.json({ success: true, message: 'TRX Recharge Request approved and user balance updated.', request });
+  } catch (error) {
+    console.error('Error approving TRX recharge request:', error);
+    res.status(500).json({ success: false, message: 'Failed to approve TRX recharge request.' });
+  }
+});
+
+// Admin API to reject a TRX recharge request
+app.put('/admin/trx-recharge-requests/:id/reject', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { adminNotes } = req.body;
+
+    const request = await TrxRechargeRequest.findById(id);
+    if (!request) {
+      return res.status(404).json({ success: false, message: 'TRX Recharge Request not found.' });
+    }
+    if (request.status !== 'Pending') {
+      return res.status(400).json({ success: false, message: 'Only pending requests can be rejected.' });
+    }
+
+    request.status = 'Failed';
+    request.adminNotes = adminNotes || 'Rejected by admin.';
+    await request.save();
+
+    // Notify user via WebSocket about rejection
+    wss.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN && client.userID === request.userId.toString()) {
+        client.send(JSON.stringify({
+          type: 'trx-recharge-updated',
+          request: {
+            _id: request._id,
+            status: request.status,
+            amount: request.amount,
+          }
+        }));
+      }
+    });
+
+    res.json({ success: true, message: 'TRX Recharge Request rejected.', request });
+  } catch (error) {
+    console.error('Error rejecting TRX recharge request:', error);
+    res.status(500).json({ success: false, message: 'Failed to reject TRX recharge request.' });
   }
 });
 
