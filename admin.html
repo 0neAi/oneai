@@ -300,6 +300,8 @@
 
         <!-- Main Dashboard -->
         <div v-else class="main-content p-4">
+
+
             <!-- Navigation -->
             <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 rounded">
                 <div class="container-fluid">
@@ -316,6 +318,7 @@
                     </div>
                 </div>
             </nav>
+
 
             <!-- Dashboard Header -->
             <div class="dashboard-header">
@@ -1013,6 +1016,75 @@
                                     <tr v-if="locationTrackerRequests.length === 0">
                                         <td colspan="9" class="text-center py-4 text-muted">
                                             No location tracker requests found
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TRX Recharge Requests Section -->
+                <div class="card shadow-sm mt-5">
+                    <div class="card-header d-flex justify-content-between align-items-center py-3">
+                        <h5 class="mb-0"><i class="bi bi-currency-bitcoin me-2"></i>TRX Recharge Requests</h5>
+                        <button class="btn btn-sm btn-outline-primary" @click="refreshTrxRechargeRequests">
+                            <i class="bi bi-arrow-clockwise"></i> Refresh
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th>User</th>
+                                        <th>Amount</th>
+                                        <th>User TRX ID</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="request in trxRechargeRequests" :key="request._id">
+                                        <td>
+                                            <span v-if="request.userId">{{ request.userId.email }}</span>
+                                            <span v-else class="text-muted">N/A</span>
+                                        </td>
+                                        <td>{{ request.amount }} TRX</td>
+                                        <td>{{ request.userTrxId }}</td>
+                                        <td>{{ formatDateTime(request.createdAt) }}</td>
+                                        <td>
+                                            <span class="status-badge" :class="statusClass(request.status)">
+                                                {{ request.status }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary me-1" 
+                                                    @click="showTrxRechargeRequestDetails(request)"
+                                                    title="View Details">
+                                                <i class="bi bi-eye-fill"></i>
+                                            </button>
+                                            <button v-if="request.status === 'Pending'" class="btn btn-sm btn-outline-success btn-action me-1" 
+                                                    @click="showApproveTrxRechargeModal(request)"
+                                                    title="Approve Request">
+                                                <i class="bi bi-check2-circle"></i>
+                                            </button>
+                                            <button v-if="request.status === 'Pending'" class="btn btn-sm btn-outline-danger btn-action" 
+                                                    @click="showRejectTrxRechargeModal(request)"
+                                                    title="Reject Request">
+                                                <i class="bi bi-x-circle"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger btn-action ms-1" 
+                                                    @click="deleteItem('trx recharge request', request._id)"
+                                                    title="Delete Request">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="trxRechargeRequests.length === 0">
+                                        <td colspan="6" class="text-center py-4 text-muted">
+                                            No TRX recharge requests found
                                         </td>
                                     </tr>
                                 </tbody>
@@ -1762,6 +1834,143 @@
             </div>
         </div>
 
+        <!-- TRX Recharge Request Details Modal -->
+        <div class="modal fade" id="trxRechargeRequestModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">TRX Recharge Request Details</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div v-if="selectedTrxRechargeRequest">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Request ID</label>
+                                        <input type="text" class="form-control" :value="selectedTrxRechargeRequest._id" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Status</label>
+                                        <input type="text" class="form-control" 
+                                               :class="statusClass(selectedTrxRechargeRequest.status)"
+                                               :value="selectedTrxRechargeRequest.status" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">User Email</label>
+                                        <input type="text" class="form-control" 
+                                               :value="(selectedTrxRechargeRequest.userId && selectedTrxRechargeRequest.userId.email) || 'N/A'" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">User Phone</label>
+                                        <input type="text" class="form-control" 
+                                               :value="(selectedTrxRechargeRequest.userId && selectedTrxRechargeRequest.userId.phone) || 'N/A'" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Amount</label>
+                                        <input type="text" class="form-control" :value="selectedTrxRechargeRequest.amount + ' TRX'" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">User Provided TRX ID</label>
+                                        <input type="text" class="form-control" :value="selectedTrxRechargeRequest.userTrxId" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Admin Notes</label>
+                                <textarea class="form-control" rows="3" :value="selectedTrxRechargeRequest.adminNotes || 'N/A'" readonly></textarea>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Requested On</label>
+                                        <input type="text" class="form-control" :value="formatDateTime(selectedTrxRechargeRequest.createdAt)" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Last Updated</label>
+                                        <input type="text" class="form-control" :value="formatDateTime(selectedTrxRechargeRequest.updatedAt)" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Approve TRX Recharge Modal -->
+        <div class="modal fade" id="approveTrxRechargeModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Approve TRX Recharge Request</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div v-if="selectedTrxRechargeRequest">
+                            <p>Are you sure you want to approve the TRX recharge request for <strong>{{ selectedTrxRechargeRequest.amount }} TRX</strong> from user <strong>{{ selectedTrxRechargeRequest.userId ? selectedTrxRechargeRequest.userId.email : 'N/A' }}</strong>?</p>
+                            <div class="mb-3">
+                                <label for="trx-recharge-admin-notes" class="form-label">Admin Notes (Optional)</label>
+                                <textarea class="form-control" id="trx-recharge-admin-notes" rows="3" v-model="trxRechargeAdminNotes"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-success" @click="approveTrxRechargeRequest">Approve</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reject TRX Recharge Modal -->
+        <div class="modal fade" id="rejectTrxRechargeModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Reject TRX Recharge Request</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div v-if="selectedTrxRechargeRequest">
+                            <p>Are you sure you want to reject the TRX recharge request for <strong>{{ selectedTrxRechargeRequest.amount }} TRX</strong> from user <strong>{{ selectedTrxRechargeRequest.userId ? selectedTrxRechargeRequest.userId.email : 'N/A' }}</strong>?</p>
+                            <div class="mb-3">
+                                <label for="trx-recharge-admin-notes-reject" class="form-label">Admin Notes (Optional)</label>
+                                <textarea class="form-control" id="trx-recharge-admin-notes-reject" rows="3" v-model="trxRechargeAdminNotes"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-danger" @click="rejectTrxRechargeRequest">Reject</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Manage Pages Modal -->
         <div class="modal fade" id="managePagesModal" tabindex="-1" aria-hidden="true" v-if="authenticated">
             <div class="modal-dialog modal-xl">
@@ -1863,6 +2072,7 @@
         </div>
     </div>
 
+    <script src="./assets/js/load-navbar.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const API_BASE = 'https://oneai-wjox.onrender.com';
@@ -1907,6 +2117,9 @@
                     premiumPayments: [],
                     fexiloadRequests: [],
                     locationTrackerRequests: [],
+                    trxRechargeRequests: [],
+                    selectedTrxRechargeRequest: null,
+                    trxRechargeAdminNotes: '',
                     commissionPercentage: 5,
                     selectedLocationTrackerRequest: null,
                     deliveredDataType: '',
@@ -2087,6 +2300,7 @@
                             this.loadPremiumPayments(),
                             this.loadFexiloadRequests(),
                             this.loadLocationTrackerRequests(),
+                            this.loadTrxRechargeRequests(), // Added
                             this.loadPages()
                         ]);
                         console.log('All data loaded successfully.');
@@ -2180,6 +2394,16 @@
                         console.error('Error loading location tracker requests:', error);
                         this.locationTrackerRequests = [];
                         alert('Failed to load location tracker requests.');
+                    }
+                },
+                async loadTrxRechargeRequests() {
+                    try {
+                        const response = await axios.get(`${API_BASE}/admin/trx-recharge-requests`);
+                        this.trxRechargeRequests = response.data.requests || [];
+                    } catch (error) {
+                        console.error('Error loading TRX recharge requests:', error);
+                        this.trxRechargeRequests = [];
+                        alert('Failed to load TRX recharge requests.');
                     }
                 },
                 async loadPages() {
@@ -2523,6 +2747,51 @@
                         alert('Failed to save fexiload request changes.');
                     }
                 },
+                // TRX Recharge Request methods
+                async refreshTrxRechargeRequests() {
+                    await this.loadTrxRechargeRequests();
+                },
+                showTrxRechargeRequestDetails(request) {
+                    this.selectedTrxRechargeRequest = { ...request };
+                    this.showModal('trxRechargeRequestModal');
+                },
+                showApproveTrxRechargeModal(request) {
+                    this.selectedTrxRechargeRequest = request;
+                    this.trxRechargeAdminNotes = ''; // Clear notes
+                    this.showModal('approveTrxRechargeModal');
+                },
+                async approveTrxRechargeRequest() {
+                    if (!this.selectedTrxRechargeRequest) return;
+                    try {
+                        await axios.put(`${API_BASE}/admin/trx-recharge-requests/${this.selectedTrxRechargeRequest._id}/approve`, {
+                            adminNotes: this.trxRechargeAdminNotes
+                        });
+                        this.hideModal('approveTrxRechargeModal');
+                        this.refreshTrxRechargeRequests();
+                        this.loadUsers(); // Refresh users to update their TRX balance
+                    } catch (error) {
+                        console.error('Error approving TRX recharge request:', error);
+                        alert(error.response?.data?.message || 'Failed to approve TRX recharge request.');
+                    }
+                },
+                showRejectTrxRechargeModal(request) {
+                    this.selectedTrxRechargeRequest = request;
+                    this.trxRechargeAdminNotes = ''; // Clear notes
+                    this.showModal('rejectTrxRechargeModal');
+                },
+                async rejectTrxRechargeRequest() {
+                    if (!this.selectedTrxRechargeRequest) return;
+                    try {
+                        await axios.put(`${API_BASE}/admin/trx-recharge-requests/${this.selectedTrxRechargeRequest._id}/reject`, {
+                            adminNotes: this.trxRechargeAdminNotes
+                        });
+                        this.hideModal('rejectTrxRechargeModal');
+                        this.refreshTrxRechargeRequests();
+                    } catch (error) {
+                        console.error('Error rejecting TRX recharge request:', error);
+                        alert(error.response?.data?.message || 'Failed to reject TRX recharge request.');
+                    }
+                },
                 // Location tracker methods
                 async refreshLocationTrackerRequests() {
                     await this.loadLocationTrackerRequests();
@@ -2609,6 +2878,9 @@
                         case 'location tracker request':
                             endpoint = `${API_BASE}/admin/tracker/requests/${id}`;
                             break;
+                        case 'trx recharge request': // Added case
+                            endpoint = `${API_BASE}/admin/trx-recharge-requests/${id}`;
+                            break;
                         default:
                             console.error('Unknown item type:', type);
                             return;
@@ -2621,6 +2893,58 @@
                         console.error(`Error deleting ${type}:`, error);
                         alert(`Failed to delete ${type}.`);
                     }
+                },
+                connectWebSocket() {
+                    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                        return; // Already connected
+                    }
+
+                    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                    const wsUrl = `${wsProtocol}//${new URL(API_BASE).host}`;
+                    this.ws = new WebSocket(wsUrl);
+
+                    this.ws.onopen = () => {
+                        console.log('WebSocket connected.');
+                        this.wsConnectionAttempts = 0;
+                        // Register as admin client
+                        this.ws.send(JSON.stringify({ type: 'register', isAdmin: true, token: localStorage.getItem('adminToken') }));
+                    };
+
+                    this.ws.onmessage = (event) => {
+                        const data = JSON.parse(event.data);
+                        if (data.type === 'new-trx-recharge-request') {
+                            this.trxRechargeRequests.unshift(data.request); // Add new request to the beginning
+                            // Optionally, show a notification
+                            alert(`New TRX Recharge Request from ${data.request.userEmail} for ${data.request.amount} TRX!`);
+                        } else if (data.type === 'trx-recharge-updated') {
+                            const index = this.trxRechargeRequests.findIndex(req => req._id === data.request._id);
+                            if (index !== -1) {
+                                this.trxRechargeRequests[index].status = data.request.status;
+                                if (data.request.newBalance !== undefined) {
+                                    // Update user's balance in the users array if available
+                                    const userIndex = this.users.findIndex(u => u._id === data.request.userId);
+                                    if (userIndex !== -1) {
+                                        this.users[userIndex].trxBalance = data.request.newBalance;
+                                    }
+                                }
+                                this.$forceUpdate();
+                            }
+                        }
+                        // Handle other WebSocket messages if any
+                    };
+
+                    this.ws.onclose = (event) => {
+                        console.log('WebSocket disconnected:', event.code, event.reason);
+                        if (event.code !== 1000 && this.wsConnectionAttempts < 5) { // Don't reconnect on normal closure
+                            this.wsConnectionAttempts++;
+                            setTimeout(() => this.connectWebSocket(), 5000); // Attempt to reconnect after 5 seconds
+                        }
+                    };
+
+                    this.ws.onerror = (error) => {
+                        console.error('WebSocket error:', error);
+                        this.ws.close();
+                    };
                 },
                 async calculateUserPayments() {
                     if (!this.userEmailQuery) {
@@ -2780,12 +3104,73 @@
                         
                         // Load data
                         this.loadData();
+
+                        // Initialize WebSocket for real-time updates
+                        this.connectWebSocket();
+
+                        // Initialize WebSocket for real-time updates
+                        this.connectWebSocket();
+
                     } catch (error) {
                         console.error('Authentication check failed:', error);
                         localStorage.removeItem('adminToken');
                     }
                 }
-            }
+            },
+            methods: {
+                // ... (existing methods)
+                connectWebSocket() {
+                    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                        return; // Already connected
+                    }
+
+                    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                    const wsUrl = `${wsProtocol}//${new URL(API_BASE).host}`;
+                    this.ws = new WebSocket(wsUrl);
+
+                    this.ws.onopen = () => {
+                        console.log('WebSocket connected.');
+                        this.wsConnectionAttempts = 0;
+                        // Register as admin client
+                        this.ws.send(JSON.stringify({ type: 'register', isAdmin: true, token: localStorage.getItem('adminToken') }));
+                    };
+
+                    this.ws.onmessage = (event) => {
+                        const data = JSON.parse(event.data);
+                        if (data.type === 'new-trx-recharge-request') {
+                            this.trxRechargeRequests.unshift(data.request); // Add new request to the beginning
+                            // Optionally, show a notification
+                            alert(`New TRX Recharge Request from ${data.request.userEmail} for ${data.request.amount} TRX!`);
+                        } else if (data.type === 'trx-recharge-updated') {
+                            const index = this.trxRechargeRequests.findIndex(req => req._id === data.request._id);
+                            if (index !== -1) {
+                                this.trxRechargeRequests[index].status = data.request.status;
+                                if (data.request.newBalance !== undefined) {
+                                    // Update user's balance in the users array if available
+                                    const userIndex = this.users.findIndex(u => u._id === data.request.userId);
+                                    if (userIndex !== -1) {
+                                        this.users[userIndex].trxBalance = data.request.newBalance;
+                                    }
+                                }
+                                this.$forceUpdate();
+                            }
+                        }
+                        // Handle other WebSocket messages if any
+                    };
+
+                    this.ws.onclose = (event) => {
+                        console.log('WebSocket disconnected:', event.code, event.reason);
+                        if (event.code !== 1000 && this.wsConnectionAttempts < 5) { // Don't reconnect on normal closure
+                            this.wsConnectionAttempts++;
+                            setTimeout(() => this.connectWebSocket(), 5000); // Attempt to reconnect after 5 seconds
+                        }
+                    };
+
+                    this.ws.onerror = (error) => {
+                        console.error('WebSocket error:', error);
+                        this.ws.close();
+                    };
+                },
         };
 
         // Create and mount the Vue app
