@@ -198,7 +198,7 @@
       });
       const data = await response.json();
       if (data.success && trxBalanceElement) {
-        trxBalanceElement.innerHTML = `<span class="icon solid fa-coins"> ${data.trxBalance.toFixed(2)} TRX</span>`;
+        trxBalanceElement.innerHTML = `<span class="icon solid fa-coins"> ${(data.trxBalance || 0).toFixed(2)} TRX</span>`;
       } else if (trxBalanceElement) {
         trxBalanceElement.textContent = 'Error loading TRX';
         console.error('Failed to fetch TRX balance for navbar:', data.message);
