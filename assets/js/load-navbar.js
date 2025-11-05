@@ -20,9 +20,6 @@
       </div>
       <div class="nav-user">
         <span id="navbarTrxBalance" class="icon solid fa-coins"> Loading TRX...</span>
-        <button onclick="window.handleLogout()" class="icon solid fa-sign-out-alt">
-          Logout
-        </button>
       </div>
     </div>
     <div class="notice-board">
@@ -31,6 +28,9 @@
         <marquee behavior="scroll" direction="left">
           আকর্ষনীয় ডিসকাউন্ট দেওয়া হচ্ছে ! পেমেন্ট করার আগে আপনার ভাগ্য যাচাই করুন | যেকোন সমস্যার জন্য হেল্পলাইনে যোগাযোগ করুন | WORKING TIME: 8AM TO 8PM
         </marquee>
+        <button onclick="window.handleLogout()" class="icon solid fa-sign-out-alt" style="margin-left: 10px; background: none; border: none; color: inherit; cursor: pointer;">
+          Logout
+        </button>
       </div>
     </div>
   </nav>`;
