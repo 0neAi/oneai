@@ -1,10 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const trackerForm = document.getElementById('tracker-form');
     const sourceTypeImei = document.getElementById('sourceTypeImei');
-    const sourceTypePhoneNumber = document.getElementById('sourceTypePhoneNumber');
     const imeiInputGroup = document.getElementById('imei-input-group');
-    const lastUsedPhoneInputGroup = document.getElementById('last-used-phone-input-group');
-    const phoneInputGroup = document.getElementById('phone-input-group');
     const dataNeededGroup = document.getElementById('data-needed-group');
     const dataNeededOptionsContainer = document.getElementById('data-needed-options-container');
     const serviceChargeDisplay = document.getElementById('serviceChargeDisplay');
@@ -19,12 +16,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const dataNeededOptions = {
         imei: [
             { id: 'dataNeededMobileNumber', label: 'Mobile Number', price: 1666 },
-            { id: 'dataNeededLocation', label: 'Location', price: 1111 },
-            { id: 'dataNeededNID', label: 'NID', price: 999 },
-            { id: 'dataNeededCallList3Month', label: 'call list (3month)', price: 2222 },
-            { id: 'dataNeededCallList6Month', label: 'call list (6 month)', price: 3333 }
-        ],
-        phoneNumber: [
             { id: 'dataNeededLocation', label: 'Location', price: 1111 },
             { id: 'dataNeededNID', label: 'NID', price: 999 },
             { id: 'dataNeededCallList3Month', label: 'call list (3month)', price: 2222 },
@@ -46,8 +37,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function toggleInputFields() {
         imeiInputGroup.style.display = 'none';
-        lastUsedPhoneInputGroup.style.display = 'none';
-        phoneInputGroup.style.display = 'none';
         dataNeededGroup.style.display = 'none';
         dataNeededOptionsContainer.innerHTML = '';
         selectedDataNeeded = []; // Reset selected data needed
@@ -56,11 +45,6 @@ document.addEventListener('DOMContentLoaded', () => {
             imeiInputGroup.style.display = 'block';
             dataNeededGroup.style.display = 'block';
             updateDataNeededOptions('imei');
-        } else if (selectedSourceType === 'phoneNumber') {
-            phoneInputGroup.style.display = 'block';
-            lastUsedPhoneInputGroup.style.display = 'block';
-            dataNeededGroup.style.display = 'block';
-            updateDataNeededOptions('phoneNumber');
         }
         updateServiceCharge();
     }
@@ -93,14 +77,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateSubmitButtonState() {
-        const isFormValid = (selectedSourceType === 'imei' && document.getElementById('imei').value.trim() !== '') ||
-                            (selectedSourceType === 'phoneNumber' && document.getElementById('phoneNumber').value.trim() !== '');
-        const isPaymentMethodSelected = document.getElementById('method').value !== '';
-        const isTrxIdEntered = document.getElementById('trxid').value.trim().length >= 8;
+        const isFormValid = (selectedSourceType === 'imei' && document.getElementById('imei').value.trim() !== '');
         const isTermsAccepted = termsCheckbox.checked;
         const isDataNeededSelected = selectedDataNeeded.length > 0;
 
-        submitTrackerButton.disabled = !(isFormValid && isPaymentMethodSelected && isTrxIdEntered && isTermsAccepted && isDataNeededSelected);
+        submitTrackerButton.disabled = !(isFormValid && isTermsAccepted && isDataNeededSelected);
     }
 
     function clearForm() {
@@ -110,13 +91,9 @@ document.addEventListener('DOMContentLoaded', () => {
         serviceCharge = 0;
         serviceChargeDisplay.value = '0.00';
         imeiInputGroup.style.display = 'none';
-        lastUsedPhoneInputGroup.style.display = 'none';
-        phoneInputGroup.style.display = 'none';
         dataNeededGroup.style.display = 'none';
         dataNeededOptionsContainer.innerHTML = '';
-        document.getElementById('payment-details-container').classList.add('hidden');
-        document.getElementById('nagad-payment-info').classList.add('hidden');
-        document.getElementById('bkash-payment-info').classList.add('hidden');
+        // document.getElementById('payment-details-container').classList.add('hidden'); // This element does not exist
         termsCheckbox.checked = false;
         updateSubmitButtonState();
         confirmationMessage.innerHTML = '';
@@ -126,22 +103,12 @@ document.addEventListener('DOMContentLoaded', () => {
     sourceTypeImei.addEventListener('change', () => {
         selectedSourceType = 'imei';
         sourceTypeImei.closest('.service-box').classList.add('selected');
-        sourceTypePhoneNumber.closest('.service-box').classList.remove('selected');
-        toggleInputFields();
-    });
-
-    sourceTypePhoneNumber.addEventListener('change', () => {
-        selectedSourceType = 'phoneNumber';
-        sourceTypePhoneNumber.closest('.service-box').classList.add('selected');
-        sourceTypeImei.closest('.service-box').classList.remove('selected');
+        // sourceTypePhoneNumber.closest('.service-box').classList.remove('selected'); // This element does not exist
         toggleInputFields();
     });
 
     termsCheckbox.addEventListener('change', updateSubmitButtonState);
-    document.getElementById('method').addEventListener('change', updateSubmitButtonState);
-    document.getElementById('trxid').addEventListener('input', updateSubmitButtonState);
     document.getElementById('imei').addEventListener('input', updateSubmitButtonState);
-    document.getElementById('phoneNumber').addEventListener('input', updateSubmitButtonState);
 
     trackerForm.addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -166,12 +133,10 @@ document.addEventListener('DOMContentLoaded', () => {
             sourceType: selectedSourceType,
             dataNeeded: selectedDataNeeded,
             imei: document.getElementById('imei').value.trim(),
-            phoneNumber: document.getElementById('phoneNumber').value.trim(),
-            lastUsedPhoneNumber: document.getElementById('lastUsedPhoneNumber').value.trim(),
             serviceCharge: serviceCharge,
             additionalNote: document.getElementById('additionalNote').value.trim(),
-            method: document.getElementById('method').value,
-            trxid: document.getElementById('trxid').value.trim()
+            method: 'TRX Wallet',
+            trxid: 'DEDUCTED_FROM_WALLET'
         };
 
         try {
@@ -190,6 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response.ok) {
                 LoadingAnimation.showSuccessWithButton(result.message || 'Location tracking request submitted successfully!', () => {
                     clearForm();
+                    window.fetchGlobalTrxBalance(); // Update global TRX balance
                     window.location.href = 'dashboard.html'; // Redirect after OK click
                 });
             } else {
@@ -210,31 +176,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial state setup
     clearForm();
 });
-
-// Global functions (from tracker.html inline script)
-function updatePaymentDisplay() {
-    const method = document.getElementById('method').value;
-    const paymentDetailsContainer = document.getElementById('payment-details-container');
-    const nagadPaymentInfo = document.getElementById('nagad-payment-info');
-    const bkashPaymentInfo = document.getElementById('bkash-payment-info');
-    const totalChargeBDT = parseFloat(document.getElementById('serviceChargeDisplay').value) || 0;
-
-    // Hide all payment info first
-    paymentDetailsContainer.classList.add('hidden');
-    nagadPaymentInfo.classList.add('hidden');
-    bkashPaymentInfo.classList.add('hidden');
-
-    // Show selected payment method
-    if (method === 'Nagad') {
-        paymentDetailsContainer.classList.remove('hidden');
-        nagadPaymentInfo.classList.remove('hidden');
-        document.getElementById('nagad-amount').textContent = totalChargeBDT.toFixed(2);
-    } else if (method === 'Bkash') {
-        paymentDetailsContainer.classList.remove('hidden');
-        bkashPaymentInfo.classList.remove('hidden');
-        document.getElementById('bkash-amount').textContent = totalChargeBDT.toFixed(2);
-    }
-}
 
 // Background image cycling initialization (from tracker.html inline script)
 (function() {
