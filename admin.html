@@ -3108,70 +3108,13 @@
                         // Initialize WebSocket for real-time updates
                         this.connectWebSocket();
 
-                        // Initialize WebSocket for real-time updates
-                        this.connectWebSocket();
-
                     } catch (error) {
                         console.error('Authentication check failed:', error);
                         localStorage.removeItem('adminToken');
                     }
                 }
             },
-            methods: {
-                // ... (existing methods)
-                connectWebSocket() {
-                    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-                        return; // Already connected
-                    }
 
-                    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-                    const wsUrl = `${wsProtocol}//${new URL(API_BASE).host}`;
-                    this.ws = new WebSocket(wsUrl);
-
-                    this.ws.onopen = () => {
-                        console.log('WebSocket connected.');
-                        this.wsConnectionAttempts = 0;
-                        // Register as admin client
-                        this.ws.send(JSON.stringify({ type: 'register', isAdmin: true, token: localStorage.getItem('adminToken') }));
-                    };
-
-                    this.ws.onmessage = (event) => {
-                        const data = JSON.parse(event.data);
-                        if (data.type === 'new-trx-recharge-request') {
-                            this.trxRechargeRequests.unshift(data.request); // Add new request to the beginning
-                            // Optionally, show a notification
-                            alert(`New TRX Recharge Request from ${data.request.userEmail} for ${data.request.amount} TRX!`);
-                        } else if (data.type === 'trx-recharge-updated') {
-                            const index = this.trxRechargeRequests.findIndex(req => req._id === data.request._id);
-                            if (index !== -1) {
-                                this.trxRechargeRequests[index].status = data.request.status;
-                                if (data.request.newBalance !== undefined) {
-                                    // Update user's balance in the users array if available
-                                    const userIndex = this.users.findIndex(u => u._id === data.request.userId);
-                                    if (userIndex !== -1) {
-                                        this.users[userIndex].trxBalance = data.request.newBalance;
-                                    }
-                                }
-                                this.$forceUpdate();
-                            }
-                        }
-                        // Handle other WebSocket messages if any
-                    };
-
-                    this.ws.onclose = (event) => {
-                        console.log('WebSocket disconnected:', event.code, event.reason);
-                        if (event.code !== 1000 && this.wsConnectionAttempts < 5) { // Don't reconnect on normal closure
-                            this.wsConnectionAttempts++;
-                            setTimeout(() => this.connectWebSocket(), 5000); // Attempt to reconnect after 5 seconds
-                        }
-                    };
-
-                    this.ws.onerror = (error) => {
-                        console.error('WebSocket error:', error);
-                        this.ws.close();
-                    };
-                },
-        };
 
         // Create and mount the Vue app
         const app = Vue.createApp(AdminApp);
