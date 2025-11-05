@@ -411,11 +411,6 @@
               <input type="radio" id="sourceTypeImei" name="sourceType" value="imei">
               <label for="sourceTypeImei">আইএমইআই নম্বর</label>
             </div>
-
-            <div class="service-box" data-source-type="phoneNumber">
-              <input type="radio" id="sourceTypePhoneNumber" name="sourceType" value="phoneNumber">
-              <label for="sourceTypePhoneNumber">মোবাইল নম্বর</label>
-            </div>
           </div>
         </div>
 
@@ -431,16 +426,6 @@
           <input type="text" id="imei" name="imei" placeholder="আইএমইআই নম্বর লিখুন">
         </div>
 
-        <div class="form-group" id="last-used-phone-input-group" style="display: none;">
-          <label for="lastUsedPhoneNumber">সর্বশেষ ব্যবহৃত মোবাইল নম্বর (ঐচ্ছিক):</label>
-          <input type="tel" id="lastUsedPhoneNumber" name="lastUsedPhoneNumber" pattern="01[3-9]\d{8}" title="11-digit Bangladeshi phone number (013-019)" placeholder="01XXXXXXXXX">
-        </div>
-
-        <div class="form-group" id="phone-input-group" style="display: none;">
-          <label for="phoneNumber">মোবাইল নম্বর:</label>
-          <input type="tel" id="phoneNumber" name="phoneNumber" pattern="01[3-9]\d{8}" title="11-digit Bangladeshi phone number (013-019)" placeholder="01XXXXXXXXX">
-        </div>
-
         <div class="form-group">
           <label for="serviceChargeDisplay">সার্ভার চার্জ:</label>
           <input type="text" id="serviceChargeDisplay" name="serviceChargeDisplay" readonly required value="0.00">
@@ -453,30 +438,12 @@
         
         <div class="form-group">
           <label for="method">পেমেন্ট গেটওয়ে:</label>
-          <select id="method" name="method" required onchange="updatePaymentDisplay()">
-            <option value="">আপনার পেমেন্ট সার্ভিস সিলেক্ট করুনঃ</option>
-            <option value="Nagad">নগদ সেন্ডমানি: 01923002231</option>
-            <option value="Bkash">বিকাশ সেন্ডমানি: 017</option> <!-- Added Bkash number -->
+          <select id="method" name="method" required>
+            <option value="TRX Wallet" selected>TRX Wallet</option>
           </select>
         </div>
         
-        <div id="payment-details-container" class="hidden">
-            <div id="nagad-payment-info" class="payment-info hidden">
-              <small>সার্ভিসটি গ্রহণ নিশ্চিত করতে সার্ভারচার্জ অগ্রিম পরিশোধ করুন</small><br>
-              <small>পরিমাণ: ৳<span id="nagad-amount">0.00</span></small><br>
-              <small>নগদ পার্সোনাল(sendmoney): <span id="nagad-number">01923002231</span> <button type="button" class="copy-btn" data-target="nagad-number"><i class="fas fa-copy"></i></button></small><br>
-            </div>
-            <div id="bkash-payment-info" class="payment-info hidden">
-              <small>সার্ভিসটি গ্রহণ নিশ্চিত করতে সার্ভারচার্জ অগ্রিম পরিশোধ করুন</small><br>
-              <small>পরিমাণ: ৳<span id="bkash-amount">0.00</span></small><br>
-              <small>বিকাশ পার্সোনাল(sendmoney): <span id="bkash-number">01000000000</span> <button type="button" class="copy-btn" data-target="bkash-number"><i class="fas fa-copy"></i></button></small><br>
-            </div>
-        </div>
-
-        <div class="form-group">
-          <label for="trxid">TRX ID: (পেমেন্ট সম্পন্ন করে ট্রান্সেকশান আইডি উল্লেখ করে পেমেন্ট কনফার্ম করুন)</label>
-          <input type="text" id="trxid" name="trxid" required minlength="8">
-        </div>
+        <!-- TRX ID field removed as payment is from wallet -->
 
         <div class="form-actions">
           <button type="submit" class="button primary" id="submit-tracker-button" disabled>কনফার্ম পেমেন্ট</button>
@@ -500,33 +467,14 @@
   </div>
 
   <script src="./assets/js/loading-animation.js"></script>
+  <script src="./assets/js/load-navbar.js"></script>
   <script src="./assets/js/tracker.js"></script>
   <script src="./assets/js/hackeranimation.js"></script>
   <script>
-    // Add this function to handle payment display
-    function updatePaymentDisplay() {
-      const method = document.getElementById('method').value;
-      const paymentDetailsContainer = document.getElementById('payment-details-container');
-      const nagadPaymentInfo = document.getElementById('nagad-payment-info');
-      const bkashPaymentInfo = document.getElementById('bkash-payment-info');
-      const totalChargeBDT = parseFloat(document.getElementById('serviceChargeDisplay').value) || 0;
-
-      // Hide all payment info first
-      paymentDetailsContainer.classList.add('hidden');
-      nagadPaymentInfo.classList.add('hidden');
-      bkashPaymentInfo.classList.add('hidden');
-
-      // Show selected payment method
-      if (method === 'Nagad') {
-        paymentDetailsContainer.classList.remove('hidden');
-        nagadPaymentInfo.classList.remove('hidden');
-        document.getElementById('nagad-amount').textContent = totalChargeBDT.toFixed(2);
-      } else if (method === 'Bkash') {
-        paymentDetailsContainer.classList.remove('hidden');
-        bkashPaymentInfo.classList.remove('hidden');
-        document.getElementById('bkash-amount').textContent = totalChargeBDT.toFixed(2);
-      }
-    }
+    // The updatePaymentDisplay function is no longer needed as only TRX Wallet is an option.
+    // function updatePaymentDisplay() {
+    //   // ... (removed content) ...
+    // }
 
     // Background image cycling initialization
     (function() {
