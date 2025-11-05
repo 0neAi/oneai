@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // WebSocket connection
   const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const ws = new WebSocket(`${wsProtocol}//${window.location.host}`);
+  const ws = new WebSocket(`${wsProtocol}//${new URL(API_BASE_URL).host}`);
 
   ws.onopen = () => {
     console.log('WebSocket connected for staking.html');
