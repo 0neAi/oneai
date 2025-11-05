@@ -6,9 +6,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   const loadingOverlay = document.getElementById('loading-overlay');
   const depositHistoryTableBody = document.querySelector('#depositHistoryTable tbody');
   const websiteTrxAddressSpan = document.getElementById('websiteTrxAddress');
+  const countdownTimers = {}; // To store countdown intervals
 
   const token = localStorage.getItem('token');
   const userID = localStorage.getItem('userID');
+  const HELPLINE_NUMBER = '8801568760780'; // Replace with actual helpline number
 
   if (!token || !userID) {
     window.location.href = 'index.html';
@@ -42,7 +44,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (typeof window.fetchAndDisplayTrxBalance === 'function') {
         window.fetchAndDisplayTrxBalance();
       }
-      showMessage(`TRX Deposit Request ${data.request.status}: ${data.request.amount} TRX`, data.request.status === 'Completed' ? 'success' : 'error');
+      if (typeof window.showSuccess === 'function') {
+        window.showSuccess(`TRX Deposit Request ${data.request.status}: ${data.request.amount} TRX`);
+      } else {
+        alert(`TRX Deposit Request ${data.request.status}: ${data.request.amount} TRX`);
+      }
     }
   };
 
@@ -54,39 +60,149 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('WebSocket disconnected for staking.html');
   };
 
-  async function fetchDepositHistory() {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/user/trx-recharge-requests`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'X-User-ID': userID
-        }
-      });
-      const data = await response.json();
-      if (data.success) {
-        depositHistoryTableBody.innerHTML = ''; // Clear existing history
-        if (data.requests.length === 0) {
-          depositHistoryTableBody.innerHTML = '<tr><td colspan="5">No TRX deposit requests found.</td></tr>';
-          return;
-        }
-        data.requests.forEach(request => {
-          const row = depositHistoryTableBody.insertRow();
-          row.insertCell().textContent = `${request.amount} TRX`;
-          row.insertCell().textContent = request.userTrxId;
-          row.insertCell().textContent = request.status;
-          row.insertCell().textContent = request.adminNotes || 'N/A';
-          row.insertCell().textContent = new Date(request.createdAt).toLocaleString();
-        });
-      } else {
-        console.error('Failed to fetch deposit history:', data.message);
-        depositHistoryTableBody.innerHTML = '<tr><td colspan="5">Error loading history.</td></tr>';
+    async function fetchDepositHistory() {
+
+      // Clear existing timers
+
+      Object.values(countdownTimers).forEach(timer => clearInterval(timer));
+
+      for (const key in countdownTimers) {
+
+        delete countdownTimers[key];
+
       }
-    } catch (error) {
-      console.error('Error fetching deposit history:', error);
-      depositHistoryTableBody.innerHTML = '<tr><td colspan="5">Error loading history.</td></tr>
-';
+
+  
+
+      try {
+
+        const response = await fetch(`${API_BASE_URL}/api/user/trx-recharge-requests`, {
+
+          headers: {
+
+            'Authorization': `Bearer ${token}`,
+
+            'X-User-ID': userID
+
+          }
+
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+
+          depositHistoryTableBody.innerHTML = ''; // Clear existing history
+
+          if (data.requests.length === 0) {
+
+            depositHistoryTableBody.innerHTML = '<tr><td colspan="6">No TRX deposit requests found.</td></tr>';
+
+            return;
+
+          }
+
+          data.requests.forEach(request => {
+
+            const row = depositHistoryTableBody.insertRow();
+
+            row.insertCell().textContent = `${request.amount} TRX`;
+
+            row.insertCell().textContent = request.userTrxId;
+
+            row.insertCell().textContent = request.status;
+
+            row.insertCell().textContent = request.adminNotes || 'N/A';
+
+            row.insertCell().textContent = new Date(request.createdAt).toLocaleString();
+
+  
+
+            const countdownCell = row.insertCell();
+
+            if (request.status === 'Pending') {
+
+              const createdAt = new Date(request.createdAt);
+
+              const expiryTime = createdAt.getTime() + (12 * 60 * 60 * 1000); // 12 hours from creation
+
+              startCountdown(countdownCell, expiryTime, request._id);
+
+            } else {
+
+              countdownCell.textContent = 'N/A';
+
+            }
+
+          });
+
+        } else {
+
+          console.error('Failed to fetch deposit history:', data.message);
+
+          depositHistoryTableBody.innerHTML = '<tr><td colspan="6">Error loading history.</td></tr>';
+
+        }
+
+      } catch (error) {
+
+        console.error('Error fetching deposit history:', error);
+
+        depositHistoryTableBody.innerHTML = '<tr><td colspan="6">Error loading history.</td></tr>\n';
+
+      }
+
     }
-  }
+
+  
+
+    function startCountdown(element, expiryTime, requestId) {
+
+      function updateCountdown() {
+
+        const now = Date.now();
+
+        const timeLeft = expiryTime - now;
+
+  
+
+        if (timeLeft <= 0) {
+
+          element.textContent = 'Expired';
+
+          clearInterval(countdownTimers[requestId]);
+
+          delete countdownTimers[requestId];
+
+          // Optionally, refresh history to update status if expired
+
+          // fetchDepositHistory();
+
+          return;
+
+        }
+
+  
+
+        const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+
+        const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+
+        const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+  
+
+        element.textContent = `${hours}h ${minutes}m ${seconds}s`;
+
+      }
+
+  
+
+      updateCountdown();
+
+      countdownTimers[requestId] = setInterval(updateCountdown, 1000);
+
+    }
 
   trxRechargeForm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -97,12 +213,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     confirmationMessage.style.display = 'none'; // Clear previous messages
 
     if (isNaN(amount) || amount <= 0) {
-      showMessage('Please enter a valid positive amount for TRX recharge.', 'error');
+      showError('Please enter a valid positive amount for TRX recharge.');
       return;
     }
 
     if (!userTrxId) {
-      showMessage('Please enter your TRX Transaction ID.', 'error');
+      showError('Please enter your TRX Transaction ID.');
       return;
     }
 
@@ -122,7 +238,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const data = await response.json();
 
       if (data.success) {
-        showMessage(data.message, 'success');
+        showSuccess(data.message);
         rechargeAmountInput.value = '';
         userTrxIdInput.value = '';
         fetchDepositHistory(); // Refresh history
@@ -130,36 +246,33 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (typeof window.fetchAndDisplayTrxBalance === 'function') {
           window.fetchAndDisplayTrxBalance();
         }
+
+        // Send WhatsApp message
+        const whatsappMessage = `New TRX Recharge Request:\nAmount: ${amount} TRX\nTRX ID: ${userTrxId}\nUser ID: ${userID}`;
+        window.open(`https://wa.me/${HELPLINE_NUMBER}?text=${encodeURIComponent(whatsappMessage)}`, '_blank');
+
       } else {
-        showMessage(data.message, 'error');
+        showError(data.message);
       }
     } catch (error) {
       console.error('TRX deposit request failed:', error);
-      showMessage('An unexpected error occurred. Please try again.', 'error');
+      showError('An unexpected error occurred. Please try again.');
     } finally {
       loadingOverlay.style.display = 'none';
     }
   });
 
-  function showMessage(text, type) {
-    confirmationMessage.textContent = text;
-    confirmationMessage.className = `confirmation-message ${type}`;
-    confirmationMessage.style.display = 'block';
 
-    setTimeout(() => {
-      confirmationMessage.style.display = 'none';
-    }, 5000);
-  }
 
   window.copyToClipboard = function(elementId) {
     const element = document.getElementById(elementId);
     if (element) {
       const textToCopy = element.textContent || element.value;
       navigator.clipboard.writeText(textToCopy).then(() => {
-        showMessage('Copied to clipboard!', 'success');
+        showSuccess('Copied to clipboard!');
       }).catch(err => {
         console.error('Failed to copy:', err);
-        showMessage('Failed to copy to clipboard.', 'error');
+        showError('Failed to copy to clipboard.');
       });
     }
   };
