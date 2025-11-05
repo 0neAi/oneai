@@ -2,7 +2,7 @@
 <html lang="bn">
 <head>
   <meta charset="utf-8" />
-  <title>ওয়ানএআই ফ্লেক্সিলোড সার্ভিস</title>
+  <title>ওয়ানএআই ক্রিপ্টো রিচার্জ সার্ভিস (TRX)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
   <link rel="stylesheet" href="./assets/css/main.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -53,11 +53,11 @@
 </head>
 <body class="is-preload">
   <div id="bg"></div>
-  <h1>ওয়ানএআই ফ্লেক্সিলোড সার্ভিস</h1>
+  <h1>ওয়ানএআই ক্রিপ্টো রিচার্জ সার্ভিস (TRX)</h1>
 
   <header id="header">
-    <h3>মোবাইল রিচার্জ সার্ভিস</h3>
-    <p>আপনার গ্রামীণফোন/স্কিটো নম্বরে রিচার্জ করুন।</p>
+    <h3>মোবাইল রিচার্জ করুন TRX দিয়ে</h3>
+    <p>আপনার গ্রামীণফোন/স্কিটো নম্বরে TRX ব্যবহার করে রিচার্জ করুন।</p>
   </header>
 
   <section>
@@ -84,25 +84,10 @@
 
       <div class="form-group">
         <label for="method">পেমেন্ট গেটওয়ে:</label>
-        <select id="method" name="method" required onchange="updatePaymentDisplay()">
-          <option value="">আপনার পেমেন্ট সার্ভিস সিলেক্ট করুনঃ</option>
-          <option value="Bkash">বিকাশ সেন্ডমানি: 01770605072</option>
-          <option value="Nagad">নগদ সেন্ডমানি: 01923002231</option>
+        <select id="method" name="method" required>
+          <option value="TRX Wallet" selected>TRX Wallet</option>
         </select>
       </div>
-      <div id="nagad-payment-info" class="payment-info hidden">
-        <small>রিচার্জ নিশ্চিত করতে রিটেইল চার্জ অগ্রিম পরিশোধ করুন</small><br>
-        <small>নগদ পার্সোনাল(sendmoney): <span id="nagad-number">01923002231</span> <button type="button" class="copy-btn" data-target="nagad-number"><i class="fas fa-copy"></i></button></small><br>
-      </div>
-      <div id="bkash-payment-info" class="payment-info hidden">
-        <small>রিচার্জ নিশ্চিত করতে রিটেইল চার্জ অগ্রিম পরিশোধ করুন</small><br>
-        <small>বিকাশ পার্সোনাল(sendmoney): <span id="bkash-number">01770605072</span> <button type="button" class="copy-btn" data-target="bkash-number"><i class="fas fa-copy"></i></button></small><br>
-      </div>
-      <div class="form-group">
-        <label for="transactionNumber">TRX ID: (পেমেন্ট সম্পন্ন করে ট্রান্সেকশান আইডি উল্লেখ করে পেমেন্ট কনফার্ম করুন)</label>
-        <input type="text" id="transactionNumber" name="transactionNumber" required minlength="8" placeholder="আপনার পেমেন্ট TRX ID">
-      </div>
-
       <div class="form-actions">
         <button type="submit" class="button primary" id="submit-fexiload-button">সাবমিট রিচার্জ রিকোয়েস্ট</button>
         <button type="button" class="button" onclick="clearForm()">ফর্ম ক্লিয়ার করুন</button>
@@ -153,42 +138,15 @@
       const retailChargeValue = rechargeAmount - cashback; // Renamed to avoid conflict with the input element
       retailChargeInput.value = retailChargeValue.toFixed(2); // Set numerical value
       retailChargeDisplay.textContent = retailChargeValue.toFixed(2) + ' টাকা'; // Set display value
-      updatePaymentDisplay();
     }
 
-    // New function to update payment display based on method
-    function updatePaymentDisplay() {
-        const method = document.getElementById('method').value;
-        const nagadInfo = document.getElementById('nagad-payment-info');
-        const bkashInfo = document.getElementById('bkash-payment-info');
-
-        if (method === 'Nagad') {
-            nagadInfo.classList.remove('hidden');
-            bkashInfo.classList.add('hidden');
-        } else if (method === 'Bkash') {
-            nagadInfo.classList.add('hidden');
-            bkashInfo.classList.remove('hidden');
-        } else {
-            nagadInfo.classList.add('hidden'); // Hide all if no method selected
-            bkashInfo.classList.add('hidden');
-        }
-    }
-
-    // Function to copy text to clipboard
-    function copyToClipboard(elementId) {
-        const element = document.getElementById(elementId);
-        const textToCopy = element.textContent;
-        navigator.clipboard.writeText(textToCopy).then(() => {
-            showMessage('Copied to clipboard!', 'success');
-        }).catch(err => {
-            console.error('Failed to copy: ', err);
-            showMessage('Failed to copy to clipboard.', 'error');
-        });
-    }
+    // The updatePaymentDisplay function is no longer needed as only TRX Wallet is an option.
+    // function updatePaymentDisplay() {
+    //   // ... (removed content) ...
+    // }
 
     document.getElementById('fexiload-form').addEventListener('submit', async (e) => {
       e.preventDefault();
-      // No need for isSubmitting flag, LoadingAnimation handles it
 
       try {
         const authToken = localStorage.getItem('authToken');
@@ -207,10 +165,8 @@
 
         const gpNumber = document.getElementById('gpNumber').value.trim();
         const rechargeAmount = document.getElementById('rechargeAmount').value.trim();
-        const transactionNumber = document.getElementById('transactionNumber').value.trim();
         const retailChargeString = document.getElementById('retailCharge').value.trim();
-        const retailCharge = parseFloat(retailChargeString.replace(' টাকা', ''));
-        const method = document.getElementById('method').value; // Get selected payment method
+        const retailCharge = parseFloat(retailChargeString);
 
         if (!validateGpNumber(gpNumber)) {
           throw new Error('অবৈধ জিপি/স্কিটো নম্বর ফরম্যাট।');
@@ -218,19 +174,13 @@
         if (!rechargeAmount) {
           throw new Error('রিচার্জের পরিমাণ বা অফার নির্বাচন করা আবশ্যক।');
         }
-        if (!method) { // Validate payment method selection
-          throw new Error('পেমেন্ট সার্ভিস নির্বাচন করা আবশ্যক।');
-        }
-        if (transactionNumber.length < 8) {
-          throw new Error('ট্রানজেকশন নম্বর (TRX ID) কমপক্ষে ৮ অক্ষরের হতে হবে।');
-        }
 
         const formData = {
           gpNumber,
           rechargeAmount,
-          transactionNumber,
+          transactionNumber: 'DEDUCTED_FROM_WALLET',
           retailCharge,
-          method, // Include payment method in form data
+          method: 'TRX Wallet',
           userId: userID
         };
 
@@ -247,49 +197,29 @@
         const responseData = await response.json();
         
         if (response.ok) {
-          const whatsappMessage = `
-নতুন ফ্লেক্সিলোড রিকোয়েস্ট:
-ইউজার আইডি: ${userID}
-জিপি/স্কিটো নম্বর: ${formData.gpNumber}
-রিচার্জের পরিমাণ/অফার: ${formData.rechargeAmount}
-পেমেন্ট মেথড: ${formData.method}
-ট্রানজেকশন নম্বর (TRX ID): ${formData.transactionNumber}
-রিটেইল চার্জ: ${formData.retailCharge}
-`.trim();
-
-          window.open(`https://wa.me/8801568760780?text=${encodeURIComponent(whatsappMessage)}`, '_blank');
-
-          LoadingAnimation.showSuccessWithButton('ফ্লেক্সিলোড রিকোয়েস্ট সফলভাবে সাবমিট করা হয়েছে! রিচার্জ হতে সর্বোচ্চ ৩০ মিনিট সময় লাগতে পারে।', () => {
+          LoadingAnimation.showSuccessWithButton('ক্রিপ্টো রিচার্জ রিকোয়েস্ট সফলভাবে সাবমিট করা হয়েছে! রিচার্জ হতে সর্বোচ্চ ৩০ মিনিট সময় লাগতে পারে।', () => {
             clearForm();
+            window.fetchGlobalTrxBalance(); // Update global TRX balance
             window.location.href = 'dashboard.html'; // Redirect after OK click
           });
         } else {
-          const errorMessage = responseData.message || 'ফ্লেক্সিলোড রিকোয়েস্ট ব্যর্থ হয়েছে।';
+          const errorMessage = responseData.message || 'ক্রিপ্টো রিচার্জ রিকোয়েস্ট ব্যর্থ হয়েছে।';
           LoadingAnimation.setTerminalMessage(`> Error: ${errorMessage}`);
           showMessage(errorMessage, 'error');
           setTimeout(() => LoadingAnimation.stop(), 3000); // Stop after a delay
         }
       } catch (error) {
-        console.error('ফ্লেক্সিলোড সাবমিশন ত্রুটি:', error);
+        console.error('ক্রিপ্টো রিচার্জ সাবমিশন ত্রুটি:', error);
         const errorMessage = error.message || 'একটি অপ্রত্যাশিত ত্রুটি ঘটেছে।';
         LoadingAnimation.setTerminalMessage(`> Error: ${errorMessage}`);
-        showMessage(errorMessage, 'error');
+          showMessage(errorMessage, 'error');
         setTimeout(() => LoadingAnimation.stop(), 3000); // Stop after a delay
-      } finally {
-        // LoadingAnimation.stop() is called in success/error blocks, no need here
       }
     });
 
     document.addEventListener('DOMContentLoaded', () => {
       // Initial calculation on load if an amount is pre-selected (e.g., by browser autofill)
       calculateRetailCharge();
-      // Add event listener for copy buttons
-      document.addEventListener('click', (e) => {
-        if (e.target.classList.contains('copy-btn') || e.target.closest('.copy-btn')) {
-            const targetId = e.target.closest('.copy-btn').getAttribute('data-target');
-            copyToClipboard(targetId);
-        }
-      });
     });
   </script>
   <script src="./assets/js/loading-animation.js"></script>
