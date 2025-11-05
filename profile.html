@@ -185,6 +185,7 @@
     </style>
 </head>
 <body>
+
     <div id="navbar-container"></div>
     <div class="star-fall-animation"></div>
 
@@ -259,7 +260,6 @@
                     <thead>
                         <tr>
                             <th>Name</th>
-                            <th>Phone</th>
                             <th>Email</th>
                             <th>Total Payments</th>
                         </tr>
@@ -335,7 +335,6 @@
                         const tr = document.createElement('tr');
                         tr.innerHTML = `
                             <td>${referral.name || 'N/A'}</td>
-                            <td>${referral.phone || 'N/A'}</td>
                             <td>${referral.email || 'N/A'}</td>
                             <td>${referral.totalPayments || 0}</td>
                         `;
