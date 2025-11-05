@@ -1292,13 +1292,6 @@ function formatCompanyName(company) {
     return names[company] || company;
 }
 
-function showError(message) {
-    showMessage(message, 'error');
-}
-
-function showSuccess(message) {
-    showMessage(message, 'success');
-}
 
 function showAiServices() {
     const aiSection = document.getElementById('ai-services-section');
@@ -1526,10 +1519,7 @@ document.getElementById('notification-badge').addEventListener('click', function
     showSuccess('Notifications cleared');
 });
 
-// Mobile menu toggle
-document.getElementById('menu-toggle').addEventListener('click', function() {
-    alert('Mobile menu would open here');
-});
+
 </script>
 <script src="./assets/js/load-navbar.js"></script>
 <script src="./assets/js/main.js"></script>
