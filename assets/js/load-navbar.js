@@ -219,7 +219,7 @@
     if (!userID) return;
 
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const ws = new WebSocket(`${wsProtocol}//${window.location.host}`);
+    const ws = new WebSocket(`${wsProtocol}//${new URL(API_BASE_URL).host}`);
 
     ws.onopen = () => {
       console.log('Navbar WebSocket connected');
