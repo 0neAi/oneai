@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>1ai Server Staking</title>
+    <title>1ai TRX Recharge</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
@@ -68,22 +68,6 @@
             font-size: 1.5rem;
             color: #4facfe;
             margin-bottom: 10px;
-        }
-        
-        .server-status {
-            background: rgba(255, 0, 0, 0.2);
-            padding: 15px;
-            border-radius: 10px;
-            margin: 20px 0;
-            text-align: center;
-            border: 2px solid rgba(255, 0, 0, 0.4);
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.4); }
-            70% { box-shadow: 0 0 0 15px rgba(255, 0, 0, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0); }
         }
         
         .staking-info {
@@ -329,36 +313,24 @@
     
     <div class="container">
         <header>
-            <h1><i class="fas fa-server"></i> 1ai Server Staking</h1>
-            <div class="server-status">
-                <h2><i class="fas fa-exclamation-triangle"></i> Server is Down</h2>
-                <p>Please renew your server today to become live. Error code: ox37xml</p>
-                <p>Server Name: Chittagong South-ox37</p>
-            </div>
+            <h1><i class="fas fa-wallet"></i> 1ai TRX Recharge</h1>
         </header>
         
         <section>
-            <div class="staking-info">
-                <h3><i class="fas fa-hand-holding-usd"></i> Staking Details</h3>
-                <p><strong>Amount:</strong> $130</p>
+            <form id="trx-recharge-form">
+                <div class="form-group">
+                    <label for="recharge-amount"><i class="fas fa-coins"></i> TRX Amount:</label>
+                    <input type="number" id="recharge-amount" placeholder="Enter TRX amount" min="1" required>
+                </div>
+                <div class="form-group">
+                    <label for="trx-address"><i class="fas fa-wallet"></i> Your TRX Address:</label>
+                    <input type="text" id="trx-address" placeholder="Enter your TRX address" required>
+                </div>
                 
-                <h3 style="margin-top: 20px;"><i class="fas fa-gift"></i> Benefits:</h3>
-                <ul class="benefits">
-                    <li><i class="fas fa-check-circle"></i> 100% voucher for 4 months</li>
-                    <li><i class="fas fa-check-circle"></i> 50% voucher for lifetime validity</li>
-                    <li><i class="fas fa-check-circle"></i> Priority Support</li>
-                    <li><i class="fas fa-check-circle"></i> Early access to new features</li>
-                    <li><i class="fas fa-check-circle"></i> Exclusive Community Access</li>
-                </ul>
-            </div>
-            
-            <form id="staking-form">
                 <div class="form-group">
                     <label for="method"><i class="fas fa-credit-card"></i> Payment Gateway:</label>
                     <select id="method" name="method" required>
-                        <option value="">Select your payment method</option>
-                        <option value="Crypto">Crypto (BUSD)</option>
-                        <option value="Nagad">Nagad</option>
+                        <option value="TRX Wallet" selected>TRX Wallet</option>
                     </select>
                 </div>
                 
@@ -366,30 +338,15 @@
                     <h3><i class="fas fa-money-bill-wave"></i> Payment Details</h3>
                     <div class="payment-detail">
                         <div>
-                            <strong>Send Amount:</strong>
-                            <span id="payment-amount">130 BUSD</span>
+                            <strong>Amount to Recharge:</strong>
+                            <span id="payment-amount">0 TRX</span>
                         </div>
                     </div>
-                    <div class="payment-detail">
-                        <div>
-                            <strong>Recipient:</strong>
-                            <span id="payment-address">0xc030e827B4cCC29884feE81D93a6823E5A784785</span>
-                        </div>
-                        <button type="button" class="copy-btn" data-target="payment-address">
-                            <i class="fas fa-copy"></i> Copy
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="trxid"><i class="fas fa-receipt"></i> Transaction ID (TRX ID):</label>
-                    <input type="text" id="trxid" name="trxid" required minlength="8" 
-                           placeholder="Enter your transaction ID after payment">
                 </div>
                 
                 <div class="form-actions">
                     <button type="submit" class="submit-btn">
-                        <i class="fas fa-paper-plane"></i> Confirm Payment
+                        <i class="fas fa-paper-plane"></i> Initiate Recharge
                     </button>
                 </div>
             </form>
@@ -399,16 +356,17 @@
         
         <div class="footer">
             <p>1Ai - Your Digital Solution Partner</p>
-            <p>Contact Support: support@1ai.com | +880 1568-760780</p>
+            <p>Contact Support: support@1ai.com</p>
         </div>
     </div>
     
     <div class="loading-overlay" id="loading-overlay">
         <div class="loading-spinner"></div>
         <p>Thank you, Valued User!</p>
-        <p>Your payment is being processed...</p>
+        <p>Your TRX recharge request is being processed...</p>
     </div>
 
+    <script src="./assets/js/load-navbar.js"></script>
     <script>
         // Create background particles
         function createParticles() {
@@ -444,103 +402,78 @@
         document.addEventListener('DOMContentLoaded', () => {
             createParticles();
             
-            const stakingForm = document.getElementById('staking-form');
-            const methodSelect = document.getElementById('method');
-            const paymentAmount = document.getElementById('payment-amount');
-            const paymentAddress = document.getElementById('payment-address');
+            const trxRechargeForm = document.getElementById('trx-recharge-form');
             const loadingOverlay = document.getElementById('loading-overlay');
             const confirmationMessage = document.getElementById('confirmation-message');
-            
-            // Set default payment method
-            methodSelect.value = 'Crypto';
-            
-            // Update payment details based on selected method
-            function updatePaymentDetails() {
-                if (methodSelect.value === 'Crypto') {
-                    paymentAmount.textContent = '130 BUSD';
-                    paymentAddress.textContent = '0xc030e827B4cCC29884feE81D93a6823E5A784785';
-                } else if (methodSelect.value === 'Nagad') {
-                    paymentAmount.textContent = '15,800 BDT';
-                    paymentAddress.textContent = '01923002231';
-                }
-            }
-            
-            // Initial update
-            updatePaymentDetails();
-            
-            // Update when selection changes
-            methodSelect.addEventListener('change', updatePaymentDetails);
-            
-            // Copy to clipboard functionality
-            document.querySelector('.copy-btn').addEventListener('click', () => {
-                const text = paymentAddress.textContent;
-                navigator.clipboard.writeText(text).then(() => {
-                    showMessage('Copied to clipboard!', 'success');
-                }).catch(err => {
-                    console.error('Failed to copy: ', err);
-                    showMessage('Failed to copy to clipboard', 'error');
-                });
+            const rechargeAmountInput = document.getElementById('recharge-amount');
+            const trxAddressInput = document.getElementById('trx-address');
+            const paymentAmountDisplay = document.getElementById('payment-amount');
+
+            rechargeAmountInput.addEventListener('input', () => {
+                paymentAmountDisplay.textContent = `${rechargeAmountInput.value || 0} TRX`;
             });
             
             // Form submission
-            stakingForm.addEventListener('submit', (e) => {
+            trxRechargeForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                
-                const trxid = document.getElementById('trxid').value;
-                
-                // Validate TRX ID
-                if (trxid.length < 8) {
-                    showMessage('TRX ID must be at least 8 characters', 'error');
-                    return;
-                }
                 
                 // Show loading overlay
                 loadingOverlay.style.display = 'flex';
                 
-                // Simulate processing delay
-                setTimeout(() => {
-                    const paymentMethod = methodSelect.value;
-                    const stakingAmount = paymentMethod === 'Crypto' ? 
-                        '130 BUSD' : '15,800 BDT';
-                    
-                    const benefits = [
-                        '100% voucher for 4 months',
-                        '50% voucher for lifetime validity',
-                        'Priority Support',
-                        'Early access to new features',
-                        'Exclusive Community Access'
-                    ].join('\n• ');
-                    
-                    const helplineNumber = '8801568760780';
-                    
-                    // Construct WhatsApp message
-                    const message = `🚀 New Staking Request 🚀
-                    
-📌 Payment Method: ${paymentMethod}
-💰 Amount: ${stakingAmount}
-💳 TRX ID: ${trxid}
+                const authToken = localStorage.getItem('authToken');
+                const userID = localStorage.getItem('userID');
+                const rechargeAmount = parseFloat(rechargeAmountInput.value);
+                const trxAddress = trxAddressInput.value.trim();
 
-🎁 Benefits:
-• ${benefits}
-
-👉 Please activate my server and benefits.`;
-
-                    // Create WhatsApp URL
-                    const whatsappUrl = `https://wa.me/${helplineNumber}?text=${encodeURIComponent(message)}`;
-                    
-                    // Open WhatsApp
-                    window.open(whatsappUrl, '_blank');
-                    
-                    // Hide loading overlay
+                if (!authToken || !userID) {
+                    showMessage('Authentication required. Please log in.', 'error');
+                    setTimeout(() => window.location.href = 'index.html', 3000);
                     loadingOverlay.style.display = 'none';
-                    
-                    // Show success message
-                    showMessage('Your request has been submitted! Please complete the process in WhatsApp.', 'success');
-                    
-                    // Reset form
-                    stakingForm.reset();
-                    updatePaymentDetails();
-                }, 3000);
+                    return;
+                }
+
+                if (isNaN(rechargeAmount) || rechargeAmount <= 0) {
+                    showMessage('Please enter a valid positive amount for TRX recharge.', 'error');
+                    loadingOverlay.style.display = 'none';
+                    return;
+                }
+
+                if (!trxAddress) {
+                    showMessage('Please enter your TRX address.', 'error');
+                    loadingOverlay.style.display = 'none';
+                    return;
+                }
+
+                try {
+                    const response = await fetch('https://oneai-wjox.onrender.com/api/user/trx-recharge', { 
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${authToken}`,
+                            'X-User-ID': userID
+                        },
+                        body: JSON.stringify({ amount: rechargeAmount, trxAddress: trxAddress })
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        window.fetchGlobalTrxBalance();
+                        
+                        loadingOverlay.style.display = 'none';
+                        showMessage('Your TRX recharge request has been submitted successfully!', 'success');
+                        trxRechargeForm.reset();
+                        paymentAmountDisplay.textContent = '0 TRX';
+                    } else {
+                        const errorMessage = result.message || 'Failed to process TRX recharge.';
+                        showMessage(errorMessage, 'error');
+                        loadingOverlay.style.display = 'none';
+                    }
+                } catch (error) {
+                    console.error('Error during TRX recharge:', error);
+                    showMessage('An unexpected error occurred. Please try again later.', 'error');
+                    loadingOverlay.style.display = 'none';
+                }
             });
             
             // Show message function
@@ -556,5 +489,3 @@
             }
         });
     </script>
-</body>
-</html>
