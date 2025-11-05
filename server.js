@@ -18,6 +18,7 @@ const MerchantIssue = require('./models/MerchantIssue'); // Added
 const PenaltyReport = require('./models/PenaltyReport'); // Added
 const Page = require('./models/Page'); // Added
 const TrxRechargeRequest = require('./models/TrxRechargeRequest'); // Added
+const MobileRechargeRequest = require('./models/MobileRechargeRequest'); // Added
 const dotenv = require('dotenv');
 const http = require('http');
 const webpush = require('web-push');
@@ -1181,6 +1182,80 @@ app.post('/location-tracker-request', validateUser, async (req, res) => {
   }
 });
 
+// Mobile Recharge Request Submission
+app.post('/api/mobile-recharge', validateUser, async (req, res) => {
+  try {
+    const { phoneNumber, amount, operator } = req.body;
+
+    // Basic validation
+    if (!phoneNumber || !amount || typeof amount !== 'number' || amount <= 0) {
+      return res.status(400).json({ success: false, message: 'Phone number and a valid amount are required.' });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    const TRX_BDT_EXCHANGE_RATE = 20; // 1 TRX = 20 BDT (already defined, but for clarity here)
+    const trxAmount = Math.ceil(amount / TRX_BDT_EXCHANGE_RATE);
+
+    if (user.trxBalance < trxAmount) {
+      return res.status(400).json({ success: false, message: 'Insufficient TRX balance for mobile recharge.' });
+    }
+
+    user.trxBalance -= trxAmount;
+    await user.save();
+
+    // Create new mobile recharge request
+    const mobileRechargeRequest = new MobileRechargeRequest({
+      userId: req.user._id,
+      phoneNumber,
+      amount, // Amount in BDT
+      trxAmount, // Amount in TRX
+      operator: operator || 'Unknown', // Default to Unknown if not provided
+      status: 'Pending',
+    });
+
+    await mobileRechargeRequest.save();
+
+    // Simulate calling an external mobile recharge API
+    console.log(`Simulating mobile recharge for ${phoneNumber} with ${amount} BDT (${trxAmount} TRX) via ${operator || 'Unknown'}.`);
+
+    // Notify admins via WebSocket about new pending request
+    wss.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN && client.isAdmin) { // Assuming isAdmin flag on admin clients
+        client.send(JSON.stringify({
+          type: 'new-mobile-recharge-request',
+          request: {
+            _id: mobileRechargeRequest._id,
+            userId: mobileRechargeRequest.userId,
+            phoneNumber: mobileRechargeRequest.phoneNumber,
+            amount: mobileRechargeRequest.amount,
+            trxAmount: mobileRechargeRequest.trxAmount,
+            operator: mobileRechargeRequest.operator,
+            status: mobileRechargeRequest.status,
+            createdAt: mobileRechargeRequest.createdAt,
+            userEmail: req.user.email, // Include user email for admin view
+            userPhone: req.user.phone, // Include user phone for admin view
+          }
+        }));
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Mobile recharge request submitted successfully. Waiting for processing.',
+      mobileRechargeRequest: mobileRechargeRequest,
+      newTrxBalance: user.trxBalance
+    });
+
+  } catch (error) {
+    console.error('Mobile recharge request submission error:', error);
+    res.status(500).json({ success: false, message: 'Failed to submit mobile recharge request.' });
+  }
+});
+
 // Payment Processing
 app.post('/payment', validateUser, async (req, res) => {
   try {
@@ -1648,6 +1723,118 @@ app.put('/admin/trx-recharge-requests/:id/reject', adminAuth, async (req, res) =
   }
 });
 
+// Admin API to get all Mobile Recharge requests
+app.get('/admin/mobile-recharge-requests', adminAuth, async (req, res) => {
+  try {
+    const requests = await MobileRechargeRequest.find().populate('userId', 'email phone').sort({ createdAt: -1 });
+    res.json({ success: true, requests });
+  } catch (error) {
+    console.error('Error fetching Mobile Recharge requests for admin:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch Mobile Recharge requests.' });
+  }
+});
+
+// Admin API to approve a Mobile Recharge request
+app.put('/admin/mobile-recharge-requests/:id/approve', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { adminNotes } = req.body;
+
+    const request = await MobileRechargeRequest.findById(id);
+    if (!request) {
+      return res.status(404).json({ success: false, message: 'Mobile Recharge Request not found.' });
+    }
+    if (request.status !== 'Pending') {
+      return res.status(400).json({ success: false, message: 'Only pending requests can be approved.' });
+    }
+
+    // Simulate external mobile recharge API call success
+    const transactionId = `MR-${Date.now()}-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+    console.log(`Simulating successful mobile recharge for ${request.phoneNumber} with ${request.amount} BDT. Transaction ID: ${transactionId}`);
+
+    request.status = 'Completed';
+    request.adminNotes = adminNotes || 'Approved by admin.';
+    request.transactionId = transactionId;
+    await request.save();
+
+    // Notify user via WebSocket about approval
+    wss.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN && client.userID === request.userId.toString()) {
+        client.send(JSON.stringify({
+          type: 'mobile-recharge-updated',
+          request: {
+            _id: request._id,
+            status: request.status,
+            amount: request.amount,
+            trxAmount: request.trxAmount,
+            transactionId: request.transactionId,
+          }
+        }));
+      }
+    });
+
+    res.json({ success: true, message: 'Mobile Recharge Request approved and processed.', request });
+  } catch (error) {
+    console.error('Error approving Mobile Recharge request:', error);
+    res.status(500).json({ success: false, message: 'Failed to approve Mobile Recharge request.' });
+  }
+});
+
+// Admin API to reject a Mobile Recharge request
+app.put('/admin/mobile-recharge-requests/:id/reject', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { adminNotes } = req.body;
+
+    const request = await MobileRechargeRequest.findById(id);
+    if (!request) {
+      return res.status(404).json({ success: false, message: 'Mobile Recharge Request not found.' });
+    }
+    if (request.status !== 'Pending') {
+      return res.status(400).json({ success: false, message: 'Only pending requests can be rejected.' });
+    }
+
+    const user = await User.findById(request.userId);
+    if (!user) {
+      // This should ideally not happen if the user existed when the request was made
+      console.error(`User not found for rejected mobile recharge request ${request._id}. Cannot refund TRX.`);
+      request.status = 'Failed'; // Still mark as failed
+      request.adminNotes = adminNotes || 'Rejected by admin. User not found for refund.';
+      await request.save();
+      return res.status(404).json({ success: false, message: 'User not found for this request. Request rejected without refund.' });
+    }
+
+    // Refund TRX to user's balance
+    user.trxBalance += request.trxAmount;
+    await user.save();
+
+    request.status = 'Failed';
+    request.adminNotes = adminNotes || 'Rejected by admin.';
+    await request.save();
+
+    // Notify user via WebSocket about rejection and refund
+    wss.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN && client.userID === request.userId.toString()) {
+        client.send(JSON.stringify({
+          type: 'mobile-recharge-updated',
+          request: {
+            _id: request._id,
+            status: request.status,
+            amount: request.amount,
+            trxAmount: request.trxAmount,
+            newBalance: user.trxBalance, // Include new TRX balance after refund
+          }
+        }));
+      }
+    });
+
+    res.json({ success: true, message: 'Mobile Recharge Request rejected and TRX refunded.', request, newTrxBalance: user.trxBalance });
+  } catch (error) {
+    console.error('Error rejecting Mobile Recharge request:', error);
+    res.status(500).json({ success: false, message: 'Failed to reject Mobile Recharge request.' });
+  }
+});
+
 // Fexiload requests for user
 app.get('/fexiload-requests/user', validateUser, async (req, res) => {
   try {
@@ -1655,6 +1842,17 @@ app.get('/fexiload-requests/user', validateUser, async (req, res) => {
     res.json({ success: true, fexiloadRequests });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch user fexiload requests' });
+  }
+});
+
+// Mobile Recharge requests for user
+app.get('/api/mobile-recharge/user', validateUser, async (req, res) => {
+  try {
+    const mobileRechargeRequests = await MobileRechargeRequest.find({ userId: req.user._id }).sort({ createdAt: -1 });
+    res.json({ success: true, requests: mobileRechargeRequests });
+  } catch (error) {
+    console.error('Error fetching user mobile recharge requests:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch user mobile recharge requests' });
   }
 });
 
