@@ -14,7 +14,6 @@ const PremiumService = require('./models/PremiumService');
 const FexiloadRequest = require('./models/FexiloadRequest');
 const LocationTrackerServiceRequest = require('./models/LocationTrackerServiceRequest');
 const Voucher = require('./models/Voucher');
-<<<<<<< HEAD
 const BrokerOrder = require('./models/BrokerOrder');
 const BrokerCreditTransaction = require('./models/BrokerCreditTransaction');
 const dotenv = require('dotenv');
@@ -35,23 +34,11 @@ const BROKER_CREDIT_PACKAGES = [
 
 const orderFetcher = require('./services/orderFetcher');
 const { trackOrder, trackOrderByLink } = require('./services/trackingService');
-=======
->>>>>>> origin/main
 const MerchantIssue = require('./models/MerchantIssue'); // Added
 const PenaltyReport = require('./models/PenaltyReport'); // Added
 const Page = require('./models/Page'); // Added
 const TrxRechargeRequest = require('./models/TrxRechargeRequest'); // Added
 const MobileRechargeRequest = require('./models/MobileRechargeRequest'); // Added
-<<<<<<< HEAD
-=======
-const dotenv = require('dotenv');
-const http = require('http');
-const webpush = require('web-push');
-const path = require('path');
-
-// Initialize environment variables
-dotenv.config();
->>>>>>> origin/main
 
 function standardizePageName(name) {
   // Check if it's a domain name (contains a dot and no spaces)
@@ -152,7 +139,6 @@ wss.on('connection', (ws, req) => {
       if (data.type === 'register') {
         ws.userID = data.userID;
       }
-<<<<<<< HEAD
 
       if (data.type === 'auth') {
         const token = data.token;
@@ -162,12 +148,10 @@ wss.on('connection', (ws, req) => {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         ws.userID = decoded.userId || decoded.userID;
       }
-=======
->>>>>>> origin/main
-      
+
       if (data.type === 'adminStatusUpdate') {
         const decoded = jwt.verify(data.token, process.env.JWT_SECRET);
-        
+
         if (!['superadmin', 'moderator'].includes(decoded.role)) {
           throw new Error('Insufficient privileges');
         }
@@ -189,10 +173,7 @@ wss.on('connection', (ws, req) => {
 });
 
 app.set('wss', wss);
-<<<<<<< HEAD
 setWebSocketServer(wss);
-=======
->>>>>>> origin/main
 
 // Server readiness check
 app.use((req, res, next) => {
@@ -1946,7 +1927,6 @@ app.get('/location-tracker-requests/user', validateUser, async (req, res) => {
   }
 });
 
-<<<<<<< HEAD
 // Broker order routes
 app.get('/broker/orders/user', validateUser, async (req, res) => {
   try {
@@ -2341,8 +2321,6 @@ app.post('/admin/broker-orders/closing', adminAuth, async (req, res) => {
   }
 });
 
-=======
->>>>>>> origin/main
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Global Error:', {
@@ -2363,11 +2341,8 @@ app.use((err, req, res, next) => {
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server & WS running on port ${PORT}`);
   console.log(`🏭 Environment: ${process.env.NODE_ENV || 'development'}`);
-<<<<<<< HEAD
 
   orderFetcher.start();
-=======
->>>>>>> origin/main
   
   process.on('unhandledRejection', err => {
     console.error('Unhandled Rejection:', err);
