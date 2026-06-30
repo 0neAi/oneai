@@ -12,15 +12,16 @@ const DEFAULT_MORNING_FETCH_HOUR = 7;
 const DEFAULT_EVENING_CLOSE_HOUR = 22;
 
 function normalizeAgentStatus(rawStatus) {
-  const status = String(rawStatus || '').trim().toLowerCase();
+  const status = String(rawStatus || '').trim().toLowerCase().replace(/[_\s]+/g, ' ');
 
   if (!status) return 'PENDING';
   if (['delivered', 'delivery completed', 'complete', 'completed'].includes(status)) return 'DELIVERED';
   if (['return', 'returned', 'returned by customer', 'return requested', 'returned to sender'].includes(status)) return 'RETURNED';
-  if (['hold', 'on hold', 'holding', 'holded'].includes(status)) return 'HOLD';
+  if (['hold', 'on hold', 'onhold', 'holding', 'holded'].includes(status)) return 'HOLD';
   if (['cancelled', 'canceled', 'cancel'].includes(status)) return 'CANCELLED';
   if (['failed', 'failure', 'failed to deliver'].includes(status)) return 'FAILED';
   if (['pickup', 'picked up', 'on pickup', 'in pickup'].includes(status)) return 'PICKUP';
+  if (['price change delivery', 'price change', 'price changed', 'price change requested'].includes(status)) return 'PENDING';
   return 'PENDING';
 }
 
@@ -182,50 +183,53 @@ class OrderFetcher {
       return { inserted: 0, modified: 0 };
     }
 
-    const bulkOps = orders.map((order) => ({
-      updateOne: {
-        filter: { orderId: order.orderId },
-        update: {
-          $set: {
-            consignmentId: order.consignmentId,
-            merchantName: order.merchantName,
-            productDescription: order.productDescription,
-            price: order.price,
-            deliveryInstruction: order.deliveryInstruction,
-            recipientName: order.recipientName,
-            recipientPhone: order.recipientPhone,
-            recipientAddress: order.recipientAddress,
-            merchantPhone: order.merchantPhone,
-            failedReason: order.failedReason,
-            paymentLink: order.paymentLink,
-            quantity: order.quantity,
-            status: order.status,
-            agentName: order.agentName,
-            agentDisplayName: order.agentDisplayName,
-            agentAssigned: order.agentAssigned,
-            assigned: order.assigned,
-            fetchedAt: new Date(),
-            lastStatusUpdate: new Date(),
-            lastStatusCheck: new Date(),
-            updatedAt: new Date(),
-            trackingEnabled: Boolean(order.consignmentId && order.recipientPhone),
-            completed: ['DELIVERED', 'RETURNED', 'CANCELLED', 'FAILED'].includes(order.status)
+    const bulkOps = orders.map((order) => {
+      const normalizedStatus = normalizeAgentStatus(order.status);
+      return {
+        updateOne: {
+          filter: { orderId: order.orderId },
+          update: {
+            $set: {
+              consignmentId: order.consignmentId,
+              merchantName: order.merchantName,
+              productDescription: order.productDescription,
+              price: order.price,
+              deliveryInstruction: order.deliveryInstruction,
+              recipientName: order.recipientName,
+              recipientPhone: order.recipientPhone,
+              recipientAddress: order.recipientAddress,
+              merchantPhone: order.merchantPhone,
+              failedReason: order.failedReason,
+              paymentLink: order.paymentLink,
+              quantity: order.quantity,
+              status: normalizedStatus,
+              agentName: order.agentName,
+              agentDisplayName: order.agentDisplayName,
+              agentAssigned: order.agentAssigned,
+              assigned: order.assigned,
+              fetchedAt: new Date(),
+              lastStatusUpdate: new Date(),
+              lastStatusCheck: new Date(),
+              updatedAt: new Date(),
+              trackingEnabled: Boolean(order.consignmentId && order.recipientPhone),
+              completed: ['DELIVERED', 'RETURNED', 'CANCELLED', 'FAILED'].includes(normalizedStatus)
+            },
+            $setOnInsert: {
+              orderId: order.orderId,
+              createdAt: new Date(),
+              statusHistory: [{
+                status: normalizedStatus,
+                note: 'Auto-fetched from Pathao',
+                timestamp: new Date()
+              }],
+              holdCount: 0,
+              holdReason: ''
+            }
           },
-          $setOnInsert: {
-            orderId: order.orderId,
-            createdAt: new Date(),
-            statusHistory: [{
-              status: order.status,
-              note: 'Auto-fetched from Pathao',
-              timestamp: new Date()
-            }],
-            holdCount: 0,
-            holdReason: ''
-          }
-        },
-        upsert: true
-      }
-    }));
+          upsert: true
+        }
+      };
+    });
 
     const result = await BrokerOrder.bulkWrite(bulkOps, { ordered: false });
     return {
@@ -246,14 +250,17 @@ class OrderFetcher {
     const updates = [];
     for (const order of holdOrders) {
       const fetched = fetchedMap.get(String(order.orderId).trim());
-      if (!fetched || fetched.status === 'HOLD') continue;
+      if (!fetched) continue;
+
+      const normalizedStatus = normalizeAgentStatus(fetched.status);
+      if (normalizedStatus === 'HOLD') continue;
 
       updates.push({
         updateOne: {
           filter: { _id: order._id },
           update: {
             $set: {
-              status: fetched.status,
+              status: normalizedStatus,
               holdCount: 0,
               holdReason: '',
               agentName: fetched.agentName,
@@ -262,11 +269,11 @@ class OrderFetcher {
               assigned: fetched.assigned,
               lastStatusUpdate: new Date(),
               updatedAt: new Date(),
-              completed: ['DELIVERED', 'RETURNED', 'CANCELLED', 'FAILED'].includes(fetched.status)
+              completed: ['DELIVERED', 'RETURNED', 'CANCELLED', 'FAILED'].includes(normalizedStatus)
             },
             $push: {
               statusHistory: {
-                status: fetched.status,
+                status: normalizedStatus,
                 note: 'Hold order reassigned after morning fetch',
                 timestamp: new Date()
               }

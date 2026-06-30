@@ -1,8 +1,15 @@
-const API_BASE_URL = window.API_BASE_URL || (['localhost', '127.0.0.1'].includes(window.location.hostname)
+const DEFAULT_API_BASE_URL = 'https://oneai-wjox.onrender.com';
+const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+const API_BASE_URL = window.API_BASE_URL || (isLocalhost
     ? 'http://localhost:10000'
-    : window.location.origin);
+    : (window.location.hostname === '0neai.github.io' ? DEFAULT_API_BASE_URL : window.location.origin));
 
 const BROKER_TRC20_ADDRESS = 'TKbAYXQPYeU9BbW41h2h4Lao63iyMXMdJ5';
+const FALLBACK_BROKER_PACKAGES = [
+    { id: 'pkg_1200', credits: 1200, price: 35, currency: 'USDT' },
+    { id: 'pkg_2500', credits: 2500, price: 75, currency: 'USDT' },
+    { id: 'pkg_5000', credits: 5000, price: 130, currency: 'USDT' }
+];
 
 const brokerState = {
     orders: [],
@@ -373,38 +380,83 @@ async function loadBrokerCreditPackages() {
         'Authorization': `Bearer ${authToken}`,
         'X-User-ID': userID
     };
+    const packagesContainer = document.getElementById('broker-packages-list');
+
+    if (!packagesContainer) return;
+
+    packagesContainer.innerHTML = '<div style="grid-column: 1 / -1; color: #9fb4ff;">Loading packages…</div>';
 
     try {
         const response = await fetch(`${API_BASE_URL}/broker/credit-packages`, { headers });
         const data = await response.json();
-        if (!response.ok) throw new Error('Failed to load credit packages');
+        if (!response.ok) throw new Error(data?.message || 'Failed to load credit packages');
 
-        const packagesContainer = document.getElementById('broker-packages-list');
+        const packages = Array.isArray(data?.packages) && data.packages.length ? data.packages : FALLBACK_BROKER_PACKAGES;
         packagesContainer.innerHTML = '';
 
-        data.packages.forEach(pkg => {
+        packages.forEach(pkg => {
             const pricePerCredit = (pkg.price / pkg.credits).toFixed(3);
-            const card = document.createElement('div');
+            const card = document.createElement('button');
+            card.type = 'button';
             card.className = 'broker-package-card';
             card.innerHTML = `
-                <div style="font-weight: 700; font-size: 1.45rem; color: #4ade80; margin-bottom: 8px;">${pkg.credits.toLocaleString()}</div>
+                <div style="font-weight: 800; font-size: 1.4rem; color: #4ade80; margin-bottom: 8px;">${Number(pkg.credits).toLocaleString()}</div>
                 <div style="font-size: 0.95rem; color: #b8bee5; margin-bottom: 8px;">Credits</div>
                 <div style="font-weight: 700; color: #facc15; margin-bottom: 6px;">${pkg.price} ${pkg.currency}</div>
                 <div style="font-size: 0.85rem; color: #95a3d2;">$${pricePerCredit}/credit</div>
             `;
-            card.onclick = () => setBrokerPackageSelection(pkg);
+            card.onclick = () => setBrokerPackageSelection(pkg, card);
+            card.onkeydown = (event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    setBrokerPackageSelection(pkg, card);
+                }
+            };
             packagesContainer.appendChild(card);
         });
+
+        if (brokerState.selectedPackage) {
+            const activeCard = Array.from(packagesContainer.querySelectorAll('.broker-package-card')).find((element) => element.dataset.packageId === brokerState.selectedPackage.id);
+            if (activeCard) {
+                activeCard.classList.add('active');
+            }
+        }
     } catch (error) {
         console.error('Load packages error:', error);
+        packagesContainer.innerHTML = '';
+        FALLBACK_BROKER_PACKAGES.forEach(pkg => {
+            const pricePerCredit = (pkg.price / pkg.credits).toFixed(3);
+            const card = document.createElement('button');
+            card.type = 'button';
+            card.className = 'broker-package-card';
+            card.innerHTML = `
+                <div style="font-weight: 800; font-size: 1.4rem; color: #4ade80; margin-bottom: 8px;">${Number(pkg.credits).toLocaleString()}</div>
+                <div style="font-size: 0.95rem; color: #b8bee5; margin-bottom: 8px;">Credits</div>
+                <div style="font-weight: 700; color: #facc15; margin-bottom: 6px;">${pkg.price} ${pkg.currency}</div>
+                <div style="font-size: 0.85rem; color: #95a3d2;">$${pricePerCredit}/credit</div>
+            `;
+            card.onclick = () => setBrokerPackageSelection(pkg, card);
+            packagesContainer.appendChild(card);
+        });
         showError(error.message || 'Failed to load credit packages');
     }
 }
 
-function setBrokerPackageSelection(pkg) {
+function setBrokerPackageSelection(pkg, selectedCard) {
     brokerState.selectedPackage = pkg;
     const selectedDiv = document.getElementById('broker-selected-package');
-    selectedDiv.innerHTML = `<strong>${pkg.credits.toLocaleString()} credits</strong> for <strong>${pkg.price} ${pkg.currency}</strong>`;
+    const packagesContainer = document.getElementById('broker-packages-list');
+
+    if (selectedDiv) {
+        selectedDiv.innerHTML = `<strong>${Number(pkg.credits).toLocaleString()} credits</strong> for <strong>${pkg.price} ${pkg.currency}</strong>`;
+    }
+
+    if (packagesContainer) {
+        packagesContainer.querySelectorAll('.broker-package-card').forEach((card) => card.classList.remove('active'));
+        if (selectedCard) {
+            selectedCard.classList.add('active');
+        }
+    }
 }
 
 function setBrokerPaymentMethod(value) {
@@ -448,6 +500,7 @@ async function purchaseBrokerCredits() {
             body: JSON.stringify({
                 packageId: brokerState.selectedPackage.id,
                 paymentMethod,
+                trxid: paymentTxId,
                 paymentTxId
             })
         });
