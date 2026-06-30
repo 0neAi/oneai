@@ -2216,15 +2216,17 @@ app.get('/broker/credit-packages', validateUser, async (req, res) => {
 
 app.post('/broker/credits/purchase', validateUser, async (req, res) => {
   try {
-    const { packageId, paymentMethod, paymentTxId } = req.body;
+    const { packageId, paymentMethod, trxid, paymentTxId } = req.body;
+    const paymentReference = (typeof trxid === 'string' && trxid.trim()) ? trxid.trim() : (typeof paymentTxId === 'string' ? paymentTxId.trim() : '');
+
     if (!packageId || typeof packageId !== 'string') {
       return res.status(400).json({ success: false, message: 'Valid package ID is required.' });
     }
     if (!paymentMethod || !['USDT', 'TRX'].includes(String(paymentMethod).toUpperCase())) {
       return res.status(400).json({ success: false, message: 'Valid payment method is required (USDT or TRX).' });
     }
-    if (!paymentTxId || typeof paymentTxId !== 'string' || !paymentTxId.trim()) {
-      return res.status(400).json({ success: false, message: 'Transaction reference is required.' });
+    if (!paymentReference) {
+      return res.status(400).json({ success: false, message: 'TRXID or payment reference is required.' });
     }
 
     const selectedPackage = BROKER_CREDIT_PACKAGES.find(pkg => pkg.id === packageId);
@@ -2247,7 +2249,7 @@ app.post('/broker/credits/purchase', validateUser, async (req, res) => {
       amount: selectedPackage.credits,
       balance: user.brokerCredits,
       description: `${selectedPackage.credits} broker credits purchased via ${paymentMethod.toUpperCase()}`,
-      transactionHash: paymentTxId.trim()
+      transactionHash: paymentReference
     });
     await transaction.save();
 

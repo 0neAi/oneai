@@ -8,7 +8,12 @@
     <link rel="stylesheet" href="./assets/css/main.css">
     <style>
         body {
-            background: #03031b;
+            background: radial-gradient(circle at top left, #162147 0%, #03031b 45%, #020212 100%);
+            color: #f8fafc;
+        }
+        .container {
+            max-width: 1320px;
+            padding: 32px 20px 56px;
         }
         .broker-hero {
             display: flex;
@@ -64,14 +69,15 @@
             margin-bottom: 26px;
         }
         .broker-summary-card {
-            background: rgba(20, 20, 40, 0.96);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 20px;
+            background: linear-gradient(135deg, rgba(18, 24, 46, 0.98), rgba(10, 14, 30, 0.96));
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 22px;
             padding: 22px;
             min-height: 130px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
+            box-shadow: 0 18px 45px rgba(0,0,0,0.24);
         }
         .broker-summary-card h3 {
             margin: 0 0 14px;
@@ -95,6 +101,11 @@
             grid-template-columns: 1fr;
             gap: 18px;
             margin-bottom: 24px;
+            padding: 20px;
+            border-radius: 24px;
+            background: rgba(10, 14, 30, 0.8);
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 16px 36px rgba(0,0,0,0.2);
         }
         .broker-action-group {
             display: flex;
@@ -108,14 +119,25 @@
             align-items: center;
         }
         .broker-filters input,
-        .broker-filters select {
+        .broker-filters select,
+        .broker-form input,
+        .broker-form select {
             width: 100%;
             padding: 0.95rem 1rem;
             border-radius: 14px;
             border: 1px solid rgba(255,255,255,0.12);
-            background: #101027;
+            background: #0d1428;
             color: #e7ebff;
             font-size: 0.95rem;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+        }
+        .broker-filters input:focus,
+        .broker-filters select:focus,
+        .broker-form input:focus,
+        .broker-form select:focus {
+            outline: none;
+            border-color: #60a5fa;
+            box-shadow: 0 0 0 3px rgba(96,165,250,0.18);
         }
         .broker-filters label {
             color: #b8bff2;
@@ -126,12 +148,62 @@
             font-size: 0.95rem;
             margin-top: 4px;
         }
+        .broker-form {
+            background: linear-gradient(145deg, rgba(15, 21, 42, 0.98), rgba(8, 12, 28, 0.96));
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 20px 45px rgba(0,0,0,0.24);
+        }
+        .broker-form h3 {
+            margin: 0 0 16px;
+            color: #f8fafc;
+            font-size: 1.25rem;
+        }
+        .broker-form .form-group {
+            margin-bottom: 16px;
+        }
+        .broker-form label {
+            display: block;
+            margin-bottom: 8px;
+            color: #b8c2ff;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+        .broker-form .action-btn,
+        .broker-hero-actions a,
+        .broker-action-group button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 0.95rem 1.2rem;
+            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: linear-gradient(135deg, #2563eb, #4f46e5);
+            color: #fff;
+            font-weight: 700;
+            box-shadow: 0 12px 24px rgba(37,99,235,0.2);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+        }
+        .broker-form .action-btn:hover,
+        .broker-hero-actions a:hover,
+        .broker-action-group button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 16px 30px rgba(37,99,235,0.25);
+            filter: brightness(1.05);
+        }
+        .broker-form .action-btn.small {
+            padding: 0.7rem 0.95rem;
+            font-size: 0.9rem;
+        }
         .broker-table-wrapper {
-            background: rgba(16, 16, 40, 0.95);
+            background: linear-gradient(145deg, rgba(16,16,40,0.95), rgba(10,12,28,0.97));
             border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 20px;
+            border-radius: 22px;
             overflow: hidden;
-            box-shadow: 0 26px 70px rgba(0,0,0,0.24);
+            box-shadow: 0 22px 55px rgba(0,0,0,0.24);
             margin-bottom: 28px;
         }
         .broker-table-heading {
@@ -363,7 +435,14 @@
 
         <section id="broker-credit-form" class="broker-form" style="display:none;">
             <h3>Buy Broker Credits</h3>
-            <p style="color: #c8cee3; margin-bottom: 14px;">Pay with TRX or USDT first, then submit your transaction/ref ID to credit the package.</p>
+            <p style="color: #c8cee3; margin-bottom: 14px;">Send TRX or USDT to the TRC20 wallet below, then paste the payment TRXID/reference into the field.</p>
+            <div class="form-group" style="margin-bottom: 14px;">
+                <label>TRC20 Wallet Address</label>
+                <div style="display:flex; gap: 8px; align-items: center;">
+                    <input type="text" id="broker-trc20-address" readonly value="TKbAYXQPYeU9BbW41h2h4Lao63iyMXMdJ5" style="flex:1; background:#1b1f2e; color:#fff; border:1px solid rgba(255,255,255,0.08); padding: 12px; border-radius: 10px;" />
+                    <button type="button" class="action-btn small" onclick="copyBrokerPaymentAddress()" style="min-width: auto; padding: 0 14px;">Copy</button>
+                </div>
+            </div>
             <div id="broker-packages-list" class="broker-packages-grid"></div>
             <div class="form-group" style="margin-top: 16px;">
                 <label>Selected Package</label>
@@ -379,10 +458,10 @@
                 </select>
             </div>
             <div class="form-group">
-                <label for="broker-payment-txid">Transaction / Reference ID</label>
+                <label for="broker-payment-txid">Payment TRXID / Reference ID</label>
                 <input id="broker-payment-txid" type="text" placeholder="Enter TRX or USDT transaction ID" onchange="setBrokerPaymentTxId(this.value)" />
             </div>
-            <p style="color: #99a3c8; font-size: 0.95rem; margin-bottom: 12px;">After paying, submit the transaction reference so the package can be applied.</p>
+            <p style="color: #99a3c8; font-size: 0.95rem; margin-bottom: 12px;">Use the TRXID from your wallet transfer to verify payment and credit the selected package.</p>
             <button class="action-btn" onclick="purchaseBrokerCredits()" style="width: 100%; margin-top: 16px;">Confirm Purchase</button>
         </section>
 

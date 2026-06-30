@@ -2,6 +2,8 @@ const API_BASE_URL = window.API_BASE_URL || (['localhost', '127.0.0.1'].includes
     ? 'http://localhost:10000'
     : window.location.origin);
 
+const BROKER_TRC20_ADDRESS = 'TKbAYXQPYeU9BbW41h2h4Lao63iyMXMdJ5';
+
 const brokerState = {
     orders: [],
     credits: 0,
@@ -472,6 +474,17 @@ async function purchaseBrokerCredits() {
         console.error('Purchase broker credits error:', error);
         showError(error.message || 'Unable to purchase broker credits.');
     }
+}
+
+function copyBrokerPaymentAddress() {
+    if (!navigator.clipboard) {
+        showError('Clipboard support is not available in this browser.');
+        return;
+    }
+
+    navigator.clipboard.writeText(BROKER_TRC20_ADDRESS)
+        .then(() => showSuccess('TRC20 payment address copied to clipboard.'))
+        .catch(() => showError('Failed to copy the TRC20 address.'));
 }
 
 async function trackBrokerOrder(orderId) {
