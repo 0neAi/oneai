@@ -1,0 +1,152 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+  <title>Mobile Recharge - OneAI</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <link rel="stylesheet" href="assets/css/main.css" />
+  <noscript>
+    <link rel="stylesheet" href="assets/css/noscript.css" />
+  </noscript>
+</head>
+
+<body class="is-preload">
+  <!-- Wrapper -->
+  <div id="wrapper">
+
+    <!-- Header -->
+    <header id="header">
+      <a href="index.html" class="logo">OneAI</a>
+    </header>
+
+    <!-- Nav -->
+    <nav id="nav">
+      <ul class="links">
+        <li><a href="dashboard.html">Dashboard</a></li>
+        <li class="active"><a href="mobile-recharge.html">Mobile Recharge</a></li>
+        <li><a href="fexiload.html">Fexiload</a></li>
+        <li><a href="tracker.html">Tracker</a></li>
+        <li><a href="profile.html">Profile</a></li>
+        <li><a href="support.html">Support</a></li>
+        <li><a href="staking.html">Staking</a></li>
+        <li><a href="entertainment.html">Entertainment</a></li>
+        <li><a href="admin.html">Admin</a></li>
+      </ul>
+    </nav>
+
+    <!-- Main -->
+    <div id="main">
+
+      <!-- Post -->
+      <section class="post">
+        <header class="major">
+          <h1>Mobile Recharge</h1>
+          <p>Recharge your mobile with TRX.</p>
+        </header>
+
+        <div class="box">
+          <p>Your current TRX Balance: <strong id="trxBalance">Loading...</strong></p>
+          <form id="mobileRechargeForm">
+            <div class="fields">
+              <div class="field half">
+                <label for="phoneNumber">Phone Number</label>
+                <input type="text" name="phoneNumber" id="phoneNumber" placeholder="e.g., 01712345678" required />
+              </div>
+              <div class="field half">
+                <label for="amount">Recharge Amount (BDT)</label>
+                <input type="number" name="amount" id="amount" min="1" placeholder="e.g., 50, 100" required />
+              </div>
+              <div class="field half">
+                <label for="operator">Operator (Optional)</label>
+                <select name="operator" id="operator">
+                  <option value="">Select Operator</option>
+                  <option value="Grameenphone">Grameenphone</option>
+                  <option value="Robi">Robi</option>
+                  <option value="Airtel">Airtel</option>
+                  <option value="Banglalink">Banglalink</option>
+                  <option value="Teletalk">Teletalk</option>
+                </select>
+              </div>
+            </div>
+            <ul class="actions">
+              <li><input type="submit" value="Recharge Now" class="primary" /></li>
+            </ul>
+          </form>
+          <div id="message" style="margin-top: 20px;"></div>
+        </div>
+
+        <h3>Your Mobile Recharge History</h3>
+        <div class="table-wrapper">
+          <table id="rechargeHistoryTable">
+            <thead>
+              <tr>
+                <th>Phone Number</th>
+                <th>Amount (BDT)</th>
+                <th>TRX Deducted</th>
+                <th>Operator</th>
+                <th>Status</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Recharge history will be loaded here -->
+            </tbody>
+          </table>
+        </div>
+
+      </section>
+
+    </div>
+
+    <!-- Footer -->
+    <footer id="footer">
+      <section class="split contact">
+        <section class="alt">
+          <h3>Address</h3>
+          <p>1234 Somewhere Road #8254<br />Nashville, TN 00000-0000</p>
+        </section>
+        <section>
+          <h3>Phone</h3>
+          <p><a href="#">(000) 000-0000</a></p>
+        </section>
+        <section>
+          <h3>Email</h3>
+          <p><a href="#">info@untitled.tld</a></p>
+        </section>
+        <section>
+          <h3>Social</h3>
+          <ul class="icons alt">
+            <li><a href="#" class="icon brands alt fa-twitter"><span class="label">Twitter</span></a></li>
+            <li><a href="#" class="icon brands alt fa-facebook-f"><span class="label">Facebook</span></a></li>
+            <li><a href="#" class="icon brands alt fa-instagram"><span class="label">Instagram</span></a></li>
+            <li><a href="#" class="icon brands alt fa-github"><span class="label">GitHub</span></a></li>
+          </ul>
+        </section>
+      </section>
+    </footer>
+
+    <!-- Copyright -->
+    <div id="copyright">
+      <ul>
+        <li>&copy; Untitled</li>
+        <li>Design: <a href="https://html5up.net">HTML5 UP</a></li>
+      </ul>
+    </div>
+
+  </div>
+
+  <!-- Scripts -->
+  <script src="assets/js/jquery.min.js"></script>
+  <script src="assets/js/jquery.scrollex.min.js"></script>
+  <script src="assets/js/jquery.scrolly.min.js"></script>
+  <script src="assets/js/browser.min.js"></script>
+  <script src="assets/js/breakpoints.min.js"></script>
+  <script src="assets/js/util.js"></script>
+  <script src="assets/js/main.js"></script>
+  <script src="assets/js/mobile-recharge.js"></script>
+  <script src="assets/js/load-navbar.js"></script>
+
+</body>
+
+</html>

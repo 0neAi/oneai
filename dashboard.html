@@ -1,0 +1,2509 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+    <title>1NEAi Dashboard</title>
+    <link rel="icon" href="./images/logo.png" type="image/png">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="./assets/css/main.css">
+    <link rel="manifest" href="/manifest.json">
+    <style>
+        /* General Body Styles */
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            background-color: #1a1a2e;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+            width: 100%;
+        }
+
+        /* Header */
+        .dashboard-header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            padding: 1rem 0;
+            border-bottom: 1px solid #3a3a5e;
+        }
+
+        .dashboard-header h1 {
+            font-size: 1.8rem;
+            color: #ff69b4;
+            margin: 0 0 0.5rem 0;
+        }
+
+        .dashboard-header p {
+            font-size: 0.9rem;
+            color: #a0a0c0;
+            line-height: 1.4;
+            margin: 0;
+        }
+
+        /* Stats */
+        .dashboard-stats {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.8rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-card {
+            background: #2a2a4e;
+            padding: 0.8rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            flex: 1;
+            min-width: 100px;
+            max-width: 120px;
+        }
+
+        .stat-card h3 {
+            margin: 0 0 0.5rem 0;
+            font-size: 0.8rem;
+            color: #a0a0c0;
+        }
+
+        .stat-card .value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #ff69b4;
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.8rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .action-btn {
+            padding: 0.8rem 1rem;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 120px;
+            text-align: center;
+            flex: 1;
+        }
+
+        .refresh-btn {
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+            color: white;
+        }
+
+        .help-btn {
+            background: linear-gradient(135deg, #28a745 0%, #218838 100%);
+            color: white;
+        }
+
+        .ai-btn {
+            background: linear-gradient(135deg, #6e45e2 0%, #88d3ce 100%);
+            color: white;
+        }
+
+        .staking-btn {
+            background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+            color: white;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(255, 65, 108, 0.7);
+            }
+            70% {
+                transform: scale(1.05);
+                box-shadow: 0 0 10px 10px rgba(255, 65, 108, 0);
+            }
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(255, 65, 108, 0);
+            }
+        }
+
+        /* Payment Section */
+        .payment-section {
+            background: linear-gradient(135deg, #2a2a4e 0%, #1e1e3f 100%);
+            padding: 1.2rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            animation: fadeIn 1s ease-in-out;
+            display: none;
+            overflow-x: auto;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .payment-table {
+            overflow-x: auto;
+            width: 100%;
+        }
+
+        .payment-table table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 500px;
+        }
+
+        .payment-table th, .payment-table td {
+            padding: 0.8rem;
+            text-align: left;
+            border-bottom: 1px solid #3a3a5e;
+            color: #e0e0e0;
+            font-size: 0.9rem;
+        }
+
+        .payment-table th {
+            color: #ff69b4;
+            font-size: 0.95rem;
+            white-space: nowrap;
+        }
+
+        .payment-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .payment-table .status {
+            padding: 0.4rem 0.6rem;
+            border-radius: 15px;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            text-align: center;
+            min-width: 80px;
+            display: inline-block;
+        }
+
+        .payment-table .status.pending {
+            background-color: #ffc107;
+            color: #000;
+        }
+
+        .payment-table .status.pickup {
+            background-color: #17a2b8;
+            color: #fff;
+        }
+
+        .payment-table .status.delivered {
+            background-color: #28a745;
+            color: #fff;
+        }
+
+        .payment-table .status.completed {
+            background-color: #28a745;
+            color: #fff;
+        }
+
+        .payment-table .status.cancelled,
+        .payment-table .status.failed,
+        .payment-table .status.returned {
+            background-color: #dc3545;
+            color: #fff;
+        }
+
+        .payment-table tbody tr:hover {
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .order-summary {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .order-summary small {
+            color: #a6a6cc;
+            font-size: 0.82rem;
+            line-height: 1.3;
+        }
+
+        .broker-section {
+            background: rgba(20, 20, 40, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 18px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18);
+        }
+
+        .broker-section h2 {
+            margin-bottom: 1rem;
+            color: #ffffff;
+            font-size: 1.7rem;
+            letter-spacing: 0.5px;
+        }
+
+        .broker-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.85rem;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 1rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .broker-filters input,
+        .broker-filters select {
+            background: #16162d;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #e8e8ff;
+            border-radius: 10px;
+            padding: 0.8rem 0.95rem;
+            min-width: 200px;
+            flex: 1;
+            max-width: 320px;
+        }
+
+        .broker-results-summary {
+            color: #c0c0e8;
+            font-size: 0.92rem;
+            margin-left: auto;
+            white-space: nowrap;
+        }
+
+        .broker-table-wrapper {
+            background: #14142d;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            overflow: hidden;
+            margin-top: 1.25rem;
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+        }
+
+        .broker-table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1rem 0.5rem;
+            gap: 1rem;
+        }
+
+        .broker-table-header h3 {
+            margin: 0;
+            font-size: 1.1rem;
+            color: #ffffff;
+        }
+
+        .broker-table-wrapper .payment-table {
+            margin: 0;
+        }
+
+        .broker-table-wrapper table {
+            min-width: 900px;
+        }
+
+        .broker-table-wrapper th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: rgba(26, 26, 46, 0.98);
+        }
+
+        .order-summary {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .order-summary strong {
+            color: #ffffff;
+            display: block;
+        }
+
+        .order-summary small {
+            color: #9aa0c8;
+            font-size: 0.82rem;
+        }
+
+        .broker-form {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            padding: 1.25rem;
+            margin-top: 1rem;
+        }
+
+        .broker-form label {
+            display: block;
+            color: #c1c5e0;
+            margin-bottom: 0.25rem;
+            font-size: 0.9rem;
+        }
+
+        .broker-form input,
+        .broker-form textarea,
+        .broker-form select {
+            width: 100%;
+            padding: 0.85rem 0.95rem;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            background: rgba(0, 0, 0, 0.08);
+            color: #ffffff;
+            margin-bottom: 1rem;
+        }
+
+        .broker-form button.action-btn {
+            width: 100%;
+            max-width: 260px;
+            margin-top: 0.5rem;
+        }
+
+        .broker-highlight {
+            color: #7dd3fc;
+        }
+
+        /* AI Services Section */
+        .ai-services {
+            background: #2a2a4e;
+            padding: 1.2rem;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+            display: none;
+        }
+
+        .ai-services-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.8rem;
+            margin-top: 1rem;
+        }
+
+        .ai-service-btn {
+            background: linear-gradient(135deg, #3a3a5e 0%, #2a2a4e 100%);
+            border: none;
+            color: white;
+            padding: 0.8rem;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.3rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.8rem;
+            text-align: center;
+        }
+
+        .ai-service-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .ai-service-btn i {
+            font-size: 1.2rem;
+        }
+
+        /* No Payments Message */
+        .no-payments {
+            text-align: center;
+            padding: 1.5rem;
+            background: #2a2a4e;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Services Section */
+        .services-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+
+        .service-card {
+            background: #2a2a4e;
+            padding: 1.2rem;
+            border-radius: 10px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100px;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .service-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .service-card i {
+            font-size: 1.8rem;
+            color: #ff69b4;
+            margin-bottom: 0.5rem;
+        }
+
+        .service-card h3 {
+            font-size: 0.95rem;
+            color: #e0e0e0;
+            margin: 0;
+        }
+
+        .service-card.staking-btn {
+            background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+            color: white;
+            animation: pulse 2s infinite;
+        }
+
+        /* Features Section */
+        .features {
+            background: #2a2a4e;
+            padding: 1.2rem;
+            border-radius: 10px;
+        }
+
+        .features h3 {
+            margin-top: 0;
+            font-size: 1.2rem;
+            color: #ff69b4;
+        }
+
+        .feature {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 1.2rem;
+        }
+
+        .feature-icon {
+            font-size: 1.5rem;
+            color: #ff69b4;
+            margin-right: 0.8rem;
+            flex-shrink: 0;
+        }
+
+        .feature-content {
+            flex: 1;
+        }
+
+        .feature-content h4 {
+            font-size: 1rem;
+            margin: 0 0 0.5rem 0;
+            color: #e0e0e0;
+        }
+
+        .feature-content p {
+            font-size: 0.85rem;
+            margin: 0 0 0.5rem 0;
+            line-height: 1.4;
+            color: #a0a0c0;
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(26, 26, 46, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            color: white;
+        }
+
+        .loading-overlay i {
+            margin-bottom: 1rem;
+        }
+
+        /* Navbar */
+        .navbar-placeholder {
+            background: #2c3e50;
+            color: white;
+            padding: 0.8rem;
+            margin-bottom: 1rem;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .navbar-placeholder i {
+            font-size: 1.2rem;
+        }
+
+        /* Notification Badge */
+        .notification-badge {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #ff416c;
+            color: white;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+            z-index: 1000;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .notification-badge.hidden {
+            display: none;
+        }
+
+        /* Responsive Design */
+        @media screen and (max-width: 480px) {
+            .container {
+                padding: 0.8rem;
+            }
+            
+            .dashboard-header h1 {
+                font-size: 1.6rem;
+            }
+            
+            .stat-card {
+                min-width: 85px;
+                padding: 0.6rem;
+            }
+            
+            .stat-card h3 {
+                font-size: 0.75rem;
+            }
+            
+            .stat-card .value {
+                font-size: 1rem;
+            }
+            
+            .action-btn {
+                min-width: 100px;
+                padding: 0.7rem 0.8rem;
+                font-size: 0.8rem;
+            }
+            
+            .services-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.8rem;
+            }
+            
+            .service-card {
+                padding: 1rem;
+                min-height: 90px;
+            }
+            
+            .service-card i {
+                font-size: 1.5rem;
+            }
+            
+            .service-card h3 {
+                font-size: 0.85rem;
+            }
+            
+            .ai-services-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .feature {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+            
+            .feature-icon {
+                margin-right: 0;
+                margin-bottom: 0.5rem;
+            }
+            
+            .payment-section, .ai-services, .features {
+                padding: 1rem;
+            }
+            
+            .payment-table th, .payment-table td {
+                padding: 0.6rem;
+            }
+        }
+
+        @media screen and (max-width: 350px) {
+            .services-grid, .ai-services-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .action-btn {
+                width: 100%;
+            }
+        }
+
+        /* Utility Classes */
+        .text-center {
+            text-align: center;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        /* Payment Details Modal */
+        #payment-details-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 1rem;
+        }
+        
+        .modal-content {
+            background: #2a2a4e;
+            padding: 1.5rem;
+            border-radius: 10px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        #broker-order-details-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.82);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 1rem;
+        }
+
+        .broker-order-details-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.8rem;
+            margin-top: 0.8rem;
+        }
+
+        .broker-detail-card {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 0.8rem;
+        }
+
+        .broker-detail-card strong {
+            display: block;
+            color: #ffffff;
+            margin-bottom: 0.25rem;
+            font-size: 0.92rem;
+        }
+
+        .broker-detail-card span,
+        .broker-detail-card a {
+            color: #d6d6f0;
+            font-size: 0.92rem;
+            word-break: break-word;
+        }
+
+        .broker-order-clickable {
+            cursor: pointer;
+        }
+
+        .broker-order-meta {
+            color: #b9b9d8;
+            font-size: 0.82rem;
+            margin-top: 0.2rem;
+            line-height: 1.35;
+        }
+        
+        /* Payment Popup */
+        #payment-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #2a2a4e;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3);
+            z-index: 1001;
+            display: none;
+            text-align: center;
+            max-width: 90%;
+            width: 300px;
+        }
+        
+        #payment-popup.active {
+            display: block;
+            animation: popIn 0.3s ease;
+        }
+        
+        @keyframes popIn {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+            100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+        
+        /* Toast notifications */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 0.8rem 1.5rem;
+            border-radius: 30px;
+            z-index: 1002;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+            animation: toastIn 0.3s ease, toastOut 0.3s ease 2.7s forwards;
+        }
+        
+        .toast.success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .toast.error {
+            background: #dc3545;
+            color: white;
+        }
+        
+        @keyframes toastIn {
+            0% { opacity: 0; transform: translate(-50%, -20px); }
+            100% { opacity: 1; transform: translate(-50%, 0); }
+        }
+        
+        @keyframes toastOut {
+            0% { opacity: 1; transform: translate(-50%, 0); }
+            100% { opacity: 0; transform: translate(-50%, -20px); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Initial Auth Check Script -->
+    <script>
+        (async () => {
+            const authToken = localStorage.getItem('authToken');
+            const userID = localStorage.getItem('userID');
+
+            if (!authToken || !userID) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            try {
+                const validateResponse = await fetch('https://oneai-wjox.onrender.com/validate', {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'X-User-ID': userID
+                    }
+                });
+
+                const validateData = await validateResponse.json();
+
+                if (!validateResponse.ok) {
+                    if (validateData.message === 'Authentication failed: User not approved') {
+                        window.location.href = 'waiting-for-approval.html';
+                    } else {
+                        localStorage.clear();
+                        window.location.href = 'index.html';
+                    }
+                    return;
+                }
+
+                if (validateData.isAdminApproved === false) {
+                    window.location.href = 'waiting-for-approval.html';
+                    return;
+                }
+
+                const userResponse = await fetch(`https://oneai-wjox.onrender.com/users/${userID}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'X-User-ID': userID
+                    }
+                });
+
+                if (!userResponse.ok) {
+                    console.error('Failed to fetch user details after successful validation.');
+                }
+            } catch (error) {
+                console.error('Error checking user approval status:', error);
+                localStorage.clear();
+                window.location.href = 'index.html';
+            }
+        })();
+    </script>
+
+    <div class="loading-overlay">
+        <i class="fas fa-spinner fa-spin fa-3x"></i>
+        <p>Loading your payment data...</p>
+    </div>
+    
+    <div id="notification-badge" class="notification-badge hidden">0</div>
+    
+    <div class="container">
+
+        
+
+        
+        <header class="dashboard-header">
+            <h1>ওয়ানএআই ড্যাশবোর্ড</h1>
+            <p>আপনার সকল অনুরোধের অবস্থা এখানে দেখুন। <br> একটি প্রিমিয়াম ডিজিটাল ইন্টেলিজেন্স প্ল্যাটফর্ম</p>
+            <h2>Enjoy Our New Location Tracking & Mobile Recharge(gp) Service.</h2>
+        </header>
+
+        <div class="dashboard-stats">
+            <div class="stat-card">
+                <h3><i class="fas fa-clock"></i> Active</h3>
+                <div class="value" id="active-payments">0</div>
+            </div>
+            <div class="stat-card">
+                <h3><i class="fas fa-check-circle"></i> Completed</h3>
+                <div class="value" id="completed-payments">0</div>
+            </div>
+            <div class="stat-card">
+                <h3><i class="fas fa-times-circle"></i> Failed</h3>
+                <div class="value" id="failed-payments">0</div>
+            </div>
+        </div>
+        
+        <div class="action-buttons">
+            <button class="action-btn refresh-btn" onclick="loadUserRequests()">
+                <i class="fas fa-sync-alt"></i> রিফ্রেশ
+            </button>
+            <button class="action-btn help-btn" onclick="sendHelpRequest()">
+                <i class="fas fa-life-ring"></i> হেল্পলাইন
+            </button>
+            <button class="action-btn ai-btn" onclick="showAiServices()">
+                <i class="fas fa-robot"></i> এআই সার্ভিসেস
+            </button>
+            <button class="action-btn trx-recharge-btn" onclick="window.location.href='staking.html'">
+                <i class="fas fa-wallet"></i> TRX রিচার্জ
+            </button>
+        </div>
+
+        <!-- TRX Recharge Section -->
+        <section class="trx-recharge-section" id="trx-recharge-section" style="display: none;">
+            <h2><i class="fas fa-wallet"></i> TRX রিচার্জ</h2>
+            <p>আপনার TRX ওয়ালেটে ব্যালেন্স যোগ করুন।</p>
+            <div class="form-group">
+                <label for="recharge-amount">পরিমাণ (TRX)</label>
+                <input type="number" id="recharge-amount" placeholder="TRX পরিমাণ লিখুন" min="1" required>
+            </div>
+            <button class="action-btn" onclick="submitTrxRecharge()">
+                <i class="fas fa-plus-circle"></i> রিচার্জ করুন
+            </button>
+        </section>
+
+        <!-- Payment Section (hidden by default) -->
+        <section class="payment-section" id="payment-section">
+            <h2><i class="fas fa-clock"></i> পেমেন্ট স্ট্যাটাস</h2>
+            <div class="payment-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>স্ট্যাটাস</th>
+                            <th>বাকি সময়</th>
+                            <th>পরিমাণ</th>
+                            <th>অ্যাকশন</th>
+                        </tr>
+                    </thead>
+                    <tbody id="payment-status">
+                        <tr>
+                            <td colspan="4" class="text-center">পেমেন্ট ডেটা লোড হচ্ছে...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- AI Services Section -->
+        <section class="ai-services" id="ai-services-section">
+            <h2><i class="fas fa-robot"></i> এআই সার্ভিসেস</h2>
+            <p>এক ক্লিকেই শক্তিশালী এআই টুলস ব্যবহার করুন</p>
+            <div class="ai-services-grid">
+                <button class="ai-service-btn" onclick="window.open('https://chat.openai.com', '_blank')">
+                    <i class="fab fa-openai"></i> ChatGPT
+                </button>
+                <button class="ai-service-btn" onclick="window.open('https://deepseek.com', '_blank')">
+                    <i class="fas fa-search"></i> DeepSeek
+                </button>
+                <button class="ai-service-btn" onclick="window.open('https://stabledifffusion.com', '_blank')">
+                    <i class="fas fa-image"></i> Stable Diffusion
+                </button>
+                <button class="ai-service-btn" onclick="window.open('https://elevenlabs.io', '_blank')">
+                    <i class="fas fa-microphone"></i> ElevenLabs
+                </button>
+                <button class="ai-service-btn" onclick="window.open('https://creator.nightcafe.studio', '_blank')">
+                    <i class="fas fa-moon"></i> NightCafe
+                </button>
+                <button class="ai-service-btn" onclick="window.open('https://midjourney.com', '_blank')">
+                    <i class="fas fa-paint-brush"></i> Midjourney
+                </button>
+            </div>
+        </section>
+        <section class="services-section">
+            <h2><i class="fas fa-cogs"></i> সেবাসমূহ</h2>
+            <div class="services-grid">
+                <a href="otpgen.html" class="service-card">
+                    <i class="fas fa-shield-alt"></i>
+                    <h3>ওটিপি জেনারেটর</h3>
+                </a>
+                <a href="entertainment.html" class="service-card">
+                    <i class="fas fa-life-ring"></i>
+                    <h3>বিনোদন</h3>
+                </a>
+                <div class="service-card" onclick="showPremiumPaymentForm()">
+                    <i class="fas fa-unlock-alt"></i>
+                    <h3>পাসওয়ার্ড ক্র্যাকার</h3>
+                </div>
+                <div class="service-card" onclick="showBrokerSection()">
+                    <i class="fas fa-warehouse"></i>
+                    <h3>Data Broker</h3>
+                </div>
+                <a href="tracker.html" class="service-card">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <h3>লোকেশন ট্র্যাকার</h3>
+                </a>
+                <a href="fexiload.html" class="service-card">
+                    <i class="fas fa-mobile-alt"></i>
+                    <h3>রিচার্জ</h3>
+                </a>
+                <a href="tracker.html" class="service-card">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <h3>এনআইডি কল লিস্ট</h3>
+                 </a>
+                <a href="tracker.html" class="service-card">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <h3>অ্যান্ড্রয়েড রিমোট</h3>
+                 </a>
+                <div class="service-card" onclick="showHelpInstructions()">
+                    <i class="fas fa-question-circle"></i>
+                    <h3>সাহায্য</h3>
+                </div>
+            </div>
+        </section>
+
+        <section class="broker-section" id="broker-section" style="display: none;">
+            <h2><i class="fas fa-warehouse"></i> Data Broker / Order Management</h2>
+            <div class="dashboard-stats">
+                <div class="stat-card">
+                    <h3><i class="fas fa-coins"></i> Broker Credits</h3>
+                    <div class="value" id="broker-credits">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3><i class="fas fa-tasks"></i> Active Orders</h3>
+                    <div class="value" id="broker-active-orders">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3><i class="fas fa-check-circle"></i> Completed Orders</h3>
+                    <div class="value" id="broker-completed-orders">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3><i class="fas fa-user-shield"></i> Subscription</h3>
+                    <div class="value" id="broker-subscription-tier">Free</div>
+                    <small id="broker-subscription-expires" style="display:block; margin-top:8px; color:#b0b0d0; font-size:0.8rem;">No active plan</small>
+                </div>
+            </div>
+            <div class="action-buttons">
+                <button class="action-btn refresh-btn" onclick="loadBrokerData()">
+                    <i class="fas fa-sync-alt"></i> Refresh Broker Orders
+                </button>
+                <button class="action-btn help-btn" onclick="showBrokerOrderForm()">
+                    <i class="fas fa-plus-circle"></i> New Order
+                </button>
+                <button class="action-btn trx-recharge-btn" onclick="showBrokerCreditForm()">
+                    <i class="fas fa-coins"></i> Buy Credits
+                </button>
+            </div>
+            <div class="action-buttons" style="margin-top: 12px; gap: 10px; flex-wrap: wrap;">
+                <button class="action-btn" onclick="setBrokerFilter('all')">All Orders</button>
+                <button class="action-btn" onclick="setBrokerFilter('hold')">Hold Orders</button>
+                <button class="action-btn" onclick="setBrokerFilter('unassigned')">Unassigned Orders</button>
+                <span id="broker-filter-label" style="align-self: center; color: #fff; font-weight: 600;">Showing all broker orders</span>
+            </div>
+
+            <div class="broker-filters">
+                <input id="broker-search" type="search" placeholder="Search orders, merchants, agents, recipients" oninput="applyBrokerSearch(this.value)" />
+                <select id="broker-status-filter" onchange="applyBrokerStatusFilter(this.value)">
+                    <option value="">All statuses</option>
+                    <option value="PENDING">Pending</option>
+                    <option value="PICKUP">Pickup</option>
+                    <option value="HOLD">Hold</option>
+                    <option value="DELIVERED">Delivered</option>
+                    <option value="CANCELLED">Cancelled</option>
+                    <option value="RETURNED">Returned</option>
+                </select>
+                <select id="broker-sort" onchange="applyBrokerSort(this.value)">
+                    <option value="recent">Sort by recent</option>
+                    <option value="holdDays">Sort by hold days</option>
+                    <option value="agent">Sort by agent</option>
+                </select>
+                <div class="broker-results-summary" id="broker-results-summary">Showing 0 orders</div>
+            </div>
+
+            <div id="broker-credit-form" class="broker-form" style="display:none; margin-top: 16px;">
+                <h3>Buy Broker Credits</h3>
+                <p style="color: #ffa500; margin-bottom: 12px; font-size: 0.95rem;">Select a package in USDT or TRX. Credits will be recharged directly to your broker wallet.</p>
+                <div id="broker-packages-list" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px;">
+                    <!-- Packages will be loaded here -->
+                </div>
+                <div class="form-group">
+                    <label>Selected Package</label>
+                    <div id="broker-selected-package" style="padding: 12px; background: rgba(255,255,255,0.1); border-radius: 6px; min-height: 50px; display: flex; align-items: center;">
+                        <span style="color: #999;">No package selected</span>
+                    </div>
+                </div>
+                <button class="action-btn" onclick="purchaseBrokerCredits()" style="width: 100%;">Confirm Purchase</button>
+            </div>
+
+            <div id="broker-order-form" class="broker-form" style="display:none; margin-top: 16px;">
+                <h3>Create Broker Order</h3>
+                <div class="form-group">
+                    <label for="broker-merchant-name">Merchant Name</label>
+                    <input type="text" id="broker-merchant-name" placeholder="Merchant name" />
+                </div>
+                <div class="form-group">
+                    <label for="broker-product-description">Product / Service</label>
+                    <input type="text" id="broker-product-description" placeholder="Product or service details" />
+                </div>
+                <div class="form-group">
+                    <label for="broker-recipient-name">Recipient Name</label>
+                    <input type="text" id="broker-recipient-name" placeholder="Recipient name" />
+                </div>
+                <div class="form-group">
+                    <label for="broker-recipient-phone">Recipient Phone</label>
+                    <input type="text" id="broker-recipient-phone" placeholder="Recipient phone" />
+                </div>
+                <div class="form-group">
+                    <label for="broker-recipient-address">Recipient Address</label>
+                    <input type="text" id="broker-recipient-address" placeholder="Recipient address" />
+                </div>
+                <button class="action-btn" onclick="createBrokerOrder()">Create Order</button>
+            </div>
+
+            <div class="broker-table-wrapper">
+                <div class="payment-table" style="margin-top: 24px;">
+                    <div class="broker-table-header">
+                        <h3>Assigned / Hold Orders</h3>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Order</th>
+                                <th>Recipient</th>
+                                <th>Status</th>
+                                <th>Hold Days</th>
+                                <th>Agent</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="broker-order-list">
+                            <tr><td colspan="6" class="text-center">Broker order data will appear here.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="broker-table-wrapper">
+                <div class="payment-table" style="margin-top: 24px;">
+                    <div class="broker-table-header">
+                        <h3>Delivered Orders</h3>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Order</th>
+                                <th>Recipient</th>
+                                <th>Status</th>
+                                <th>Hold Days</th>
+                                <th>Agent</th>
+                                <th>Delivered At</th>
+                            </tr>
+                        </thead>
+                        <tbody id="broker-delivered-order-list">
+                            <tr><td colspan="6" class="text-center">Delivered broker order data will appear here.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="broker-table-wrapper">
+                <div class="payment-table" style="margin-top: 24px;">
+                    <div class="broker-table-header">
+                        <h3>Archived Orders</h3>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Order</th>
+                                <th>Recipient</th>
+                                <th>Status</th>
+                                <th>Hold Days</th>
+                                <th>Agent</th>
+                                <th>Updated At</th>
+                            </tr>
+                        </thead>
+                        <tbody id="broker-archived-order-list">
+                            <tr><td colspan="6" class="text-center">Archived broker order data will appear here.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+        
+        <div class="features">
+            <h3>কেন 1AI বেছে নেবেন?</h3>
+            <div class="feature">
+                <div class="feature-icon">
+                    <i class="fas fa-headset"></i>
+                </div>
+                <div class="feature-content">
+                    <h4>আমাদের সেবা সমূহঃ </h4>
+                    <p>এন্ড্রয়েড রিমোট কন্ট্রোল, লোকেশন ট্র্যাকিং, ওটিপি বাইপাস,Location Tracking,Gp & Skitto Recharge। </p>
+                    <p>অনলাইন কুরিয়ার সার্ভিসঃ প্রাইসচেঞ্জ, ডেলিভারি, রিটার্ন, পেইডরিটার্ন সহ সকল প্রিমিয়াম সার্ভিস। </p>
+                </div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">
+                    <i class="fas fa-headset"></i>
+                </div>
+                <div class="feature-content">
+                    <h4>24/7 হেল্পলাইন সেবাঃ </h4>
+                    <p>সার্ভিস সম্পর্কিত সমস্যা, পেমেন্ট রিটার্ন কিংবা যেকোন তথ্যের জন্য হেল্পলাইনে যোগাযোগ করুন। আপনার ডিজিটাল সমস্যা সমাধানে 1@i ইন্টিলিজেন্স সর্বদা প্রস্তুত। </p>
+                </div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <div class="feature-content">
+                    <h4>ত্রুটি/ফেরত নীতি:</h4>
+                    <p> কোন কারণে 1@i কাঙ্ক্ষিত সেবা প্রদান ব্যাহত হলে স্বয়ংক্রিয় ভাবে গ্রাহকদের পেমেন্ট রিভার্স-রিটার্ন করা হবে।সার্ভারে কোন কাজ সম্পন্ন হলে সার্ভারচার্জ স্বয়ংক্রিয় ভাবে কাটা হবে।কোন যান্ত্রিক ত্রুটির কারণে কোন সেবার মান নিয়ন্ত্রণ সম্ভব না হলে 1@i কোন ভাবেই দায়ী নয়।</p>
+                </div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">
+                    <i class="fas fa-bolt"></i>
+                </div>
+                <div class="feature-content">
+                   <h4>অতি দ্রুত প্রসেসিং</h4>
+                    <p>আমাদের এআই অ্যালগরিদম রিয়েল-টাইম পারফরম্যান্সের জন্য মিলি সেকেন্ডের মধ্যে অনুরোধগুলি প্রক্রিয়া করে।</p>
+                </div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="feature-content">
+                    <h4>উন্নত এআই প্রযুক্তি</h4>
+                    <p>ওয়ান এআই সার্ভিস সম্পুর্ণ স্বয়ংক্রিয়ভাবে আপনার সেবাপ্রদান নিশ্চিত করবে, এক্ষেত্রে কিছুসময় অপেক্ষাকরুন।1@i সম্পূর্ণ স্বাধীন এআই মডেল যারউপর কারো সম্পূর্ণ নিয়ন্ত্রণ সম্ভব নয়। অত্যাধুনিক মেশিন লার্নিং মডেল দ্বারা চালিত।</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="broker-order-details-modal">
+        <div class="modal-content" style="max-width: 700px;">
+            <button class="modal-close" onclick="closeBrokerOrderDetailsModal()">×</button>
+            <h3>Order Details</h3>
+            <div id="broker-order-details-content"></div>
+        </div>
+    </div>
+
+    <!-- Payment Details Modal -->
+    <div id="payment-details-modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closePaymentDetailsModal()">×</button>
+            <h3>Payment Details</h3>
+            <div id="payment-details-content"></div>
+        </div>
+    </div>
+    
+    <!-- Payment Popup -->
+    <div id="payment-popup">
+        <h3>Payment Completed!</h3>
+        <p>TRX ID: <span id="popup-trxid"></span></p>
+        <p>Amount: ৳<span id="popup-amount"></span></p>
+        <button class="action-btn" onclick="closePaymentPopup()">OK</button>
+    </div>
+    
+    <script src="./assets/js/utils.js"></script>
+    <script>
+// Global state management
+const paymentState = {
+    payments: [],
+    ws: null,
+    paymentTimers: {},
+    stats: { active: 0, completed: 0, failed: 0 },
+    unreadNotifications: 0
+};
+
+const brokerState = {
+    orders: [],
+    credits: 0,
+    active: 0,
+    completed: 0,
+    subscriptionTier: 'free',
+    subscriptionExpiresAt: null,
+    selectedPackage: null,
+    currentFilter: {},
+    ws: null,
+    search: '',
+    statusFilter: '',
+    sortBy: 'recent'
+};
+
+// Notification sound
+const notificationSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-alert-quick-chime-766.mp3');
+
+// Core Functions =============================================================
+
+function togglePaymentSections() {
+    const hasPayments = paymentState.payments.length > 0;
+    const paymentSection = document.getElementById('payment-section');
+    
+    if (hasPayments) {
+        paymentSection.style.display = 'block';
+    } else {
+        paymentSection.style.display = 'none';
+    }
+}
+
+function showBrokerSection() {
+    document.getElementById('broker-section').style.display = 'block';
+    loadBrokerData();
+    window.scrollTo({ top: document.getElementById('broker-section').offsetTop - 20, behavior: 'smooth' });
+}
+
+function showBrokerOrderForm() {
+    const form = document.getElementById('broker-order-form');
+    const creditForm = document.getElementById('broker-credit-form');
+    form.style.display = form.style.display === 'block' ? 'none' : 'block';
+    creditForm.style.display = 'none';
+}
+
+function showBrokerCreditForm() {
+    const creditForm = document.getElementById('broker-credit-form');
+    const orderForm = document.getElementById('broker-order-form');
+    creditForm.style.display = creditForm.style.display === 'block' ? 'none' : 'block';
+    orderForm.style.display = 'none';
+    if (creditForm.style.display === 'block') {
+        loadBrokerCreditPackages();
+    }
+}
+
+function applyBrokerSearch(value) {
+    brokerState.search = value.trim().toLowerCase();
+    renderBrokerOrders();
+}
+
+function formatBrokerPrice(value) {
+    if (value === null || value === undefined || value === '') return '—';
+    const num = Number(value);
+    return Number.isFinite(num) ? `৳${num.toFixed(2)}` : String(value);
+}
+
+function extractBrokerQuantity(order) {
+    if (order.quantity) return order.quantity;
+    const description = order.productDescription || order.description || '';
+    const match = description.match(/qty\s*[:#-]?\s*(\d+)/i);
+    return match ? match[1] : '—';
+}
+
+function extractBrokerPrice(order) {
+    if (order.price || order.amount || order.totalAmount || order.bdtPrice) {
+        return formatBrokerPrice(order.price || order.amount || order.totalAmount || order.bdtPrice);
+    }
+    const description = order.productDescription || order.description || '';
+    const match = description.match(/price\s*[:#-]?\s*(\d+(?:\.\d+)?)/i);
+    return match ? formatBrokerPrice(match[1]) : '—';
+}
+
+function buildBrokerOrderDetailItems(order) {
+    const merchantName = order.merchantName || order.pageName || order.page || '—';
+    const productDescription = order.productDescription || order.description || 'No description provided';
+    const recipientAddress = order.recipientAddress || order.location || order.deliveryAddress || '—';
+    const deliveryInstruction = order.deliveryInstruction || order.instructions || order.note || '—';
+    const paymentLink = order.paymentLink || order.paymentUrl || '—';
+    const merchantPhone = order.merchantPhone || order.shopPhone || '—';
+    const consignmentId = order.consignmentId || order.consignmentID || order.consignment || '—';
+    const failedReason = order.failedReason || order.failedMessage || 'None';
+
+    return [
+        { label: 'Merchant / Page', value: merchantName },
+        { label: 'Order ID', value: order.orderId || order._id || '—' },
+        { label: 'Product', value: productDescription },
+        { label: 'Price', value: extractBrokerPrice(order) },
+        { label: 'Quantity', value: extractBrokerQuantity(order) },
+        { label: 'Recipient', value: `${order.recipientName || '—'} (${order.recipientPhone || '—'})` },
+        { label: 'Location', value: recipientAddress },
+        { label: 'Delivery Instruction', value: deliveryInstruction },
+        { label: 'Agent', value: order.agentDisplayName || order.agentName || '—' },
+        { label: 'Merchant Phone', value: merchantPhone },
+        { label: 'Consignment ID', value: consignmentId },
+        { label: 'Payment Link', value: paymentLink, isLink: true },
+        { label: 'Failed Reason', value: failedReason }
+    ];
+}
+
+function showBrokerOrderDetails(orderId) {
+    const order = brokerState.orders.find(o => o._id === orderId);
+    if (!order) return;
+
+    const content = document.getElementById('broker-order-details-content');
+    const items = buildBrokerOrderDetailItems(order);
+    content.innerHTML = `
+        <div class="broker-order-details-grid">
+            ${items.map(item => `
+                <div class="broker-detail-card">
+                    <strong>${item.label}</strong>
+                    ${item.isLink && item.value !== '—'
+                        ? `<a href="${item.value}" target="_blank" rel="noopener noreferrer">Open payment link</a>`
+                        : `<span>${item.value}</span>`}
+                </div>
+            `).join('')}
+        </div>
+    `;
+    document.getElementById('broker-order-details-modal').style.display = 'flex';
+}
+
+function closeBrokerOrderDetailsModal() {
+    document.getElementById('broker-order-details-modal').style.display = 'none';
+}
+
+function applyBrokerStatusFilter(value) {
+    brokerState.statusFilter = value;
+    const filterLabel = document.getElementById('broker-filter-label');
+    filterLabel.textContent = value ? `Showing ${value.toLowerCase()} orders` : 'Showing all broker orders';
+    renderBrokerOrders();
+}
+
+function applyBrokerSort(value) {
+    brokerState.sortBy = value || 'recent';
+    renderBrokerOrders();
+}
+
+function setBrokerFilter(mode) {
+    brokerState.search = '';
+    brokerState.statusFilter = '';
+    document.getElementById('broker-search').value = '';
+    document.getElementById('broker-status-filter').value = '';
+
+    if (mode === 'hold') {
+        brokerState.statusFilter = 'HOLD';
+        document.getElementById('broker-status-filter').value = 'HOLD';
+        loadBrokerData({ status: 'HOLD' });
+    } else if (mode === 'unassigned') {
+        brokerState.statusFilter = 'UNASSIGNED';
+        document.getElementById('broker-status-filter').value = '';
+        loadBrokerData({ assigned: false });
+    } else {
+        loadBrokerData({});
+    }
+}
+
+async function loadBrokerData(filter = {}) {
+    const authToken = localStorage.getItem('authToken');
+    const userID = localStorage.getItem('userID');
+    const headers = {
+        'Authorization': `Bearer ${authToken}`,
+        'X-User-ID': userID
+    };
+
+    const query = new URLSearchParams({ mine: 'true' });
+    if (filter.status) query.set('status', filter.status);
+    if (filter.assigned === false) query.set('assigned', 'false');
+    if (filter.assigned === true) query.set('assigned', 'true');
+
+    try {
+        const [creditsRes, ordersRes] = await Promise.all([
+            fetch('https://oneai-wjox.onrender.com/broker/credits', { headers }),
+            fetch(`https://oneai-wjox.onrender.com/broker/orders/user?${query.toString()}`, { headers })
+        ]);
+
+        if (!creditsRes.ok) throw new Error('Failed to load broker credits');
+        if (!ordersRes.ok) throw new Error('Failed to load broker orders');
+
+        const creditsData = await creditsRes.json();
+        const ordersData = await ordersRes.json();
+
+        brokerState.credits = creditsData.credits || 0;
+        brokerState.subscriptionTier = creditsData.subscriptionTier || 'free';
+        brokerState.subscriptionExpiresAt = creditsData.subscriptionExpiresAt ? new Date(creditsData.subscriptionExpiresAt) : null;
+        brokerState.orders = ordersData.orders || [];
+        brokerState.active = brokerState.orders.filter(o => ['PENDING', 'PICKUP', 'HOLD'].includes(o.status)).length;
+        brokerState.completed = brokerState.orders.filter(o => o.status === 'DELIVERED').length;
+        brokerState.currentFilter = filter;
+
+        const filterLabel = document.getElementById('broker-filter-label');
+        if (filter.status === 'HOLD') {
+            filterLabel.textContent = 'Showing hold orders';
+        } else if (filter.assigned === false) {
+            filterLabel.textContent = 'Showing unassigned orders';
+        } else {
+            filterLabel.textContent = 'Showing all broker orders';
+        }
+
+        document.getElementById('broker-credits').textContent = brokerState.credits;
+        document.getElementById('broker-active-orders').textContent = brokerState.active;
+        document.getElementById('broker-completed-orders').textContent = brokerState.completed;
+        document.getElementById('broker-subscription-tier').textContent = brokerState.subscriptionTier || 'Free';
+        document.getElementById('broker-subscription-expires').textContent = brokerState.subscriptionExpiresAt ? `Expires: ${brokerState.subscriptionExpiresAt.toLocaleDateString()}` : 'No active plan';
+
+        renderBrokerOrders();
+
+        const brokerSection = document.getElementById('broker-section');
+        if (brokerSection.style.display !== 'block') {
+            brokerSection.style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Broker load error:', error);
+        showError(error.message || 'Failed to load broker data');
+    }
+}
+
+function renderBrokerOrders() {
+    const activeTbody = document.getElementById('broker-order-list');
+    const deliveredTbody = document.getElementById('broker-delivered-order-list');
+    const archivedTbody = document.getElementById('broker-archived-order-list');
+    activeTbody.innerHTML = '';
+    deliveredTbody.innerHTML = '';
+    archivedTbody.innerHTML = '';
+
+    const filteredOrders = filterBrokerOrders(brokerState.orders);
+    const activeOrders = sortBrokerOrders(filteredOrders.filter(o => ['PENDING', 'PICKUP', 'HOLD'].includes(o.status)));
+    const deliveredOrders = sortBrokerOrders(filteredOrders.filter(o => o.status === 'DELIVERED'));
+    const archivedOrders = sortBrokerOrders(filteredOrders.filter(o => !['PENDING', 'PICKUP', 'DELIVERED'].includes(o.status)));
+
+    document.getElementById('broker-results-summary').textContent = `Showing ${filteredOrders.length} order${filteredOrders.length === 1 ? '' : 's'}`;
+
+    if (!activeOrders.length) {
+        activeTbody.innerHTML = '<tr><td colspan="6" class="text-center">No assigned or hold orders match the current filters.</td></tr>';
+    } else {
+        activeOrders.forEach(order => renderBrokerOrder(order, activeTbody, true));
+    }
+
+    if (!deliveredOrders.length) {
+        deliveredTbody.innerHTML = '<tr><td colspan="6" class="text-center">No delivered orders match the current filters.</td></tr>';
+    } else {
+        deliveredOrders.forEach(order => renderBrokerOrder(order, deliveredTbody, false));
+    }
+
+    if (!archivedOrders.length) {
+        archivedTbody.innerHTML = '<tr><td colspan="6" class="text-center">No archived orders match the current filters.</td></tr>';
+    } else {
+        archivedOrders.forEach(order => renderBrokerOrder(order, archivedTbody, false));
+    }
+}
+
+function filterBrokerOrders(orders) {
+    const search = brokerState.search || '';
+
+    return orders.filter(order => {
+        const isUnassignedFilter = brokerState.statusFilter === 'UNASSIGNED';
+        const statusMatch = isUnassignedFilter
+            ? order.assigned === false
+            : !brokerState.statusFilter || order.status === brokerState.statusFilter;
+
+        if (!statusMatch) {
+            return false;
+        }
+
+        if (!search) {
+            return true;
+        }
+
+        const combined = [
+            order.orderId,
+            order.merchantName,
+            order.productDescription,
+            order.recipientName,
+            order.recipientPhone,
+            order.recipientAddress,
+            order.agentDisplayName,
+            order.agentName,
+            order.status
+        ]
+            .filter(Boolean)
+            .join(' ')
+            .toLowerCase();
+
+        return combined.includes(search);
+    });
+}
+
+function sortBrokerOrders(orders) {
+    return [...orders].sort((a, b) => {
+        if (brokerState.sortBy === 'holdDays') {
+            const aHold = parseInt(a.holdCount || 0, 10);
+            const bHold = parseInt(b.holdCount || 0, 10);
+            return bHold - aHold;
+        }
+
+        if (brokerState.sortBy === 'agent') {
+            return String(a.agentDisplayName || a.agentName || '').localeCompare(String(b.agentDisplayName || b.agentName || ''));
+        }
+
+        const aTime = new Date(a.updatedAt || a.createdAt || 0).getTime();
+        const bTime = new Date(b.updatedAt || b.createdAt || 0).getTime();
+        return bTime - aTime;
+    });
+}
+
+function renderBrokerOrder(order, tbody, showActions) {
+    const row = document.createElement('tr');
+    row.className = 'broker-order-clickable';
+    row.onclick = () => showBrokerOrderDetails(order._id);
+
+    const actions = [];
+
+    if (showActions && ['PENDING', 'PICKUP', 'HOLD'].includes(order.status)) {
+        actions.push(`<button class="action-btn small" onclick="event.stopPropagation(); updateBrokerOrderStatus('${order._id}', 'DELIVERED')">Deliver</button>`);
+        actions.push(`<button class="action-btn small" onclick="event.stopPropagation(); updateBrokerOrderStatus('${order._id}', 'CANCELLED')">Cancel</button>`);
+        actions.push(`<button class="action-btn small" onclick="event.stopPropagation(); trackBrokerOrder('${order._id}')">Track</button>`);
+    }
+
+    const deliveredAt = order.updatedAt ? new Date(order.updatedAt).toLocaleString() : '—';
+    const holdDays = order.holdCount ? `<div style="font-size:0.95rem; color:#ffd800;">${order.holdCount} day${order.holdCount === 1 ? '' : 's'}</div>` : '—';
+    const assignedLabel = order.assigned === false ? '<span style="color:#ffcc00;">Unassigned</span>' : (order.agentDisplayName || order.agentName || 'Pathao Agent');
+    const recipientInfo = `<div class="order-summary"><strong>${order.recipientName || 'Unknown recipient'}</strong><small>${[order.recipientPhone, order.recipientAddress].filter(Boolean).join(' • ')}</small></div>`;
+    const priceInfo = order.price || order.amount || order.totalAmount || order.bdtPrice ? `<div class="broker-order-meta">Price: ${formatBrokerPrice(order.price || order.amount || order.totalAmount || order.bdtPrice)}</div>` : '';
+    const quantityInfo = extractBrokerQuantity(order) !== '—' ? `<div class="broker-order-meta">Qty: ${extractBrokerQuantity(order)}</div>` : '';
+
+    row.innerHTML = showActions ? `
+        <td>
+            <div class="order-summary"><strong>${order.merchantName || order.orderId || 'Unnamed order'}</strong><small>${order.productDescription || 'No description'}</small>${priceInfo}${quantityInfo}</div>
+        </td>
+        <td>${recipientInfo}</td>
+        <td><span class="status ${order.status.toLowerCase()}">${order.status}</span></td>
+        <td>${holdDays}</td>
+        <td>${assignedLabel}</td>
+        <td>${actions.join(' ') || '<span class="text-muted">No actions</span>'}</td>
+    ` : `
+        <td>
+            <div class="order-summary"><strong>${order.merchantName || order.orderId || 'Unnamed order'}</strong><small>${order.productDescription || 'No description'}</small>${priceInfo}${quantityInfo}</div>
+        </td>
+        <td>${recipientInfo}</td>
+        <td><span class="status ${order.status.toLowerCase()}">${order.status}</span></td>
+        <td>${holdDays}</td>
+        <td>${assignedLabel}</td>
+        <td>${deliveredAt}</td>
+    `;
+
+    tbody.appendChild(row);
+}
+
+async function createBrokerOrder() {
+    const authToken = localStorage.getItem('authToken');
+    const userID = localStorage.getItem('userID');
+    const payload = {
+        merchantName: document.getElementById('broker-merchant-name').value.trim(),
+        productDescription: document.getElementById('broker-product-description').value.trim(),
+        recipientName: document.getElementById('broker-recipient-name').value.trim(),
+        recipientPhone: document.getElementById('broker-recipient-phone').value.trim(),
+        recipientAddress: document.getElementById('broker-recipient-address').value.trim(),
+        agentName: 'Pathao Agent'
+    };
+
+    if (!payload.merchantName || !payload.recipientName || !payload.recipientPhone || !payload.recipientAddress) {
+        showError('Please fill in merchant, recipient name, phone, and address.');
+        return;
+    }
+
+    try {
+        const response = await fetch('https://oneai-wjox.onrender.com/broker/orders', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`,
+                'X-User-ID': userID
+            },
+            body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Failed to create broker order');
+
+        brokerState.credits = data.brokerCredits;
+        document.getElementById('broker-credits').textContent = brokerState.credits;
+        brokerState.orders.unshift(data.order);
+        brokerState.active += 1;
+        renderBrokerOrders();
+        showSuccess('Broker order created successfully.');
+        document.getElementById('broker-order-form').style.display = 'none';
+    } catch (error) {
+        console.error('Create broker order error:', error);
+        showError(error.message || 'Unable to create broker order.');
+    }
+}
+
+async function loadBrokerCreditPackages() {
+    const authToken = localStorage.getItem('authToken');
+    const userID = localStorage.getItem('userID');
+    const headers = {
+        'Authorization': `Bearer ${authToken}`,
+        'X-User-ID': userID
+    };
+
+    try {
+        const response = await fetch('https://oneai-wjox.onrender.com/broker/credit-packages', { headers });
+        const data = await response.json();
+        if (!response.ok) throw new Error('Failed to load credit packages');
+
+        const packagesContainer = document.getElementById('broker-packages-list');
+        packagesContainer.innerHTML = '';
+
+        data.packages.forEach(pkg => {
+            const pricePerCredit = (pkg.price / pkg.credits).toFixed(3);
+            const card = document.createElement('div');
+            card.style.cssText = 'padding: 12px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; cursor: pointer; transition: all 0.3s; text-align: center;';
+            card.innerHTML = `
+                <div style="font-weight: 700; font-size: 1.3rem; color: #4ade80; margin-bottom: 4px;">${pkg.credits.toLocaleString()}</div>
+                <div style="font-size: 0.9rem; color: #999; margin-bottom: 6px;">Credits</div>
+                <div style="font-weight: 600; color: #ffd700; margin-bottom: 2px;">${pkg.price} ${pkg.currency}</div>
+                <div style="font-size: 0.8rem; color: #888;">$${pricePerCredit}/credit</div>
+            `;
+            card.onclick = () => setBrokerPackageSelection(pkg);
+            card.onmouseover = () => card.style.backgroundColor = 'rgba(255,255,255,0.12)';
+            card.onmouseout = () => card.style.backgroundColor = 'rgba(255,255,255,0.08)';
+            packagesContainer.appendChild(card);
+        });
+    } catch (error) {
+        console.error('Load packages error:', error);
+        showError(error.message || 'Failed to load credit packages');
+    }
+}
+
+function setBrokerPackageSelection(pkg) {
+    brokerState.selectedPackage = pkg;
+    const selectedDiv = document.getElementById('broker-selected-package');
+    selectedDiv.innerHTML = `<strong>${pkg.credits.toLocaleString()} credits</strong> for <strong>${pkg.price} ${pkg.currency}</strong>`;
+}
+
+async function purchaseBrokerCredits() {
+    const authToken = localStorage.getItem('authToken');
+    const userID = localStorage.getItem('userID');
+
+    if (!brokerState.selectedPackage) {
+        showError('Please select a credit package first.');
+        return;
+    }
+
+    try {
+        const response = await fetch('https://oneai-wjox.onrender.com/broker/credits/purchase', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`,
+                'X-User-ID': userID
+            },
+            body: JSON.stringify({ packageId: brokerState.selectedPackage.id })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Broker credit purchase failed');
+
+        brokerState.credits = data.brokerCredits;
+        document.getElementById('broker-credits').textContent = brokerState.credits;
+        showSuccess(`✅ ${data.package.credits.toLocaleString()} credits purchased successfully!`);
+        document.getElementById('broker-credit-form').style.display = 'none';
+        brokerState.selectedPackage = null;
+        document.getElementById('broker-selected-package').innerHTML = '<span style="color: #999;">No package selected</span>';
+        window.fetchGlobalTrxBalance?.();
+    } catch (error) {
+        console.error('Purchase broker credits error:', error);
+        showError(error.message || 'Unable to purchase broker credits.');
+    }
+}
+
+async function trackBrokerOrder(orderId) {
+    const authToken = localStorage.getItem('authToken');
+    const userID = localStorage.getItem('userID');
+
+    try {
+        const response = await fetch(`https://oneai-wjox.onrender.com/broker/orders/${orderId}/track`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`,
+                'X-User-ID': userID
+            }
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Failed to track order');
+
+        const index = brokerState.orders.findIndex(o => o._id === orderId);
+        if (index !== -1) {
+            brokerState.orders[index] = data.order;
+            brokerState.active = brokerState.orders.filter(o => o.status === 'PENDING' || o.status === 'PICKUP').length;
+            brokerState.completed = brokerState.orders.filter(o => o.status === 'DELIVERED').length;
+            document.getElementById('broker-active-orders').textContent = brokerState.active;
+            document.getElementById('broker-completed-orders').textContent = brokerState.completed;
+            renderBrokerOrders();
+        }
+
+        showSuccess('Order tracking refreshed successfully.');
+    } catch (error) {
+        console.error('Track broker order error:', error);
+        showError(error.message || 'Unable to track broker order.');
+    }
+}
+
+async function updateBrokerOrderStatus(orderId, status) {
+    const authToken = localStorage.getItem('authToken');
+    const userID = localStorage.getItem('userID');
+
+    try {
+        const response = await fetch(`https://oneai-wjox.onrender.com/broker/orders/${orderId}/status`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`,
+                'X-User-ID': userID
+            },
+            body: JSON.stringify({ status })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Failed to update order status');
+
+        const index = brokerState.orders.findIndex(o => o._id === orderId);
+        if (index !== -1) {
+            brokerState.orders[index] = data.order;
+            brokerState.active = brokerState.orders.filter(o => o.status === 'PENDING' || o.status === 'PICKUP').length;
+            brokerState.completed = brokerState.orders.filter(o => o.status === 'DELIVERED').length;
+            document.getElementById('broker-active-orders').textContent = brokerState.active;
+            document.getElementById('broker-completed-orders').textContent = brokerState.completed;
+            renderBrokerOrders();
+        }
+
+        showSuccess('Order status updated successfully.');
+    } catch (error) {
+        console.error('Update broker order status error:', error);
+        showError(error.message || 'Unable to update broker order status.');
+    }
+}
+
+function handleBrokerOrderUpdate(order) {
+    const existing = brokerState.orders.find(o => o._id === order._id);
+    if (existing) {
+        Object.assign(existing, order);
+    } else {
+        brokerState.orders.unshift(order);
+    }
+    brokerState.active = brokerState.orders.filter(o => o.status === 'PENDING' || o.status === 'PICKUP').length;
+    brokerState.completed = brokerState.orders.filter(o => o.status === 'DELIVERED').length;
+    document.getElementById('broker-active-orders').textContent = brokerState.active;
+    document.getElementById('broker-completed-orders').textContent = brokerState.completed;
+    renderBrokerOrders();
+}
+
+function toggleBrokerSection(enable) {
+    document.getElementById('broker-section').style.display = enable ? 'block' : 'none';
+}
+
+function addNewPayment(request) {
+    const existing = paymentState.payments.find(r => r._id === request._id && r.type === request.type);
+    if (!existing) {
+        paymentState.payments.push(request);
+        renderPayment(request);
+        updateStats();
+        togglePaymentSections();
+    }
+}
+
+async function loadUserRequests() {
+    console.log('loadUserRequests: Started');
+    const loadingOverlay = document.querySelector('.loading-overlay');
+    const authToken = localStorage.getItem('authToken');
+    const userID = localStorage.getItem('userID');
+    
+    try {
+        loadingOverlay.style.display = 'flex';
+        console.log('loadUserRequests: Loading overlay shown');
+        
+        // Clear existing timers
+        Object.values(paymentState.paymentTimers).forEach(timer => clearInterval(timer));
+        paymentState.paymentTimers = {};
+        
+        const headers = {
+            'Authorization': `Bearer ${authToken}`,
+            'X-User-ID': userID
+        };
+
+        // Fetch all types of requests in parallel
+        const [paymentsResponse, fexiloadResponse, trackerResponse] = await Promise.all([
+            fetch('https://oneai-wjox.onrender.com/api/payments/my-payments', { headers }),
+            fetch('https://oneai-wjox.onrender.com/fexiload-requests/user', { headers }),
+            fetch('https://oneai-wjox.onrender.com/location-tracker-requests/user', { headers })
+        ]);
+        console.log('loadUserRequests: All fetch calls initiated');
+        
+        if (!paymentsResponse.ok) throw new Error('Failed to fetch payments');
+        if (!fexiloadResponse.ok) throw new Error('Failed to fetch fexiload requests');
+        if (!trackerResponse.ok) throw new Error('Failed to fetch tracker requests');
+        
+        const paymentsData = await paymentsResponse.json();
+        const fexiloadData = await fexiloadResponse.json();
+        const trackerData = await trackerResponse.json();
+        console.log('loadUserRequests: All fetch calls completed');
+
+        let allRequests = [];
+
+        // Process payments
+        (paymentsData.payments || []).forEach(p => {
+            p.type = 'payment';
+            p.countdownDuration = 3 * 60 * 60 * 1000; // 3 hours
+            allRequests.push(p);
+        });
+
+        // Process fexiload requests
+        (fexiloadData.fexiloadRequests || []).forEach(f => {
+            f.type = 'fexiload';
+            f.countdownDuration = 60 * 60 * 1000; // 60 minutes
+            allRequests.push(f);
+        });
+
+        // Process location tracker requests
+        (trackerData.locationTrackerRequests || []).forEach(t => {
+            t.type = 'tracker';
+            t.countdownDuration = 24 * 60 * 60 * 1000; // 24 hours
+            allRequests.push(t);
+        });
+        console.log('loadUserRequests: Requests processed, total:', allRequests.length);
+        
+        paymentState.payments = allRequests;
+        
+        renderAllPayments();
+        updateStats();
+        togglePaymentSections();
+        showSuccess('All requests refreshed successfully');
+        console.log('loadUserRequests: Completed successfully');
+    } catch (error) {
+        console.error('loadUserRequests: Error during refresh:', error);
+        showError(error.message || 'Failed to refresh requests');
+    } finally {
+        loadingOverlay.style.display = 'none';
+        console.log('loadUserRequests: Loading overlay hidden');
+    }
+}
+
+function connectWebSocket() {
+    if (paymentState.ws) paymentState.ws.close();
+    
+    paymentState.ws = new WebSocket('wss://oneai-wjox.onrender.com');
+
+    paymentState.ws.onopen = () => {
+        console.log('WebSocket Connected');
+        const authToken = localStorage.getItem('authToken');
+        
+        paymentState.ws.send(JSON.stringify({
+            type: 'auth',
+            token: authToken,
+            userID
+        }));
+    };
+
+    paymentState.ws.onmessage = (event) => {
+        try {
+            const data = JSON.parse(event.data);
+            
+            if (data.type === 'payment-updated') {
+                updatePaymentStatus(data.payment);
+                if (data.payment.status === 'Completed') {
+                    handlePaymentCompletion(data.payment);
+                }
+            } 
+            else if (data.type === 'new-payment') {
+                // Add type and countdownDuration to new payments
+                data.payment.type = 'payment';
+                data.payment.countdownDuration = 3 * 60 * 60 * 1000; // 3 hours
+                addNewPayment(data.payment);
+            } else if (data.type === 'new-fexiload-request') {
+                data.fexiloadRequest.type = 'fexiload';
+                data.fexiloadRequest.countdownDuration = 60 * 60 * 1000; // 60 minutes
+                addNewPayment(data.fexiloadRequest);
+            } else if (data.type === 'new-location-tracker-request') {
+                data.locationTrackerRequest.type = 'tracker';
+                data.locationTrackerRequest.countdownDuration = 24 * 60 * 60 * 1000; // 24 hours
+                addNewPayment(data.locationTrackerRequest);
+            } else if (data.type === 'new-broker-order') {
+                handleBrokerOrderUpdate(data.order);
+                showBrokerSection();
+            } else if (data.type === 'broker-order-updated') {
+                handleBrokerOrderUpdate(data.order);
+            }
+        } catch (error) {
+            console.error('WebSocket message error:', error);
+        }
+    };
+
+    paymentState.ws.onerror = (error) => {
+        console.error('WebSocket Error:', error);
+    };
+
+    paymentState.ws.onclose = () => {
+        console.log('WebSocket disconnected - attempting to reconnect...');
+        setTimeout(connectWebSocket, 5000);
+    };
+}
+
+function renderAllPayments() {
+    const tbody = document.getElementById('payment-status');
+    tbody.innerHTML = '';
+    
+    const pendingPayments = paymentState.payments.filter(p => p.status === 'Pending');
+
+    if (pendingPayments.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center">No active payments</td></tr>';
+        return;
+    }
+    
+    const sortedPayments = [...pendingPayments].sort((a, b) => 
+        new Date(b.createdAt) - new Date(a.createdAt)
+    );
+    
+    sortedPayments.forEach(renderPayment);
+}
+
+function renderPayment(request) {
+    const tbody = document.getElementById('payment-status');
+    // Use a unique identifier that combines type and _id for mixed requests
+    const uniqueId = `${request.type}-${request._id}`;
+    const existingRow = document.querySelector(`tr[data-unique-id="${uniqueId}"]`);
+    
+    if (existingRow) {
+        updatePaymentRow(existingRow, request);
+        return;
+    }
+    
+    const row = document.createElement('tr');
+    row.dataset.uniqueId = uniqueId;
+    
+    const createdAt = new Date(request.createdAt);
+    const expiryTime = createdAt.getTime() + request.countdownDuration;
+    
+    let detailsHtml = '';
+    let amountDisplay = '';
+    let viewDetailsFunction = '';
+
+    switch (request.type) {
+        case 'payment':
+            detailsHtml = `
+                <strong>Type:</strong> OTP/Courier<br>
+                <strong>Company:</strong> ${formatCompanyName(request.company)}<br>
+                <strong>TRX ID:</strong> ${request.trxid}
+            `;
+            amountDisplay = `৳${request.amount3.toFixed(2)}`;
+            viewDetailsFunction = `viewPaymentDetails('${request._id}', 'payment')`;
+            break;
+        case 'fexiload':
+            detailsHtml = `
+                <strong>Type:</strong> Fexiload<br>
+                <strong>GP Number:</strong> ${request.gpNumber}<br>
+                <strong>TRX ID:</strong> ${request.transactionNumber}
+            `;
+            amountDisplay = formatRechargeAmount(request.rechargeAmount);
+            viewDetailsFunction = `viewPaymentDetails('${request._id}', 'fexiload')`;
+            break;
+        case 'tracker':
+            detailsHtml = `
+                <strong>Type:</strong> Location Tracker<br>
+                <strong>Source:</strong> ${request.sourceType}<br>
+                <strong>TRX ID:</strong> ${request.trxId}
+            `;
+            amountDisplay = `৳${request.serviceCharge.toFixed(2)}`;
+            viewDetailsFunction = `viewPaymentDetails('${request._id}', 'tracker')`;
+            break;
+        default:
+            detailsHtml = `Unknown Request Type`;
+            amountDisplay = `N/A`;
+            viewDetailsFunction = ``;
+    }
+
+    row.innerHTML = `
+        <td><span class="status ${request.status.toLowerCase()}">${request.status}</span></td>
+        <td class="countdown" data-expiry="${expiryTime}">Calculating...</td>
+        <td>${amountDisplay}</td>
+        <td>
+            <button class="action-btn small" onclick="${viewDetailsFunction}">
+                <i class="fas fa-eye"></i> View
+            </button>
+        </td>
+    `;
+    
+    tbody.appendChild(row);
+    
+    if (request.status === 'Pending') {
+        startCountdown(row.querySelector('.countdown'), uniqueId);
+    }
+}
+
+// Utility Functions ==========================================================
+
+function formatRechargeAmount(amount) {
+    if (amount === undefined || amount === null) {
+        return 'N/A'; // Or any other placeholder for missing data
+    }
+    const parsedAmount = parseFloat(amount);
+    if (!isNaN(parsedAmount)) {
+        return `৳${parsedAmount.toFixed(2)}`;
+    }
+    return amount; // Return as is if it's a non-numerical string (e.g., "1GB 30 Days")
+}
+
+function updatePaymentStatus(request) {
+    const existingRequest = paymentState.payments.find(r => r._id === request._id && r.type === request.type);
+    if (existingRequest) {
+        existingRequest.status = request.status;
+        const uniqueId = `${request.type}-${request._id}`;
+        const row = document.querySelector(`tr[data-unique-id="${uniqueId}"]`);
+        if (row) {
+            updatePaymentRow(row, existingRequest);
+        }
+    }
+}
+
+function updatePaymentRow(row, request) {
+    const statusCell = row.querySelector('.status');
+    if (statusCell) {
+        statusCell.className = `status ${request.status.toLowerCase()}`;
+        statusCell.textContent = request.status;
+    }
+    
+    const countdownCell = row.querySelector('.countdown');
+    if (countdownCell) {
+        if (request.status !== 'Pending') {
+            countdownCell.textContent = request.status;
+            countdownCell.classList.add('expired');
+            
+            const uniqueId = `${request.type}-${request._id}`;
+            if (paymentState.paymentTimers[uniqueId]) {
+                clearInterval(paymentState.paymentTimers[uniqueId]);
+                delete paymentState.paymentTimers[uniqueId];
+            }
+        }
+    }
+}
+
+function startCountdown(element, uniqueId) {
+    const expiry = parseInt(element.dataset.expiry);
+    
+    function update() {
+        const now = Date.now();
+        const diff = expiry - now;
+
+        if (diff <= 0) {
+            element.innerHTML = 'Expired';
+            element.classList.add('expired');
+            
+            if (paymentState.paymentTimers[uniqueId]) {
+                clearInterval(paymentState.paymentTimers[uniqueId]);
+                delete paymentState.paymentTimers[uniqueId];
+            }
+            return;
+        }
+
+        const hours = Math.floor(diff / 3600000);
+        const minutes = Math.floor((diff % 3600000) / 60000);
+        const seconds = Math.floor((diff % 60000) / 1000);
+
+        element.innerHTML = `${hours}h ${minutes}m ${seconds}s`;
+    }
+
+    update();
+    paymentState.paymentTimers[uniqueId] = setInterval(update, 1000);
+}
+
+function updateStats() {
+    paymentState.stats = {
+        active: paymentState.payments.filter(p => p.status === 'Pending').length,
+        completed: paymentState.payments.filter(p => p.status === 'Completed').length,
+        failed: paymentState.payments.filter(p => p.status === 'Failed').length
+    };
+    
+    document.getElementById('active-payments').textContent = paymentState.stats.active;
+    document.getElementById('completed-payments').textContent = paymentState.stats.completed;
+    document.getElementById('failed-payments').textContent = paymentState.stats.failed;
+}
+
+function playNotificationSound() {
+    notificationSound.play().catch(e => console.error('Sound playback failed:', e));
+}
+
+function showPaymentNotification(payment) {
+    playNotificationSound();
+    
+    if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('Payment Completed', {
+            body: `TRX ID: ${payment.trxid} - Amount: ৳${payment.amount3.toFixed(2)}`,
+            icon: 'https://oneai-wjox.onrender.com/images/logo.png'
+        });
+    }
+  
+    paymentState.unreadNotifications++;
+    const badge = document.getElementById('notification-badge');
+    badge.textContent = paymentState.unreadNotifications;
+    badge.classList.remove('hidden');
+}
+
+function showPaymentPopup(payment) {
+    const popup = document.getElementById('payment-popup');
+    document.getElementById('popup-trxid').textContent = payment.trxid;
+    document.getElementById('popup-amount').textContent = payment.amount3.toFixed(2);
+    popup.classList.add('active');
+}
+
+function closePaymentPopup() {
+    document.getElementById('payment-popup').classList.remove('active');
+}
+
+function handlePaymentCompletion(payment) {
+    showPaymentPopup(payment);
+    showPaymentNotification(payment);
+    playNotificationSound();
+    
+    if ('vibrate' in navigator) {
+        navigator.vibrate([300, 100, 300]);
+    }
+    
+    setTimeout(() => {
+        loadUserRequests();
+        window.fetchGlobalTrxBalance(); // Refresh global TRX balance after payment completion
+    }, 2000);
+}
+
+function formatCompanyName(company) {
+    const names = {
+        'govt_nid': 'Govt NID',
+        'redx': 'RedX',
+        'pathao': 'Pathao',
+        'steadfast': 'SteadFast',
+        'premium_service': 'Premium Service'
+    };
+    return names[company] || company;
+}
+
+
+function showAiServices() {
+    const aiSection = document.getElementById('ai-services-section');
+    if (aiSection.style.display === 'none' || !aiSection.style.display) {
+        aiSection.style.display = 'block';
+    } else {
+        aiSection.style.display = 'none';
+    }
+}
+
+function showTrxRecharge() {
+    const rechargeSection = document.getElementById('trx-recharge-section');
+    if (rechargeSection.style.display === 'none' || !rechargeSection.style.display) {
+        rechargeSection.style.display = 'block';
+    } else {
+        rechargeSection.style.display = 'none';
+    }
+}
+
+async function submitTrxRecharge() {
+    const amountInput = document.getElementById('recharge-amount');
+    const amount = parseFloat(amountInput.value);
+
+    if (isNaN(amount) || amount <= 0) {
+        showError('Please enter a valid positive amount for recharge.');
+        return;
+    }
+
+    const authToken = localStorage.getItem('authToken');
+    const userID = localStorage.getItem('userID');
+
+    try {
+        const response = await fetch('https://oneai-wjox.onrender.com/api/user/deposit-trx', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`,
+                'X-User-ID': userID
+            },
+            body: JSON.stringify({ amount })
+        });
+        const data = await response.json();
+        if (response.ok) {
+            showSuccess(`Successfully recharged ${amount} TRX.`);
+            amountInput.value = ''; // Clear input
+            window.fetchGlobalTrxBalance(); // Refresh global balance
+        } else {
+            showError(data.message || 'TRX recharge failed.');
+        }
+    } catch (error) {
+        console.error('Error during TRX recharge:', error);
+        showError('Error during TRX recharge.');
+    }
+}
+
+// Initialization =============================================================
+
+document.addEventListener('DOMContentLoaded', async () => {
+    if ('Notification' in window) {
+        try {
+            await Notification.requestPermission();
+        } catch (error) {
+            console.error('Notification permission error:', error);
+        }
+    }
+    
+    const loadingOverlay = document.querySelector('.loading-overlay');
+    loadingOverlay.style.display = 'flex';
+    
+    try {
+        const authToken = localStorage.getItem('authToken');
+        const userID = localStorage.getItem('userID');
+        
+        if (!authToken || !userID) {
+            window.location.href = 'index.html';
+            return;
+        }
+
+        await loadUserRequests();
+        // No need to call fetchTrxBalance() here, as it's handled by load-navbar.js
+        connectWebSocket();
+        
+    } catch (error) {
+        console.error('Initialization error:', error);
+        showError('Failed to load dashboard data');
+        setTimeout(() => {
+            window.location.href = 'index.html';
+        }, 3000);
+    } finally {
+        loadingOverlay.style.display = 'none';
+    }
+});
+
+// Global Window Functions ====================================================
+
+window.viewPaymentDetails = function(id, type) {
+    const request = paymentState.payments.find(r => r._id === id && r.type === type);
+    if (request) {
+        const detailsContent = document.getElementById('payment-details-content');
+        let html = '';
+
+        switch (request.type) {
+            case 'payment':
+                let consignmentsHtml = '';
+                if (request.consignments && request.consignments.length > 0) {
+                    consignmentsHtml += '<h4>Consignments:</h4><ul>';
+                    request.consignments.forEach(c => {
+                        consignmentsHtml += `
+                            <li>
+                                <strong>Name:</strong> ${c.name}<br>
+                                <strong>Phone:</strong> ${c.phone}<br>
+                                <strong>Service Type:</strong> ${c.serviceType}<br>
+                                <strong>Amount 1:</strong> ${c.amount1}<br>
+                                <strong>Amount 2:</strong> ${c.amount2}
+                            </li>
+                        `;
+                    });
+                    consignmentsHtml += '</ul>';
+                }
+                html = `
+                    <p><strong>Type:</strong> OTP/Courier Payment</p>
+                    <p><strong>Company:</strong> ${formatCompanyName(request.company)}</p>
+                    <p><strong>TRX ID:</strong> ${request.trxid}</p>
+                    <p><strong>Amount:</strong> ৳${request.amount3.toFixed(2)}</p>
+                    <p><strong>Status:</strong> <span class="status ${request.status.toLowerCase()}">${request.status}</span></p>
+                    <p><strong>Method:</strong> ${request.method}</p>
+                    <p><strong>Created:</strong> ${new Date(request.createdAt).toLocaleString()}</p>
+                    <hr>
+                    ${consignmentsHtml}
+                `;
+                break;
+            case 'fexiload':
+                html = `
+                    <p><strong>Type:</strong> Fexiload Request</p>
+                    <p><strong>GP Number:</strong> ${request.gpNumber}</p>
+                    <p><strong>Recharge Amount:</strong> ${formatRechargeAmount(request.rechargeAmount)}</p>
+                    <p><strong>Retail Charge:</strong> ৳${request.retailCharge.toFixed(2)}</p>
+                    <p><strong>TRX ID:</strong> ${request.transactionNumber}</p>
+                    <p><strong>Method:</strong> ${request.method}</p>
+                    <p><strong>Status:</strong> <span class="status ${request.status.toLowerCase()}">${request.status}</span></p>
+                    <p><strong>Created:</strong> ${new Date(request.createdAt).toLocaleString()}</p>
+                `;
+                break;
+            case 'tracker':
+                html = `
+                    <p><strong>Type:</strong> Location Tracker Request</p>
+                    <p><strong>Source Type:</strong> ${request.sourceType}</p>
+                    <p><strong>IMEI/Phone:</strong> ${request.imei || request.phoneNumber || 'N/A'}</p>
+                    <p><strong>Data Needed:</strong> ${request.dataNeeded.join(', ')}</p>
+                    <p><strong>Service Charge:</strong> ৳${request.serviceCharge.toFixed(2)}</p>
+                    <p><strong>TRX ID:</strong> ${request.trxId}</p>
+                    <p><strong>Method:</strong> ${request.paymentMethod}</p>
+                    <p><strong>Status:</strong> <span class="status ${request.status.toLowerCase()}">${request.status}</span></p>
+                    <p><strong>Created:</strong> ${new Date(request.createdAt).toLocaleString()}</p>
+                    <p><strong>Additional Note:</strong> ${request.additionalNote || 'N/A'}</p>
+                `;
+                break;
+            default:
+                html = `<p>Details not available for this request type.</p>`;
+        }
+
+        detailsContent.innerHTML = html;
+        document.getElementById('payment-details-modal').style.display = 'flex';
+    } else {
+        showError('Request details not found');
+    }
+};
+
+window.closePaymentDetailsModal = function() {
+    document.getElementById('payment-details-modal').style.display = 'none';
+};
+
+window.showPremiumPaymentForm = function() {
+    alert('Premium payment form would appear here');
+};
+
+window.submitPremiumPayment = async function() {
+    const authToken = localStorage.getItem('authToken');
+    const userID = localStorage.getItem('userID');
+    const phone = "1234567890"; // Would come from form
+    const trxid = "TRX12345";  // Would come from form
+    const amount = 100;        // Would come from form
+    const service = "premium"; // Would come from form
+    
+    try {
+        const response = await fetch('https://oneai-wjox.onrender.com/premium-payment', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`,
+                'X-User-ID': userID
+            },
+            body: JSON.stringify({ phone, trxid, amount, service, type: 'premium' })
+        });
+        
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Submission failed');
+
+        addNewPayment(data.payment);
+        showSuccess('Premium payment submitted!');
+    } catch (error) {
+        showError(error.message);
+    }
+};
+
+window.sendHelpRequest = function() {
+    const payment = paymentState.payments[0];
+    const message = payment 
+        ? `Need help with payment:\nTRX: ${payment.trxid}\nAmount: ৳${payment.amount3.toFixed(2)}
+Status: ${payment.status}`
+        : 'I need assistance with your services';
+    window.open(`https://wa.me/8801568760780?text=${encodeURIComponent(message)}`, '_blank');
+};
+
+window.showHelpInstructions = function() {
+    alert("Help instructions:\n1. Check payment status in the table\n2. Use Helpline button for urgent help\n3. Refresh payments every 30 minutes");
+};
+
+window.closePaymentPopup = closePaymentPopup;
+
+// Initialize notification badge handler
+document.getElementById('notification-badge').addEventListener('click', function() {
+    paymentState.unreadNotifications = 0;
+    this.classList.add('hidden');
+    showSuccess('Notifications cleared');
+});
+
+
+</script>
+<script src="./assets/js/load-navbar.js"></script>
+<script src="./assets/js/main.js"></script>
+<script src="./assets/js/hackeranimation.js"></script>
+    <script>
+        if ('serviceWorker' in navigator && 'PushManager' in window) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(swReg => {
+                        console.log('Service Worker is registered', swReg);
+                        swReg.pushManager.getSubscription()
+                            .then(subscription => {
+                                if (subscription === null) {
+                                    swReg.pushManager.subscribe({
+                                        userVisibleOnly: true,
+                                        applicationServerKey: 'BC4WNXapAoWn3i2p5JW1aCwMEGPzS0fEfK5qc_3tA0-q4rNKcJWjpf92dfXQ6OmrrkHUbDSWv_w5AJ9qYGIdRv4'
+                                    })
+                                    .then(newSubscription => {
+                                        fetch('https://oneai-wjox.onrender.com/subscribe', {
+                                            method: 'POST',
+                                            body: JSON.stringify(newSubscription),
+                                            headers: {
+                                                'Content-Type': 'application/json',
+                                                'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                                                'X-User-ID': localStorage.getItem('userID')
+                                            }
+                                        });
+                                    });
+                                }
+                            });
+                    })
+                    .catch(error => {
+                        console.error('Service Worker Error', error);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>

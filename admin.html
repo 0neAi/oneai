@@ -1,0 +1,3124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="icon" href="./images/logo.png" type="image/png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.2.31/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #4e73df;
+            --success-color: #1cc88a;
+            --warning-color: #f6c23e;
+            --danger-color: #e74a3b;
+            --dark-color: #5a5c69;
+            --light-bg: #f8f9fc;
+            --dark-bg: #1a1a2e;
+        }
+        
+        body {
+            background-color: var(--light-bg);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333;
+        }
+        
+        #admin-app {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        
+        .main-content {
+            flex: 1;
+        }
+        
+        .stat-card {
+            border-radius: 0.5rem;
+            color: white;
+            padding: 1.5rem;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0.5rem 1.5rem rgba(58, 59, 69, 0.2);
+        }
+        
+        .bg-primary { background-color: var(--primary-color)!important; }
+        .bg-success { background-color: var(--success-color)!important; }
+        .bg-warning { background-color: var(--warning-color)!important; }
+        .bg-danger { background-color: var(--danger-color)!important; }
+        .bg-info { background-color: #0dcaf0!important; }
+        .bg-dark { background-color: var(--dark-bg)!important; }
+
+        .dashboard-header {
+            background: linear-gradient(135deg, var(--primary-color), #2a4cb2);
+            color: white;
+            border-radius: 0.35rem;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        
+        .spinner {
+            width: 3rem;
+            height: 3rem;
+        }
+        
+        .table-responsive {
+            max-height: 500px;
+        }
+        
+        .action-cell {
+            min-width: 150px;
+        }
+        
+        .modal-header {
+            background: linear-gradient(135deg, var(--primary-color), #0dcaf0);
+            color: white;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 0.35rem;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
+            margin-bottom: 1.5rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0.5rem 1.5rem rgba(58, 59, 69, 0.2);
+        }
+        
+        .card-header {
+            background-color: #f8f9fc;
+            border-bottom: 1px solid #e3e6f0;
+            font-weight: 600;
+            padding: 1rem 1.5rem;
+        }
+        
+        .status-badge {
+            padding: 0.35em 0.65em;
+            border-radius: 0.25rem;
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+        
+        .issue-card {
+            border-left: 4px solid;
+            margin-bottom: 1rem;
+            background-color: white;
+            border-radius: 0.35rem;
+            overflow: hidden;
+        }
+        
+        .issue-card.low {
+            border-left-color: #28a745;
+        }
+        
+        .issue-card.medium {
+            border-left-color: #ffc107;
+        }
+        
+        .issue-card.high {
+            border-left-color: #dc3545;
+        }
+        
+        .issue-card .card-body {
+            padding: 1rem;
+        }
+        
+        .issue-card .meta {
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+        
+        .issue-card .actions {
+            margin-top: 1rem;
+        }
+        
+        .issue-type-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            margin-right: 0.5rem;
+            background-color: #e9ecef;
+        }
+        
+        .issue-status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        
+        .status-pending {
+            background-color: #ffc107;
+            color: #212529;
+        }
+        
+        .status-in-progress {
+            background-color: #17a2b8;
+            color: white;
+        }
+        
+        .status-resolved {
+            background-color: #28a745;
+            color: white;
+        }
+        
+        .status-rejected {
+            background-color: #dc3545;
+            color: white;
+        }
+        
+        .nav-tabs .nav-link {
+            color: #495057;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+        }
+        
+        .nav-tabs .nav-link.active {
+            color: var(--primary-color);
+            background-color: transparent;
+            border-bottom: 3px solid var(--primary-color);
+        }
+        
+        .tab-content {
+            padding: 1.5rem 0;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 250px;
+            margin-bottom: 1.5rem;
+        }
+        
+        .main-container {
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.05);
+            padding: 2rem;
+            margin-top: 1rem;
+        }
+        
+        .nav-brand {
+            font-weight: 800;
+            font-size: 1.5rem;
+            color: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+    <div id="admin-app">
+        <!-- Loading Overlay -->
+        <div v-if="isLoading" class="loading-overlay">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="ms-3">Loading Admin Data...</p>
+        </div>
+
+        <!-- Initial Setup -->
+        <div v-if="showInitialSetup" class="text-center py-5">
+            <div class="d-flex justify-content-center mb-4">
+                <div class="nav-brand">Admin Panel</div>
+            </div>
+            <div class="auth-container">
+                <h3 class="mb-4">Create First Admin</h3>
+                <form @submit.prevent="registerAdmin">
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input id="email" type="email" class="form-control" 
+                               v-model="admin.email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input id="password" type="password" class="form-control"
+                               v-model="admin.password" required minlength="12">
+                        <small class="text-muted">Minimum 12 characters with uppercase, lowercase, number and special character</small>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <span v-if="!registerLoading">Create Admin Account</span>
+                        <span v-else class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                    </button>
+                    <div v-if="registerError" class="alert alert-danger mt-3">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ registerError }}
+                    </div>
+                    <div v-if="registerSuccess" class="alert alert-success mt-3">
+                        <i class="bi bi-check-circle-fill me-2"></i>{{ registerSuccess }}
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Login Form -->
+        <div v-else-if="!authenticated" class="d-flex align-items-center justify-content-center vh-100">
+            <div class="card p-4" style="width: 100%; max-width: 400px;">
+                <h3 class="card-title text-center">Admin Login</h3>
+                <div v-if="loginError" class="alert alert-danger">{{ loginError }}</div>
+                <form @submit.prevent="login">
+                    <div class="mb-3">
+                        <label for="login-email" class="form-label">Email address</label>
+                        <input type="email" class="form-control" id="login-email" v-model="admin.email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="login-password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="login-password" v-model="admin.password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <span v-if="!loginLoading">Login</span>
+                        <span v-else class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Main Dashboard -->
+        <div v-else class="main-content p-4">
+
+
+            <!-- Navigation -->
+            <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 rounded">
+                <div class="container-fluid">
+                    <span class="navbar-brand">
+                        <i class="bi bi-shield-lock me-2"></i>Admin Dashboard
+                    </span>
+                    <div class="d-flex align-items-center">
+                        <span class="text-light me-3">
+                            <i class="bi bi-person-circle me-1"></i> {{ admin.email }}
+                        </span>
+                        <button class="btn btn-outline-light" @click="logout">
+                            <i class="bi bi-box-arrow-right me-1"></i>Logout
+                        </button>
+                    </div>
+                </div>
+            </nav>
+
+
+            <!-- Dashboard Header -->
+            <div class="dashboard-header">
+                <h3><i class="bi bi-speedometer2 me-2"></i> Dashboard Overview</h3>
+                <p class="mb-0">Monitor and manage your platform activities</p>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div class="row g-4 mb-4">
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="stat-card bg-primary">
+                        <i class="bi bi-people-fill fs-1"></i>
+                        <div class="number">{{ stats.totalUsers }}</div>
+                        <div class="label">Total Users</div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="stat-card bg-success">
+                        <i class="bi bi-credit-card-fill fs-1"></i>
+                        <div class="number">{{ stats.totalPayments }}</div>
+                        <div class="label">Total Payments</div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="stat-card bg-info">
+                        <i class="bi bi-cash-stack fs-1"></i>
+                        <div class="number">৳{{ totalPaymentAmount.toFixed(2) }}</div>
+                        <div class="label">Total Amount</div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="stat-card bg-warning">
+                        <i class="bi bi-hourglass-split fs-1"></i>
+                        <div class="number">{{ stats.pendingPayments }}</div>
+                        <div class="label">Pending Payments</div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="stat-card bg-danger">
+                        <i class="bi bi-exclamation-triangle-fill fs-1"></i>
+                        <div class="number">{{ stats.issueReports }}</div>
+                        <div class="label">Issue Reports</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="main-container">
+                <!-- Payments Section -->
+                <div class="card shadow-sm mb-5">
+                    <div class="card-header d-flex justify-content-between align-items-center py-3">
+                        <h5 class="mb-0"><i class="bi bi-credit-card me-2"></i>Recent Payments</h5>
+                        <div class="d-flex">
+                            <select v-model="paymentFilter" class="form-select form-select-sm w-auto me-2">
+                                <option value="all">All</option>
+                                <option value="Pending">Pending</option>
+                                <option value="Completed">Completed</option>
+                                <option value="Failed">Failed</option>
+                            </select>
+                            <button class="btn btn-sm btn-outline-primary" @click="refreshPayments">
+                                <i class="bi bi-arrow-clockwise"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th>TRX ID</th>
+                                        <th>User</th>
+                                        <th>Date</th>
+                                        <th>Amount</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="payment in filteredPayments" :key="payment._id">
+                                        <td>{{ payment.trxid }}</td>
+                                        <td>
+                                            <span v-if="payment.user">{{ payment.user.email }}</span>
+                                            <span v-else class="text-muted">N/A</span>
+                                        </td>
+                                        <td>{{ formatDateTime(payment.createdAt) }}</td>
+                                        <td>৳{{ payment.amount3.toFixed(2) }}</td>
+                                        <td>
+                                            <span class="status-badge" :class="statusClass(payment.status)">
+                                                {{ payment.status }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary me-1 btn-action" 
+                                                    @click="showPaymentDetails(payment)"
+                                                    title="View Details">
+                                                <i class="bi bi-eye-fill"></i>
+                                            </button>
+                                            <button v-if="payment.status === 'Pending'" class="btn btn-sm btn-outline-success btn-action me-1" 
+                                                    @click="approvePayment(payment)"
+                                                    title="Approve Payment">
+                                                <i class="bi bi-check2-circle"></i>
+                                            </button>
+                                            <button v-if="payment.status === 'Pending'" class="btn btn-sm btn-outline-danger btn-action" 
+                                                    @click="rejectPayment(payment)"
+                                                    title="Reject Payment">
+                                                <i class="bi bi-x-circle"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger btn-action" 
+                                                    @click="deleteItem('payment', payment._id)"
+                                                    title="Delete Payment">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="filteredPayments.length === 0">
+                                        <td colspan="6" class="text-center py-4 text-muted">
+                                            No payments found
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Merchant Issues Section -->
+                <div class="card shadow-sm mb-5">
+                    <div class="card-header d-flex justify-content-between align-items-center py-3">
+                        <h5 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Merchant Issues</h5>
+                        <div class="d-flex">
+                            <select v-model="issueFilter" class="form-select form-select-sm w-auto me-2">
+                                <option value="all">All</option>
+                                <option value="pending">Pending</option>
+                                <option value="in-progress">In Progress</option>
+                                <option value="resolved">Resolved</option>
+                                <option value="rejected">Rejected</option>
+                            </select>
+                            <button class="btn btn-sm btn-outline-primary" @click="refreshIssues">
+                                <i class="bi bi-arrow-clockwise"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="card-body">
+                        <ul class="nav nav-tabs" id="issueTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="all-tab" data-bs-toggle="tab" 
+                                        data-bs-target="#all-issues" type="button" role="tab">
+                                    All Issues
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="stats-tab" data-bs-toggle="tab" 
+                                        data-bs-target="#issue-stats" type="button" role="tab">
+                                    Statistics
+                                </button>
+                            </li>
+                        </ul>
+                        
+                        <div class="tab-content" id="issueTabContent">
+                            <div class="tab-pane fade show active" id="all-issues" role="tabpanel">
+                                <div v-if="filteredIssues.length === 0" class="text-center py-4 text-muted">
+                                    No issues found
+                                </div>
+                                
+                                <div v-for="issue in filteredIssues" :key="issue.id" 
+                                     class="issue-card">
+                                    <div class="card-body">
+                                        <h5>{{ issue.merchantName }}</h5>
+                                        <div class="meta mb-2">
+                                            <span class="issue-type-badge">{{ issue.issueType }}</span>
+                                            <span class="issue-status-badge" :class="'status-' + issue.status.replace(' ', '-')">
+                                                {{ issue.status }}
+                                            </span>
+                                            <span class="ms-2">{{ formatDateTime(issue.createdAt) }}</span>
+                                        </div>
+                                        <p class="mb-2"><strong>Phone:</strong> {{ issue.merchantPhone }}</p>
+                                        <p>{{ issue.details }}</p>
+                                        
+                                        <div class="actions">
+                                            <button class="btn btn-sm btn-outline-primary me-2" 
+                                                    @click="showIssueDetails(issue)">
+                                                <i class="bi bi-eye me-1"></i>Details
+                                            </button>
+                                            <button v-if="issue.status === 'pending'" class="btn btn-sm btn-outline-success me-2" 
+                                                    @click="updateIssueStatus(issue, 'in-progress')">
+                                                <i class="bi bi-play me-1"></i>Start Progress
+                                            </button>
+                                            <button v-if="issue.status === 'in-progress'" class="btn btn-sm btn-outline-success me-2" 
+                                                    @click="showApproveIssueModal(issue)">
+                                                <i class="bi bi-check me-1"></i>Approve
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" 
+                                                    @click="updateIssueStatus(issue, 'rejected')"
+                                                    v-if="issue.status !== 'rejected' && issue.status !== 'resolved'">
+                                                <i class="bi bi-x me-1"></i>Reject
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger ms-2" 
+                                                    @click="deleteItem('merchant issue', issue._id)"
+                                                    title="Delete Issue">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="tab-pane fade" id="issue-stats" role="tabpanel">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="card mb-4">
+                                            <div class="card-body">
+                                                <h5>Issues by Status</h5>
+                                                <div class="chart-container">
+                                                    <canvas id="issueStatusChart"></canvas>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="card mb-4">
+                                            <div class="card-body">
+                                                <h5>Issues by Type</h5>
+                                                <div class="chart-container">
+                                                    <canvas id="issueTypeChart"></canvas>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5>Recent Activity</h5>
+                                        <ul class="list-group">
+                                            <li v-for="activity in recentActivities" :key="activity.id" 
+                                                class="list-group-item">
+                                                <small class="text-muted">{{ formatDateTime(activity.timestamp) }}</small><br>
+                                                {{ activity.message }}
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Penalty Reports Section -->
+                <div class="card shadow-sm mb-5">
+                    <div class="card-header d-flex justify-content-between align-items-center py-3">
+                        <h5 class="mb-0"><i class="bi bi-exclamation-circle me-2"></i>Penalty Reports</h5>
+                        <div class="d-flex">
+                            <select v-model="penaltyFilter" class="form-select form-select-sm w-auto me-2">
+                                <option value="all">All</option>
+                                <option value="pending">Pending</option>
+                                <option value="processed">Processed</option>
+                                <option value="rejected">Rejected</option>
+                            </select>
+                            <button class="btn btn-sm btn-outline-primary" @click="refreshPenalties">
+                                <i class="bi bi-arrow-clockwise"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th>Merchant</th>
+                                        <th>Customer</th>
+                                        <th>Amount</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="report in filteredPenalties" :key="report._id">
+                                        <td>{{ report.merchantName }}</td>
+                                        <td>{{ report.customerName }}</td>
+                                        <td>{{ report.amount1 }} → {{ report.amount2 }}</td>
+                                        <td>{{ formatDate(report.penaltyDate) }}</td>
+                                        <td>{{ report.status }}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary me-1"
+                                                    @click="showPenaltyDetails(report)">
+                                                <i class="bi bi-eye me-1"></i>Details
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-success me-1"
+                                                    @click="showProcessPenaltyModal(report)"
+                                                    v-if="report.status === 'pending'">
+                                                <i class="bi bi-check me-1"></i>Process
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger"
+                                                    @click="updatePenaltyStatus(report, 'rejected')"
+                                                    v-if="report.status !== 'rejected' && report.status !== 'processed'">
+                                                <i class="bi bi-x me-1"></i>Reject
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger ms-2"
+                                                    @click="deleteItem('penalty report', report._id)"
+                                                    title="Delete Report">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="filteredPenalties.length === 0">
+                                        <td colspan="6" class="text-center py-4 text-muted">
+                                            No penalty reports found
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Users Table -->
+                <div class="card shadow-sm">
+                    <div class="card-header d-flex justify-content-between align-items-center py-3">
+                        <h5 class="mb-0"><i class="bi bi-people-fill me-2"></i>Registered Users</h5>
+                        <button class="btn btn-sm btn-outline-primary" @click="refreshUsers">
+                            <i class="bi bi-arrow-clockwise"></i> Refresh
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Phone</th>
+                                        <th>Email</th>
+                                        <th>Referral Code</th>
+                                        <th>Referred By</th>
+                                        <th>Total Payments</th>
+                                        <th>Total Amount</th>
+                                        <th>Registered</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="user in users" :key="user.id">
+                                        <td class="text-muted">{{ shortId(user._id) }}</td>
+                                        <td>{{ user.phone }}</td>
+                                        <td>{{ user.email }}</td>
+                                        <td>
+                                            <span v-if="user.referralCode">{{ user.referralCode }}</span>
+                                            <button v-else class="btn btn-sm btn-outline-success" @click="generateReferralCode(user)">
+                                                Generate
+                                            </button>
+                                        </td>
+                                        <td>{{ user.referredBy ? user.referredBy.name : 'N/A' }}</td>
+                                        <td>{{ user.totalPayments }}</td>
+                                        <td>৳{{ user.totalAmount ? user.totalAmount.toFixed(2) : '0.00' }}</td>
+                                        <td>{{ formatDateTime(user.createdAt) }}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary me-1" @click="viewUserDetails(user._id)">
+                                                <i class="bi bi-eye-fill me-1"></i>Details
+                                            </button>
+                                            <button v-if="!user.isApproved" class="btn btn-sm btn-outline-success" @click="showApproveUserModal(user)">
+                                                Approve
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger ms-2" 
+                                                    @click="deleteItem('user', user._id)"
+                                                    title="Delete User">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="users.length === 0">
+                                        <td colspan="5" class="text-center py-4 text-muted">
+                                            No users found
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Premium Payments Section -->
+                <div class="card shadow-sm mt-5">
+                    <div class="card-header d-flex justify-content-between align-items-center py-3">
+                        <h5 class="mb-0"><i class="bi bi-gem me-2"></i>Premium Payments</h5>
+                        <button class="btn btn-sm btn-outline-primary" @click="refreshPremiumPayments">
+                            <i class="bi bi-arrow-clockwise"></i> Refresh
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th>TRX ID</th>
+                                        <th>Phone</th>
+                                        <th>Amount</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="payment in premiumPayments" :key="payment._id">
+                                        <td>{{ payment.trxid }}</td>
+                                        <td>{{ payment.phone }}</td>
+                                        <td>৳{{ payment.amount.toFixed(2) }}</td>
+                                        <td>{{ formatDateTime(payment.createdAt) }}</td>
+                                        <td>
+                                            <span class="status-badge" :class="statusClass(payment.status)">
+                                                {{ payment.status }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-success" @click="showProcessPremiumModal(payment)" v-if="payment.status === 'Pending'">
+                                                <i class="bi bi-check-circle"></i> Process
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" @click="updatePremiumPaymentStatus(payment, 'Failed')">
+                                                <i class="bi bi-x-circle"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="premiumPayments.length === 0">
+                                        <td colspan="6" class="text-center py-4 text-muted">
+                                            No premium payments found
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User Payment Calculator -->
+                <div class="card shadow-sm mt-5">
+                    <div class="card-header d-flex justify-content-between align-items-center py-3">
+                        <h5 class="mb-0"><i class="bi bi-calculator me-2"></i>User Payment Calculator</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control" placeholder="Enter user email" v-model="userEmailQuery">
+                            <input type="date" class="form-control" v-model="paymentStartDate">
+                            <input type="date" class="form-control" v-model="paymentEndDate">
+                            <button class="btn btn-primary" type="button" @click="calculateUserPayments">Calculate</button>
+                        </div>
+                        <div v-if="userPaymentData">
+                            <h5>Payment details for {{ userPaymentData.user.email }}</h5>
+                            <p><strong>Total Amount:</strong> ৳{{ userPaymentData.totalAmount.toFixed(2) }}</p>
+                            <p><strong>Total Payments:</strong> {{ userPaymentData.totalPayments }}</p>
+                            <table class="table table-sm table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Amount</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="payment in userPaymentData.payments" :key="payment._id">
+                                        <td>{{ formatDateTime(payment.createdAt) }}</td>
+                                        <td>৳{{ payment.amount3.toFixed(2) }}</td>
+                                        <td>{{ payment.status }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div v-if="userPaymentError" class="alert alert-danger mt-3">
+                            {{ userPaymentError }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Manual Premium Voucher Generation Section -->
+                <div class="card shadow-sm mt-5">
+                    <div class="card-header d-flex justify-content-between align-items-center py-3">
+                        <h5 class="mb-0"><i class="bi bi-ticket-perforated me-2"></i>Manual Premium Voucher Generation</h5>
+                    </div>
+                    <div class="card-body">
+                        <form @submit.prevent="generatePremiumVoucher">
+                            <div class="mb-3">
+                                <label for="manual-premium-phone" class="form-label">Phone Number</label>
+                                <input type="text" class="form-control" id="manual-premium-phone" v-model="manualPremiumPhoneNumber" placeholder="Enter phone number" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="premium-discount-percentage" class="form-label">Discount Percentage</label>
+                                <input type="number" class="form-control" id="premium-discount-percentage" v-model.number="manualPremiumDiscountPercentage" min="0" max="100">
+                            </div>
+                            <div class="mb-3">
+                                <label for="premium-validity" class="form-label">Validity Period</label>
+                                <select class="form-select" id="premium-validity" v-model="manualPremiumValidity">
+                                    <option value="1d">1 Day</option>
+                                    <option value="2d">2 Days</option>
+                                    <option value="3d">3 Days</option>
+                                    <option value="15d">15 Days</option>
+                                    <option value="1m">1 Month</option>
+                                    <option value="3m">3 Months</option>
+                                    <option value="lifetime">Lifetime</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <span v-if="!generatingPremiumVoucher">Generate Voucher</span>
+                                <span v-else class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                            </button>
+                            <div v-if="premiumVoucherMessage" :class="{'alert-success': premiumVoucherSuccess, 'alert-danger': !premiumVoucherSuccess}" class="alert mt-3">
+                                {{ premiumVoucherMessage }}
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+            <!-- Manage Pages Section -->
+            <div class="card shadow-sm mt-5" v-if="authenticated">
+                <div class="card-header d-flex justify-content-between align-items-center py-3">
+                    <h5 class="mb-0"><i class="bi bi-file-earmark-text me-2"></i>Manage Pages</h5>
+                    <button class="btn btn-sm btn-outline-primary" @click="refreshPages">
+                        <i class="bi bi-arrow-clockwise"></i> Refresh
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>Short ID</th>
+                                    <th>Page Name</th>
+                                    <th>Status</th>
+                                    <th>P.C. Count</th>
+                                    <th>Issue Count</th>
+                                    <th>Note</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="page in pages" :key="page.shortId">
+                                    <td>{{ page.shortId }}</td>
+                                    <td>{{ page.pageName }}</td>
+                                    <td>
+                                        <span class="status-badge" :class="statusClass(page.status)">
+                                            {{ page.status }}
+                                        </span>
+                                    </td>
+                                    <td>{{ page.count }}</td>
+                                    <td>{{ page.issueCount }}</td>
+                                    <td>{{ page.note }}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary me-1" @click="editPage(page)">
+                                            <i class="bi bi-pencil-square"></i> Edit
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger" @click="deletePage(page.shortId)">
+                                            <i class="bi bi-trash"></i> Delete
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr v-if="pages.length === 0">
+                                    <td colspan="7" class="text-center py-4 text-muted">
+                                        No pages found
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <h5 class="mb-3">Add New Page</h5>
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" placeholder="New Page Name" v-model="newPage.pageName">
+                    </div>
+                    <div class="input-group mb-3">
+                        <textarea class="form-control" placeholder="Note (optional)" v-model="newPage.note"></textarea>
+                    </div>
+                    <button class="btn btn-primary" @click="addPage">Add Page</button>
+                </div>
+            </div>
+
+                <!-- Fexiload Requests Section -->
+                <div class="card shadow-sm mt-5">
+                    <div class="card-header d-flex justify-content-between align-items-center py-3">
+                        <h5 class="mb-0"><i class="bi bi-phone me-2"></i>Fexiload Requests</h5>
+                        <button class="btn btn-sm btn-outline-primary" @click="refreshFexiloadRequests">
+                            <i class="bi bi-arrow-clockwise"></i> Refresh
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th>User</th>
+                                        <th>GP Number</th>
+                                        <th>Amount/Offer</th>
+                                        <th>Retail Charge</th>
+                                        <th>Payment Method</th>
+                                        <th>TRX ID</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="request in fexiloadRequests" :key="request._id">
+                                        <td>
+                                            <span v-if="request.userId">{{ request.userId.email }}</span>
+                                            <span v-else class="text-muted">N/A</span>
+                                        </td>
+                                        <td>{{ request.gpNumber }}</td>
+                                        <td>{{ request.rechargeAmount }}</td>
+                                        <td>{{ request.retailCharge ? request.retailCharge.toFixed(2) : 'N/A' }}</td>
+                                        <td>{{ request.method }}</td>
+                                        <td>{{ request.transactionNumber }}</td>
+                                        <td>{{ formatDateTime(request.createdAt) }}</td>
+                                        <td>
+                                            <span class="status-badge" :class="statusClass(request.status)">
+                                                {{ request.status }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-success" @click="updateFexiloadRequestStatus(request, 'Completed')" v-if="request.status === 'Pending'">
+                                                <i class="bi bi-check-circle"></i> Complete
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" @click="updateFexiloadRequestStatus(request, 'Failed')" v-if="request.status === 'Pending'">
+                                                <i class="bi bi-x-circle"></i> Fail
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger ms-1" @click="deleteItem('fexiload request', request._id)">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Location Tracker Requests Section -->
+                <div class="card shadow-sm mt-5">
+                    <div class="card-header d-flex justify-content-between align-items-center py-3">
+                        <h5 class="mb-0"><i class="bi bi-geo-alt-fill me-2"></i>Location Tracker Requests</h5>
+                        <button class="btn btn-sm btn-outline-primary" @click="refreshLocationTrackerRequests">
+                            <i class="bi bi-arrow-clockwise"></i> Refresh
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th>User</th>
+                                        <th>Source Type</th>
+                                        <th>IMEI/Phone</th>
+                                        <th>Service Types</th>
+                                        <th>Charge</th>
+                                        <th>TRX ID</th>
+                                        <th>Status</th>
+                                        <th>Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="request in locationTrackerRequests" :key="request._id">
+                                        <td>
+                                            <span v-if="request.user">{{ request.user.email }}</span>
+                                            <span v-else class="text-muted">N/A</span>
+                                        </td>
+                                        <td>{{ request.sourceType }}</td>
+                                        <td>
+                                            <span v-if="request.imei">{{ request.imei }}</span>
+                                            <span v-else-if="request.phoneNumber">{{ request.phoneNumber }}</span>
+                                            <span v-else class="text-muted">N/A</span>
+                                        </td>
+                                        <td>{{ request.serviceTypes.join(', ') }}</td>
+                                        <td>৳{{ request.serviceCharge.toFixed(2) }}</td>
+                                        <td>{{ request.trxId }}</td>
+                                        <td>
+                                            <span class="status-badge" :class="statusClass(request.status)">
+                                                {{ request.status }}
+                                            </span>
+                                        </td>
+                                        <td>{{ formatDateTime(request.createdAt) }}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary me-1" @click="showLocationTrackerRequestDetails(request)">
+                                                <i class="bi bi-eye-fill"></i> Details
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-success me-1" @click="updateLocationTrackerRequestStatus(request, 'Approved')" v-if="request.status === 'Pending'">
+                                                <i class="bi bi-check-circle"></i> Approve
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger me-1" @click="updateLocationTrackerRequestStatus(request, 'Rejected')" v-if="request.status === 'Pending'">
+                                                <i class="bi bi-x-circle"></i> Reject
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-info me-1" @click="showDeliverDataModal(request)" v-if="request.status === 'Approved' || request.status === 'Pending'">
+                                                <i class="bi bi-box-arrow-in-right"></i> Deliver Data
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" @click="deleteItem('location tracker request', request._id)">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="locationTrackerRequests.length === 0">
+                                        <td colspan="9" class="text-center py-4 text-muted">
+                                            No location tracker requests found
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TRX Recharge Requests Section -->
+                <div class="card shadow-sm mt-5">
+                    <div class="card-header d-flex justify-content-between align-items-center py-3">
+                        <h5 class="mb-0"><i class="bi bi-currency-bitcoin me-2"></i>TRX Recharge Requests</h5>
+                        <button class="btn btn-sm btn-outline-primary" @click="refreshTrxRechargeRequests">
+                            <i class="bi bi-arrow-clockwise"></i> Refresh
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th>User</th>
+                                        <th>Amount</th>
+                                        <th>User TRX ID</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="request in trxRechargeRequests" :key="request._id">
+                                        <td>
+                                            <span v-if="request.userId">{{ request.userId.email }}</span>
+                                            <span v-else class="text-muted">N/A</span>
+                                        </td>
+                                        <td>{{ request.amount }} TRX</td>
+                                        <td>{{ request.userTrxId }}</td>
+                                        <td>{{ formatDateTime(request.createdAt) }}</td>
+                                        <td>
+                                            <span class="status-badge" :class="statusClass(request.status)">
+                                                {{ request.status }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary me-1" 
+                                                    @click="showTrxRechargeRequestDetails(request)"
+                                                    title="View Details">
+                                                <i class="bi bi-eye-fill"></i>
+                                            </button>
+                                            <button v-if="request.status === 'Pending'" class="btn btn-sm btn-outline-success btn-action me-1" 
+                                                    @click="showApproveTrxRechargeModal(request)"
+                                                    title="Approve Request">
+                                                <i class="bi bi-check2-circle"></i>
+                                            </button>
+                                            <button v-if="request.status === 'Pending'" class="btn btn-sm btn-outline-danger btn-action" 
+                                                    @click="showRejectTrxRechargeModal(request)"
+                                                    title="Reject Request">
+                                                <i class="bi bi-x-circle"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger btn-action ms-1" 
+                                                    @click="deleteItem('trx recharge request', request._id)"
+                                                    title="Delete Request">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="trxRechargeRequests.length === 0">
+                                        <td colspan="6" class="text-center py-4 text-muted">
+                                            No TRX recharge requests found
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Details Modal -->
+        <div class="modal fade" id="paymentModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Payment Details</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div v-if="selectedPayment">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Payment ID</label>
+                                        <input type="text" class="form-control" :value="selectedPayment.id" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Status</label>
+                                        <input type="text" class="form-control" 
+                                               :class="statusClass(selectedPayment.status)"
+                                               :value="selectedPayment.status" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">User Email</label>
+                                        <input type="text" class="form-control" 
+                                               :value="(selectedPayment.user && selectedPayment.user.email) || 'N/A'" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Transaction ID</label>
+                                        <input type="text" class="form-control" :value="selectedPayment.trxid" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label">Company</label>
+                                        <input type="text" class="form-control" :value="selectedPayment.company" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label">Phone</label>
+                                        <input type="text" class="form-control" :value="selectedPayment.phone" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label">Password</label>
+                                        <input type="text" class="form-control" :value="selectedPayment.password" readonly>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label">Server Charge</label>
+                                        <input type="text" class="form-control" :value="selectedPayment.amount3.toFixed(2)" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label">Discounted Amount</label>
+                                        <input type="text" class="form-control" :value="(selectedPayment.amount3 * (1 - selectedPayment.discount / 100)).toFixed(2)" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label">Discount Percentage</label>
+                                        <input type="text" class="form-control" :value="selectedPayment.discount + '%'
+                                        " readonly>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <h5 class="mt-4 mb-3">Consignments</h5>
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Phone</th>
+                                            <th>Original Amount</th>
+                                            <th>Updated Amount</th>
+                                            <th>Service</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="(consignment, index) in selectedPayment.consignments" :key="index">
+                                            <td>{{ consignment.name }}</td>
+                                            <td>{{ consignment.phone }}</td>
+                                            <td>৳{{ consignment.amount1.toFixed(2) }}</td>
+                                            <td>৳{{ consignment.amount2.toFixed(2) }}</td>
+                                            <td>{{ consignment.serviceType }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Issue Details Modal -->
+        <div class="modal fade" id="issueModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Issue Details</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div v-if="selectedIssue">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Merchant Name</label>
+                                        <input type="text" class="form-control" :value="selectedIssue.merchantName" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Merchant Phone</label>
+                                        <input type="text" class="form-control" :value="selectedIssue.merchantPhone" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Issue Type</label>
+                                        <input type="text" class="form-control" :value="selectedIssue.issueType" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Details</label>
+                                <textarea class="form-control" rows="4" readonly>{{ selectedIssue.details }}</textarea>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Status</label>
+                                <select class="form-select" v-model="selectedIssue.status">
+                                    <option value="pending">Pending</option>
+                                    <option value="in-progress">In Progress</option>
+                                    <option value="resolved">Resolved</option>
+                                    <option value="rejected">Rejected</option>
+                                </select>
+                            </div>
+                            
+                            <div v-if="selectedIssue.voucherCode" class="mb-3">
+                                <label class="form-label">Voucher Code</label>
+                                <input type="text" class="form-control" :value="selectedIssue.voucherCode" readonly>
+                            </div>
+                            <div v-if="selectedIssue.voucherCode" class="mb-3">
+                                <label class="form-label">Discount Percentage</label>
+                                <input type="text" class="form-control" :value="selectedIssue.discountPercentage + '%'
+                                " readonly>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" @click="saveIssueChanges">Save Changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Penalty Details Modal -->
+        <div class="modal fade" id="penaltyModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Penalty Report Details</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div v-if="selectedPenalty">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Merchant Name</label>
+                                        <input type="text" class="form-control" :value="selectedPenalty.merchantName" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Customer Name</label>
+                                        <input type="text" class="form-control" :value="selectedPenalty.customerName" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Customer Phone</label>
+                                        <input type="text" class="form-control" :value="selectedPenalty.customerPhone" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Penalty Date</label>
+                                        <input type="text" class="form-control" :value="formatDate(selectedPenalty.penaltyDate)" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Original Amount</label>
+                                        <input type="text" class="form-control" :value="selectedPenalty.amount1" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Updated Amount</label>
+                                        <input type="text" class="form-control" :value="selectedPenalty.amount2" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Penalty Details</label>
+                                <textarea class="form-control" rows="4" readonly>{{ selectedPenalty.penaltyDetails }}</textarea>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Status</label>
+                                <select class="form-select" v-model="selectedPenalty.status">
+                                    <option value="pending">Pending</option>
+                                    <option value="processed">Processed</option>
+                                    <option value="rejected">Rejected</option>
+                                </select>
+                            </div>
+                            
+                            <div v-if="selectedPenalty.voucherCode" class="mb-3">
+                                <label class="form-label">Voucher Code</label>
+                                <input type="text" class="form-control" :value="selectedPenalty.voucherCode" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" @click="savePenaltyChanges">Save Changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Process Penalty Modal -->
+        <div class="modal fade" id="processPenaltyModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Process Penalty & Generate Voucher</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div v-if="selectedPenalty">
+                            <p><strong>Merchant:</strong> {{ selectedPenalty.merchantName }}</p>
+                            <div class="mb-3">
+                                <label for="discount-percentage" class="form-label">Discount Percentage</label>
+                                <input type="number" class="form-control" id="discount-percentage" v-model.number="discountPercentage" min="1" max="100">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" @click="processPenalty">Generate Voucher</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Approve Issue Modal -->
+        <div class="modal fade" id="approveIssueModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Approve Issue & Generate Voucher</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div v-if="selectedIssue">
+                            <p><strong>Merchant:</strong> {{ selectedIssue.merchantName }}</p>
+                            <div class="mb-3">
+                                <label for="issue-discount-percentage" class="form-label">Discount Percentage</label>
+                                <input type="number" class="form-control" id="issue-discount-percentage" v-model.number="issueDiscountPercentage" min="1" max="100">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" @click="approveIssue">Generate Voucher</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Details Modal -->
+        <div class="modal fade" id="userDetailsModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">User Details: {{ selectedUserDetail ? selectedUserDetail.name : '' }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div v-if="selectedUserDetail">
+                            <h6>Personal Information</h6>
+                            <p><strong>Name:</strong> {{ selectedUserDetail.name }}</p>
+                            <p><strong>Email:</strong> {{ selectedUserDetail.email }}</p>
+                            <p><strong>Phone:</strong> {{ selectedUserDetail.phone }}</p>
+                            <p><strong>Zilla:</strong> {{ selectedUserDetail.zilla }}</p>
+                            <p><strong>Office Location:</strong> {{ selectedUserDetail.officeLocation }}</p>
+                            <p><strong>Referral Code:</strong> {{ selectedUserDetail.referralCode }}</p>
+                            <p><strong>Admin Approved:</strong> {{ selectedUserDetail.isApproved ? 'Yes' : 'No' }}</p>
+                            <p><strong>Registered On:</strong> {{ formatDateTime(selectedUserDetail.createdAt) }}</p>
+
+                            <h6 class="mt-4">Referral Information</h6>
+                            <p v-if="selectedUserDetail.referredBy">
+                                <strong>Referred By:</strong> {{ selectedUserDetail.referredBy.name }} ({{ selectedUserDetail.referredBy.email }})
+                            </p>
+                            <p v-else>Not referred by anyone.</p>
+                            <p><strong>Referral Commission Percentage:</strong> {{ selectedUserDetail.referralCommissionPercentage }}%</p>
+                            <p><strong>Total Referrals:</strong> {{ selectedUserDetail.referrals ? selectedUserDetail.referrals.length : 0 }}</p>
+                            <p v-if="selectedUserDetail.monthlyCommission !== undefined">
+                                <strong>Monthly Commission (This Month):</strong> ৳{{ selectedUserDetail.monthlyCommission.toFixed(2) }}
+                            </p>
+
+                            <h6 class="mt-4">Payments</h6>
+                            <div v-if="selectedUserDetail.payments && selectedUserDetail.payments.length > 0">
+                                <p><strong>Total Payments (Completed):</strong> {{ selectedUserDetail.totalPayments }}</p>
+                                <p><strong>Total Amount (Completed):</strong> ৳{{ selectedUserDetail.totalAmount.toFixed(2) }}</p>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>TRX ID</th>
+                                                <th>Amount</th>
+                                                <th>Status</th>
+                                                <th>Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="payment in selectedUserDetail.payments" :key="payment._id">
+                                                <td>{{ payment.trxid }}</td>
+                                                <td>৳{{ payment.amount3.toFixed(2) }}</td>
+                                                <td>{{ payment.status }}</td>
+                                                <td>{{ formatDateTime(payment.createdAt) }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <p v-else>No payments found for this user.</p>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Approve User Modal -->
+        <div class="modal fade" id="approveUserModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Approve User & Set Commission</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Set the referral commission percentage and update user details for this user.</p>
+                        <div v-if="selectedUser">
+                            <div class="mb-3">
+                                <label for="approve-name" class="form-label">Name</label>
+                                <input type="text" class="form-control" id="approve-name" v-model="selectedUser.name">
+                            </div>
+                            <div class="mb-3">
+                                <label for="approve-zilla" class="form-label">Zilla</label>
+                                <input type="text" class="form-control" id="approve-zilla" v-model="selectedUser.zilla">
+                            </div>
+                            <div class="mb-3">
+                                <label for="approve-officeLocation" class="form-label">Office Location</label>
+                                <input type="text" class="form-control" id="approve-officeLocation" v-model="selectedUser.officeLocation">
+                            </div>
+                            <div class="mb-3">
+                                <label for="commission-percentage" class="form-label">Commission Percentage</label>
+                                <input type="number" class="form-control" id="commission-percentage" v-model.number="commissionPercentage" min="0" max="100">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" @click="approveUser">Approve User</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Process Premium Payment Modal -->
+        <div class="modal fade" id="processPremiumModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Process Premium Payment & Generate Voucher</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div v-if="selectedPremiumPayment">
+                            <p><strong>Phone:</strong> {{ selectedPremiumPayment.phone }}</p>
+                            <div class="mb-3">
+                                <label for="premium-discount-percentage" class="form-label">Discount Percentage</label>
+                                <input type="number" class="form-control" id="premium-discount-percentage" v-model.number="premiumDiscountPercentage" min="0" max="100">
+                            </div>
+                            <div class="mb-3">
+                                <label for="premium-validity-modal" class="form-label">Validity Period</label>
+                                <select class="form-select" id="premium-validity-modal" v-model="premiumValidity">
+                                    <option value="1d">1 Day</option>
+                                    <option value="2d">2 Days</option>
+                                    <option value="3d">3 Days</option>
+                                    <option value="15d">15 Days</option>
+                                    <option value="1m">1 Month</option>
+                                    <option value="3m">3 Months</option>
+                                    <option value="lifetime">Lifetime</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" @click="processPremiumPayment">Generate Voucher</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fexiload Request Details Modal -->
+        <div class="modal fade" id="fexiloadRequestModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Fexiload Request Details</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div v-if="selectedFexiloadRequest">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Request ID</label>
+                                        <input type="text" class="form-control" :value="selectedFexiloadRequest._id" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Status</label>
+                                        <select class="form-select" v-model="selectedFexiloadRequest.status">
+                                            <option value="Pending">Pending</option>
+                                            <option value="Completed">Completed</option>
+                                            <option value="Failed">Failed</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">User Email</label>
+                                        <input type="text" class="form-control" 
+                                               :value="(selectedFexiloadRequest.userId && selectedFexiloadRequest.userId.email) || 'N/A'" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">User Phone</label>
+                                        <input type="text" class="form-control" 
+                                               :value="(selectedFexiloadRequest.userId && selectedFexiloadRequest.userId.phone) || 'N/A'" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">GP Number</label>
+                                        <input type="text" class="form-control" :value="selectedFexiloadRequest.gpNumber" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Recharge Amount/Offer</label>
+                                        <input type="text" class="form-control" :value="selectedFexiloadRequest.rechargeAmount" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Transaction Number (TRX ID)</label>
+                                <input type="text" class="form-control" :value="selectedFexiloadRequest.transactionNumber" readonly>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Requested On</label>
+                                        <input type="text" class="form-control" :value="formatDateTime(selectedFexiloadRequest.createdAt)" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Last Updated</label>
+                                        <input type="text" class="form-control" :value="formatDateTime(selectedFexiloadRequest.updatedAt)" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" @click="saveFexiloadRequestChanges">Save Changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Location Tracker Request Details Modal -->
+        <div class="modal fade" id="locationTrackerRequestModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Location Tracker Request Details</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div v-if="selectedLocationTrackerRequest">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Request ID</label>
+                                        <input type="text" class="form-control" :value="selectedLocationTrackerRequest._id" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Status</label>
+                                        <select class="form-select" v-model="selectedLocationTrackerRequest.status">
+                                            <option value="Pending">Pending</option>
+                                            <option value="Approved">Approved</option>
+                                            <option value="Rejected">Rejected</option>
+                                            <option value="Completed">Completed</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">User Email</label>
+                                        <input type="text" class="form-control"
+                                               :value="(selectedLocationTrackerRequest.user && selectedLocationTrackerRequest.user.email) || 'N/A'" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">User Phone</label>
+                                        <input type="text" class="form-control"
+                                               :value="(selectedLocationTrackerRequest.user && selectedLocationTrackerRequest.user.phone) || 'N/A'" readonly>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Source Type</label>
+                                        <input type="text" class="form-control" :value="selectedLocationTrackerRequest.sourceType" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">IMEI / Phone Number</label>
+                                        <input type="text" class="form-control"
+                                               :value="selectedLocationTrackerRequest.imei || selectedLocationTrackerRequest.phoneNumber || 'N/A'" readonly>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3" v-if="selectedLocationTrackerRequest.lastUsedPhoneNumber">
+                                <label class="form-label">Last Used Phone Number (IMEI)</label>
+                                <input type="text" class="form-control" :value="selectedLocationTrackerRequest.lastUsedPhoneNumber" readonly>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Requested Data Types</label>
+                                <input type="text" class="form-control" :value="selectedLocationTrackerRequest.dataNeeded.join(', ')" readonly>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Service Types (Backend)</label>
+                                <input type="text" class="form-control" :value="selectedLocationTrackerRequest.serviceTypes.join(', ')" readonly>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Additional Note</label>
+                                <textarea class="form-control" rows="3" readonly>{{ selectedLocationTrackerRequest.additionalNote || 'N/A' }}</textarea>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label">Service Charge</label>
+                                        <input type="text" class="form-control" :value="selectedLocationTrackerRequest.serviceCharge.toFixed(2)" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label">Payment Method</label>
+                                        <input type="text" class="form-control" :value="selectedLocationTrackerRequest.paymentMethod" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label">TRX ID</label>
+                                        <input type="text" class="form-control" :value="selectedLocationTrackerRequest.trxId" readonly>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Requested On</label>
+                                        <input type="text" class="form-control" :value="formatDateTime(selectedLocationTrackerRequest.createdAt)" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Last Updated</label>
+                                        <input type="text" class="form-control" :value="formatDateTime(selectedLocationTrackerRequest.updatedAt)" readonly>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h6 class="mt-4">Delivered Data</h6>
+                            <div v-if="selectedLocationTrackerRequest.deliveredData && selectedLocationTrackerRequest.deliveredData.length > 0">
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>Data Type</th>
+                                                <th>Content</th>
+                                                <th>Delivered By</th>
+                                                <th>Delivered At</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="data in selectedLocationTrackerRequest.deliveredData" :key="data._id">
+                                                <td>{{ data.dataType }}</td>
+                                                <td>{{ JSON.stringify(data.dataContent) }}</td>
+                                                <td>{{ data.deliveredBy ? data.deliveredBy.email : 'N/A' }}</td>
+                                                <td>{{ formatDateTime(data.deliveredAt) }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <p v-else class="text-muted">No data delivered yet for this request.</p>
+
+                            <div class="mb-3">
+                                <label class="form-label">Moderator Notes</label>
+                                <textarea class="form-control" rows="3" v-model="selectedLocationTrackerRequest.moderatorNotes"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" @click="saveLocationTrackerRequestChanges">Save Changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Deliver Data Modal -->
+        <div class="modal fade" id="deliverDataModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Deliver Data for Request: {{ selectedLocationTrackerRequest ? shortId(selectedLocationTrackerRequest._id) : '' }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div v-if="selectedLocationTrackerRequest">
+                            <p><strong>Requested Data Types:</strong> {{ selectedLocationTrackerRequest.dataNeeded.join(', ') }}</p>
+                            <div class="mb-3">
+                                <label for="delivered-data-type" class="form-label">Data Type</label>
+                                <select class="form-select" id="delivered-data-type" v-model="deliveredDataType">
+                                    <option value="">Select Data Type</option>
+                                    <option v-for="type in selectedLocationTrackerRequest.dataNeeded" :value="type">{{ type }}</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="delivered-data-content" class="form-label">Data Content (JSON or Text)</label>
+                                <textarea class="form-control" id="delivered-data-content" rows="5" v-model="deliveredDataContent" placeholder="Enter data content (e.g., {'latitude': 23.7, 'longitude': 90.3} or plain text)"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" @click="submitDeliveredData">Submit Data</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TRX Recharge Request Details Modal -->
+        <div class="modal fade" id="trxRechargeRequestModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">TRX Recharge Request Details</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div v-if="selectedTrxRechargeRequest">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Request ID</label>
+                                        <input type="text" class="form-control" :value="selectedTrxRechargeRequest._id" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Status</label>
+                                        <input type="text" class="form-control" 
+                                               :class="statusClass(selectedTrxRechargeRequest.status)"
+                                               :value="selectedTrxRechargeRequest.status" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">User Email</label>
+                                        <input type="text" class="form-control" 
+                                               :value="(selectedTrxRechargeRequest.userId && selectedTrxRechargeRequest.userId.email) || 'N/A'" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">User Phone</label>
+                                        <input type="text" class="form-control" 
+                                               :value="(selectedTrxRechargeRequest.userId && selectedTrxRechargeRequest.userId.phone) || 'N/A'" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Amount</label>
+                                        <input type="text" class="form-control" :value="selectedTrxRechargeRequest.amount + ' TRX'" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">User Provided TRX ID</label>
+                                        <input type="text" class="form-control" :value="selectedTrxRechargeRequest.userTrxId" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Admin Notes</label>
+                                <textarea class="form-control" rows="3" :value="selectedTrxRechargeRequest.adminNotes || 'N/A'" readonly></textarea>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Requested On</label>
+                                        <input type="text" class="form-control" :value="formatDateTime(selectedTrxRechargeRequest.createdAt)" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Last Updated</label>
+                                        <input type="text" class="form-control" :value="formatDateTime(selectedTrxRechargeRequest.updatedAt)" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Approve TRX Recharge Modal -->
+        <div class="modal fade" id="approveTrxRechargeModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Approve TRX Recharge Request</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div v-if="selectedTrxRechargeRequest">
+                            <p>Are you sure you want to approve the TRX recharge request for <strong>{{ selectedTrxRechargeRequest.amount }} TRX</strong> from user <strong>{{ selectedTrxRechargeRequest.userId ? selectedTrxRechargeRequest.userId.email : 'N/A' }}</strong>?</p>
+                            <div class="mb-3">
+                                <label for="trx-recharge-admin-notes" class="form-label">Admin Notes (Optional)</label>
+                                <textarea class="form-control" id="trx-recharge-admin-notes" rows="3" v-model="trxRechargeAdminNotes"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-success" @click="approveTrxRechargeRequest">Approve</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reject TRX Recharge Modal -->
+        <div class="modal fade" id="rejectTrxRechargeModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Reject TRX Recharge Request</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div v-if="selectedTrxRechargeRequest">
+                            <p>Are you sure you want to reject the TRX recharge request for <strong>{{ selectedTrxRechargeRequest.amount }} TRX</strong> from user <strong>{{ selectedTrxRechargeRequest.userId ? selectedTrxRechargeRequest.userId.email : 'N/A' }}</strong>?</p>
+                            <div class="mb-3">
+                                <label for="trx-recharge-admin-notes-reject" class="form-label">Admin Notes (Optional)</label>
+                                <textarea class="form-control" id="trx-recharge-admin-notes-reject" rows="3" v-model="trxRechargeAdminNotes"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-danger" @click="rejectTrxRechargeRequest">Reject</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Manage Pages Modal -->
+        <div class="modal fade" id="managePagesModal" tabindex="-1" aria-hidden="true" v-if="authenticated">
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Manage Pages</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div v-if="pages.length === 0" class="text-center py-4 text-muted">
+                            No pages found.
+                        </div>
+                        <div v-else class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th>Page Name</th>
+                                        <th>Status</th>
+                                        <th>Price Changes</th>
+                                        <th>Issue Count</th> <!-- Added Issue Count column -->
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="page in pages" :key="page.pageName">
+                                        <td>{{ page.pageName }}</td>
+                                        <td>
+                                            <span class="status-badge" :class="statusClass(page.status)">
+                                                {{ page.status }}
+                                            </span>
+                                        </td>
+                                        <td>{{ page.count }} PC</td>
+                                        <td>{{ page.issueCount }}</td> <!-- Display Issue Count -->
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary me-1" @click="editPage(page)">
+                                                <i class="bi bi-pencil-square"></i> Edit
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" @click="deletePage(page.pageName)">
+                                                <i class="bi bi-trash"></i> Delete
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Page Modal (for individual page editing) -->
+        <div class="modal fade" id="editPageModal" tabindex="-1" aria-hidden="true" v-if="authenticated">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Edit Page: {{ selectedPage ? selectedPage.pageName : '' }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body" v-if="selectedPage">
+                        <div class="mb-3">
+                            <label for="edit-page-shortid" class="form-label">Short ID</label>
+                            <input type="text" class="form-control" id="edit-page-shortid" v-model="selectedPage.shortId" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-page-name" class="form-label">Page Name</label>
+                            <input type="text" class="form-control" id="edit-page-name" v-model="selectedPage.pageName">
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-page-status" class="form-label">Page Status</label>
+                            <select class="form-select" id="edit-page-status" v-model="selectedPage.status" required>
+                                <option value="new-listed">New Listed</option>
+                                <option value="issueless-pending">Issueless Pending</option>
+                                <option value="issueless">Issueless</option>
+                                <option value="issue-rising">Issue Prone</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-page-price-change-count" class="form-label">Price Change Count</label>
+                            <input type="number" class="form-control" id="edit-page-price-change-count" v-model.number="selectedPage.count" min="0">
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-page-issue-count" class="form-label">Issue Count</label>
+                            <input type="number" class="form-control" id="edit-page-issue-count" v-model.number="selectedPage.issueCount" min="0">
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-page-note" class="form-label">Note</label>
+                            <textarea class="form-control" id="edit-page-note" rows="3" v-model="selectedPage.note"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" @click="savePageChanges">Save Changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const API_BASE = 'https://oneai-wjox.onrender.com';
+        
+        // Helper function to parse JWT
+        function parseJwt(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                if (!base64Url) { // Added check
+                    return null;
+                }
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(
+                    atob(base64)
+                    .split('')
+                    .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+                    .join('')
+                );
+                return JSON.parse(jsonPayload);
+            } catch (e) {
+                console.error("Error parsing JWT:", e); // Added error logging
+                return null;
+            }
+        }
+
+        const AdminApp = {
+            data() {
+                return {
+                    isLoading: true,
+                    showInitialSetup: false,
+                    authenticated: false,
+                    admin: { email: '', password: '' },
+                    loginError: '',
+                    loginLoading: false,
+                    registerError: '',
+                    registerSuccess: '',
+                    registerLoading: false,
+                    users: [],
+                    payments: [],
+                    merchantIssues: [],
+                    penaltyReports: [],
+                    premiumPayments: [],
+                    fexiloadRequests: [],
+                    locationTrackerRequests: [],
+                    trxRechargeRequests: [],
+                    selectedTrxRechargeRequest: null,
+                    trxRechargeAdminNotes: '',
+                    commissionPercentage: 5,
+                    selectedLocationTrackerRequest: null,
+                    deliveredDataType: '',
+                    deliveredDataContent: '',
+                    selectedPayment: null,
+                    selectedIssue: null,
+                    selectedPenalty: null,
+                    selectedPremiumPayment: null,
+                    selectedFexiloadRequest: null,
+                    selectedUserDetail: null,
+                    selectedUser: null,
+                    stats: { totalUsers: 0, totalPayments: 0, pendingPayments: 0, issueReports: 0 },
+                    discountPercentage: 10,
+                    issueDiscountPercentage: 10,
+                    premiumDiscountPercentage: 0,
+                    premiumValidity: '15d',
+                    manualPremiumDiscountPercentage: 0,
+                    manualPremiumValidity: '15d',
+                    manualPremiumPhoneNumber: '',
+                    generatingPremiumVoucher: false,
+                    premiumVoucherMessage: '',
+                    premiumVoucherSuccess: false,
+                    issueStatusChart: null,
+                    issueTypeChart: null,
+                    recentActivities: [],
+                    ws: null,
+                    wsConnectionAttempts: 0,
+                    userEmailQuery: '',
+                    userPaymentData: null,
+                    userPaymentError: '',
+                    paymentStartDate: '',
+                    paymentEndDate: '',
+                    paymentFilter: 'all',
+                    issueFilter: 'all',
+                    penaltyFilter: 'all',
+                    pages: [],
+                    newPage: { pageName: '', note: '' },
+                    selectedPage: null
+                };
+            },
+            computed: {
+                filteredPayments() {
+                    if (this.paymentFilter === 'all') {
+                        return this.payments;
+                    }
+                    return this.payments.filter(p => p.status === this.paymentFilter);
+                },
+                filteredIssues() {
+                    if (this.issueFilter === 'all') {
+                        return this.merchantIssues;
+                    }
+                    return this.merchantIssues.filter(issue => 
+                        issue.status === this.issueFilter.replace('-', ' ')
+                    );
+                },
+                filteredPenalties() {
+                    if (this.penaltyFilter === 'all') {
+                        return this.penaltyReports;
+                    }
+                    return this.penaltyReports.filter(report => 
+                        report.status === this.penaltyFilter
+                    );
+                },
+                totalPaymentAmount() {
+                    return this.payments.filter(p => p.status === 'Completed').reduce((total, payment) => total + payment.amount3, 0);
+                }
+            },
+            methods: {
+                async checkInitialSetup() {
+                    try {
+                        this.isLoading = true;
+                        const response = await axios.get(`${API_BASE}/admin/exists`);
+                        this.showInitialSetup = !response.data.exists;
+                    } catch (error) {
+                        console.error('Admin check error:', error);
+                        this.showInitialSetup = true;
+                    } finally {
+                        this.isLoading = false;
+                    }
+                },
+                validateEmail(email) {
+                    return /^[^\s @]+@[^\s @]+\.[^\s @]+$/.test(email);
+                },
+                validatePassword(password) {
+                    return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/.test(password);
+                },
+                async registerAdmin() {
+                    this.registerError = '';
+                    this.registerSuccess = '';
+                    this.registerLoading = true;
+                    
+                    if (!this.validateEmail(this.admin.email)) {
+                        this.registerError = 'Please enter a valid email address';
+                        this.registerLoading = false;
+                        return;
+                    }
+                    
+                    if (!this.validatePassword(this.admin.password)) {
+                        this.registerError = 'Password must be at least 12 characters with uppercase, lowercase, number and special character';
+                        this.registerLoading = false;
+                        return;
+                    }
+
+                    try {
+                        const response = await axios.post(`${API_BASE}/admin/register`, {
+                            email: this.admin.email.trim(),
+                            password: this.admin.password
+                        });
+
+                        if (response.data.success) {
+                            this.registerSuccess = 'Admin account created! Redirecting...';
+                            setTimeout(() => {
+                                this.showInitialSetup = false;
+                                this.authenticated = true;
+                                this.loadData();
+                            }, 1500);
+                        } else {
+                            this.registerError = response.data.message;
+                        }
+                    } catch (error) {
+                        this.registerError = (error.response && error.response.data && error.response.data.message) 
+                            || 'Registration failed. Please try again.';
+                    } finally {
+                        this.registerLoading = false;
+                    }
+                },
+                async login() {
+                    console.log('Attempting login...');
+                    this.loginError = '';
+                    this.loginLoading = true;
+                    
+                    try {
+                        const response = await axios.post(`${API_BASE}/admin/login`, this.admin);
+                        console.log('Login response:', response.data);
+                        
+                        if (response.data.success) {
+                            localStorage.setItem('adminToken', response.data.token);
+                            const decodedToken = parseJwt(response.data.token);
+                            if (decodedToken && decodedToken.email) {
+                                this.admin.email = decodedToken.email;
+                            }
+                            this.authenticated = true;
+                            console.log('Login successful, authenticated:', this.authenticated);
+                            await this.loadData();
+                        } else {
+                            this.loginError = response.data.message || 'Login failed. Please check your credentials.';
+                            console.log('Login failed:', this.loginError);
+                        }
+                    } catch (error) {
+                        console.error('Login error caught:', error);
+                        
+                        if (error.response) {
+                            this.loginError = error.response.data.message || 
+                                             `Server error: ${error.response.status}`;
+                        } else if (error.request) {
+                            this.loginError = 'No response from server. Please check your connection.';
+                        } else {
+                            this.loginError = 'Login failed. Please try again.';
+                        }
+                    } finally {
+                        this.loginLoading = false;
+                        console.log('Login process finished, loginLoading:', this.loginLoading);
+                    }
+                },
+                async loadData() {
+                    console.log('Starting loadData...');
+                    this.isLoading = true;
+                    const token = localStorage.getItem('adminToken');
+                    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                    console.log('Authorization token set.');
+
+                    try {
+                        await Promise.all([
+                            this.loadUsers(),
+                            this.loadPayments(),
+                            this.loadMerchantIssues(),
+                            this.loadPenaltyReports(),
+                            this.loadPremiumPayments(),
+                            this.loadFexiloadRequests(),
+                            this.loadLocationTrackerRequests(),
+                            this.loadTrxRechargeRequests(), // Added
+                            this.loadPages()
+                        ]);
+                        console.log('All data loaded successfully.');
+                    } catch (error) {
+                        console.error('Data loading error in loadData:', error);
+                        if (error.response && error.response.status === 401) {
+                            console.log('401 error, logging out.');
+                            this.logout();
+                            alert('Session expired or unauthorized. Please log in again.');
+                        } else {
+                            alert('Failed to load some dashboard data. Please check your connection or try again.');
+                        }
+                    } finally {
+                        this.stats = {
+                            totalUsers: this.users.length,
+                            totalPayments: this.payments.length,
+                            pendingPayments: this.payments.filter(p => p.status === 'Pending').length,
+                            issueReports: this.merchantIssues.length
+                        };
+                        this.updateCharts();
+                        this.loadRecentActivities();
+                        this.isLoading = false;
+                        console.log('loadData finished, isLoading:', this.isLoading);
+                    }
+                },
+                async loadUsers() {
+                    try {
+                        const response = await axios.get(`${API_BASE}/admin/users`);
+                        this.users = response.data.users || [];
+                    } catch (error) {
+                        console.error('Error loading users:', error);
+                        this.users = [];
+                        alert('Failed to load registered users.');
+                    }
+                },
+                async loadPayments() {
+                    try {
+                        const response = await axios.get(`${API_BASE}/admin/payments`);
+                        this.payments = response.data.payments || [];
+                    } catch (error) {
+                        console.error('Error loading payments:', error);
+                        this.payments = [];
+                        alert('Failed to load recent payments.');
+                    }
+                },
+                async loadMerchantIssues() {
+                    try {
+                        const response = await axios.get(`${API_BASE}/admin/merchant-issues`);
+                        this.merchantIssues = response.data.issues || [];
+                    } catch (error) {
+                        console.error('Error loading merchant issues:', error);
+                        this.merchantIssues = [];
+                        alert('Failed to load merchant issues.');
+                    }
+                },
+                async loadPenaltyReports() {
+                    try {
+                        const response = await axios.get(`${API_BASE}/admin/penalty-reports`);
+                        this.penaltyReports = response.data.reports || [];
+                    } catch (error) {
+                        console.error('Error loading penalty reports:', error);
+                        this.penaltyReports = [];
+                        alert('Failed to load penalty reports.');
+                    }
+                },
+                async loadPremiumPayments() {
+                    try {
+                        const response = await axios.get(`${API_BASE}/admin/premium-services`);
+                        this.premiumPayments = response.data.premiumServices || [];
+                    } catch (error) {
+                        console.error('Error loading premium payments:', error);
+                        this.premiumPayments = [];
+                        alert('Failed to load premium payments.');
+                    }
+                },
+                async loadFexiloadRequests() {
+                    try {
+                        const response = await axios.get(`${API_BASE}/admin/fexiload-requests`);
+                        this.fexiloadRequests = response.data.fexiloadRequests || [];
+                    } catch (error) {
+                        console.error('Error loading fexiload requests:', error);
+                        this.fexiloadRequests = [];
+                        alert('Failed to load fexiload requests.');
+                    }
+                },
+                async loadLocationTrackerRequests() {
+                    try {
+                        const response = await axios.get(`${API_BASE}/admin/tracker/requests`);
+                        this.locationTrackerRequests = response.data.requests || [];
+                    } catch (error) {
+                        console.error('Error loading location tracker requests:', error);
+                        this.locationTrackerRequests = [];
+                        alert('Failed to load location tracker requests.');
+                    }
+                },
+                async loadTrxRechargeRequests() {
+                    try {
+                        const response = await axios.get(`${API_BASE}/admin/trx-recharge-requests`);
+                        this.trxRechargeRequests = response.data.requests || [];
+                    } catch (error) {
+                        console.error('Error loading TRX recharge requests:', error);
+                        this.trxRechargeRequests = [];
+                        alert('Failed to load TRX recharge requests.');
+                    }
+                },
+                async loadPages() {
+                    try {
+                        const response = await axios.get(`${API_BASE}/api/pages`);
+                        this.pages = response.data.pages || [];
+                    } catch (error) {
+                        console.error('Error loading pages:', error);
+                        this.pages = [];
+                        alert('Failed to load pages data.');
+                    }
+                },
+                async refreshPages() {
+                    await this.loadPages();
+                },
+                async addPage() {
+                    if (!this.newPage.pageName) {
+                        alert('Page Name cannot be empty.');
+                        return;
+                    }
+                    try {
+                        await axios.post(`${API_BASE}/admin/pages`, { 
+                            pageName: this.newPage.pageName, 
+                            note: this.newPage.note 
+                        });
+                        this.newPage.pageName = '';
+                        this.newPage.note = '';
+                        this.loadPages();
+                    } catch (error) {
+                        console.error('Failed to add page:', error);
+                        alert(error.response?.data?.message || 'Failed to add page.');
+                    }
+                },
+                editPage(page) {
+                    this.selectedPage = { ...page }; // Create a copy for editing
+                    this.showModal('editPageModal');
+                },
+                async savePageChanges() {
+                    if (!this.selectedPage) return;
+                    
+                    try {
+                        await axios.put(`${API_BASE}/admin/pages/${this.selectedPage.shortId}`, {
+                            pageName: this.selectedPage.pageName,
+                            status: this.selectedPage.status,
+                            count: this.selectedPage.count,
+                            issueCount: this.selectedPage.issueCount,
+                            note: this.selectedPage.note
+                        });
+                        this.hideModal('editPageModal');
+                        this.loadPages();
+                    } catch (error) {
+                        console.error('Failed to update page:', error);
+                        alert(error.response?.data?.message || 'Failed to update page.');
+                    }
+                },
+                async deletePage(shortId) {
+                    if (!confirm('Are you sure you want to delete this page?')) return;
+                    try {
+                        await axios.delete(`${API_BASE}/admin/pages/${shortId}`);
+                        this.loadPages();
+                    } catch (error) {
+                        console.error('Failed to delete page:', error);
+                        alert('Failed to delete page.');
+                    }
+                },
+                // Modal helper methods
+                showModal(modalId) {
+                    const modalElement = document.getElementById(modalId);
+                    if (modalElement) {
+                        const modal = new bootstrap.Modal(modalElement);
+                        modal.show();
+                    }
+                },
+                hideModal(modalId) {
+                    const modalElement = document.getElementById(modalId);
+                    if (modalElement) {
+                        const modal = bootstrap.Modal.getInstance(modalElement);
+                        if (modal) {
+                            modal.hide();
+                        }
+                    }
+                },
+                // Payment methods
+                async refreshPayments() {
+                    await this.loadPayments();
+                },
+                async approvePayment(payment) {
+                    try {
+                        await axios.put(`${API_BASE}/admin/payments/${payment._id}/approve`);
+                        payment.status = 'Completed';
+                        this.$forceUpdate();
+                    } catch (error) {
+                        console.error('Error approving payment:', error);
+                        alert('Failed to approve payment.');
+                    }
+                },
+                async rejectPayment(payment) {
+                    try {
+                        await axios.put(`${API_BASE}/admin/payments/${payment._id}/reject`);
+                        payment.status = 'Failed';
+                        this.$forceUpdate();
+                    } catch (error) {
+                        console.error('Error rejecting payment:', error);
+                        alert('Failed to reject payment.');
+                    }
+                },
+                showPaymentDetails(payment) {
+                    this.selectedPayment = payment;
+                    this.showModal('paymentModal');
+                },
+                // Issue methods
+                async refreshIssues() {
+                    await this.loadMerchantIssues();
+                },
+                async updateIssueStatus(issue, status) {
+                    try {
+                        await axios.put(`${API_BASE}/admin/merchant-issues/${issue._id}/status`, { status });
+                        issue.status = status;
+                        this.$forceUpdate();
+                    } catch (error) {
+                        console.error('Error updating issue status:', error);
+                        alert('Failed to update issue status.');
+                    }
+                },
+                showIssueDetails(issue) {
+                    this.selectedIssue = { ...issue };
+                    this.showModal('issueModal');
+                },
+                async saveIssueChanges() {
+                    if (!this.selectedIssue) return;
+                    try {
+                        await axios.put(`${API_BASE}/admin/merchant-issues/${this.selectedIssue._id}`, {
+                            status: this.selectedIssue.status
+                        });
+                        this.hideModal('issueModal');
+                        this.refreshIssues();
+                    } catch (error) {
+                        console.error('Error saving issue changes:', error);
+                        alert('Failed to save issue changes.');
+                    }
+                },
+                showApproveIssueModal(issue) {
+                    this.selectedIssue = issue;
+                    this.issueDiscountPercentage = 10;
+                    this.showModal('approveIssueModal');
+                },
+                async approveIssue() {
+                    if (!this.selectedIssue) return;
+                    try {
+                        await axios.post(`${API_BASE}/admin/merchant-issues/${this.selectedIssue._id}/approve`, {
+                            discountPercentage: this.issueDiscountPercentage
+                        });
+                        this.hideModal('approveIssueModal');
+                        this.refreshIssues();
+                    } catch (error) {
+                        console.error('Error approving issue:', error);
+                        alert('Failed to approve issue.');
+                    }
+                },
+                // Penalty methods
+                async refreshPenalties() {
+                    await this.loadPenaltyReports();
+                },
+                async updatePenaltyStatus(penalty, status) {
+                    try {
+                        await axios.put(`${API_BASE}/admin/penalty-reports/${penalty._id}/status`, { status });
+                        penalty.status = status;
+                        this.$forceUpdate();
+                    } catch (error) {
+                        console.error('Error updating penalty status:', error);
+                        alert('Failed to update penalty status.');
+                    }
+                },
+                showPenaltyDetails(penalty) {
+                    this.selectedPenalty = { ...penalty };
+                    this.showModal('penaltyModal');
+                },
+                async savePenaltyChanges() {
+                    if (!this.selectedPenalty) return;
+                    try {
+                        await axios.put(`${API_BASE}/admin/penalty-reports/${this.selectedPenalty._id}`, {
+                            status: this.selectedPenalty.status
+                        });
+                        this.hideModal('penaltyModal');
+                        this.refreshPenalties();
+                    } catch (error) {
+                        console.error('Error saving penalty changes:', error);
+                        alert('Failed to save penalty changes.');
+                    }
+                },
+                showProcessPenaltyModal(penalty) {
+                    this.selectedPenalty = penalty;
+                    this.discountPercentage = 10;
+                    this.showModal('processPenaltyModal');
+                },
+                async processPenalty() {
+                    if (!this.selectedPenalty) return;
+                    try {
+                        await axios.post(`${API_BASE}/admin/penalty-reports/${this.selectedPenalty._id}/process`, {
+                            discountPercentage: this.discountPercentage
+                        });
+                        this.hideModal('processPenaltyModal');
+                        this.refreshPenalties();
+                    } catch (error) {
+                        console.error('Error processing penalty:', error);
+                        alert('Failed to process penalty.');
+                    }
+                },
+                // User methods
+                async refreshUsers() {
+                    await this.loadUsers();
+                },
+                async generateReferralCode(user) {
+                    try {
+                        await axios.post(`${API_BASE}/admin/users/${user._id}/generate-referral`);
+                        this.refreshUsers();
+                    } catch (error) {
+                        console.error('Error generating referral code:', error);
+                        alert('Failed to generate referral code.');
+                    }
+                },
+                async viewUserDetails(userId) {
+                    try {
+                        const response = await axios.get(`${API_BASE}/admin/users/${userId}/details`);
+                        this.selectedUserDetail = response.data.user;
+                        this.showModal('userDetailsModal');
+                    } catch (error) {
+                        console.error('Error loading user details:', error);
+                        alert('Failed to load user details.');
+                    }
+                },
+                showApproveUserModal(user) {
+                    this.selectedUser = { ...user };
+                    this.commissionPercentage = user.referralCommissionPercentage || 5;
+                    this.showModal('approveUserModal');
+                },
+                async approveUser() {
+                    if (!this.selectedUser) return;
+                    try {
+                        await axios.put(`${API_BASE}/admin/users/${this.selectedUser._id}/approve`, {
+                            name: this.selectedUser.name,
+                            zilla: this.selectedUser.zilla,
+                            officeLocation: this.selectedUser.officeLocation,
+                            commissionPercentage: this.commissionPercentage
+                        });
+                        this.hideModal('approveUserModal');
+                        this.refreshUsers();
+                    } catch (error) {
+                        console.error('Error approving user:', error);
+                        alert('Failed to approve user.');
+                    }
+                },
+                // Premium payment methods
+                async refreshPremiumPayments() {
+                    await this.loadPremiumPayments();
+                },
+                showProcessPremiumModal(payment) {
+                    this.selectedPremiumPayment = payment;
+                    this.premiumDiscountPercentage = payment.discount || 0;
+                    this.showModal('processPremiumModal');
+                },
+                async processPremiumPayment() {
+                    if (!this.selectedPremiumPayment) return;
+
+                    // Client-side validation for premium payment processing
+                    if (this.premiumDiscountPercentage === null || this.premiumDiscountPercentage === undefined || this.premiumDiscountPercentage < 0 || this.premiumDiscountPercentage > 100) {
+                        alert('Discount percentage must be between 0 and 100.');
+                        return;
+                    }
+                    if (!this.premiumValidity) {
+                        alert('Validity period is required.');
+                        return;
+                    }
+
+                    try {
+                        const token = localStorage.getItem('adminToken');
+                        if (!token) {
+                            alert('Authentication token missing. Please log in again.');
+                            this.logout();
+                            return;
+                        }
+
+                        await axios.post(`${API_BASE}/admin/premium-services/${this.selectedPremiumPayment._id}/process`, {
+                            discountPercentage: this.premiumDiscountPercentage,
+                            validity: this.premiumValidity
+                        }, {
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+                        this.hideModal('processPremiumModal');
+                        this.refreshPremiumPayments();
+                    } catch (error) {
+                        console.error('Error processing premium payment:', error);
+                        if (error.response && error.response.status === 401) {
+                            alert('Session expired or unauthorized. Please log in again.');
+                            this.logout();
+                        } else {
+                            alert(error.response?.data?.message || 'Failed to process premium payment.');
+                        }
+                    }
+                },
+                async updatePremiumPaymentStatus(payment, status) {
+                    try {
+                        await axios.put(`${API_BASE}/admin/premium-services/${payment._id}/status`, { status });
+                        payment.status = status;
+                        this.$forceUpdate();
+                    } catch (error) {
+                        console.error('Error updating premium payment status:', error);
+                        alert('Failed to update premium payment status.');
+                    }
+                },
+                // Fexiload methods
+                async refreshFexiloadRequests() {
+                    await this.loadFexiloadRequests();
+                },
+                async updateFexiloadRequestStatus(request, status) {
+                    try {
+                        await axios.put(`${API_BASE}/admin/fexiload-requests/${request._id}/status`, { status });
+                        request.status = status;
+                        this.$forceUpdate();
+                    } catch (error) {
+                        console.error('Error updating fexiload request status:', error);
+                        alert('Failed to update fexiload request status.');
+                    }
+                },
+                showFexiloadRequestDetails(request) {
+                    this.selectedFexiloadRequest = { ...request };
+                    this.showModal('fexiloadRequestModal');
+                },
+                async saveFexiloadRequestChanges() {
+                    if (!this.selectedFexiloadRequest) return;
+                    try {
+                        await axios.put(`${API_BASE}/admin/fexiload-requests/${this.selectedFexiloadRequest._id}`, {
+                            status: this.selectedFexiloadRequest.status
+                        });
+                        this.hideModal('fexiloadRequestModal');
+                        this.refreshFexiloadRequests();
+                    } catch (error) {
+                        console.error('Error saving fexiload request changes:', error);
+                        alert('Failed to save fexiload request changes.');
+                    }
+                },
+                // TRX Recharge Request methods
+                async refreshTrxRechargeRequests() {
+                    await this.loadTrxRechargeRequests();
+                },
+                showTrxRechargeRequestDetails(request) {
+                    this.selectedTrxRechargeRequest = { ...request };
+                    this.showModal('trxRechargeRequestModal');
+                },
+                showApproveTrxRechargeModal(request) {
+                    this.selectedTrxRechargeRequest = request;
+                    this.trxRechargeAdminNotes = ''; // Clear notes
+                    this.showModal('approveTrxRechargeModal');
+                },
+                async approveTrxRechargeRequest() {
+                    if (!this.selectedTrxRechargeRequest) return;
+                    try {
+                        await axios.put(`${API_BASE}/admin/trx-recharge-requests/${this.selectedTrxRechargeRequest._id}/approve`, {
+                            adminNotes: this.trxRechargeAdminNotes
+                        });
+                        this.hideModal('approveTrxRechargeModal');
+                        this.refreshTrxRechargeRequests();
+                        this.loadUsers(); // Refresh users to update their TRX balance
+                    } catch (error) {
+                        console.error('Error approving TRX recharge request:', error);
+                        alert(error.response?.data?.message || 'Failed to approve TRX recharge request.');
+                    }
+                },
+                showRejectTrxRechargeModal(request) {
+                    this.selectedTrxRechargeRequest = request;
+                    this.trxRechargeAdminNotes = ''; // Clear notes
+                    this.showModal('rejectTrxRechargeModal');
+                },
+                async rejectTrxRechargeRequest() {
+                    if (!this.selectedTrxRechargeRequest) return;
+                    try {
+                        await axios.put(`${API_BASE}/admin/trx-recharge-requests/${this.selectedTrxRechargeRequest._id}/reject`, {
+                            adminNotes: this.trxRechargeAdminNotes
+                        });
+                        this.hideModal('rejectTrxRechargeModal');
+                        this.refreshTrxRechargeRequests();
+                    } catch (error) {
+                        console.error('Error rejecting TRX recharge request:', error);
+                        alert(error.response?.data?.message || 'Failed to reject TRX recharge request.');
+                    }
+                },
+                // Location tracker methods
+                async refreshLocationTrackerRequests() {
+                    await this.loadLocationTrackerRequests();
+                },
+                async updateLocationTrackerRequestStatus(request, status) {
+                    try {
+                        await axios.put(`${API_BASE}/admin/tracker/requests/${request._id}/status`, { status });
+                        request.status = status;
+                        this.$forceUpdate();
+                    } catch (error) {
+                        console.error('Error updating location tracker request status:', error);
+                        alert('Failed to update location tracker request status.');
+                    }
+                },
+                showLocationTrackerRequestDetails(request) {
+                    this.selectedLocationTrackerRequest = { ...request };
+                    this.showModal('locationTrackerRequestModal');
+                },
+                async saveLocationTrackerRequestChanges() {
+                    if (!this.selectedLocationTrackerRequest) return;
+                    try {
+                        await axios.put(`${API_BASE}/admin/tracker/requests/${this.selectedLocationTrackerRequest._id}`, {
+                            status: this.selectedLocationTrackerRequest.status,
+                            moderatorNotes: this.selectedLocationTrackerRequest.moderatorNotes
+                        });
+                        this.hideModal('locationTrackerRequestModal');
+                        this.refreshLocationTrackerRequests();
+                    } catch (error) {
+                        console.error('Error saving location tracker request changes:', error);
+                        alert('Failed to save location tracker request changes.');
+                    }
+                },
+                showDeliverDataModal(request) {
+                    this.selectedLocationTrackerRequest = request;
+                    this.deliveredDataType = '';
+                    this.deliveredDataContent = '';
+                    this.showModal('deliverDataModal');
+                },
+                async submitDeliveredData() {
+                    if (!this.selectedLocationTrackerRequest || !this.deliveredDataType || !this.deliveredDataContent) {
+                        alert('Please fill all fields.');
+                        return;
+                    }
+                    try {
+                        let dataContent;
+                        try {
+                            dataContent = JSON.parse(this.deliveredDataContent);
+                        } catch (e) {
+                            dataContent = this.deliveredDataContent;
+                        }
+                        
+                        await axios.post(`${API_BASE}/admin/tracker/requests/${this.selectedLocationTrackerRequest._id}/deliver-data`, {
+                            dataType: this.deliveredDataType,
+                            dataContent: dataContent
+                        });
+                        this.hideModal('deliverDataModal');
+                        this.refreshLocationTrackerRequests();
+                    } catch (error) {
+                        console.error('Error delivering data:', error);
+                        alert('Failed to deliver data.');
+                    }
+                },
+                // Utility methods
+                async deleteItem(type, id) {
+                    if (!confirm(`Are you sure you want to delete this ${type}?`)) return;
+                    
+                    let endpoint;
+                    switch (type) {
+                        case 'payment':
+                            endpoint = `${API_BASE}/admin/payments/${id}`;
+                            break;
+                        case 'merchant issue':
+                            endpoint = `${API_BASE}/admin/merchant-issues/${id}`;
+                            break;
+                        case 'penalty report':
+                            endpoint = `${API_BASE}/admin/penalty-reports/${id}`;
+                            break;
+                        case 'user':
+                            endpoint = `${API_BASE}/admin/users/${id}`;
+                            break;
+                        case 'fexiload request':
+                            endpoint = `${API_BASE}/admin/fexiload-requests/${id}`;
+                            break;
+                        case 'location tracker request':
+                            endpoint = `${API_BASE}/admin/tracker/requests/${id}`;
+                            break;
+                        case 'trx recharge request': // Added case
+                            endpoint = `${API_BASE}/admin/trx-recharge-requests/${id}`;
+                            break;
+                        default:
+                            console.error('Unknown item type:', type);
+                            return;
+                    }
+                    
+                    try {
+                        await axios.delete(endpoint);
+                        this.loadData(); // Refresh all data
+                    } catch (error) {
+                        console.error(`Error deleting ${type}:`, error);
+                        alert(`Failed to delete ${type}.`);
+                    }
+                },
+                connectWebSocket() {
+                    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                        return; // Already connected
+                    }
+
+                    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                    const wsUrl = `${wsProtocol}//${new URL(API_BASE).host}`;
+                    this.ws = new WebSocket(wsUrl);
+
+                    this.ws.onopen = () => {
+                        console.log('WebSocket connected.');
+                        this.wsConnectionAttempts = 0;
+                        // Register as admin client
+                        this.ws.send(JSON.stringify({ type: 'register', isAdmin: true, token: localStorage.getItem('adminToken') }));
+                    };
+
+                    this.ws.onmessage = (event) => {
+                        const data = JSON.parse(event.data);
+                        if (data.type === 'new-trx-recharge-request') {
+                            this.trxRechargeRequests.unshift(data.request); // Add new request to the beginning
+                            // Optionally, show a notification
+                            alert(`New TRX Recharge Request from ${data.request.userEmail} for ${data.request.amount} TRX!`);
+                        } else if (data.type === 'trx-recharge-updated') {
+                            const index = this.trxRechargeRequests.findIndex(req => req._id === data.request._id);
+                            if (index !== -1) {
+                                this.trxRechargeRequests[index].status = data.request.status;
+                                if (data.request.newBalance !== undefined) {
+                                    // Update user's balance in the users array if available
+                                    const userIndex = this.users.findIndex(u => u._id === data.request.userId);
+                                    if (userIndex !== -1) {
+                                        this.users[userIndex].trxBalance = data.request.newBalance;
+                                    }
+                                }
+                                this.$forceUpdate();
+                            }
+                        }
+                        // Handle other WebSocket messages if any
+                    };
+
+                    this.ws.onclose = (event) => {
+                        console.log('WebSocket disconnected:', event.code, event.reason);
+                        if (event.code !== 1000 && this.wsConnectionAttempts < 5) { // Don't reconnect on normal closure
+                            this.wsConnectionAttempts++;
+                            setTimeout(() => this.connectWebSocket(), 5000); // Attempt to reconnect after 5 seconds
+                        }
+                    };
+
+                    this.ws.onerror = (error) => {
+                        console.error('WebSocket error:', error);
+                        this.ws.close();
+                    };
+                },
+                async calculateUserPayments() {
+                    if (!this.userEmailQuery) {
+                        this.userPaymentError = 'Please enter a user email.';
+                        return;
+                    }
+                    
+                    try {
+                        const params = {
+                            email: this.userEmailQuery
+                        };
+                        if (this.paymentStartDate) params.startDate = this.paymentStartDate;
+                        if (this.paymentEndDate) params.endDate = this.paymentEndDate;
+                        
+                        const response = await axios.get(`${API_BASE}/admin/user-payments`, { params });
+                        this.userPaymentData = response.data;
+                        this.userPaymentError = '';
+                    } catch (error) {
+                        console.error('Error calculating user payments:', error);
+                        this.userPaymentError = error.response?.data?.message || 'Failed to calculate user payments.';
+                        this.userPaymentData = null;
+                    }
+                },
+                async generatePremiumVoucher() {
+                    this.generatingPremiumVoucher = true;
+                    this.premiumVoucherMessage = '';
+
+                    // Client-side validation
+                    if (!this.manualPremiumPhoneNumber || !/^01[3-9]\d{8}$/.test(this.manualPremiumPhoneNumber)) {
+                        this.premiumVoucherMessage = 'Please enter a valid 11-digit Bangladeshi phone number (e.g., 01XXXXXXXXX).';
+                        this.premiumVoucherSuccess = false;
+                        this.generatingPremiumVoucher = false;
+                        return;
+                    }
+                    if (this.manualPremiumDiscountPercentage === null || this.manualPremiumDiscountPercentage === undefined || this.manualPremiumDiscountPercentage < 0 || this.manualPremiumDiscountPercentage > 100) {
+                        this.premiumVoucherMessage = 'Discount percentage must be between 0 and 100.';
+                        this.premiumVoucherSuccess = false;
+                        this.generatingPremiumVoucher = false;
+                        return;
+                    }
+                    if (!this.manualPremiumValidity) {
+                        this.premiumVoucherMessage = 'Validity period is required.';
+                        this.premiumVoucherSuccess = false;
+                        this.generatingPremiumVoucher = false;
+                        return;
+                    }
+
+                    try {
+                        const token = localStorage.getItem('adminToken');
+                        if (!token) {
+                            this.premiumVoucherMessage = 'Authentication token missing. Please log in again.';
+                            this.premiumVoucherSuccess = false;
+                            this.generatingPremiumVoucher = false;
+                            this.logout(); // Log out if token is missing
+                            return;
+                        }
+
+                        const payload = {
+                            phone: this.manualPremiumPhoneNumber,
+                            discountPercentage: this.manualPremiumDiscountPercentage,
+                            validity: this.manualPremiumValidity
+                        };
+                        console.log('Sending premium voucher generation request with payload:', payload);
+
+                        const response = await axios.post(`${API_BASE}/admin/generate-premium-voucher`, payload, {
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+
+                        this.premiumVoucherMessage = `Voucher generated successfully! Code: ${response.data.voucherCode}`;
+                        console.log('Voucher code from response:', response.data.voucherCode);
+                        console.log('Final premiumVoucherMessage:', this.premiumVoucherMessage);
+                        this.premiumVoucherSuccess = true;
+                        // Clear message after 5 seconds
+                        setTimeout(() => {
+                            this.premiumVoucherMessage = '';
+                        }, 5000);
+                        this.manualPremiumPhoneNumber = '';
+                        this.manualPremiumDiscountPercentage = 0; // Reset after successful generation
+                        this.manualPremiumValidity = '15d'; // Reset after successful generation
+                    } catch (error) {
+                        console.error('Error generating premium voucher:', error);
+                        if (error.response && error.response.status === 401) {
+                            this.premiumVoucherMessage = 'Session expired or unauthorized. Please log in again.';
+                            this.logout();
+                        } else {
+                            this.premiumVoucherMessage = error.response?.data?.message || 'Failed to generate voucher.';
+                        }
+                        this.premiumVoucherSuccess = false;
+                    } finally {
+                        this.generatingPremiumVoucher = false;
+                    }
+                },
+                // Chart and activity methods
+                updateCharts() {
+                    // Implementation for charts would go here
+                    console.log('Updating charts...');
+                },
+                loadRecentActivities() {
+                    // Implementation for recent activities would go here
+                    console.log('Loading recent activities...');
+                    this.recentActivities = [];
+                },
+                // Helper methods
+                statusClass(status) {
+                    const statusMap = {
+                        'Pending': 'bg-warning',
+                        'Completed': 'bg-success',
+                        'Failed': 'bg-danger',
+                        'Approved': 'bg-success',
+                        'Rejected': 'bg-danger',
+                        'pending': 'bg-warning',
+                        'in-progress': 'bg-info',
+                        'resolved': 'bg-success',
+                        'rejected': 'bg-danger',
+                        'processed': 'bg-success'
+                    };
+                    return statusMap[status] || 'bg-secondary';
+                },
+                formatDateTime(dateString) {
+                    if (!dateString) return 'N/A';
+                    const date = new Date(dateString);
+                    return date.toLocaleString();
+                },
+                formatDate(dateString) {
+                    if (!dateString) return 'N/A';
+                    const date = new Date(dateString);
+                    return date.toLocaleDateString();
+                },
+                shortId(id) {
+                    if (!id) return 'N/A';
+                    return id.substring(0, 8) + '...';
+                },
+                logout() {
+                    localStorage.removeItem('adminToken');
+                    this.authenticated = false;
+                    this.admin = { email: '', password: '' };
+                }
+            },
+            async mounted() {
+                // Check initial setup
+                await this.checkInitialSetup();
+                
+                // Check authentication if setup is done
+                const token = localStorage.getItem('adminToken');
+                if (token && !this.showInitialSetup) {
+                    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                    const decodedToken = parseJwt(token);
+                    if (decodedToken && decodedToken.email) {
+                        this.admin.email = decodedToken.email;
+                    }
+                    try {
+                        // Validate token
+                        await axios.get(`${API_BASE}/admin/validate`);
+                        this.authenticated = true;
+                        
+                        // Load data
+                        this.loadData();
+
+                        // Initialize WebSocket for real-time updates
+                        this.connectWebSocket();
+
+                    } catch (error) {
+                        console.error('Authentication check failed:', error);
+                        localStorage.removeItem('adminToken');
+                    }
+                }
+            }
+        }
+
+        // Create and mount the Vue app
+        const app = Vue.createApp(AdminApp);
+        app.mount('#admin-app');
+    </script>
+</body>
+</html>

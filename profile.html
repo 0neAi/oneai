@@ -1,0 +1,568 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+    <title>1AI - User Profile</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="./assets/css/main.css">
+    <link rel="stylesheet" href="./assets/css/animations.css">
+    <style>
+        body {
+            background: linear-gradient(45deg, #1a1a2e, #16222a, #1a1a2e);
+            background-size: 400% 400%;
+            animation: gradient-background 15s ease infinite;
+            color: #f0f0f0;
+        }
+
+        .container {
+            animation: fade-in 1s ease-out;
+        }
+
+        .profile-header {
+            text-align: center;
+            padding: 3rem 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            margin-bottom: 2rem;
+            animation: fade-in 1s ease-out;
+        }
+
+        .profile-header h1 {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #1cb495;
+            margin-bottom: 0.5rem;
+        }
+        
+        .profile-header h2 {
+            font-size: 1.2rem;
+            color: #ccc;
+        }
+
+        .dashboard-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 15px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            animation: slide-in-left 0.8s ease-out;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .stat-card h3 {
+            font-size: 1rem;
+            color: #aaa;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-card .value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #1cb495;
+        }
+
+        .user-profile-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            animation: slide-in-right 0.8s ease-out;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .avatar-container {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        #userAvatar {
+            border-radius: 50%;
+            border: 3px solid #1cb495;
+            background-color: #333;
+            box-shadow: 0 0 15px rgba(28, 180, 149, 0.5);
+        }
+
+        #userEmailDisplay {
+            margin-top: 0.5rem;
+            font-size: 1.2rem;
+            color: #1cb495;
+        }
+
+        .strike-bonus-section {
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+        
+        .strike-progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #444;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 1rem auto;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #1cb495, #17a2b8);
+            width: 0%;
+            border-radius: 10px;
+            transition: width 0.5s ease-in-out;
+        }
+
+        .strike-actions button {
+            margin: 0.5rem;
+            padding: 1rem 1.5rem;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            animation: pulse 2s infinite;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .referral-link-section, .referral-section, .voucher-section {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            animation: fade-in 1s ease-out;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .voucher-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .voucher-card {
+            background: linear-gradient(135deg, #6f42c1, #4e73df);
+            color: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
+            animation: fade-in 1s ease-out;
+        }
+
+        .referral-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .referral-table th, .referral-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: left;
+        }
+
+        .referral-table th {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="navbar-container"></div>
+    <div class="star-fall-animation"></div>
+
+    <div class="container">
+        <header class="profile-header">
+            <h1>প্রোফাইল</h1>
+            <h2>Welcome, <span id="userName"></span>!</h2>
+        </header>
+
+        <div class="dashboard-stats">
+            <div class="stat-card">
+                <h3><i class="fas fa-users"></i> Total Referrals</h3>
+                <div class="value" id="referralCount">0</div>
+            </div>
+            <div class="stat-card">
+                <h3><i class="fas fa-trophy"></i> Referral Bonus</h3>
+                <div class="value" id="referralBonus">0</div>
+            </div>
+            <div class="stat-card">
+                <h3><i class="fas fa-hourglass-half"></i> Bonus Status</h3>
+                <div class="value" id="referralBonusStatus">pending</div>
+            </div>
+            <div class="stat-card">
+                <h3><i class="fas fa-money-bill-wave"></i> Monthly Commission</h3>
+                <div class="value" id="monthlyCommission">৳0.00</div>
+            </div>
+        </div>
+
+        <section class="user-profile-section">
+            <div class="avatar-container">
+                <canvas id="userAvatar" width="100" height="100"></canvas>
+                <h3 id="userEmailDisplay"></h3>
+            </div>
+
+            <div class="strike-bonus-section">
+                <h2>Daily Payment Strike</h2>
+                <div class="strike-progress-bar">
+                    <div class="progress-fill" id="strikeProgressBar"></div>
+                </div>
+                <p><strong>বর্তমান স্ট্রাইক:</strong> <span id="strike-count">0</span>/6 days</p>
+                <p><strong>স্টার:</strong> <span id="normal-stars">0</span>/10</p>
+                <div class="strike-actions">
+                    <button id="collect-daily-star-btn" class="button primary">Check-in</button>
+                    <button id="convert-stars-btn" class="button">Convert Stars</button>
+                    <button id="claim-bonus-btn" class="button success" style="display: none;">Claim Bonus Voucher</button>
+                </div>
+                <p id="strikeMessage" class="message"></p>
+                <p>প্রতিদিন স্টার রিসিভ করুন। পেমেন্ট করতে বার্থ হলে স্টার কনভার্ট করে স্ট্রাইকে থাকুন।(৫স্টার = ১স্ট্রাইক)। স্ট্রাইক কমপ্লিট করে ৮০%  থেকে ১০০% ডিসকাউন্ট ভাউচার রিসিভ করুন।</p>
+            </div>
+        </section>
+
+        <section class="referral-link-section">
+            <h2>আপনার রেফার লিংকঃ</h2>
+            <div class="referral-link-container">
+                <input type="text" id="referralLink" readonly>
+                <button class="copy-btn" data-target="referralLink"><i class="fas fa-copy"></i> Copy</button>
+            </div><br>
+            <p>রেফারকোড ছাড়া কোন নিউ মেম্বার রেজিস্ট্রেশন করতে পারবে না। আপনার রেফার করা ইউজার প্রথম সার্ভিস গ্রহণ সম্পন্ন করলেই আপনি পাবেন ১০০% ডিস্কাউন্ট ভাউচার।<br> প্রতিমাসে রেফার্ড় ইউজারের সকল পেমেন্টের উপর ১০% কমিশন পান।<br>৭ জন রেফারেল এক্টিভ করে জিতে নিন কন্টিনিউ ১০০% ডিস্কাউন্ট ভাউচার। ৩টি সফল পেমেন্টের মাধ্যমে কোন ইউজার এক্টিভ হিসেবে গণ্য হবে এবং ১১দিন এর বেশী কোন এক্টিভিটি না থাকলে আইডি স্বয়ংক্রিয় ভাবে ডিলিট হয়ে যাবে। </p>
+            <p>৫ই আগস্ট পর্যন্ত রেফারকৃত সকল ইউজার আইডি থেকে ১০% মাসিক কমিশন এবং পরবর্তী সকল রেফার্ড আইডি থেকে ৫% রেফারাল কমিশন উপভোগ করুন। ফেইক রেফারেল থেকে বিরত থাকুন এতে আপনার আইপি,ইউজার আইডি,এপ/ওয়েবসাইট লগইন নাম্বার ব্যান করে দেওয়া হবে।</p>
+            <p>প্রতিমাসের শেষ দিন সকল কমিশন এবং বোনাস অনলাইন পেমেন্টের মাধ্যমে রিলিজ করা হবে।</p>
+        </section>
+
+        <section class="voucher-section" id="voucher-section" style="display: none;">
+            <h2>Your Vouchers</h2>
+            <div id="voucher-list" class="voucher-list"></div>
+        </section>
+
+        <section class="referral-section">
+            <h2>Your Referrals</h2>
+            <div class="referral-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Total Payments</th>
+                        </tr>
+                    </thead>
+                    <tbody id="referralList">
+                        <!-- Dynamic content will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <script src="./assets/js/load-navbar.js"></script>
+    <script>
+        // Starfall animation
+        const starFallAnimation = document.querySelector('.star-fall-animation');
+        if (starFallAnimation) {
+            for (let i = 0; i < 50; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = `${Math.random() * 100}vw`;
+                star.style.width = `${Math.random() * 3}px`;
+                star.style.height = star.style.width;
+                star.style.animationDelay = `${Math.random() * 10}s`;
+                starFallAnimation.appendChild(star);
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', async () => {
+            const token = localStorage.getItem('authToken');
+            const userID = localStorage.getItem('userID');
+
+            if (!token || !userID) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            try {
+                const response = await fetch(`https://oneai-wjox.onrender.com/users/${userID}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'X-User-ID': userID
+                    }
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Failed to fetch user profile: ${response.status} ${response.statusText} - ${errorText}`);
+                }
+
+                const data = await response.json();
+                const user = data.user;
+                console.log('User data fetched for profile:', user); // Added log
+
+                document.getElementById('userName').textContent = user.name || 'Guest';
+                document.getElementById('referralCount').textContent = user.referrals ? user.referrals.length : 0;
+                document.getElementById('referralBonus').textContent = user.referralBonus || '0';
+                document.getElementById('referralBonusStatus').textContent = user.referralBonusStatus || 'N/A';
+
+                // Display referral link
+                if (user.referralCode) {
+                    const baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
+                    const referralLink = `${baseUrl}signup.html?referral=${user.referralCode}`;
+                    document.getElementById('referralLink').value = referralLink;
+                } else {
+                    document.getElementById('referralLink').value = 'No referral code available';
+                }
+
+                const referralList = document.getElementById('referralList');
+                referralList.innerHTML = ''; // Clear existing content
+                if (user.referrals && Array.isArray(user.referrals)) {
+                    user.referrals.forEach(referral => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${referral.name || 'N/A'}</td>
+                            <td>${referral.email || 'N/A'}</td>
+                            <td>${referral.totalPayments || 0}</td>
+                        `;
+                        referralList.appendChild(tr);
+                    });
+                } else {
+                    console.warn('User referrals data is missing or not an array.');
+                }
+
+                console.log('User vouchers before filtering:', user.vouchers); // Added log
+                const vouchers = user.vouchers ? user.vouchers.filter(v => !v.isUsed) : [];
+                console.log('Active vouchers after filtering:', vouchers); // Added log
+                if (vouchers.length > 0) {
+                    document.getElementById('voucher-section').style.display = 'block';
+                    const voucherList = document.getElementById('voucher-list');
+                    vouchers.forEach(voucher => {
+                        const voucherCard = document.createElement('div');
+                        voucherCard.className = 'voucher-card';
+                        
+                        const isPremium = voucher.reportModel === 'PremiumService';
+                        const isIssue = voucher.reportModel === 'MerchantIssue';
+                        const isPenalty = voucher.reportModel === 'PenaltyReport';
+                        const isReferral = voucher.reportModel === 'User';
+
+                        let iconClass = 'fas fa-ticket-alt';
+                        let voucherType = 'Voucher';
+
+                        if (isPremium) {
+                            iconClass = 'fas fa-crown';
+                            voucherType = 'Premium Service';
+                        } else if (isIssue) {
+                            iconClass = 'fas fa-bug';
+                            voucherType = 'Merchant Issue';
+                        } else if (isPenalty) {
+                            iconClass = 'fas fa-exclamation-triangle';
+                            voucherType = 'Penalty Report';
+                        } else if (isReferral) {
+                            iconClass = 'fas fa-user-plus';
+                            voucherType = 'Referral';
+                        }
+
+                        voucherCard.innerHTML = `
+                            <h4><i class="${iconClass}"></i> ${voucherType}</h4>
+                            <p>${voucher.discountPercentage || 'XX'}% Discount</p>
+                            <p>Use this code at checkout:</p>
+                            <div class="voucher-code">${voucher.code || 'N/A'}</div>
+                        `;
+                        voucherList.appendChild(voucherCard);
+                    });
+                }
+
+                // Fetch and display monthly commission
+                try {
+                    const commissionResponse = await fetch(`https://oneai-wjox.onrender.com/users/${userID}/monthly-commission`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'X-User-ID': userID
+                        }
+                    });
+
+                    if (commissionResponse.ok) {
+                        const commissionData = await commissionResponse.json();
+                        document.getElementById('monthlyCommission').textContent = `৳${(commissionData.monthlyCommission || 0).toFixed(2)}`;
+                    } else {
+                        const errorText = await commissionResponse.text();
+                        console.error(`Failed to fetch monthly commission: ${commissionResponse.status} ${response.statusText} - ${errorText}`);
+                        document.getElementById('monthlyCommission').textContent = '৳0.00';
+                    }
+                } catch (error) {
+                    console.error('Error fetching monthly commission:', error);
+                    document.getElementById('monthlyCommission').textContent = '৳0.00';
+                }
+
+                // Avatar Generation
+                const canvas = document.getElementById('userAvatar');
+                const ctx = canvas.getContext('2d');
+                const emailHash = user.email ? user.email.split('').reduce((acc, char) => char.charCodeAt(0) + ((acc << 5) - acc), 0) : 0;
+                const color = `hsl(${emailHash % 360}, 70%, 50%)`;
+                const initials = user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) : (user.email ? user.email.substring(0, 2).toUpperCase() : '??');
+
+                ctx.fillStyle = color;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.font = 'bold 40px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = 'white';
+                ctx.fillText(initials, canvas.width / 2, canvas.height / 2);
+                document.getElementById('userEmailDisplay').textContent = user.email || 'N/A';
+
+                // Strike Bonus Logic
+                const updateStrikeUI = (userData) => {
+                    document.getElementById('strike-count').textContent = userData.strikeCount || 0;
+                    document.getElementById('normal-stars').textContent = userData.normalStars || 0;
+                    const progressBar = document.getElementById('strikeProgressBar');
+                    const progress = ((userData.strikeCount || 0) / 6) * 100;
+                    progressBar.style.width = `${progress}%`;
+
+                    const collectBtn = document.getElementById('collect-daily-star-btn');
+                    const convertBtn = document.getElementById('convert-stars-btn');
+                    const claimBtn = document.getElementById('claim-bonus-btn');
+                    const strikeMessage = document.getElementById('strikeMessage');
+
+                    collectBtn.style.display = 'flex';
+                    collectBtn.style.alignItems = 'center';
+                    collectBtn.style.justifyContent = 'center';
+                    convertBtn.style.display = 'flex';
+                    convertBtn.style.alignItems = 'center';
+                    convertBtn.style.justifyContent = 'center';
+                    claimBtn.style.display = 'none';
+                    strikeMessage.textContent = '';
+                    strikeMessage.className = 'message';
+
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+
+                    if (userData.lastNormalStarCollectionDate) {
+                        const lastCollectionDay = new Date(userData.lastNormalStarCollectionDate);
+                        lastCollectionDay.setHours(0, 0, 0, 0);
+                        if (today.getTime() === lastCollectionDay.getTime()) {
+                            collectBtn.disabled = true;
+                            collectBtn.textContent = 'Collected Today';
+                        } else {
+                            collectBtn.disabled = false;
+                            collectBtn.textContent = 'Daily Check-in';
+                        }
+                    } else {
+                        collectBtn.disabled = false;
+                        collectBtn.textContent = 'Daily Check-in';
+                    }
+
+                    convertBtn.disabled = (userData.normalStars || 0) < 5;
+
+                    if (userData.hasPendingBonusVoucher) {
+                        claimBtn.style.display = 'block';
+                        strikeMessage.textContent = 'You have a pending 80% bonus voucher to claim!';
+                        strikeMessage.classList.add('success');
+                    } else {
+                        claimBtn.style.display = 'none';
+                    }
+
+                    if ((userData.strikeCount || 0) < 6 && !userData.hasPendingBonusVoucher) {
+                        strikeMessage.textContent = `প্রতিদিন সার্ভিস গ্রহণ করে স্ট্রাইকে থাকুন! বোনাস পাওয়ার আর মাত্র ${6 - (userData.strikeCount || 0)} দিন বাকি।`;
+                        strikeMessage.classList.add('info');
+                    }
+                };
+
+                updateStrikeUI(user);
+
+                document.getElementById('collect-daily-star-btn').addEventListener('click', async () => {
+                    try {
+                        const response = await fetch(`https://oneai-wjox.onrender.com/users/${userID}/collect-daily-star`, {
+                            method: 'POST',
+                            headers: { 'Authorization': `Bearer ${token}`, 'X-User-ID': userID }
+                        });
+                        const data = await response.json();
+                        if (data.success) {
+                            alert(data.message);
+                            updateStrikeUI(data.user);
+                        } else {
+                            alert(data.message);
+                        }
+                    } catch (error) {
+                        console.error('Error collecting daily star:', error);
+                        alert('Failed to collect daily star.');
+                    }
+                });
+
+                document.getElementById('convert-stars-btn').addEventListener('click', async () => {
+                    if (!confirm('Are you sure you want to convert 5 normal stars to a strike star?')) return;
+                    try {
+                        const response = await fetch(`https://oneai-wjox.onrender.com/users/${userID}/convert-normal-stars`, {
+                            method: 'POST',
+                            headers: { 'Authorization': `Bearer ${token}`, 'X-User-ID': userID }
+                        });
+                        const data = await response.json();
+                        if (data.success) {
+                            alert(data.message);
+                            updateStrikeUI(data.user);
+                        } else {
+                            alert(data.message);
+                        }
+                    } catch (error) {
+                        console.error('Error converting normal stars:', error);
+                        alert('Failed to convert normal stars.');
+                    }
+                });
+
+                document.getElementById('claim-bonus-btn').addEventListener('click', async () => {
+                    if (!confirm('Are you sure you want to claim your 80% bonus voucher?')) return;
+                    try {
+                        const response = await fetch(`https://oneai-wjox.onrender.com/users/${userID}/claim-bonus-voucher`, {
+                            method: 'POST',
+                            headers: { 'Authorization': `Bearer ${token}`, 'X-User-ID': userID }
+                        });
+                        const data = await response.json();
+                        if (data.success) {
+                            alert(data.message + ' Your voucher code is: ' + data.voucherCode);
+                            updateStrikeUI(data.user);
+                            window.location.reload(); 
+                        } else {
+                            alert(data.message);
+                        }
+                    } catch (error) {
+                        console.error('Error claiming bonus voucher:', error);
+                        alert('Failed to claim bonus voucher.');
+                    }
+                });
+
+                document.querySelectorAll('.copy-btn').forEach(button => {
+                    button.addEventListener('click', (event) => {
+                        const targetId = event.currentTarget.dataset.target;
+                        const element = document.getElementById(targetId);
+                        if (element) {
+                            navigator.clipboard.writeText(element.value || element.textContent).then(() => {
+                                alert('Copied to clipboard!');
+                            }).catch(err => {
+                                console.error('Failed to copy: ', err);
+                                alert('Failed to copy to clipboard.');
+                            });
+                        }
+                    });
+                });
+            } catch (error) {
+                console.error('Error loading user profile:', error);
+                alert('Failed to load user profile data. Please try again later.');
+            }
+        });
+    </script>
+    <script src="./assets/js/hackeranimation.js"></script>
+</body>
+</html>

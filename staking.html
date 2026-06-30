@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>1ai TRX Recharge</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #1a2a6c);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(0, 0, 20, 0.85);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            z-index: 2;
+        }
+        
+        header {
+            text-align: center;
+            padding: 20px 0;
+            margin-bottom: 30px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            color: #4facfe;
+            text-shadow: 0 0 15px rgba(79, 172, 254, 0.7);
+        }
+        
+        h2 {
+            font-size: 1.8rem;
+            margin: 15px 0;
+            color: #ff7e5f;
+            text-shadow: 0 0 10px rgba(255, 126, 95, 0.5);
+        }
+        
+        h3 {
+            font-size: 1.5rem;
+            color: #4facfe;
+            margin-bottom: 10px;
+        }
+        
+        .staking-info {
+            background: rgba(0, 30, 60, 0.7);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(79, 172, 254, 0.3);
+        }
+        
+        .benefits {
+            margin: 20px 0;
+            padding-left: 20px;
+        }
+        
+        .benefits li {
+            margin: 12px 0;
+            padding-left: 10px;
+            border-left: 3px solid #4facfe;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #4facfe;
+        }
+        
+        select, input {
+            width: 100%;
+            padding: 14px;
+            background: rgba(0, 10, 30, 0.7);
+            border: 1px solid rgba(79, 172, 254, 0.3);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        select:focus, input:focus {
+            outline: none;
+            border-color: #ff7e5f;
+            box-shadow: 0 0 0 3px rgba(255, 126, 95, 0.3);
+        }
+        
+        .payment-info {
+            background: rgba(0, 30, 60, 0.7);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid rgba(79, 172, 254, 0.3);
+        }
+        
+        .payment-detail {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .payment-detail:last-child {
+            border-bottom: none;
+        }
+        
+        .copy-btn {
+            background: rgba(79, 172, 254, 0.2);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .copy-btn:hover {
+            background: rgba(79, 172, 254, 0.4);
+            transform: translateY(-2px);
+        }
+        
+        .form-actions {
+            display: flex;
+            justify-content: center;
+            margin-top: 30px;
+        }
+        
+        .submit-btn {
+            background: linear-gradient(to right, #4facfe, #00f2fe);
+            color: #000;
+            border: none;
+            border-radius: 50px;
+            padding: 16px 40px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+            background: linear-gradient(to right, #00f2fe, #4facfe);
+        }
+        
+        .submit-btn:active {
+            transform: translateY(-2px);
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            color: white;
+            font-size: 1.5rem;
+            text-align: center;
+            display: none;
+        }
+        
+        .loading-spinner {
+            border: 5px solid rgba(255, 255, 255, 0.1);
+            border-top: 5px solid #4facfe;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 25px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .confirmation-message {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            font-size: 1.1rem;
+            display: none;
+        }
+        
+        .success {
+            background: rgba(40, 167, 69, 0.2);
+            border: 1px solid rgba(40, 167, 69, 0.5);
+            color: #28a745;
+        }
+        
+        .error {
+            background: rgba(220, 53, 69, 0.2);
+            border: 1px solid rgba(220, 53, 69, 0.5);
+            color: #dc3545;
+        }
+        
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+        
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(79, 172, 254, 0.5);
+            animation: float 15s infinite linear;
+        }
+        
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) scale(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-20vh) scale(1);
+                opacity: 0;
+            }
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 2.2rem;
+            }
+            
+            h2 {
+                font-size: 1.5rem;
+            }
+            
+            .payment-detail {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .copy-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated background particles -->
+    <div class="particles" id="particles"></div>
+    
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-wallet"></i> 1ai TRX Recharge</h1>
+        </header>
+        
+        <div style="text-align: center; margin-bottom: 20px;">
+            <a href="dashboard.html" class="submit-btn" style="background: linear-gradient(to right, #007bff, #0056b3); color: white; text-decoration: none; padding: 10px 20px; border-radius: 5px;">
+                <i class="fas fa-tachometer-alt"></i> Go to Dashboard
+            </a>
+        </div>
+        
+        <section>
+            <div class="staking-info">
+                <h2><i class="fas fa-info-circle"></i> How to Recharge TRX</h2>
+                <p>To recharge your TRX balance, please send your desired TRX amount to the address below. After sending, enter the amount and the transaction ID (TRX ID) in the form below.</p>
+                <div class="payment-detail">
+                    <div>
+                        <strong>Our TRX Deposit Address:</strong>
+                        <span id="websiteTrxAddress">TKbAYXQPYeU9BbW41h2h4Lao63iyMXMdJ5</span> <!-- Placeholder Address -->
+                    </div>
+                    <button class="copy-btn" onclick="copyToClipboard('websiteTrxAddress')">
+                        <i class="fas fa-copy"></i> Copy
+                    </button>
+                </div>
+            </div>
+
+            <form id="trx-recharge-form">
+                <div class="form-group">
+                    <label for="recharge-amount"><i class="fas fa-coins"></i> TRX Amount:</label>
+                    <input type="number" id="recharge-amount" placeholder="Enter TRX amount you sent" min="1" required>
+                </div>
+                <div class="form-group">
+                    <label for="userTrxId"><i class="fas fa-receipt"></i> Your TRX Transaction ID:</label>
+                    <input type="text" id="userTrxId" placeholder="Enter the TRX transaction ID" required>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="submit-btn">
+                        <i class="fas fa-paper-plane"></i> Submit Recharge Request
+                    </button>
+                </div>
+            </form>
+            
+            <div id="confirmation-message" class="confirmation-message"></div>
+
+            <h2 style="margin-top: 40px;"><i class="fas fa-history"></i> Your TRX Deposit History</h2>
+            <div class="table-wrapper">
+                <table id="depositHistoryTable">
+                    <thead>
+                        <tr>
+                            <th>Amount (TRX)</th>
+                            <th>Your TRX ID</th>
+                            <th>Status</th>
+                            <th>Admin Notes</th>
+                            <th>Date</th>
+                            <th>Countdown</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Deposit history will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        
+        <div class="footer">
+            <p>1Ai - Your Digital Solution Partner</p>
+            <p>Contact Support: support@1ai.com</p>
+        </div>
+    </div>
+    
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-spinner"></div>
+        <p>Thank you, Valued User!</p>
+        <p>Your TRX recharge request is being processed...</p>
+    </div>
+
+
+    <script src="./assets/js/utils.js"></script>
+    <script src="./assets/js/staking.js"></script>
