@@ -1930,8 +1930,7 @@ app.get('/location-tracker-requests/user', validateUser, async (req, res) => {
 // Broker order routes
 app.get('/broker/orders/user', validateUser, async (req, res) => {
   try {
-    const mineOnly = req.query.mine === 'true';
-    const filter = mineOnly ? { user: req.user._id } : {};
+    const filter = { user: req.user._id };
 
     if (req.query.status) {
       filter.status = String(req.query.status).toUpperCase();
@@ -2004,43 +2003,56 @@ app.post('/broker/orders', validateUser, async (req, res) => {
       return res.status(403).json({ success: false, message: 'At least 1 broker credit is required to create an order.' });
     }
 
-    user.brokerCredits -= 1;
-    user.brokerUsageCount = (user.brokerUsageCount || 0) + 1;
-    user.brokerLastAccessedAt = new Date();
-    await user.save();
-
     const orderId = `BROKER-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-
     const agentNameValue = agentName?.trim() || '';
     const isAssigned = Boolean(agentNameValue);
-    const brokerOrder = new BrokerOrder({
-      user: user._id,
-      orderId,
-      merchantName,
-      productDescription,
-      recipientName,
-      recipientPhone,
-      recipientAddress,
-      agentName: agentNameValue || 'Pathao Agent',
-      agentDisplayName: agentNameValue || 'Pathao Agent',
-      agentAssigned: agentNameValue,
-      assigned: isAssigned,
-      status: 'PENDING',
-      trackingEnabled: true,
-      statusHistory: [{ status: 'PENDING', note: 'Order created' }]
-    });
 
-    await brokerOrder.save();
+    let brokerOrder;
+    let brokerTransaction;
 
-    const brokerTransaction = new BrokerCreditTransaction({
-      userId: user._id,
-      type: 'usage',
-      amount: 1,
-      balance: user.brokerCredits,
-      description: 'Broker order created',
-      orderId: brokerOrder._id
-    });
-    await brokerTransaction.save();
+    try {
+      brokerOrder = new BrokerOrder({
+        user: user._id,
+        orderId,
+        merchantName,
+        productDescription,
+        recipientName,
+        recipientPhone,
+        recipientAddress,
+        agentName: agentNameValue || 'Pathao Agent',
+        agentDisplayName: agentNameValue || 'Pathao Agent',
+        agentAssigned: agentNameValue,
+        assigned: isAssigned,
+        status: 'PENDING',
+        trackingEnabled: true,
+        statusHistory: [{ status: 'PENDING', note: 'Order created' }]
+      });
+
+      await brokerOrder.save();
+
+      brokerTransaction = new BrokerCreditTransaction({
+        userId: user._id,
+        type: 'usage',
+        amount: 1,
+        balance: user.brokerCredits - 1,
+        description: 'Broker order created',
+        orderId: brokerOrder._id
+      });
+      await brokerTransaction.save();
+
+      user.brokerCredits -= 1;
+      user.brokerUsageCount = (user.brokerUsageCount || 0) + 1;
+      user.brokerLastAccessedAt = new Date();
+      await user.save();
+    } catch (orderError) {
+      if (brokerTransaction && brokerTransaction._id) {
+        await BrokerCreditTransaction.findByIdAndDelete(brokerTransaction._id).catch(() => {});
+      }
+      if (brokerOrder && brokerOrder._id) {
+        await BrokerOrder.findByIdAndDelete(brokerOrder._id).catch(() => {});
+      }
+      throw orderError;
+    }
 
     wss.clients.forEach(client => {
       if (client.readyState === WebSocket.OPEN && client.userID === user._id.toString()) {
