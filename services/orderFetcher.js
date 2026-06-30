@@ -220,8 +220,7 @@ class OrderFetcher {
               timestamp: new Date()
             }],
             holdCount: 0,
-            holdReason: '',
-            completed: ['DELIVERED', 'RETURNED', 'CANCELLED', 'FAILED'].includes(order.status)
+            holdReason: ''
           }
         },
         upsert: true

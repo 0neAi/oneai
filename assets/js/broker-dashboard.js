@@ -1,3 +1,7 @@
+const API_BASE_URL = window.API_BASE_URL || (['localhost', '127.0.0.1'].includes(window.location.hostname)
+    ? 'http://localhost:10000'
+    : window.location.origin);
+
 const brokerState = {
     orders: [],
     credits: 0,
@@ -6,6 +10,8 @@ const brokerState = {
     subscriptionTier: 'free',
     subscriptionExpiresAt: null,
     selectedPackage: null,
+    paymentMethod: 'USDT',
+    paymentTxId: '',
     currentFilter: {},
     search: '',
     statusFilter: '',
@@ -147,15 +153,15 @@ async function loadBrokerData(filter = {}) {
         'X-User-ID': userID
     };
 
-    const query = new URLSearchParams({ mine: 'true' });
+    const query = new URLSearchParams({ mine: 'false' });
     if (filter.status) query.set('status', filter.status);
     if (filter.assigned === false) query.set('assigned', 'false');
     if (filter.assigned === true) query.set('assigned', 'true');
 
     try {
         const [creditsRes, ordersRes] = await Promise.all([
-            fetch('https://oneai-wjox.onrender.com/broker/credits', { headers }),
-            fetch(`https://oneai-wjox.onrender.com/broker/orders/user?${query.toString()}`, { headers })
+            fetch(`${API_BASE_URL}/broker/credits`, { headers }),
+            fetch(`${API_BASE_URL}/broker/orders/user?${query.toString()}`, { headers })
         ]);
 
         if (!creditsRes.ok) throw new Error('Failed to load broker credits');
@@ -333,7 +339,7 @@ async function createBrokerOrder() {
     }
 
     try {
-        const response = await fetch('https://oneai-wjox.onrender.com/broker/orders', {
+        const response = await fetch(`${API_BASE_URL}/broker/orders`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -367,7 +373,7 @@ async function loadBrokerCreditPackages() {
     };
 
     try {
-        const response = await fetch('https://oneai-wjox.onrender.com/broker/credit-packages', { headers });
+        const response = await fetch(`${API_BASE_URL}/broker/credit-packages`, { headers });
         const data = await response.json();
         if (!response.ok) throw new Error('Failed to load credit packages');
 
@@ -399,6 +405,14 @@ function setBrokerPackageSelection(pkg) {
     selectedDiv.innerHTML = `<strong>${pkg.credits.toLocaleString()} credits</strong> for <strong>${pkg.price} ${pkg.currency}</strong>`;
 }
 
+function setBrokerPaymentMethod(value) {
+    brokerState.paymentMethod = value;
+}
+
+function setBrokerPaymentTxId(value) {
+    brokerState.paymentTxId = value.trim();
+}
+
 async function purchaseBrokerCredits() {
     const authToken = localStorage.getItem('authToken');
     const userID = localStorage.getItem('userID');
@@ -408,15 +422,32 @@ async function purchaseBrokerCredits() {
         return;
     }
 
+    const paymentMethod = document.getElementById('broker-payment-method')?.value || brokerState.paymentMethod;
+    const paymentTxId = document.getElementById('broker-payment-txid')?.value.trim() || brokerState.paymentTxId.trim();
+
+    if (!paymentMethod) {
+        showError('Please select a payment method (TRX or USDT).');
+        return;
+    }
+
+    if (!paymentTxId) {
+        showError('Please enter your TRX/USDT transaction reference.');
+        return;
+    }
+
     try {
-        const response = await fetch('https://oneai-wjox.onrender.com/broker/credits/purchase', {
+        const response = await fetch(`${API_BASE_URL}/broker/credits/purchase`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${authToken}`,
                 'X-User-ID': userID
             },
-            body: JSON.stringify({ packageId: brokerState.selectedPackage.id })
+            body: JSON.stringify({
+                packageId: brokerState.selectedPackage.id,
+                paymentMethod,
+                paymentTxId
+            })
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'Broker credit purchase failed');
@@ -426,7 +457,16 @@ async function purchaseBrokerCredits() {
         showSuccess(`✅ ${data.package.credits.toLocaleString()} credits purchased successfully!`);
         document.getElementById('broker-credit-form').style.display = 'none';
         brokerState.selectedPackage = null;
-        document.getElementById('broker-selected-package').innerHTML = '<span style="color: #999;">No package selected</span>';
+        brokerState.paymentTxId = '';
+        if (document.getElementById('broker-selected-package')) {
+            document.getElementById('broker-selected-package').innerHTML = '<span style="color: #999;">No package selected</span>';
+        }
+        if (document.getElementById('broker-payment-txid')) {
+            document.getElementById('broker-payment-txid').value = '';
+        }
+        if (document.getElementById('broker-payment-method')) {
+            document.getElementById('broker-payment-method').value = 'USDT';
+        }
         window.fetchGlobalTrxBalance?.();
     } catch (error) {
         console.error('Purchase broker credits error:', error);
@@ -439,7 +479,7 @@ async function trackBrokerOrder(orderId) {
     const userID = localStorage.getItem('userID');
 
     try {
-        const response = await fetch(`https://oneai-wjox.onrender.com/broker/orders/${orderId}/track`, {
+        const response = await fetch(`${API_BASE_URL}/broker/orders/${orderId}/track`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -472,7 +512,7 @@ async function updateBrokerOrderStatus(orderId, status) {
     const userID = localStorage.getItem('userID');
 
     try {
-        const response = await fetch(`https://oneai-wjox.onrender.com/broker/orders/${orderId}/status`, {
+        const response = await fetch(`${API_BASE_URL}/broker/orders/${orderId}/status`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -509,6 +549,8 @@ window.applyBrokerStatusFilter = applyBrokerStatusFilter;
 window.applyBrokerSort = applyBrokerSort;
 window.createBrokerOrder = createBrokerOrder;
 window.purchaseBrokerCredits = purchaseBrokerCredits;
+window.setBrokerPaymentMethod = setBrokerPaymentMethod;
+window.setBrokerPaymentTxId = setBrokerPaymentTxId;
 window.trackBrokerOrder = trackBrokerOrder;
 window.updateBrokerOrderStatus = updateBrokerOrderStatus;
 window.showBrokerOrderDetails = showBrokerOrderDetails;

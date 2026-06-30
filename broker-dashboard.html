@@ -363,7 +363,7 @@
 
         <section id="broker-credit-form" class="broker-form" style="display:none;">
             <h3>Buy Broker Credits</h3>
-            <p style="color: #c8cee3; margin-bottom: 14px;">Select your package and confirm to top up credits immediately.</p>
+            <p style="color: #c8cee3; margin-bottom: 14px;">Pay with TRX or USDT first, then submit your transaction/ref ID to credit the package.</p>
             <div id="broker-packages-list" class="broker-packages-grid"></div>
             <div class="form-group" style="margin-top: 16px;">
                 <label>Selected Package</label>
@@ -371,6 +371,18 @@
                     <span>No package selected</span>
                 </div>
             </div>
+            <div class="form-group">
+                <label for="broker-payment-method">Payment Method</label>
+                <select id="broker-payment-method" onchange="setBrokerPaymentMethod(this.value)">
+                    <option value="USDT">USDT</option>
+                    <option value="TRX">TRX</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="broker-payment-txid">Transaction / Reference ID</label>
+                <input id="broker-payment-txid" type="text" placeholder="Enter TRX or USDT transaction ID" onchange="setBrokerPaymentTxId(this.value)" />
+            </div>
+            <p style="color: #99a3c8; font-size: 0.95rem; margin-bottom: 12px;">After paying, submit the transaction reference so the package can be applied.</p>
             <button class="action-btn" onclick="purchaseBrokerCredits()" style="width: 100%; margin-top: 16px;">Confirm Purchase</button>
         </section>
 

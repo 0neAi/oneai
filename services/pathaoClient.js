@@ -160,7 +160,14 @@ class PathaoApiClient {
     while (true) {
       const username = process.env[`AGENT${index}_USERNAME`];
       const password = process.env[`AGENT${index}_PASSWORD`];
-      if (!username || !password) break;
+      if (!username || !password) {
+        if (index === 1) {
+          console.warn('  ⚠️ No Pathao agent credentials found in environment. Set AGENT1_USERNAME and AGENT1_PASSWORD.');
+        } else {
+          console.warn(`  ⚠️ Stopped scanning Pathao agents after AGENT${index - 1} because AGENT${index}_USERNAME or AGENT${index}_PASSWORD is missing.`);
+        }
+        break;
+      }
 
       const displayName = process.env[`AGENT${index}_DISPLAY`] || `Agent ${index}`;
       const isActive = process.env[`AGENT${index}_ACTIVE`] !== 'false';
@@ -175,7 +182,9 @@ class PathaoApiClient {
       index += 1;
     }
 
-    return agents.filter((agent) => agent.isActive);
+    const activeAgents = agents.filter((agent) => agent.isActive);
+    console.log(`  ℹ️ Pathao agent scan complete. Configured: ${agents.length}, active: ${activeAgents.length}`);
+    return activeAgents;
   }
 
   async fetchAllPendingOrders() {

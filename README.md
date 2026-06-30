@@ -88,6 +88,13 @@ This repository contains the full web application stack for OneAI:
    MONGODB_URI=your_mongodb_connection_string
    JWT_SECRET=your_jwt_secret
    NODE_ENV=development
+   PATHAO_BASE_URL=https://api-hermes.pathao.com
+   PATHAO_CLIENT_ID=1
+   PATHAO_CLIENT_SECRET=your_client_secret
+   AGENT1_USERNAME=018XXXXXXXX
+   AGENT1_PASSWORD=your_agent_password
+   AGENT1_DISPLAY=Pathao Agent 1
+   AGENT1_ACTIVE=true
    ```
 4. Start the backend:
    ```bash
@@ -98,6 +105,17 @@ This repository contains the full web application stack for OneAI:
 
 - The frontend is designed for GitHub Pages deployment.
 - The backend is intended for deployment on Render.
+- Set these Render environment variables for broker order fetching:
+  - `MONGODB_URI`
+  - `JWT_SECRET`
+  - `PATHAO_BASE_URL` (optional; default is `https://api-hermes.pathao.com`)
+  - `PATHAO_CLIENT_ID` (optional; default is `1`)
+  - `PATHAO_CLIENT_SECRET`
+  - `AGENT1_USERNAME`
+  - `AGENT1_PASSWORD`
+  - `AGENT1_DISPLAY` (optional)
+  - `AGENT1_ACTIVE` (optional, defaults to true)
+  - additional agents as `AGENT2_USERNAME`, `AGENT2_PASSWORD`, etc.
 - CORS and WebSocket origins should be configured for the production frontend domain.
 - The backend should be reachable from the frontend using the hosted Render API URL.
 
