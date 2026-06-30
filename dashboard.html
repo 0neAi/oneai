@@ -212,6 +212,7 @@
             color: #000;
         }
 
+<<<<<<< HEAD
         .payment-table .status.pickup {
             background-color: #17a2b8;
             color: #fff;
@@ -222,18 +223,25 @@
             color: #fff;
         }
 
+=======
+>>>>>>> origin/main
         .payment-table .status.completed {
             background-color: #28a745;
             color: #fff;
         }
 
+<<<<<<< HEAD
         .payment-table .status.cancelled,
         .payment-table .status.failed,
         .payment-table .status.returned {
+=======
+        .payment-table .status.failed {
+>>>>>>> origin/main
             background-color: #dc3545;
             color: #fff;
         }
 
+<<<<<<< HEAD
         .payment-table tbody tr:hover {
             background: rgba(255, 255, 255, 0.04);
         }
@@ -386,6 +394,8 @@
             color: #7dd3fc;
         }
 
+=======
+>>>>>>> origin/main
         /* AI Services Section */
         .ai-services {
             background: #2a2a4e;
@@ -718,6 +728,7 @@
             font-size: 1.5rem;
             cursor: pointer;
         }
+<<<<<<< HEAD
 
         #broker-order-details-modal {
             position: fixed;
@@ -771,6 +782,8 @@
             margin-top: 0.2rem;
             line-height: 1.35;
         }
+=======
+>>>>>>> origin/main
         
         /* Payment Popup */
         #payment-popup {
@@ -1015,10 +1028,13 @@
                     <i class="fas fa-unlock-alt"></i>
                     <h3>পাসওয়ার্ড ক্র্যাকার</h3>
                 </div>
+<<<<<<< HEAD
                 <div class="service-card" onclick="showBrokerSection()">
                     <i class="fas fa-warehouse"></i>
                     <h3>Data Broker</h3>
                 </div>
+=======
+>>>>>>> origin/main
                 <a href="tracker.html" class="service-card">
                     <i class="fas fa-map-marker-alt"></i>
                     <h3>লোকেশন ট্র্যাকার</h3>
@@ -1041,6 +1057,7 @@
                 </div>
             </div>
         </section>
+<<<<<<< HEAD
 
         <section class="broker-section" id="broker-section" style="display: none;">
             <h2><i class="fas fa-warehouse"></i> Data Broker / Order Management</h2>
@@ -1209,6 +1226,8 @@
                 </div>
             </div>
         </section>
+=======
+>>>>>>> origin/main
         
         <div class="features">
             <h3>কেন 1AI বেছে নেবেন?</h3>
@@ -1261,6 +1280,7 @@
         </div>
     </div>
     
+<<<<<<< HEAD
     <div id="broker-order-details-modal">
         <div class="modal-content" style="max-width: 700px;">
             <button class="modal-close" onclick="closeBrokerOrderDetailsModal()">×</button>
@@ -1269,6 +1289,8 @@
         </div>
     </div>
 
+=======
+>>>>>>> origin/main
     <!-- Payment Details Modal -->
     <div id="payment-details-modal">
         <div class="modal-content">
@@ -1297,6 +1319,7 @@ const paymentState = {
     unreadNotifications: 0
 };
 
+<<<<<<< HEAD
 const brokerState = {
     orders: [],
     credits: 0,
@@ -1312,6 +1335,8 @@ const brokerState = {
     sortBy: 'recent'
 };
 
+=======
+>>>>>>> origin/main
 // Notification sound
 const notificationSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-alert-quick-chime-766.mp3');
 
@@ -1328,6 +1353,7 @@ function togglePaymentSections() {
     }
 }
 
+<<<<<<< HEAD
 function showBrokerSection() {
     document.getElementById('broker-section').style.display = 'block';
     loadBrokerData();
@@ -1858,6 +1884,8 @@ function toggleBrokerSection(enable) {
     document.getElementById('broker-section').style.display = enable ? 'block' : 'none';
 }
 
+=======
+>>>>>>> origin/main
 function addNewPayment(request) {
     const existing = paymentState.payments.find(r => r._id === request._id && r.type === request.type);
     if (!existing) {
@@ -1956,7 +1984,10 @@ function connectWebSocket() {
         paymentState.ws.send(JSON.stringify({
             type: 'auth',
             token: authToken,
+<<<<<<< HEAD
             userID
+=======
+>>>>>>> origin/main
         }));
     };
 
@@ -1983,11 +2014,14 @@ function connectWebSocket() {
                 data.locationTrackerRequest.type = 'tracker';
                 data.locationTrackerRequest.countdownDuration = 24 * 60 * 60 * 1000; // 24 hours
                 addNewPayment(data.locationTrackerRequest);
+<<<<<<< HEAD
             } else if (data.type === 'new-broker-order') {
                 handleBrokerOrderUpdate(data.order);
                 showBrokerSection();
             } else if (data.type === 'broker-order-updated') {
                 handleBrokerOrderUpdate(data.order);
+=======
+>>>>>>> origin/main
             }
         } catch (error) {
             console.error('WebSocket message error:', error);

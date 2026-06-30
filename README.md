@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # OneAI Platform
 
 OneAI is a multi-service digital platform that combines user onboarding, premium payments, mobile recharge workflows, location tracking requests, staking, and admin management in one connected experience. The project is split between a static frontend hosted on GitHub Pages and a Node.js/Express backend hosted on Render with MongoDB for persistent data.
@@ -220,3 +221,14 @@ Before launching the update, confirm that:
 ## Notes
 
 This README now serves as a compatible implementation guide for the next OneAI update. It is written to match the current website infrastructure and should be used as the reference for planning the Data Broker feature without disrupting the existing platform.
+=======
+OneAi Project backed by Hacker1
+
+
+Java:
+>>To check installed java versions: 
+$ update-java-alternatives --list
+>> To change java version using:
+└─$ sudo update-alternatives --config java
+>>
+>>>>>>> origin/main

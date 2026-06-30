@@ -54,6 +54,7 @@ const userSchema = new mongoose.Schema({
   referrals: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], // Added for populating referred users
   referralBonus: { type: Number, default: 0 },
   referralBonusStatus: { type: String, default: 'pending' },
+<<<<<<< HEAD
   trxBalance: { type: Number, default: 0 },
   brokerCredits: { type: Number, default: 0 },
   brokerSubscriptionTier: {
@@ -64,6 +65,8 @@ const userSchema = new mongoose.Schema({
   brokerSubscriptionExpiresAt: { type: Date },
   brokerUsageCount: { type: Number, default: 0 },
   brokerLastAccessedAt: { type: Date },
+=======
+>>>>>>> origin/main
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 }, {
