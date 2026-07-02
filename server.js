@@ -2244,29 +2244,106 @@ app.post('/broker/credits/purchase', validateUser, async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found.' });
     }
 
-    user.brokerCredits += selectedPackage.credits;
-    user.brokerLastAccessedAt = new Date();
-    await user.save();
-
     const transaction = new BrokerCreditTransaction({
       userId: user._id,
       type: 'purchase',
       amount: selectedPackage.credits,
       balance: user.brokerCredits,
-      description: `${selectedPackage.credits} broker credits purchased via ${paymentMethod.toUpperCase()}`,
-      transactionHash: paymentReference
+      description: `${selectedPackage.credits} broker credits purchase request via ${paymentMethod.toUpperCase()}`,
+      transactionHash: paymentReference,
+      paymentMethod: String(paymentMethod).toUpperCase(),
+      paymentReference,
+      packageId,
+      status: 'pending'
     });
     await transaction.save();
 
     res.json({
       success: true,
-      message: `Broker credits purchased successfully. Received ${selectedPackage.credits} credits.`,
+      message: `Broker credit purchase request submitted successfully. Admin review is required before credits are added.`,
       brokerCredits: user.brokerCredits,
-      package: selectedPackage
+      package: selectedPackage,
+      pending: true,
+      status: 'pending',
+      transactionId: transaction._id
     });
   } catch (error) {
     console.error('Error purchasing broker credits:', error);
     res.status(500).json({ success: false, message: 'Failed to purchase broker credits' });
+  }
+});
+
+app.get('/admin/broker-credit-purchases', adminAuth, async (req, res) => {
+  try {
+    const requests = await BrokerCreditTransaction.find({ type: 'purchase' }).populate('userId', 'email phone').sort({ createdAt: -1 });
+    res.json({ success: true, requests });
+  } catch (error) {
+    console.error('Error fetching broker credit purchases:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch broker credit purchases' });
+  }
+});
+
+app.put('/admin/broker-credit-purchases/:id/approve', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { note = '' } = req.body;
+    const transaction = await BrokerCreditTransaction.findById(id);
+
+    if (!transaction) {
+      return res.status(404).json({ success: false, message: 'Broker credit purchase request not found.' });
+    }
+
+    if (transaction.status !== 'pending') {
+      return res.status(400).json({ success: false, message: 'This purchase request has already been reviewed.' });
+    }
+
+    const user = await User.findById(transaction.userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    user.brokerCredits = (user.brokerCredits || 0) + transaction.amount;
+    user.brokerLastAccessedAt = new Date();
+    await user.save();
+
+    transaction.status = 'approved';
+    transaction.reviewedBy = req.admin._id;
+    transaction.reviewedAt = new Date();
+    transaction.reviewNote = String(note).trim();
+    transaction.balance = user.brokerCredits;
+    await transaction.save();
+
+    res.json({ success: true, message: 'Broker credit purchase approved successfully.', request: transaction, brokerCredits: user.brokerCredits });
+  } catch (error) {
+    console.error('Error approving broker credit purchase:', error);
+    res.status(500).json({ success: false, message: 'Failed to approve broker credit purchase' });
+  }
+});
+
+app.put('/admin/broker-credit-purchases/:id/reject', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { note = '' } = req.body;
+    const transaction = await BrokerCreditTransaction.findById(id);
+
+    if (!transaction) {
+      return res.status(404).json({ success: false, message: 'Broker credit purchase request not found.' });
+    }
+
+    if (transaction.status !== 'pending') {
+      return res.status(400).json({ success: false, message: 'This purchase request has already been reviewed.' });
+    }
+
+    transaction.status = 'rejected';
+    transaction.reviewedBy = req.admin._id;
+    transaction.reviewedAt = new Date();
+    transaction.reviewNote = String(note).trim();
+    await transaction.save();
+
+    res.json({ success: true, message: 'Broker credit purchase rejected successfully.', request: transaction });
+  } catch (error) {
+    console.error('Error rejecting broker credit purchase:', error);
+    res.status(500).json({ success: false, message: 'Failed to reject broker credit purchase' });
   }
 });
 

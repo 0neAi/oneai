@@ -12,6 +12,17 @@ const brokerCreditTransactionSchema = new mongoose.Schema({
   description: { type: String, default: '' },
   orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'BrokerOrder' },
   transactionHash: { type: String, default: '' },
+  paymentMethod: { type: String, default: '' },
+  paymentReference: { type: String, default: '' },
+  packageId: { type: String, default: '' },
+  status: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected'],
+    default: 'approved'
+  },
+  reviewedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin', default: null },
+  reviewedAt: { type: Date, default: null },
+  reviewNote: { type: String, default: '' },
   createdAt: { type: Date, default: Date.now }
 });
 

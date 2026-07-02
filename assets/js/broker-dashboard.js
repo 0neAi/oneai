@@ -323,6 +323,24 @@ function sortBrokerOrders(orders) {
             return String(a.agentDisplayName || a.agentName || '').localeCompare(String(b.agentDisplayName || b.agentName || ''));
         }
 
+        if (brokerState.sortBy === 'price-high') {
+            const aPrice = Number(a.price || a.amount || a.totalAmount || a.bdtPrice || 0);
+            const bPrice = Number(b.price || b.amount || b.totalAmount || b.bdtPrice || 0);
+            return bPrice - aPrice;
+        }
+
+        if (brokerState.sortBy === 'price-low') {
+            const aPrice = Number(a.price || a.amount || a.totalAmount || a.bdtPrice || 0);
+            const bPrice = Number(b.price || b.amount || b.totalAmount || b.bdtPrice || 0);
+            return aPrice - bPrice;
+        }
+
+        if (brokerState.sortBy === 'alphabetical') {
+            const aName = String(a.merchantName || a.orderId || a.productDescription || '').toLowerCase();
+            const bName = String(b.merchantName || b.orderId || b.productDescription || '').toLowerCase();
+            return aName.localeCompare(bName);
+        }
+
         const aTime = new Date(a.updatedAt || a.createdAt || 0).getTime();
         const bTime = new Date(b.updatedAt || b.createdAt || 0).getTime();
         return bTime - aTime;
@@ -548,9 +566,10 @@ async function purchaseBrokerCredits() {
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'Broker credit purchase failed');
 
-        brokerState.credits = data.brokerCredits;
+        brokerState.credits = data.brokerCredits ?? brokerState.credits;
         document.getElementById('broker-credits').textContent = brokerState.credits;
-        showSuccess(`✅ ${data.package.credits.toLocaleString()} credits purchased successfully!`);
+        const successMessage = data.message || `✅ ${data.package?.credits?.toLocaleString() || brokerState.selectedPackage?.credits?.toLocaleString() || 'Credits'} purchased successfully!`;
+        showSuccess(successMessage);
         document.getElementById('broker-credit-form').style.display = 'none';
         brokerState.selectedPackage = null;
         brokerState.paymentTxId = '';

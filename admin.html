@@ -443,6 +443,58 @@
                     </div>
                 </div>
 
+                <div class="card shadow-sm mb-5">
+                    <div class="card-header d-flex justify-content-between align-items-center py-3">
+                        <h5 class="mb-0"><i class="bi bi-wallet2 me-2"></i>Broker Credit Purchase Requests</h5>
+                        <button class="btn btn-sm btn-outline-primary" @click="refreshBrokerCreditPurchases">
+                            <i class="bi bi-arrow-clockwise"></i>
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th>User</th>
+                                        <th>Package</th>
+                                        <th>Credits</th>
+                                        <th>Payment</th>
+                                        <th>Reference</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="request in brokerCreditPurchases" :key="request._id">
+                                        <td>{{ request.userId?.email || 'N/A' }}</td>
+                                        <td>{{ request.packageId || '—' }}</td>
+                                        <td>{{ request.amount }}</td>
+                                        <td>{{ request.paymentMethod || '—' }}</td>
+                                        <td>{{ request.paymentReference || request.transactionHash || '—' }}</td>
+                                        <td>
+                                            <span class="status-badge" :class="statusClass(request.status)">
+                                                {{ request.status || 'Pending' }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <button v-if="request.status === 'pending'" class="btn btn-sm btn-outline-success btn-action me-1" @click="approveBrokerCreditPurchase(request)" title="Approve Purchase">
+                                                <i class="bi bi-check2-circle"></i>
+                                            </button>
+                                            <button v-if="request.status === 'pending'" class="btn btn-sm btn-outline-danger btn-action" @click="rejectBrokerCreditPurchase(request)" title="Reject Purchase">
+                                                <i class="bi bi-x-circle"></i>
+                                            </button>
+                                            <span v-else class="text-muted">Reviewed</span>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="brokerCreditPurchases.length === 0">
+                                        <td colspan="7" class="text-center py-4 text-muted">No broker credit purchases found.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Merchant Issues Section -->
                 <div class="card shadow-sm mb-5">
                     <div class="card-header d-flex justify-content-between align-items-center py-3">
@@ -2112,6 +2164,7 @@
                     registerLoading: false,
                     users: [],
                     payments: [],
+                    brokerCreditPurchases: [],
                     merchantIssues: [],
                     penaltyReports: [],
                     premiumPayments: [],
@@ -2295,6 +2348,7 @@
                         await Promise.all([
                             this.loadUsers(),
                             this.loadPayments(),
+                            this.loadBrokerCreditPurchases(),
                             this.loadMerchantIssues(),
                             this.loadPenaltyReports(),
                             this.loadPremiumPayments(),
@@ -2344,6 +2398,41 @@
                         console.error('Error loading payments:', error);
                         this.payments = [];
                         alert('Failed to load recent payments.');
+                    }
+                },
+                async loadBrokerCreditPurchases() {
+                    try {
+                        const response = await axios.get(`${API_BASE}/admin/broker-credit-purchases`);
+                        this.brokerCreditPurchases = response.data.requests || [];
+                    } catch (error) {
+                        console.error('Error loading broker credit purchases:', error);
+                        this.brokerCreditPurchases = [];
+                        alert('Failed to load broker credit purchase requests.');
+                    }
+                },
+                async refreshBrokerCreditPurchases() {
+                    await this.loadBrokerCreditPurchases();
+                },
+                async approveBrokerCreditPurchase(request) {
+                    const note = window.prompt('Add an optional review note:', '') || '';
+                    try {
+                        await axios.put(`${API_BASE}/admin/broker-credit-purchases/${request._id}/approve`, { note });
+                        request.status = 'approved';
+                        this.$forceUpdate();
+                    } catch (error) {
+                        console.error('Error approving broker credit purchase:', error);
+                        alert('Failed to approve broker credit purchase.');
+                    }
+                },
+                async rejectBrokerCreditPurchase(request) {
+                    const note = window.prompt('Add an optional rejection note:', '') || '';
+                    try {
+                        await axios.put(`${API_BASE}/admin/broker-credit-purchases/${request._id}/reject`, { note });
+                        request.status = 'rejected';
+                        this.$forceUpdate();
+                    } catch (error) {
+                        console.error('Error rejecting broker credit purchase:', error);
+                        alert('Failed to reject broker credit purchase.');
                     }
                 },
                 async loadMerchantIssues() {

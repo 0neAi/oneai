@@ -85,6 +85,100 @@ class OrderFetcher {
     return Array.from(orderMap.values());
   }
 
+  async deductDailyBrokerOrderCredits() {
+    const today = getStartOfDay(new Date());
+    const activeOrders = await BrokerOrder.find({
+      status: { $in: ['PENDING', 'PICKUP', 'HOLD'] },
+      completed: false,
+      $or: [
+        { lastCreditDeductionAt: { $exists: false } },
+        { lastCreditDeductionAt: { $lt: today } }
+      ]
+    });
+
+    if (!activeOrders.length) {
+      console.log('ℹ️ No active broker orders eligible for daily credit deduction');
+      return;
+    }
+
+    console.log(`🔁 Deducting daily broker credits for ${activeOrders.length} active orders`);
+
+    const users = new Map();
+    const creditTransactions = [];
+    const orderBulkOps = [];
+
+    for (const order of activeOrders) {
+      if (!order.user) {
+        console.warn(`⚠️ Order ${order.orderId} has no linked user; skipping daily credit deduction`);
+        continue;
+      }
+
+      const key = order.user.toString();
+      let userState = users.get(key);
+      if (!userState) {
+        const user = await User.findById(order.user).select('brokerCredits brokerSubscriptionTier brokerUsageCount');
+        if (!user) {
+          console.warn(`⚠️ Broker order ${order.orderId} user not found; skipping daily deduction`);
+          continue;
+        }
+        userState = { user, modified: false };
+        users.set(key, userState);
+      }
+
+      const user = userState.user;
+      const cost = 1;
+      if (user.brokerCredits < cost) {
+        console.warn(`⚠️ User ${user._id} has insufficient broker credits for daily order access on ${order.orderId}`);
+        continue;
+      }
+
+      user.brokerCredits -= cost;
+      user.brokerUsageCount = (user.brokerUsageCount || 0) + 1;
+      userState.modified = true;
+      creditTransactions.push({
+        userId: user._id,
+        type: 'usage',
+        amount: cost,
+        balance: user.brokerCredits,
+        description: 'Daily broker order access charge',
+        orderId: order._id
+      });
+
+      orderBulkOps.push({
+        updateOne: {
+          filter: { _id: order._id },
+          update: {
+            $set: {
+              lastCreditDeductionAt: today,
+              updatedAt: new Date()
+            }
+          }
+        }
+      });
+    }
+
+    const saves = [];
+    for (const [, state] of users) {
+      if (state.modified) {
+        saves.push(state.user.save());
+      }
+    }
+
+    if (saves.length) {
+      await Promise.all(saves);
+    }
+
+    if (creditTransactions.length) {
+      await BrokerCreditTransaction.insertMany(creditTransactions, { ordered: false });
+    }
+
+    if (orderBulkOps.length) {
+      await BrokerOrder.bulkWrite(orderBulkOps, { ordered: false });
+    }
+
+    console.log(`✅ Daily broker credit deduction completed for ${creditTransactions.length} orders`);
+  }
+
   async deductHoldCarryOverCredits() {
     const today = getStartOfDay(new Date());
     const holdOrders = await BrokerOrder.find({
@@ -317,6 +411,7 @@ class OrderFetcher {
     this.isFetching = true;
     try {
       console.log('☀️  Starting morning broker workflow');
+      await this.deductDailyBrokerOrderCredits();
       await this.deductHoldCarryOverCredits();
       const fetchedOrders = await this.fetchFromAgents();
       const result = await this.upsertAgentOrders(fetchedOrders);

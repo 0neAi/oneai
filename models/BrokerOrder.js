@@ -32,6 +32,7 @@ const brokerOrderSchema = new mongoose.Schema({
   holdReason: { type: String, default: '' },
   completed: { type: Boolean, default: false },
   holdCreditDeductedAt: { type: Date },
+  lastCreditDeductionAt: { type: Date },
   creditsUsed: { type: Number, default: 1 },
   statusHistory: [{
     status: String,
