@@ -1930,6 +1930,11 @@ app.get('/location-tracker-requests/user', validateUser, async (req, res) => {
 // Broker order routes
 app.get('/broker/orders/user', validateUser, async (req, res) => {
   try {
+    const user = await User.findById(req.user._id).select('brokerCredits');
+    if (!user || user.brokerCredits < 1) {
+      return res.status(403).json({ success: false, message: 'You need broker credits to view orders. Purchase credits via TRX or USDT to continue.' });
+    }
+
     const mineOnly = req.query.mine === 'true';
     const filter = {};
 

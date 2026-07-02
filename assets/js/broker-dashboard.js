@@ -44,6 +44,31 @@ function toggleCreditForm() {
     }
 }
 
+function showBrokerCreditRequiredNotice() {
+    const notice = document.getElementById('broker-credit-warning');
+    if (notice) {
+        notice.style.display = 'block';
+    }
+}
+
+function hideBrokerCreditRequiredNotice() {
+    const notice = document.getElementById('broker-credit-warning');
+    if (notice) {
+        notice.style.display = 'none';
+    }
+}
+
+function clearBrokerOrdersForCredit() {
+    document.getElementById('broker-results-summary').textContent = 'Order view disabled until credits are purchased';
+    const activeTbody = document.getElementById('broker-order-list');
+    const deliveredTbody = document.getElementById('broker-delivered-order-list');
+    const archivedTbody = document.getElementById('broker-archived-order-list');
+    const message = '<tr><td colspan="6" class="text-center">You need broker credits to load orders. Purchase credits via TRX/USDT to view data.</td></tr>';
+    if (activeTbody) activeTbody.innerHTML = message;
+    if (deliveredTbody) deliveredTbody.innerHTML = message;
+    if (archivedTbody) archivedTbody.innerHTML = message;
+}
+
 function applyBrokerSearch(value) {
     brokerState.search = value.trim().toLowerCase();
     renderBrokerOrders();
@@ -168,35 +193,51 @@ async function loadBrokerData(filter = {}) {
     if (filter.assigned === true) query.set('assigned', 'true');
 
     try {
-        const [creditsRes, ordersRes] = await Promise.all([
-            fetch(`${API_BASE_URL}/broker/credits`, { headers }),
-            fetch(`${API_BASE_URL}/broker/orders/user?${query.toString()}`, { headers })
-        ]);
-
+        const creditsRes = await fetch(`${API_BASE_URL}/broker/credits`, { headers });
         if (!creditsRes.ok) throw new Error('Failed to load broker credits');
-        if (!ordersRes.ok) throw new Error('Failed to load broker orders');
 
         const creditsData = await creditsRes.json();
-        const ordersData = await ordersRes.json();
-
         brokerState.credits = creditsData.credits || 0;
         brokerState.subscriptionTier = creditsData.subscriptionTier || 'free';
         brokerState.subscriptionExpiresAt = creditsData.subscriptionExpiresAt ? new Date(creditsData.subscriptionExpiresAt) : null;
-        brokerState.orders = ordersData.orders || [];
-        brokerState.active = brokerState.orders.filter(o => ['PENDING', 'PICKUP', 'HOLD'].includes(o.status)).length;
-        brokerState.completed = brokerState.orders.filter(o => o.status === 'DELIVERED').length;
         brokerState.currentFilter = filter;
 
         document.getElementById('broker-credits').textContent = brokerState.credits;
-        document.getElementById('broker-active-orders').textContent = brokerState.active;
-        document.getElementById('broker-completed-orders').textContent = brokerState.completed;
         document.getElementById('broker-subscription-tier').textContent = brokerState.subscriptionTier || 'Free';
         document.getElementById('broker-subscription-expires').textContent = brokerState.subscriptionExpiresAt ? `Expires: ${brokerState.subscriptionExpiresAt.toLocaleDateString()}` : 'No active plan';
+
+        if (brokerState.credits < 1) {
+            brokerState.orders = [];
+            brokerState.active = 0;
+            brokerState.completed = 0;
+            document.getElementById('broker-active-orders').textContent = '0';
+            document.getElementById('broker-completed-orders').textContent = '0';
+            showBrokerCreditRequiredNotice();
+            clearBrokerOrdersForCredit();
+            return;
+        }
+
+        hideBrokerCreditRequiredNotice();
+
+        const ordersRes = await fetch(`${API_BASE_URL}/broker/orders/user?${query.toString()}`, { headers });
+        if (!ordersRes.ok) throw new Error('Failed to load broker orders');
+
+        const ordersData = await ordersRes.json();
+        brokerState.orders = ordersData.orders || [];
+        brokerState.active = brokerState.orders.filter(o => ['PENDING', 'PICKUP', 'HOLD'].includes(o.status)).length;
+        brokerState.completed = brokerState.orders.filter(o => o.status === 'DELIVERED').length;
+
+        document.getElementById('broker-active-orders').textContent = brokerState.active;
+        document.getElementById('broker-completed-orders').textContent = brokerState.completed;
 
         renderBrokerOrders();
     } catch (error) {
         console.error('Broker load error:', error);
         showError(error.message || 'Failed to load broker data');
+        if (error.message && error.message.toLowerCase().includes('credit')) {
+            showBrokerCreditRequiredNotice();
+            clearBrokerOrdersForCredit();
+        }
     }
 }
 
@@ -522,6 +563,8 @@ async function purchaseBrokerCredits() {
         if (document.getElementById('broker-payment-method')) {
             document.getElementById('broker-payment-method').value = 'USDT';
         }
+        hideBrokerCreditRequiredNotice();
+        await loadBrokerData(brokerState.currentFilter);
         window.fetchGlobalTrxBalance?.();
     } catch (error) {
         console.error('Purchase broker credits error:', error);
