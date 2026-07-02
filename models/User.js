@@ -56,6 +56,8 @@ const userSchema = new mongoose.Schema({
   referralBonusStatus: { type: String, default: 'pending' },
   trxBalance: { type: Number, default: 0 },
   brokerCredits: { type: Number, default: 0 },
+  brokerDashboardChargeDate: { type: Date, default: null },
+  brokerDashboardChargedOrderCount: { type: Number, default: 0 },
   brokerSubscriptionTier: {
     type: String,
     enum: ['free', 'daily', 'weekly', 'monthly'],

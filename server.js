@@ -51,6 +51,12 @@ function standardizePageName(name) {
   }).join(' ');
 }
 
+function getBrokerDashboardChargeDay(date = new Date()) {
+  const normalizedDate = new Date(date);
+  normalizedDate.setHours(0, 0, 0, 0);
+  return normalizedDate;
+}
+
 // Initialize express app
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -1982,23 +1988,10 @@ app.get('/location-tracker-requests/user', validateUser, async (req, res) => {
 // Broker order routes
 app.get('/broker/orders/user', validateUser, async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).select('brokerCredits');
-    if (!user || user.brokerCredits < 1) {
-      return res.status(403).json({ success: false, message: 'You need broker credits to view orders. Purchase credits via TRX or USDT to continue.' });
+    const user = await User.findById(req.user._id).select('brokerCredits brokerDashboardChargeDate brokerDashboardChargedOrderCount');
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
     }
-
-    // Charge the viewing user one broker credit for loading broker dashboard orders.
-    user.brokerCredits -= 1;
-    await user.save();
-
-    const transaction = new BrokerCreditTransaction({
-      userId: user._id,
-      type: 'debit',
-      amount: 1,
-      balance: user.brokerCredits,
-      description: 'Broker dashboard order view charge'
-    });
-    await transaction.save();
 
     const mineOnly = req.query.mine === 'true';
     const filter = {};
@@ -2028,7 +2021,50 @@ app.get('/broker/orders/user', validateUser, async (req, res) => {
     }
 
     const orders = await BrokerOrder.find(filter).sort({ createdAt: -1 });
-    res.json({ success: true, orders, credits: user.brokerCredits });
+    const loadedOrderCount = orders.length;
+    const today = getBrokerDashboardChargeDay();
+    const lastChargeDate = user.brokerDashboardChargeDate ? getBrokerDashboardChargeDay(user.brokerDashboardChargeDate) : null;
+
+    let chargedOrderCount = user.brokerDashboardChargedOrderCount || 0;
+    let chargeAmount = 0;
+
+    if (!lastChargeDate || lastChargeDate.getTime() !== today.getTime()) {
+      chargedOrderCount = 0;
+    }
+
+    chargeAmount = Math.max(0, loadedOrderCount - chargedOrderCount);
+
+    if (chargeAmount > 0) {
+      if (user.brokerCredits < chargeAmount) {
+        return res.status(403).json({
+          success: false,
+          message: `You need ${chargeAmount} broker credit${chargeAmount === 1 ? '' : 's'} to load ${loadedOrderCount} order${loadedOrderCount === 1 ? '' : 's'} today.`
+        });
+      }
+
+      user.brokerCredits -= chargeAmount;
+      user.brokerDashboardChargeDate = today;
+      user.brokerDashboardChargedOrderCount = loadedOrderCount;
+      await user.save();
+
+      const transaction = new BrokerCreditTransaction({
+        userId: user._id,
+        type: 'usage',
+        amount: chargeAmount,
+        balance: user.brokerCredits,
+        description: `Broker dashboard order view charge for ${chargeAmount} order${chargeAmount === 1 ? '' : 's'}`
+      });
+      await transaction.save();
+    } else if (!lastChargeDate || lastChargeDate.getTime() !== today.getTime()) {
+      user.brokerDashboardChargeDate = today;
+      user.brokerDashboardChargedOrderCount = 0;
+      await user.save();
+    } else {
+      user.brokerDashboardChargedOrderCount = Math.max(user.brokerDashboardChargedOrderCount || 0, loadedOrderCount);
+      await user.save();
+    }
+
+    res.json({ success: true, orders, credits: user.brokerCredits, chargedOrderCount: user.brokerDashboardChargedOrderCount });
   } catch (error) {
     console.error('Error fetching broker orders:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch broker orders' });
