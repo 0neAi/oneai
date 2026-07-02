@@ -2165,6 +2165,12 @@
                     users: [],
                     payments: [],
                     brokerCreditPurchases: [],
+                    brokerOrders: [],
+                    brokerCreditTransactions: [],
+                    selectedBrokerCreditUserId: '',
+                    brokerCreditAdjustmentAmount: 0,
+                    brokerCreditAdjustmentMode: 'add',
+                    brokerOrderStatusOptions: ['PENDING', 'PICKUP', 'DELIVERED', 'CANCELLED', 'FAILED', 'RETURNED'],
                     merchantIssues: [],
                     penaltyReports: [],
                     premiumPayments: [],
@@ -2349,6 +2355,8 @@
                             this.loadUsers(),
                             this.loadPayments(),
                             this.loadBrokerCreditPurchases(),
+                            this.loadBrokerOrders(),
+                            this.loadBrokerCreditTransactions(),
                             this.loadMerchantIssues(),
                             this.loadPenaltyReports(),
                             this.loadPremiumPayments(),
@@ -2412,6 +2420,113 @@
                 },
                 async refreshBrokerCreditPurchases() {
                     await this.loadBrokerCreditPurchases();
+                },
+                async loadBrokerOrders() {
+                    try {
+                        const response = await axios.get(`${API_BASE}/admin/broker-orders`);
+                        this.brokerOrders = response.data.orders || [];
+                    } catch (error) {
+                        console.error('Error loading broker orders:', error);
+                        this.brokerOrders = [];
+                        alert('Failed to load broker orders.');
+                    }
+                },
+                async loadBrokerCreditTransactions() {
+                    try {
+                        const response = await axios.get(`${API_BASE}/admin/broker-credit-transactions`);
+                        this.brokerCreditTransactions = response.data.transactions || [];
+                    } catch (error) {
+                        console.error('Error loading broker credit transactions:', error);
+                        this.brokerCreditTransactions = [];
+                        alert('Failed to load broker credit transactions.');
+                    }
+                },
+                async refreshBrokerOrders() {
+                    await this.loadBrokerOrders();
+                },
+                async refreshBrokerCreditTransactions() {
+                    await this.loadBrokerCreditTransactions();
+                },
+                async triggerBrokerOrdersFetch() {
+                    try {
+                        await axios.post(`${API_BASE}/admin/broker-orders/fetch`);
+                        alert('Broker order fetch requested successfully.');
+                    } catch (error) {
+                        console.error('Error triggering broker order fetch:', error);
+                        alert('Failed to trigger broker order fetch.');
+                    }
+                },
+                async triggerBrokerMorningWorkflow() {
+                    try {
+                        await axios.post(`${API_BASE}/admin/broker-orders/morning`);
+                        alert('Morning broker workflow triggered successfully.');
+                    } catch (error) {
+                        console.error('Error triggering morning workflow:', error);
+                        alert('Failed to trigger morning broker workflow.');
+                    }
+                },
+                async triggerBrokerClosingWorkflow() {
+                    try {
+                        await axios.post(`${API_BASE}/admin/broker-orders/closing`);
+                        alert('Closing broker workflow triggered successfully.');
+                    } catch (error) {
+                        console.error('Error triggering closing workflow:', error);
+                        alert('Failed to trigger closing broker workflow.');
+                    }
+                },
+                async viewBrokerOrderDetails(order) {
+                    const details = `Order ID: ${order.orderId}\nStatus: ${order.status}\nUser: ${order.user?.email || 'Unassigned'}\nCredits Used: ${order.creditsUsed || 0}\nAssigned: ${order.assigned ? 'Yes' : 'No'}\nCreated: ${this.formatDateTime(order.createdAt)}\nMerchant: ${order.merchantName || '—'}\nProduct: ${order.productDescription || '—'}\nRecipient: ${order.recipientName || '—'} ${order.recipientPhone || ''}\nAddress: ${order.recipientAddress || '—'}`;
+                    alert(details);
+                },
+                async updateBrokerOrderStatus(order) {
+                    const status = window.prompt('Enter new order status: PENDING, PICKUP, DELIVERED, CANCELLED, FAILED, RETURNED', order.status);
+                    if (!status) return;
+                    const normalized = status.toUpperCase().trim();
+                    if (!this.brokerOrderStatusOptions.includes(normalized)) {
+                        alert('Invalid status selected.');
+                        return;
+                    }
+                    const note = window.prompt('Add an optional note for this status update:', '') || '';
+                    try {
+                        const response = await axios.put(`${API_BASE}/admin/broker-orders/${order._id}/status`, { status: normalized, note });
+                        const updatedOrder = response.data.order;
+                        const index = this.brokerOrders.findIndex(o => o._id === updatedOrder._id);
+                        if (index !== -1) {
+                            this.brokerOrders.splice(index, 1, updatedOrder);
+                        }
+                        alert('Broker order status updated successfully.');
+                    } catch (error) {
+                        console.error('Error updating broker order status:', error);
+                        alert('Failed to update broker order status.');
+                    }
+                },
+                async grantBrokerCredits() {
+                    if (!this.selectedBrokerCreditUserId) {
+                        alert('Please select a user to adjust credits for.');
+                        return;
+                    }
+                    const amount = Number(this.brokerCreditAdjustmentAmount);
+                    if (!Number.isFinite(amount) || amount === 0) {
+                        alert('Please enter a valid credit amount.');
+                        return;
+                    }
+                    try {
+                        const response = await axios.put(`${API_BASE}/admin/users/${this.selectedBrokerCreditUserId}/broker-credits`, {
+                            amount,
+                            mode: this.brokerCreditAdjustmentMode
+                        });
+                        const updatedUser = response.data.user;
+                        const userIndex = this.users.findIndex(u => u._id === updatedUser._id);
+                        if (userIndex !== -1) {
+                            this.users.splice(userIndex, 1, updatedUser);
+                        }
+                        this.brokerCreditAdjustmentAmount = 0;
+                        alert(`Broker credits ${this.brokerCreditAdjustmentMode === 'add' ? 'added' : 'set'} successfully.`);
+                        await this.loadBrokerCreditTransactions();
+                    } catch (error) {
+                        console.error('Error adjusting broker credits:', error);
+                        alert('Failed to adjust broker credits.');
+                    }
                 },
                 async approveBrokerCreditPurchase(request) {
                     const note = window.prompt('Add an optional review note:', '') || '';

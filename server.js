@@ -649,6 +649,58 @@ app.post('/admin/users/:id/approve', adminAuth, async (req, res) => {
   }
 });
 
+app.put('/admin/users/:id/broker-credits', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { amount, mode } = req.body;
+    const delta = Number(amount);
+
+    if (!Number.isFinite(delta)) {
+      return res.status(400).json({ success: false, message: 'Invalid credit amount provided.' });
+    }
+
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    if (mode === 'set') {
+      user.brokerCredits = delta;
+    } else {
+      user.brokerCredits = (user.brokerCredits || 0) + delta;
+    }
+
+    if (user.brokerCredits < 0) {
+      user.brokerCredits = 0;
+    }
+
+    const transaction = new BrokerCreditTransaction({
+      userId: user._id,
+      type: 'admin_adjust',
+      amount: delta,
+      balance: user.brokerCredits,
+      description: mode === 'set' ? 'Admin set broker credits' : 'Admin added broker credits'
+    });
+
+    await Promise.all([user.save(), transaction.save()]);
+
+    res.json({ success: true, message: 'Broker credits updated successfully.', user, transaction });
+  } catch (error) {
+    console.error('Error adjusting broker credits:', error);
+    res.status(500).json({ success: false, message: 'Failed to adjust broker credits.' });
+  }
+});
+
+app.get('/admin/broker-credit-transactions', adminAuth, async (req, res) => {
+  try {
+    const transactions = await BrokerCreditTransaction.find().populate('userId', 'email phone').sort({ createdAt: -1 });
+    res.json({ success: true, transactions });
+  } catch (error) {
+    console.error('Error fetching broker credit transactions:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch broker credit transactions.' });
+  }
+});
+
 // Admin Merchant Issue Endpoints
 app.get('/admin/merchant-issues', adminAuth, async (req, res) => {
   try {
@@ -1935,6 +1987,19 @@ app.get('/broker/orders/user', validateUser, async (req, res) => {
       return res.status(403).json({ success: false, message: 'You need broker credits to view orders. Purchase credits via TRX or USDT to continue.' });
     }
 
+    // Charge the viewing user one broker credit for loading broker dashboard orders.
+    user.brokerCredits -= 1;
+    await user.save();
+
+    const transaction = new BrokerCreditTransaction({
+      userId: user._id,
+      type: 'debit',
+      amount: 1,
+      balance: user.brokerCredits,
+      description: 'Broker dashboard order view charge'
+    });
+    await transaction.save();
+
     const mineOnly = req.query.mine === 'true';
     const filter = {};
 
@@ -1963,7 +2028,7 @@ app.get('/broker/orders/user', validateUser, async (req, res) => {
     }
 
     const orders = await BrokerOrder.find(filter).sort({ createdAt: -1 });
-    res.json({ success: true, orders });
+    res.json({ success: true, orders, credits: user.brokerCredits });
   } catch (error) {
     console.error('Error fetching broker orders:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch broker orders' });

@@ -224,9 +224,11 @@ async function loadBrokerData(filter = {}) {
 
         const ordersData = await ordersRes.json();
         brokerState.orders = ordersData.orders || [];
+        brokerState.credits = typeof ordersData.credits === 'number' ? ordersData.credits : brokerState.credits;
         brokerState.active = brokerState.orders.filter(o => ['PENDING', 'PICKUP', 'HOLD'].includes(o.status)).length;
         brokerState.completed = brokerState.orders.filter(o => o.status === 'DELIVERED').length;
 
+        document.getElementById('broker-credits').textContent = brokerState.credits;
         document.getElementById('broker-active-orders').textContent = brokerState.active;
         document.getElementById('broker-completed-orders').textContent = brokerState.completed;
 
