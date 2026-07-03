@@ -311,19 +311,19 @@ function renderBrokerOrders() {
     document.getElementById('broker-results-summary').textContent = `Showing ${filteredOrders.length} order${filteredOrders.length === 1 ? '' : 's'}`;
 
     if (!activeOrders.length) {
-        activeTbody.innerHTML = '<tr><td colspan="6" class="text-center">No active or hold orders match the current filters.</td></tr>';
+        activeTbody.innerHTML = '<tr><td colspan="3" class="text-center">No active or hold orders match the current filters.</td></tr>';
     } else {
         activeOrders.forEach(order => renderBrokerOrder(order, activeTbody, true));
     }
 
     if (!deliveredOrders.length) {
-        deliveredTbody.innerHTML = '<tr><td colspan="6" class="text-center">No completed orders match the current filters.</td></tr>';
+        deliveredTbody.innerHTML = '<tr><td colspan="3" class="text-center">No completed orders match the current filters.</td></tr>';
     } else {
         deliveredOrders.forEach(order => renderBrokerOrder(order, deliveredTbody, false));
     }
 
     if (!archivedOrders.length) {
-        archivedTbody.innerHTML = '<tr><td colspan="6" class="text-center">No archived orders match the current filters.</td></tr>';
+        archivedTbody.innerHTML = '<tr><td colspan="3" class="text-center">No archived orders match the current filters.</td></tr>';
     } else {
         archivedOrders.forEach(order => renderBrokerOrder(order, archivedTbody, false));
     }
@@ -408,41 +408,32 @@ function renderBrokerOrder(order, tbody, showActions) {
 
     const actions = [];
     if (showActions && ['PENDING', 'PICKUP', 'HOLD'].includes(order.status)) {
-        // Keep Track button; remove Deliver. Make Cancel hide the order locally.
         actions.push(`<button class="action-btn small" onclick="event.stopPropagation(); trackBrokerOrder('${order._id}')">Track</button>`);
         actions.push(`<button class="action-btn small cancel-btn" onclick="event.stopPropagation(); hideBrokerOrder('${order._id}')">Cancel</button>`);
     }
 
     const deliveredAt = order.updatedAt ? new Date(order.updatedAt).toLocaleString() : '—';
-    const holdDays = order.holdCount ? `<div style="font-size:0.95rem; color:#ffd800;">${order.holdCount} day${order.holdCount === 1 ? '' : 's'}</div>` : '—';
-    const assignedLabel = order.assigned === false ? '<span style="color:#ffcc00;">Unassigned</span>' : (order.agentDisplayName || order.agentName || 'Pathao Agent');
+    const holdDaysBadge = order.status === 'HOLD' && order.holdCount ? `<span class="meta-pill hold-pill">Hold ${order.holdCount} day${order.holdCount === 1 ? '' : 's'}</span>` : '';
     const recipientInfo = `<div class="broker-order-summary"><strong>${order.recipientName || 'Unknown recipient'}</strong><small>${[order.recipientPhone, order.recipientAddress].filter(Boolean).join(' • ')}</small></div>`;
     const priceInfo = order.price || order.amount || order.totalAmount || order.bdtPrice ? `<div class="broker-order-meta">Price: ${formatBrokerPrice(order.price || order.amount || order.totalAmount || order.bdtPrice)}</div>` : '';
     const quantityInfo = extractBrokerQuantity(order) !== '—' ? `<div class="broker-order-meta">Qty: ${extractBrokerQuantity(order)}</div>` : '';
+    const actionContent = showActions
+        ? `${actions.join(' ') || '<span class="text-muted">No actions</span>'}`
+        : `<span class="text-muted">${deliveredAt}</span>`;
 
-    row.innerHTML = showActions ? `
+    row.innerHTML = `
         <td>
             <div class="broker-order-summary"><strong>${order.merchantName || order.orderId || 'Unnamed order'}</strong><small>${order.productDescription || 'No description'}</small>${priceInfo}${quantityInfo}</div>
         </td>
         <td>${recipientInfo}</td>
-        <td><span class="status ${order.status.toLowerCase()}">${order.status}</span></td>
-        <td>${holdDays}</td>
-        <td>${assignedLabel}</td>
-        <td style="white-space:nowrap; display:flex; gap:8px; align-items:center; justify-content:flex-end;">
-            ${actions.join(' ') || '<span class="text-muted">No actions</span>'}
-            <span style="margin-left:6px;">${getStatusButtonHtml(order.status)}</span>
-        </td>
-    ` : `
-        <td>
-            <div class="broker-order-summary"><strong>${order.merchantName || order.orderId || 'Unnamed order'}</strong><small>${order.productDescription || 'No description'}</small>${priceInfo}${quantityInfo}</div>
-        </td>
-        <td>${recipientInfo}</td>
-        <td><span class="status ${order.status.toLowerCase()}">${order.status}</span></td>
-        <td>${holdDays}</td>
-        <td>${assignedLabel}</td>
-        <td style="white-space:nowrap; display:flex; gap:8px; align-items:center; justify-content:flex-end;">
-            ${deliveredAt}
-            <span style="margin-left:6px;">${getStatusButtonHtml(order.status)}</span>
+        <td class="broker-actions-cell">
+            <div class="broker-action-stack">
+                ${actionContent}
+                <div class="broker-status-stack">
+                    ${getStatusButtonHtml(order.status)}
+                    ${holdDaysBadge}
+                </div>
+            </div>
         </td>
     `;
 

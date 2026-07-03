@@ -171,6 +171,32 @@
             font-size: 0.95rem;
             font-weight: 600;
         }
+        .action-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 0.7rem 1rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: linear-gradient(135deg, #2563eb, #4f46e5);
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.9rem;
+            box-shadow: 0 8px 16px rgba(37,99,235,0.15);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+            cursor: pointer;
+        }
+        .action-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 12px 20px rgba(37,99,235,0.22);
+            filter: brightness(1.05);
+        }
+        .action-btn.small {
+            padding: 0.55rem 0.8rem;
+            font-size: 0.8rem;
+            gap: 4px;
+        }
         .broker-form .action-btn,
         .broker-hero-actions a,
         .broker-action-group button {
@@ -225,12 +251,13 @@
         }
         .broker-table-wrapper th,
         .broker-table-wrapper td {
-            padding: 20px 22px;
+            padding: 16px 18px;
             text-align: left;
             border-bottom: 1px solid rgba(255,255,255,0.06);
-            font-size: 1rem;
+            font-size: 0.96rem;
             white-space: normal;
             word-break: break-word;
+            overflow-wrap: anywhere;
         }
         .broker-table-wrapper th {
             background: rgba(12,12,33,0.95);
@@ -265,8 +292,12 @@
             padding: 6px 10px;
             border-radius: 999px;
             font-weight: 700;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             cursor: default;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
         }
         .status-button.status.pending { background: rgba(255,193,7,0.12); color: #ffd966; }
         .status-button.status.pickup { background: rgba(14,159,255,0.12); color: #80c6ff; }
@@ -278,24 +309,73 @@
 
         .action-btn.cancel-btn { background: linear-gradient(135deg, #ef4444, #dc2626); box-shadow: 0 6px 18px rgba(220,38,38,0.18); }
         .action-btn.cancel-btn:hover { transform:none; filter:brightness(0.98); }
-
-        /* Make rows feel movable/clickable like before */
+        .meta-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #fff;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.12);
+        }
+        .meta-pill.hold-pill {
+            color: #ffd080;
+            background: rgba(255,145,0,0.14);
+            border-color: rgba(255,145,0,0.24);
+        }
+        .broker-action-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            justify-content: flex-start;
+        }
+        .broker-status-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: center;
+        }
         .broker-order-clickable { cursor: grab; }
         .broker-order-clickable:active { cursor: grabbing; }
         .broker-order-summary {
             display: flex;
             flex-direction: column;
             gap: 4px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            word-break: break-word;
         }
         .broker-order-summary strong {
             color: #fff;
             display: block;
             font-weight: 700;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            word-break: break-word;
         }
         .broker-order-summary small {
             color: #95a3d2;
             font-size: 0.86rem;
             line-height: 1.4;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            word-break: break-word;
+            display: block;
+        }
+        .broker-order-meta {
+            font-size: 0.85rem;
+            color: #8a92b8;
+            margin-top: 4px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            word-break: break-word;
+        }
+        .broker-actions-cell {
+            padding: 0 !important;
         }
         .broker-detail-card {
             background: rgba(255,255,255,0.03);
@@ -544,7 +624,8 @@
             .broker-table-wrapper {
                 margin-bottom: 16px;
                 border-radius: 16px;
-                overflow-x: auto;
+                overflow-x: visible;
+                overflow-y: visible;
             }
             .broker-table-heading {
                 padding: 14px 12px;
@@ -554,32 +635,107 @@
             }
             .broker-table-wrapper table {
                 font-size: 0.85rem;
-                min-width: auto;
+                min-width: 0;
+                width: 100%;
             }
             .broker-table-wrapper th,
             .broker-table-wrapper td {
                 padding: 12px 10px;
             }
-            .broker-table-wrapper th {
-                font-size: 0.8rem;
+            .broker-table-wrapper thead {
+                display: none;
+            }
+            .broker-table-wrapper tbody,
+            .broker-table-wrapper tr {
+                display: block;
+                width: 100%;
+            }
+            .broker-table-wrapper td {
+                display: block;
+                width: 100%;
+                padding: 8px 0;
+                box-sizing: border-box;
+                word-wrap: break-word;
+                overflow-wrap: break-word;
+                white-space: normal;
+            }
+            .broker-table-wrapper tr {
+                margin: 10px 0;
+                padding: 14px;
+                border-radius: 14px;
+                background: rgba(255,255,255,0.03);
+                border: 1px solid rgba(255,255,255,0.08);
+                display: block;
+            }
+            .broker-table-wrapper td {
+                border-bottom: none;
+                padding: 6px 0;
+            }
+            .broker-table-wrapper td:last-child {
+                padding-bottom: 0;
             }
             .broker-order-summary {
                 gap: 2px;
+                word-wrap: break-word;
+                overflow-wrap: break-word;
             }
             .broker-order-summary strong {
-                font-size: 0.9rem;
+                font-size: 0.95rem;
+                display: block;
+                word-wrap: break-word;
+                overflow-wrap: break-word;
             }
             .broker-order-summary small {
                 font-size: 0.75rem;
+                display: block;
+                word-wrap: break-word;
+                overflow-wrap: break-word;
+                color: #95a3d2;
+            }
+            .broker-order-meta {
+                font-size: 0.8rem;
+                color: #8a92b8;
+                margin-top: 4px;
+                word-wrap: break-word;
+                overflow-wrap: break-word;
+            }
+            .broker-actions-cell {
+                padding-top: 12px !important;
+            }
+            .broker-action-stack {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                align-items: flex-start;
+            }
+            .broker-status-stack {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                width: 100%;
+                margin-top: 8px;
             }
             .broker-action-group button.action-btn.small {
                 padding: 0.6rem 0.8rem;
                 font-size: 0.8rem;
-                margin: 4px 2px;
+                margin: 0;
+                display: inline-flex;
             }
-            .status {
-                padding: 4px 8px;
+            .status-button {
+                padding: 6px 10px;
+                font-size: 0.8rem;
+                white-space: nowrap;
+            }
+            .meta-pill {
+                display: inline-block;
+                padding: 5px 10px;
                 font-size: 0.75rem;
+                border-radius: 999px;
+                white-space: nowrap;
+            }
+            .meta-pill.hold-pill {
+                background: rgba(255,145,0,0.12);
+                color: #ffd080;
             }
         }
 
@@ -618,12 +774,44 @@
             .broker-summary-card .value {
                 font-size: 1.4rem;
             }
+            .broker-table-wrapper {
+                margin-bottom: 12px;
+            }
             .broker-table-wrapper table {
                 font-size: 0.8rem;
             }
             .broker-table-wrapper th,
             .broker-table-wrapper td {
-                padding: 10px 6px;
+                padding: 8px 6px;
+            }
+            .broker-table-wrapper tr {
+                margin: 8px 0;
+                padding: 10px;
+            }
+            .broker-table-wrapper td {
+                padding: 4px 0;
+            }
+            .broker-order-summary strong {
+                font-size: 0.9rem;
+            }
+            .broker-order-summary small {
+                font-size: 0.7rem;
+            }
+            .broker-order-meta {
+                font-size: 0.75rem;
+                margin-top: 2px;
+            }
+            .broker-action-group button.action-btn.small {
+                padding: 0.5rem 0.6rem;
+                font-size: 0.75rem;
+            }
+            .status-button {
+                padding: 5px 8px;
+                font-size: 0.75rem;
+            }
+            .meta-pill {
+                padding: 4px 8px;
+                font-size: 0.7rem;
             }
             .broker-detail-panel {
                 max-width: 100%;
@@ -770,14 +958,11 @@
                     <tr>
                         <th>Order</th>
                         <th>Recipient</th>
-                        <th>Status</th>
-                        <th>Hold Days</th>
-                        <th>Agent</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody id="broker-order-list">
-                    <tr><td colspan="6" class="text-center">Loading active orders…</td></tr>
+                    <tr><td colspan="3" class="text-center">Loading active orders…</td></tr>
                 </tbody>
             </table>
         </section>
@@ -789,14 +974,11 @@
                     <tr>
                         <th>Order</th>
                         <th>Recipient</th>
-                        <th>Status</th>
-                        <th>Hold Days</th>
-                        <th>Agent</th>
-                        <th>Delivered At</th>
+                        <th>Details</th>
                     </tr>
                 </thead>
                 <tbody id="broker-delivered-order-list">
-                    <tr><td colspan="6" class="text-center">Loading completed orders…</td></tr>
+                    <tr><td colspan="3" class="text-center">Loading completed orders…</td></tr>
                 </tbody>
             </table>
         </section>
@@ -808,14 +990,11 @@
                     <tr>
                         <th>Order</th>
                         <th>Recipient</th>
-                        <th>Status</th>
-                        <th>Hold Days</th>
-                        <th>Agent</th>
-                        <th>Delivered At</th>
+                        <th>Details</th>
                     </tr>
                 </thead>
                 <tbody id="broker-archived-order-list">
-                    <tr><td colspan="6" class="text-center">Loading archived orders…</td></tr>
+                    <tr><td colspan="3" class="text-center">Loading archived orders…</td></tr>
                 </tbody>
             </table>
         </section>
