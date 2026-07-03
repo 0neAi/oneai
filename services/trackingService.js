@@ -13,6 +13,84 @@ function normalizeStatus(rawStatus) {
   return 'PENDING';
 }
 
+function normalizePhone(phone) {
+  const raw = String(phone || '').trim();
+  if (!raw) return '';
+  const digits = raw.replace(/\D+/g, '');
+  return digits.length >= 7 ? digits : '';
+}
+
+function collectTrackingTextEntries(trackingData) {
+  const entries = [];
+  if (!trackingData) return entries;
+
+  const addEntry = value => {
+    if (!value) return;
+    if (typeof value === 'string') {
+      entries.push(value.trim());
+      return;
+    }
+    if (Array.isArray(value)) {
+      value.forEach(item => addEntry(item));
+      return;
+    }
+    if (typeof value === 'object') {
+      Object.values(value).forEach(val => addEntry(val));
+      return;
+    }
+    entries.push(String(value).trim());
+  };
+
+  addEntry(trackingData.history || trackingData.log || trackingData.tracking_details || trackingData.trackingDetails);
+  addEntry(trackingData.order || trackingData.delivery || trackingData.data || trackingData);
+  addEntry(trackingData.raw);
+
+  return entries.filter(entry => typeof entry === 'string' && entry.length > 0);
+}
+
+function extractAgentLines(entries) {
+  const agentLines = [];
+  const normalizedPhones = new Set();
+
+  const patterns = [
+    /assigned to\s*([^()\n]+?)\s*\(\s*([0-9+\-\s()]{7,})\s*\)/i,
+    /(?:agent|driver|courier|delivery person)\s*[:\-]?\s*([^()\n]+?)\s*\(\s*([0-9+\-\s()]{7,})\s*\)/i,
+    /([^()\n]+?)\s*\(\s*([0-9+\-\s()]{7,})\s*\)/i
+  ];
+
+  entries.forEach(entry => {
+    for (const pattern of patterns) {
+      const match = entry.match(pattern);
+      if (!match) continue;
+
+      let name = String(match[1] || '').trim();
+      let phone = normalizePhone(match[2] || '');
+      if (!phone) continue;
+
+      if (name.toLowerCase().includes('assigned to')) {
+        name = name.replace(/assigned to\s*/i, '').trim();
+      }
+
+      if (!name) {
+        name = 'Unknown Agent';
+      }
+
+      if (!normalizedPhones.has(phone)) {
+        normalizedPhones.add(phone);
+        agentLines.push({ name, phone, rawLine: entry });
+      }
+      break;
+    }
+  });
+
+  return agentLines;
+}
+
+function parseAssignedAgentsFromTracking(trackingData) {
+  const entries = collectTrackingTextEntries(trackingData);
+  return extractAgentLines(entries);
+}
+
 function extractTrackingData(payload) {
   const root = payload?.data || payload;
   const order = root?.order || root?.delivery || root?.data || root;
@@ -100,4 +178,4 @@ async function trackOrderByLink(paymentLink, fallbackPhone, fallbackConsignmentI
   return trackOrder(consignmentId, phone);
 }
 
-module.exports = { trackOrder, trackOrderByLink };
+module.exports = { trackOrder, trackOrderByLink, parseAssignedAgentsFromTracking };

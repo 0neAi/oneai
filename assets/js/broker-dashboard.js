@@ -13,6 +13,7 @@ const FALLBACK_BROKER_PACKAGES = [
 
 const brokerState = {
     orders: [],
+    agents: [],
     credits: 0,
     active: 0,
     completed: 0,
@@ -32,6 +33,11 @@ function toggleOrderForm() {
     const creditForm = document.getElementById('broker-credit-form');
     orderForm.style.display = orderForm.style.display === 'block' ? 'none' : 'block';
     creditForm.style.display = 'none';
+    
+    // Load agents when form is opened
+    if (orderForm.style.display === 'block') {
+        loadBrokerAgents();
+    }
 }
 
 function toggleCreditForm() {
@@ -391,16 +397,101 @@ function renderBrokerOrder(order, tbody, showActions) {
     tbody.appendChild(row);
 }
 
+// ============================================
+// AGENT FUNCTIONS - Load and manage agents
+// ============================================
+
+async function loadBrokerAgents() {
+  const authToken = localStorage.getItem('authToken');
+  const userID = localStorage.getItem('userID');
+  
+  if (!authToken || !userID) {
+    console.warn('No auth token or user ID found');
+    brokerState.agents = [];
+    return;
+  }
+  
+  try {
+    const response = await fetch(`${API_BASE_URL}/broker/agents`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+        'X-User-ID': userID,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (data.success && Array.isArray(data.agents)) {
+      brokerState.agents = data.agents;
+      console.log('✅ Loaded agents:', data.agents.map(a => a.displayName).join(', '));
+    } else {
+      console.warn('Failed to load agents');
+      brokerState.agents = [];
+    }
+    
+    renderAgentSelector();
+  } catch (error) {
+    console.error('❌ Failed to load agents:', error);
+    brokerState.agents = [];
+    renderAgentSelector();
+  }
+}
+
+function renderAgentSelector() {
+  const agentSelect = document.getElementById('broker-agent');
+  
+  if (!agentSelect) {
+    console.warn('Agent selector element not found');
+    return;
+  }
+  
+  // Clear existing options
+  agentSelect.innerHTML = '';
+  
+  // Add default option
+  const defaultOption = document.createElement('option');
+  defaultOption.value = '';
+  defaultOption.textContent = '-- Select Agent --';
+  agentSelect.appendChild(defaultOption);
+  
+  // Add agent options
+  if (brokerState.agents && brokerState.agents.length > 0) {
+    brokerState.agents.forEach(agent => {
+      const option = document.createElement('option');
+      option.value = agent.displayName;
+      option.textContent = agent.displayName;
+      agentSelect.appendChild(option);
+    });
+  }
+  
+  console.log('✅ Agent selector rendered with', (agentSelect.options.length - 1), 'agents');
+}
+
+function getSelectedAgentName() {
+  const agentSelect = document.getElementById('broker-agent');
+  
+  if (!agentSelect || !agentSelect.value) {
+    return '';
+  }
+  
+  return agentSelect.value;
+}
+
 async function createBrokerOrder() {
     const authToken = localStorage.getItem('authToken');
     const userID = localStorage.getItem('userID');
+    
+    const selectedAgentName = getSelectedAgentName();
+    
     const payload = {
         merchantName: document.getElementById('broker-merchant-name').value.trim(),
         productDescription: document.getElementById('broker-product-description').value.trim(),
         recipientName: document.getElementById('broker-recipient-name').value.trim(),
         recipientPhone: document.getElementById('broker-recipient-phone').value.trim(),
         recipientAddress: document.getElementById('broker-recipient-address').value.trim(),
-        agentName: 'Pathao Agent'
+        agentName: selectedAgentName
     };
 
     if (!payload.merchantName || !payload.recipientName || !payload.recipientPhone || !payload.recipientAddress) {
@@ -674,6 +765,7 @@ async function updateBrokerOrderStatus(orderId, status) {
 window.toggleOrderForm = toggleOrderForm;
 window.toggleCreditForm = toggleCreditForm;
 window.loadBrokerData = loadBrokerData;
+window.loadBrokerAgents = loadBrokerAgents;
 window.applyBrokerSearch = applyBrokerSearch;
 window.applyBrokerStatusFilter = applyBrokerStatusFilter;
 window.applyBrokerSort = applyBrokerSort;
@@ -687,5 +779,6 @@ window.showBrokerOrderDetails = showBrokerOrderDetails;
 window.closeBrokerOrderDetailsModal = closeBrokerOrderDetailsModal;
 
 window.addEventListener('DOMContentLoaded', () => {
+    loadBrokerAgents();
     loadBrokerData();
 });

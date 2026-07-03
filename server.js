@@ -10,6 +10,8 @@ const { adminAuth, validateUser } = require('./middleware/auth');
 const Payment = require('./models/Payment');
 const User = require('./models/User');
 const Admin = require('./models/Admin');
+const AppSetting = require('./models/AppSetting');
+const AgentRecord = require('./models/AgentRecord');
 const PremiumService = require('./models/PremiumService');
 const FexiloadRequest = require('./models/FexiloadRequest');
 const LocationTrackerServiceRequest = require('./models/LocationTrackerServiceRequest');
@@ -33,7 +35,7 @@ const BROKER_CREDIT_PACKAGES = [
 ];
 
 const orderFetcher = require('./services/orderFetcher');
-const { trackOrder, trackOrderByLink } = require('./services/trackingService');
+const { trackOrder, trackOrderByLink, parseAssignedAgentsFromTracking } = require('./services/trackingService');
 const MerchantIssue = require('./models/MerchantIssue'); // Added
 const PenaltyReport = require('./models/PenaltyReport'); // Added
 const Page = require('./models/Page'); // Added
@@ -55,6 +57,16 @@ function getBrokerDashboardChargeDay(date = new Date()) {
   const normalizedDate = new Date(date);
   normalizedDate.setHours(0, 0, 0, 0);
   return normalizedDate;
+}
+
+async function isTrackingAgentCaptureEnabled() {
+  try {
+    const setting = await AppSetting.findOne({ key: 'trackingagentcaptureenabled' });
+    return setting ? Boolean(setting.value) : false;
+  } catch (error) {
+    console.error('Error reading tracking agent capture setting:', error);
+    return false;
+  }
 }
 
 // Initialize express app
@@ -617,6 +629,78 @@ app.post('/admin/login', async (req, res) => {
 
 app.get('/admin/validate', adminAuth, (req, res) => {
   res.json({ success: true, message: 'Admin token is valid.' });
+});
+
+app.get('/admin/settings/tracking-agent-capture', adminAuth, async (req, res) => {
+  try {
+    const setting = await AppSetting.findOne({ key: 'trackingagentcaptureenabled' });
+    res.json({ success: true, enabled: Boolean(setting?.value) });
+  } catch (error) {
+    console.error('Error fetching tracking agent capture setting:', error);
+    res.status(500).json({ success: false, message: 'Server error fetching settings.' });
+  }
+});
+
+app.put('/admin/settings/tracking-agent-capture', adminAuth, async (req, res) => {
+  try {
+    const { enabled } = req.body;
+    if (typeof enabled !== 'boolean') {
+      return res.status(400).json({ success: false, message: 'Enabled must be a boolean.' });
+    }
+
+    const setting = await AppSetting.findOneAndUpdate(
+      { key: 'trackingagentcaptureenabled' },
+      { value: enabled, description: 'Enable or disable tracking agent extraction for broker order tracking.' },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    res.json({ success: true, enabled: Boolean(setting.value) });
+  } catch (error) {
+    console.error('Error updating tracking agent capture setting:', error);
+    res.status(500).json({ success: false, message: 'Server error updating settings.' });
+  }
+});
+
+app.get('/admin/broker-agents', adminAuth, async (req, res) => {
+  try {
+    const agents = [];
+    let index = 1;
+
+    while (true) {
+      const username = process.env[`AGENT${index}_USERNAME`];
+      const password = process.env[`AGENT${index}_PASSWORD`];
+      if (!username || !password) break;
+
+      const displayName = process.env[`AGENT${index}_DISPLAY`] || `Agent ${index}`;
+      const isActive = process.env[`AGENT${index}_ACTIVE`] !== 'false';
+
+      agents.push({
+        id: `agent_${String(index).padStart(3, '0')}`,
+        displayName,
+        isActive
+      });
+      index += 1;
+    }
+
+    res.json({ success: true, agents });
+  } catch (error) {
+    console.error('Error fetching admin broker agents:', error);
+    res.status(500).json({ success: false, agents: [] });
+  }
+});
+
+app.get('/admin/broker-agent-records', adminAuth, async (req, res) => {
+  try {
+    const records = await AgentRecord.find()
+      .sort({ lastSeenAt: -1 })
+      .limit(50)
+      .lean();
+
+    res.json({ success: true, records });
+  } catch (error) {
+    console.error('Error fetching broker agent records:', error);
+    res.status(500).json({ success: false, records: [] });
+  }
 });
 
 // Admin User Management Endpoints
@@ -2097,6 +2181,36 @@ app.get('/broker/orders/unassigned', validateUser, async (req, res) => {
   }
 });
 
+// GET /broker/agents - Fetch list of active agents from environment variables
+app.get('/broker/agents', validateUser, async (req, res) => {
+  try {
+    const agents = [];
+    let index = 1;
+
+    while (true) {
+      const username = process.env[`AGENT${index}_USERNAME`];
+      const password = process.env[`AGENT${index}_PASSWORD`];
+      if (!username || !password) break;
+
+      const displayName = process.env[`AGENT${index}_DISPLAY`] || `Agent ${index}`;
+      const isActive = process.env[`AGENT${index}_ACTIVE`] !== 'false';
+
+      agents.push({
+        id: `agent_${String(index).padStart(3, '0')}`,
+        displayName,
+        isActive
+      });
+      index += 1;
+    }
+
+    const activeAgents = agents.filter(a => a.isActive);
+    res.json({ success: true, agents: activeAgents });
+  } catch (error) {
+    console.error('Error fetching agents:', error);
+    res.status(500).json({ success: false, agents: [] });
+  }
+});
+
 app.post('/broker/orders', validateUser, async (req, res) => {
   try {
     const { merchantName, productDescription, recipientName, recipientPhone, recipientAddress, agentName } = req.body;
@@ -2114,9 +2228,33 @@ app.post('/broker/orders', validateUser, async (req, res) => {
       return res.status(403).json({ success: false, message: 'At least 1 broker credit is required to create an order.' });
     }
 
+    // Validate agent if provided
+    let validatedAgentName = '';
+    if (agentName && agentName.trim()) {
+      // Check if agent exists in environment variables
+      let agentFound = false;
+      let index = 1;
+      while (true) {
+        const envDisplayName = process.env[`AGENT${index}_DISPLAY`];
+        if (!envDisplayName) break;
+        if (envDisplayName === agentName.trim()) {
+          agentFound = true;
+          break;
+        }
+        index += 1;
+      }
+
+      if (!agentFound) {
+        return res.status(400).json({
+          success: false,
+          message: `Invalid agent selected: ${agentName}`
+        });
+      }
+      validatedAgentName = agentName.trim();
+    }
+
     const orderId = `BROKER-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-    const agentNameValue = agentName?.trim() || '';
-    const isAssigned = Boolean(agentNameValue);
+    const isAssigned = Boolean(validatedAgentName);
 
     let brokerOrder;
     let brokerTransaction;
@@ -2130,9 +2268,9 @@ app.post('/broker/orders', validateUser, async (req, res) => {
         recipientName,
         recipientPhone,
         recipientAddress,
-        agentName: agentNameValue || 'Pathao Agent',
-        agentDisplayName: agentNameValue || 'Pathao Agent',
-        agentAssigned: agentNameValue,
+        agentName: validatedAgentName,
+        agentDisplayName: validatedAgentName,
+        agentAssigned: validatedAgentName,
         assigned: isAssigned,
         status: 'PENDING',
         trackingEnabled: true,
@@ -2254,6 +2392,41 @@ app.post('/broker/orders/:id/track', validateUser, async (req, res) => {
     if (trackingResult.status === 'HOLD') {
       order.holdReason = trackingResult.holdReason || order.holdReason || 'Hold status received from public tracking';
     }
+
+    const agentCaptureEnabled = await isTrackingAgentCaptureEnabled();
+    if (agentCaptureEnabled) {
+      try {
+        const assignedAgents = parseAssignedAgentsFromTracking(trackingResult.data);
+        if (assignedAgents.length) {
+          const firstAgent = assignedAgents[0];
+          if (firstAgent.name) order.agentName = firstAgent.name;
+          if (firstAgent.phone) order.agentAssigned = firstAgent.phone;
+        }
+
+        for (const agent of assignedAgents) {
+          if (!agent.phone) continue;
+
+          await AgentRecord.findOneAndUpdate(
+            { normalizedPhone: agent.phone },
+            {
+              $set: {
+                name: agent.name || 'Unknown Agent',
+                phone: agent.phone,
+                normalizedPhone: agent.phone,
+                source: 'tracking',
+                rawText: agent.rawLine || ''
+              },
+              $currentDate: { lastSeenAt: true },
+              $inc: { seenCount: 1 }
+            },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+          );
+        }
+      } catch (error) {
+        console.error('Tracking agent capture failed:', error);
+      }
+    }
+
     if (['DELIVERED', 'RETURNED', 'CANCELLED', 'FAILED'].includes(order.status)) {
       order.completed = true;
     }
