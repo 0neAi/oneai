@@ -408,9 +408,9 @@ function renderBrokerOrder(order, tbody, showActions) {
 
     const actions = [];
     if (showActions && ['PENDING', 'PICKUP', 'HOLD'].includes(order.status)) {
-        actions.push(`<button class="action-btn small" onclick="event.stopPropagation(); updateBrokerOrderStatus('${order._id}', 'DELIVERED')">Deliver</button>`);
-        actions.push(`<button class="action-btn small" onclick="event.stopPropagation(); updateBrokerOrderStatus('${order._id}', 'CANCELLED')">Cancel</button>`);
+        // Keep Track button; remove Deliver. Make Cancel hide the order locally.
         actions.push(`<button class="action-btn small" onclick="event.stopPropagation(); trackBrokerOrder('${order._id}')">Track</button>`);
+        actions.push(`<button class="action-btn small cancel-btn" onclick="event.stopPropagation(); hideBrokerOrder('${order._id}')">Cancel</button>`);
     }
 
     const deliveredAt = order.updatedAt ? new Date(order.updatedAt).toLocaleString() : '—';
@@ -428,7 +428,10 @@ function renderBrokerOrder(order, tbody, showActions) {
         <td><span class="status ${order.status.toLowerCase()}">${order.status}</span></td>
         <td>${holdDays}</td>
         <td>${assignedLabel}</td>
-        <td>${actions.join(' ') || '<span class="text-muted">No actions</span>'}</td>
+        <td style="white-space:nowrap; display:flex; gap:8px; align-items:center; justify-content:flex-end;">
+            ${actions.join(' ') || '<span class="text-muted">No actions</span>'}
+            <span style="margin-left:6px;">${getStatusButtonHtml(order.status)}</span>
+        </td>
     ` : `
         <td>
             <div class="broker-order-summary"><strong>${order.merchantName || order.orderId || 'Unnamed order'}</strong><small>${order.productDescription || 'No description'}</small>${priceInfo}${quantityInfo}</div>
@@ -437,10 +440,43 @@ function renderBrokerOrder(order, tbody, showActions) {
         <td><span class="status ${order.status.toLowerCase()}">${order.status}</span></td>
         <td>${holdDays}</td>
         <td>${assignedLabel}</td>
-        <td>${deliveredAt}</td>
+        <td style="white-space:nowrap; display:flex; gap:8px; align-items:center; justify-content:flex-end;">
+            ${deliveredAt}
+            <span style="margin-left:6px;">${getStatusButtonHtml(order.status)}</span>
+        </td>
     `;
 
     tbody.appendChild(row);
+}
+
+// Remove/hide an order locally from the UI (does not delete server-side)
+function hideBrokerOrder(orderId) {
+    // Remove from state
+    const idx = brokerState.orders.findIndex(o => o._id === orderId);
+    if (idx !== -1) {
+        brokerState.orders.splice(idx, 1);
+        renderBrokerOrders();
+        showSuccess && showSuccess('Order hidden from the list.');
+    } else {
+        showError && showError('Order not found.');
+    }
+}
+
+function getStatusButtonHtml(status) {
+    if (!status) return '';
+    const s = String(status).toUpperCase();
+    const map = {
+        'PENDING': { cls: 'status pending', label: 'PENDING' },
+        'PICKUP': { cls: 'status pickup', label: 'PICKUP' },
+        'HOLD': { cls: 'status hold', label: 'HOLD' },
+        'DELIVERED': { cls: 'status delivered', label: 'DELIVERED' },
+        'CANCELLED': { cls: 'status cancelled', label: 'CANCELLED' },
+        'FAILED': { cls: 'status failed', label: 'FAILED' },
+        'RETURNED': { cls: 'status returned', label: 'RETURNED' }
+    };
+    const info = map[s] || { cls: 'status', label: s };
+    // Render as a button-like badge
+    return `<button class="status-button ${info.cls.toLowerCase()}" onclick="event.stopPropagation();">${info.label}</button>`;
 }
 
 // ============================================

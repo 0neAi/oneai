@@ -259,6 +259,29 @@
         .broker-table-wrapper .status.cancelled,
         .broker-table-wrapper .status.failed,
         .broker-table-wrapper .status.returned { background: rgba(239,68,68,0.12); color: #ff9aa0; }
+        /* Status button styling */
+        .status-button {
+            border: none;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: default;
+        }
+        .status-button.status.pending { background: rgba(255,193,7,0.12); color: #ffd966; }
+        .status-button.status.pickup { background: rgba(14,159,255,0.12); color: #80c6ff; }
+        .status-button.status.hold { background: rgba(255,145,0,0.12); color: #ffd080; }
+        .status-button.status.delivered { background: rgba(34,197,94,0.14); color: #d1f7c4; }
+        .status-button.status.cancelled,
+        .status-button.status.failed,
+        .status-button.status.returned { background: rgba(239,68,68,0.12); color: #ff9aa0; }
+
+        .action-btn.cancel-btn { background: linear-gradient(135deg, #ef4444, #dc2626); box-shadow: 0 6px 18px rgba(220,38,38,0.18); }
+        .action-btn.cancel-btn:hover { transform:none; filter:brightness(0.98); }
+
+        /* Make rows feel movable/clickable like before */
+        .broker-order-clickable { cursor: grab; }
+        .broker-order-clickable:active { cursor: grabbing; }
         .broker-order-summary {
             display: flex;
             flex-direction: column;
