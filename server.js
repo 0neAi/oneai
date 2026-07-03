@@ -2764,6 +2764,116 @@ app.put('/admin/broker-orders/:id/status', adminAuth, async (req, res) => {
   }
 });
 
+app.post('/admin/broker-orders', adminAuth, async (req, res) => {
+  try {
+    const { userEmail, merchantName, productDescription, recipientName, recipientPhone, recipientAddress, agentName } = req.body;
+
+    if (!merchantName || !recipientName || !recipientPhone || !recipientAddress) {
+      return res.status(400).json({ success: false, message: 'Merchant, recipient and address are required.' });
+    }
+
+    let user = null;
+    if (userEmail && String(userEmail).trim()) {
+      user = await User.findOne({ email: String(userEmail).trim().toLowerCase() });
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'Specified broker user not found.' });
+      }
+      if ((user.brokerCredits || 0) < 1) {
+        return res.status(403).json({ success: false, message: 'The selected broker user must have at least 1 broker credit to create an order.' });
+      }
+    }
+
+    let validatedAgentName = '';
+    if (agentName && String(agentName).trim()) {
+      let agentFound = false;
+      let index = 1;
+      while (true) {
+        const envDisplayName = process.env[`AGENT${index}_DISPLAY`];
+        if (!envDisplayName) break;
+        if (envDisplayName === String(agentName).trim()) {
+          agentFound = true;
+          break;
+        }
+        index += 1;
+      }
+
+      if (!agentFound) {
+        return res.status(400).json({ success: false, message: `Invalid agent selected: ${agentName}` });
+      }
+      validatedAgentName = String(agentName).trim();
+    }
+
+    const orderId = `BROKER-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+    const isAssigned = Boolean(validatedAgentName);
+
+    let brokerOrder;
+    let brokerTransaction;
+
+    try {
+      brokerOrder = new BrokerOrder({
+        user: user ? user._id : null,
+        orderId,
+        merchantName,
+        productDescription,
+        recipientName,
+        recipientPhone,
+        recipientAddress,
+        agentName: validatedAgentName,
+        agentDisplayName: validatedAgentName,
+        agentAssigned: validatedAgentName,
+        assigned: isAssigned,
+        status: 'PENDING',
+        trackingEnabled: true,
+        creditsUsed: user ? 1 : 0,
+        statusHistory: [{ status: 'PENDING', note: 'Order created by admin' }]
+      });
+
+      await brokerOrder.save();
+
+      if (user) {
+        brokerTransaction = new BrokerCreditTransaction({
+          userId: user._id,
+          type: 'usage',
+          amount: 1,
+          balance: user.brokerCredits - 1,
+          description: 'Broker order created by admin',
+          orderId: brokerOrder._id
+        });
+        await brokerTransaction.save();
+
+        user.brokerCredits -= 1;
+        user.brokerUsageCount = (user.brokerUsageCount || 0) + 1;
+        user.brokerLastAccessedAt = new Date();
+        await user.save();
+      }
+    } catch (orderError) {
+      if (brokerTransaction && brokerTransaction._id) {
+        await BrokerCreditTransaction.findByIdAndDelete(brokerTransaction._id).catch(() => {});
+      }
+      if (brokerOrder && brokerOrder._id) {
+        await BrokerOrder.findByIdAndDelete(brokerOrder._id).catch(() => {});
+      }
+      throw orderError;
+    }
+
+    if (user) {
+      wss.clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN && client.userID === user._id.toString()) {
+          client.send(JSON.stringify({
+            type: 'new-broker-order',
+            order: brokerOrder
+          }));
+        }
+      });
+    }
+
+    res.status(201).json({ success: true, order: brokerOrder, brokerCredits: user ? user.brokerCredits : null });
+  } catch (error) {
+    console.error('Error creating admin broker order:', error);
+    res.status(500).json({ success: false, message: 'Failed to create broker order.' });
+  }
+});
+
 app.post('/admin/broker-orders/fetch', adminAuth, async (req, res) => {
   try {
     await orderFetcher.fetchAndStoreOrders();

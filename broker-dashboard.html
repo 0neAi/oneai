@@ -225,16 +225,19 @@
         }
         .broker-table-wrapper th,
         .broker-table-wrapper td {
-            padding: 16px 18px;
+            padding: 20px 22px;
             text-align: left;
             border-bottom: 1px solid rgba(255,255,255,0.06);
+            font-size: 1rem;
+            white-space: normal;
+            word-break: break-word;
         }
         .broker-table-wrapper th {
             background: rgba(12,12,33,0.95);
             position: sticky;
             top: 0;
             color: #dbe1ff;
-            letter-spacing: 0.02em;
+            letter-spacing: 0.03em;
             font-weight: 700;
         }
         .broker-table-wrapper tbody tr:hover {
@@ -636,7 +639,7 @@
         <section class="broker-hero">
             <div>
                 <h1>Data Broker Dashboard</h1>
-                <p>Manage broker credit, create new orders, and review status updates from one polished page.</p>
+                <p>Manage broker credit and review order status updates from one polished page.</p>
             </div>
             <div class="broker-hero-actions">
                 <a href="dashboard.html"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
@@ -677,7 +680,6 @@
         <section class="broker-control-panel">
             <div class="broker-action-group">
                 <button class="action-btn refresh-btn" onclick="loadBrokerData({}, true)"><i class="fas fa-sync-alt"></i> Refresh</button>
-                <button class="action-btn help-btn" onclick="toggleOrderForm()"><i class="fas fa-plus-circle"></i> New Order</button>
                 <button class="action-btn trx-recharge-btn" onclick="toggleCreditForm()"><i class="fas fa-wallet"></i> Purchase Credits</button>
             </div>
             <div class="broker-filter-panel">
@@ -737,36 +739,6 @@
             <button class="action-btn" onclick="purchaseBrokerCredits()" style="width: 100%; margin-top: 16px;">Confirm Purchase</button>
         </section>
 
-        <section id="broker-order-form" class="broker-form" style="display:none;">
-            <h3>Create Broker Order</h3>
-            <div class="form-group">
-                <label for="broker-merchant-name">Merchant Name</label>
-                <input type="text" id="broker-merchant-name" placeholder="Merchant name" />
-            </div>
-            <div class="form-group">
-                <label for="broker-agent"><strong>Assign Agent:</strong></label>
-                <select id="broker-agent" style="width: 100%; padding: 8px; border-radius: 4px;">
-                    <option value="">-- Select Agent --</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="broker-product-description">Product / Service</label>
-                <input type="text" id="broker-product-description" placeholder="Product or service details" />
-            </div>
-            <div class="form-group">
-                <label for="broker-recipient-name">Recipient Name</label>
-                <input type="text" id="broker-recipient-name" placeholder="Recipient name" />
-            </div>
-            <div class="form-group">
-                <label for="broker-recipient-phone">Recipient Phone</label>
-                <input type="text" id="broker-recipient-phone" placeholder="Recipient phone" />
-            </div>
-            <div class="form-group">
-                <label for="broker-recipient-address">Recipient Address</label>
-                <input type="text" id="broker-recipient-address" placeholder="Recipient address" />
-            </div>
-            <button class="action-btn" onclick="createBrokerOrder()" style="width: 100%; margin-top: 16px;">Create Order</button>
-        </section>
 
         <section class="broker-table-wrapper">
             <div class="broker-table-heading"><h2>Active / Hold Orders</h2></div>

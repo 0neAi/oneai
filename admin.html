@@ -462,6 +462,131 @@
                 </div>
             </div>
 
+            <div class="card shadow-sm mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center py-3">
+                    <h5 class="mb-0"><i class="bi bi-basket-fill me-2"></i>Create Broker Order</h5>
+                    <button class="btn btn-sm btn-outline-primary" @click="refreshBrokerOrders">
+                        <i class="bi bi-arrow-clockwise"></i> Refresh Orders
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="row gx-3 gy-3">
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <div class="mb-3">
+                                <label class="form-label">Broker User Email (optional)</label>
+                                <input type="email" class="form-control" v-model="newBrokerOrder.userEmail" placeholder="Attach order to existing user" />
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <div class="mb-3">
+                                <label class="form-label">Merchant Name</label>
+                                <input type="text" class="form-control" v-model="newBrokerOrder.merchantName" placeholder="Merchant name" />
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <div class="mb-3">
+                                <label class="form-label">Assign Agent</label>
+                                <select class="form-select" v-model="newBrokerOrder.agentName">
+                                    <option value="">None</option>
+                                    <option v-for="agent in brokerAgentConfigs" :key="agent.id" :value="agent.displayName">
+                                        {{ agent.displayName }}
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <div class="mb-3">
+                                <label class="form-label">Product / Service</label>
+                                <input type="text" class="form-control" v-model="newBrokerOrder.productDescription" placeholder="Product or service details" />
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <div class="mb-3">
+                                <label class="form-label">Recipient Name</label>
+                                <input type="text" class="form-control" v-model="newBrokerOrder.recipientName" placeholder="Recipient name" />
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <div class="mb-3">
+                                <label class="form-label">Recipient Phone</label>
+                                <input type="text" class="form-control" v-model="newBrokerOrder.recipientPhone" placeholder="Recipient phone" />
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="mb-3">
+                                <label class="form-label">Recipient Address</label>
+                                <textarea class="form-control" v-model="newBrokerOrder.recipientAddress" placeholder="Recipient address" rows="2"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" @click="createBrokerOrder">Create Broker Order</button>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-5">
+                <div class="card-header d-flex justify-content-between align-items-center py-3">
+                    <div>
+                        <h5 class="mb-0"><i class="bi bi-clipboard-data me-2"></i>Broker Orders</h5>
+                        <small class="text-muted">Manage orders created through the broker workflow.</small>
+                    </div>
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <input type="search" class="form-control form-control-sm" v-model="brokerOrdersSearch" placeholder="Search orders" style="min-width: 180px;" />
+                        <select class="form-select form-select-sm" v-model="brokerOrdersStatusFilter" style="min-width: 160px;">
+                            <option value="all">All Statuses</option>
+                            <option value="PENDING">Pending</option>
+                            <option value="PICKUP">Pickup</option>
+                            <option value="DELIVERED">Delivered</option>
+                            <option value="CANCELLED">Cancelled</option>
+                            <option value="FAILED">Failed</option>
+                            <option value="RETURNED">Returned</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>User</th>
+                                    <th>Merchant</th>
+                                    <th>Recipient</th>
+                                    <th>Agent</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="order in filteredBrokerOrders" :key="order._id">
+                                    <td>{{ order.orderId }}</td>
+                                    <td>{{ order.user?.email || 'System' }}</td>
+                                    <td>{{ order.merchantName || '—' }}</td>
+                                    <td>{{ order.recipientName || '—' }}<br><small class="text-muted">{{ order.recipientPhone || '—' }}</small></td>
+                                    <td>{{ order.agentName || order.agentAssigned || 'Unassigned' }}</td>
+                                    <td>
+                                        <span class="badge" :class="{
+                                            'bg-warning': order.status === 'PENDING',
+                                            'bg-info': order.status === 'PICKUP',
+                                            'bg-success': order.status === 'DELIVERED',
+                                            'bg-danger': ['CANCELLED', 'FAILED', 'RETURNED'].includes(order.status)
+                                        }">{{ order.status }}</span>
+                                    </td>
+                                    <td>{{ formatDateTime(order.createdAt) }}</td>
+                                    <td class="action-cell">
+                                        <button class="btn btn-sm btn-outline-primary me-1" @click="viewBrokerOrderDetails(order)"><i class="bi bi-eye-fill"></i></button>
+                                        <button class="btn btn-sm btn-outline-secondary" @click="updateBrokerOrderStatus(order)"><i class="bi bi-pencil-fill"></i></button>
+                                    </td>
+                                </tr>
+                                <tr v-if="filteredBrokerOrders.length === 0">
+                                    <td colspan="8" class="text-center py-4 text-muted">No broker orders found.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
             <div class="main-container">
                 <!-- Payments Section -->
                 <div class="card shadow-sm mb-5">
@@ -2298,6 +2423,17 @@
                     brokerCreditAdjustmentAmount: 0,
                     brokerCreditAdjustmentMode: 'add',
                     brokerOrderStatusOptions: ['PENDING', 'PICKUP', 'DELIVERED', 'CANCELLED', 'FAILED', 'RETURNED'],
+                    brokerOrdersStatusFilter: 'all',
+                    brokerOrdersSearch: '',
+                    newBrokerOrder: {
+                        userEmail: '',
+                        merchantName: '',
+                        productDescription: '',
+                        recipientName: '',
+                        recipientPhone: '',
+                        recipientAddress: '',
+                        agentName: ''
+                    },
                     merchantIssues: [],
                     brokerAgentConfigs: [],
                     capturedAgentRecords: [],
@@ -2372,6 +2508,29 @@
                     return this.penaltyReports.filter(report => 
                         report.status === this.penaltyFilter
                     );
+                },
+                filteredBrokerOrders() {
+                    let orders = this.brokerOrders || [];
+                    if (this.brokerOrdersStatusFilter !== 'all') {
+                        orders = orders.filter(order => order.status === this.brokerOrdersStatusFilter);
+                    }
+                    if (this.brokerOrdersSearch.trim()) {
+                        const search = this.brokerOrdersSearch.trim().toLowerCase();
+                        orders = orders.filter(order => {
+                            return [
+                                order.orderId,
+                                order.merchantName,
+                                order.productDescription,
+                                order.recipientName,
+                                order.recipientPhone,
+                                order.recipientAddress,
+                                order.agentName,
+                                order.agentAssigned,
+                                order.user?.email
+                            ].some(value => value && value.toString().toLowerCase().includes(search));
+                        });
+                    }
+                    return orders;
                 },
                 totalPaymentAmount() {
                     return this.payments.filter(p => p.status === 'Completed').reduce((total, payment) => total + payment.amount3, 0);
@@ -2632,6 +2791,44 @@
                     } catch (error) {
                         console.error('Error updating broker order status:', error);
                         alert('Failed to update broker order status.');
+                    }
+                },
+                async createBrokerOrder() {
+                    const payload = {
+                        userEmail: this.newBrokerOrder.userEmail.trim(),
+                        merchantName: this.newBrokerOrder.merchantName.trim(),
+                        productDescription: this.newBrokerOrder.productDescription.trim(),
+                        recipientName: this.newBrokerOrder.recipientName.trim(),
+                        recipientPhone: this.newBrokerOrder.recipientPhone.trim(),
+                        recipientAddress: this.newBrokerOrder.recipientAddress.trim(),
+                        agentName: this.newBrokerOrder.agentName
+                    };
+
+                    if (!payload.merchantName || !payload.recipientName || !payload.recipientPhone || !payload.recipientAddress) {
+                        alert('Please complete merchant name, recipient name, phone, and address before creating the order.');
+                        return;
+                    }
+
+                    try {
+                        const response = await axios.post(`${API_BASE}/admin/broker-orders`, payload);
+                        if (response.data.success) {
+                            this.brokerOrders.unshift(response.data.order);
+                            this.newBrokerOrder = {
+                                userEmail: '',
+                                merchantName: '',
+                                productDescription: '',
+                                recipientName: '',
+                                recipientPhone: '',
+                                recipientAddress: '',
+                                agentName: ''
+                            };
+                            alert('Broker order created successfully.');
+                        } else {
+                            alert(response.data.message || 'Failed to create broker order.');
+                        }
+                    } catch (error) {
+                        console.error('Error creating broker order:', error);
+                        alert((error.response && error.response.data && error.response.data.message) || 'Failed to create broker order.');
                     }
                 },
                 async grantBrokerCredits() {
