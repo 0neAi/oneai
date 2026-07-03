@@ -205,6 +205,7 @@
             overflow: hidden;
             box-shadow: 0 22px 55px rgba(0,0,0,0.24);
             margin-bottom: 28px;
+            -webkit-overflow-scrolling: touch;
         }
         .broker-table-heading {
             padding: 18px 22px 14px;
@@ -221,7 +222,6 @@
             width: 100%;
             border-collapse: collapse;
             font-size: 0.95rem;
-            min-width: 920px;
         }
         .broker-table-wrapper th,
         .broker-table-wrapper td {
@@ -296,37 +296,100 @@
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
             gap: 14px;
         }
-        .broker-modal {
+        /* Side Panel for Order Details */
+        .broker-detail-panel {
+            position: fixed;
+            top: 0;
+            right: -100%;
+            width: 100%;
+            max-width: 480px;
+            height: 100%;
+            background: linear-gradient(135deg, #081029 0%, #0a0e1e 100%);
+            border-left: 1px solid rgba(255,255,255,0.1);
+            box-shadow: -10px 0 40px rgba(0,0,0,0.4);
+            z-index: 998;
+            overflow-y: auto;
+            transition: right 0.3s ease-out;
+            padding-top: 70px;
+        }
+        .broker-detail-panel.active {
+            right: 0;
+        }
+        .broker-detail-panel-header {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 100%;
+            max-width: 480px;
+            height: 70px;
+            background: rgba(8, 16, 41, 0.95);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 999;
+        }
+        .broker-detail-panel-header h3 {
+            margin: 0;
+            color: #f8fafc;
+            font-size: 1.1rem;
+        }
+        .broker-detail-panel-close {
+            background: none;
+            border: none;
+            color: #b8bff2;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 4px 8px;
+            transition: color 0.2s ease;
+        }
+        .broker-detail-panel-close:hover {
+            color: #f8fafc;
+        }
+        .broker-detail-panel-content {
+            padding: 20px;
+        }
+        .broker-detail-item {
+            margin-bottom: 18px;
+            padding: 14px;
+            background: rgba(255,255,255,0.04);
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .broker-detail-item strong {
+            display: block;
+            color: #d8dcff;
+            font-size: 0.9rem;
+            margin-bottom: 6px;
+        }
+        .broker-detail-item span {
+            color: #e1e8ff;
+            font-size: 0.95rem;
+            word-break: break-word;
+            display: block;
+        }
+        .broker-detail-item a {
+            color: #60a5fa;
+            text-decoration: none;
+            word-break: break-word;
+            display: block;
+        }
+        .broker-detail-item a:hover {
+            text-decoration: underline;
+        }
+        .broker-modal-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.72);
+            background: rgba(0,0,0,0.4);
             display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 24px;
-            z-index: 999;
+            z-index: 997;
         }
-        .broker-modal-content {
-            width: 100%;
-            max-width: 1040px;
-            background: #081029;
-            border-radius: 24px;
-            padding: 28px;
-            border: 1px solid rgba(255,255,255,0.08);
-            box-shadow: 0 40px 90px rgba(0,0,0,0.45);
-        }
-        .broker-modal-content h3 {
-            margin-top: 0;
-            color: #f8fafc;
-            font-size: 1.3rem;
-        }
-        .broker-modal-content button.close-btn {
-            margin-top: 20px;
-            width: 100%;
-            justify-content: center;
+        .broker-modal-overlay.active {
+            display: block;
         }
         #confirmation-message {
             margin-bottom: 18px;
@@ -373,6 +436,198 @@
             border-color: #60a5fa;
             box-shadow: 0 10px 30px rgba(96,165,250,0.18);
             background: rgba(96,165,250,0.12);
+        }
+
+        /* Mobile Responsive Styles */
+        @media (max-width: 768px) {
+            body {
+                overflow-x: hidden;
+            }
+            .container {
+                padding: 16px 12px 120px;
+            }
+            .broker-hero {
+                gap: 12px;
+            }
+            .broker-hero h1 {
+                font-size: 1.8rem;
+            }
+            .broker-hero p {
+                font-size: 0.95rem;
+                line-height: 1.6;
+            }
+            .broker-summary-grid {
+                grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+                gap: 12px;
+                margin-bottom: 16px;
+            }
+            .broker-summary-card {
+                padding: 16px;
+                min-height: 110px;
+            }
+            .broker-summary-card h3 {
+                font-size: 0.9rem;
+                margin-bottom: 10px;
+            }
+            .broker-summary-card .value {
+                font-size: 1.8rem;
+            }
+            .broker-control-panel {
+                padding: 12px;
+                gap: 12px;
+            }
+            .broker-action-group {
+                gap: 8px;
+                flex-direction: column;
+            }
+            .broker-action-group button {
+                width: 100%;
+                padding: 0.85rem;
+                font-size: 0.9rem;
+            }
+            .broker-filters {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+            .broker-filters input,
+            .broker-filters select {
+                padding: 0.8rem 0.85rem;
+                font-size: 0.9rem;
+            }
+            .broker-form {
+                padding: 16px;
+                margin-bottom: 16px;
+                border-radius: 16px;
+            }
+            .broker-form h3 {
+                font-size: 1.1rem;
+                margin-bottom: 12px;
+            }
+            .broker-form .form-group {
+                margin-bottom: 12px;
+            }
+            .broker-form label {
+                font-size: 0.9rem;
+                margin-bottom: 6px;
+            }
+            .broker-form input,
+            .broker-form select {
+                padding: 0.8rem;
+                font-size: 0.9rem;
+            }
+            .broker-table-wrapper {
+                margin-bottom: 16px;
+                border-radius: 16px;
+                overflow-x: auto;
+            }
+            .broker-table-heading {
+                padding: 14px 12px;
+            }
+            .broker-table-heading h2 {
+                font-size: 1rem;
+            }
+            .broker-table-wrapper table {
+                font-size: 0.85rem;
+                min-width: auto;
+            }
+            .broker-table-wrapper th,
+            .broker-table-wrapper td {
+                padding: 12px 10px;
+            }
+            .broker-table-wrapper th {
+                font-size: 0.8rem;
+            }
+            .broker-order-summary {
+                gap: 2px;
+            }
+            .broker-order-summary strong {
+                font-size: 0.9rem;
+            }
+            .broker-order-summary small {
+                font-size: 0.75rem;
+            }
+            .broker-action-group button.action-btn.small {
+                padding: 0.6rem 0.8rem;
+                font-size: 0.8rem;
+                margin: 4px 2px;
+            }
+            .status {
+                padding: 4px 8px;
+                font-size: 0.75rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 12px 8px 100px;
+            }
+            .broker-hero {
+                flex-direction: column;
+                gap: 8px;
+                margin-bottom: 16px;
+            }
+            .broker-hero h1 {
+                font-size: 1.5rem;
+            }
+            .broker-hero-actions {
+                width: 100%;
+            }
+            .broker-hero-actions a {
+                width: 100%;
+                justify-content: center;
+            }
+            .broker-summary-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+                margin-bottom: 12px;
+            }
+            .broker-summary-card {
+                padding: 12px;
+                min-height: 100px;
+                border-radius: 12px;
+            }
+            .broker-summary-card h3 {
+                font-size: 0.8rem;
+            }
+            .broker-summary-card .value {
+                font-size: 1.4rem;
+            }
+            .broker-table-wrapper table {
+                font-size: 0.8rem;
+            }
+            .broker-table-wrapper th,
+            .broker-table-wrapper td {
+                padding: 10px 6px;
+            }
+            .broker-detail-panel {
+                max-width: 100%;
+            }
+            .broker-detail-panel-header {
+                max-width: 100%;
+            }
+        }
+
+        /* Optimize table row hover for touch devices */
+        @media (hover: none) and (pointer: coarse) {
+            .broker-table-wrapper tbody tr:hover {
+                background: none;
+            }
+            .broker-table-wrapper tbody tr:active {
+                background: rgba(255,255,255,0.06);
+            }
+        }
+        
+        /* Ensure proper stacking on very small screens */
+        @media (max-width: 360px) {
+            .container {
+                padding: 8px 4px 80px;
+            }
+            .broker-summary-grid {
+                grid-template-columns: 1fr;
+            }
+            .broker-summary-card .value {
+                font-size: 1.3rem;
+            }
         }
     </style>
 </head>
@@ -421,7 +676,7 @@
 
         <section class="broker-control-panel">
             <div class="broker-action-group">
-                <button class="action-btn refresh-btn" onclick="loadBrokerData()"><i class="fas fa-sync-alt"></i> Refresh</button>
+                <button class="action-btn refresh-btn" onclick="loadBrokerData({}, true)"><i class="fas fa-sync-alt"></i> Refresh</button>
                 <button class="action-btn help-btn" onclick="toggleOrderForm()"><i class="fas fa-plus-circle"></i> New Order</button>
                 <button class="action-btn trx-recharge-btn" onclick="toggleCreditForm()"><i class="fas fa-wallet"></i> Purchase Credits</button>
             </div>
@@ -570,12 +825,14 @@
             </table>
         </section>
 
-        <div id="broker-order-details-modal" class="broker-modal">
-            <div class="broker-modal-content">
+        <!-- Side Panel for Order Details -->
+        <div id="broker-modal-overlay" class="broker-modal-overlay"></div>
+        <div id="broker-detail-panel" class="broker-detail-panel">
+            <div class="broker-detail-panel-header">
                 <h3>Order Details</h3>
-                <div id="broker-order-details-content"></div>
-                <button class="action-btn close-btn" onclick="closeBrokerOrderDetailsModal()">Close</button>
+                <button class="broker-detail-panel-close" onclick="closeBrokerDetailPanel()">&times;</button>
             </div>
+            <div class="broker-detail-panel-content" id="broker-order-details-content"></div>
         </div>
     </main>
 

@@ -25,8 +25,40 @@ const brokerState = {
     currentFilter: {},
     search: '',
     statusFilter: '',
-    sortBy: 'recent'
+    sortBy: 'recent',
+    // Caching properties
+    lastFetchTime: null,
+    cacheExpiry: 5 * 60 * 1000, // 5 minutes cache
+    isInitialLoad: true
 };
+
+// ============================================
+// SIDE PANEL CONTROL FUNCTIONS
+// ============================================
+
+function openBrokerDetailPanel() {
+    const panel = document.getElementById('broker-detail-panel');
+    const overlay = document.getElementById('broker-modal-overlay');
+    panel.classList.add('active');
+    overlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeBrokerDetailPanel() {
+    const panel = document.getElementById('broker-detail-panel');
+    const overlay = document.getElementById('broker-modal-overlay');
+    panel.classList.remove('active');
+    overlay.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+// Close panel when overlay is clicked
+document.addEventListener('DOMContentLoaded', function() {
+    const overlay = document.getElementById('broker-modal-overlay');
+    if (overlay) {
+        overlay.addEventListener('click', closeBrokerDetailPanel);
+    }
+});
 
 function toggleOrderForm() {
     const orderForm = document.getElementById('broker-order-form');
@@ -136,22 +168,21 @@ function showBrokerOrderDetails(orderId) {
     const content = document.getElementById('broker-order-details-content');
     const items = buildBrokerOrderDetailItems(order);
     content.innerHTML = `
-        <div class="broker-order-details-grid">
-            ${items.map(item => `
-                <div class="broker-detail-card">
-                    <strong>${item.label}</strong>
-                    ${item.isLink && item.value !== '—'
-                        ? `<a href="${item.value}" target="_blank" rel="noopener noreferrer">Open payment link</a>`
-                        : `<span>${item.value}</span>`}
-                </div>
-            `).join('')}
-        </div>
+        ${items.map(item => `
+            <div class="broker-detail-item">
+                <strong>${item.label}</strong>
+                ${item.isLink && item.value !== '—'
+                    ? `<a href="${item.value}" target="_blank" rel="noopener noreferrer" title="Click to open in new tab">📎 ${item.value}</a>`
+                    : `<span>${item.value}</span>`}
+            </div>
+        `).join('')}
     `;
-    document.getElementById('broker-order-details-modal').style.display = 'flex';
+    openBrokerDetailPanel();
 }
 
+// Alias for backward compatibility
 function closeBrokerOrderDetailsModal() {
-    document.getElementById('broker-order-details-modal').style.display = 'none';
+    closeBrokerDetailPanel();
 }
 
 function applyBrokerStatusFilter(value) {
@@ -185,13 +216,26 @@ function setBrokerFilter(mode) {
     }
 }
 
-async function loadBrokerData(filter = {}) {
+async function loadBrokerData(filter = {}, forceRefresh = false) {
     const authToken = localStorage.getItem('authToken');
     const userID = localStorage.getItem('userID');
     const headers = {
         'Authorization': `Bearer ${authToken}`,
         'X-User-ID': userID
     };
+
+    // Check cache validity
+    const now = Date.now();
+    const isCacheValid = !forceRefresh && 
+                       brokerState.lastFetchTime && 
+                       (now - brokerState.lastFetchTime) < brokerState.cacheExpiry &&
+                       JSON.stringify(brokerState.currentFilter) === JSON.stringify(filter);
+
+    if (isCacheValid && brokerState.orders.length > 0 && !brokerState.isInitialLoad) {
+        console.log('✓ Using cached broker data (5 min cache)');
+        renderBrokerOrders();
+        return;
+    }
 
     const query = new URLSearchParams({ mine: 'false' });
     if (filter.status) query.set('status', filter.status);
@@ -207,6 +251,8 @@ async function loadBrokerData(filter = {}) {
         brokerState.subscriptionTier = creditsData.subscriptionTier || 'free';
         brokerState.subscriptionExpiresAt = creditsData.subscriptionExpiresAt ? new Date(creditsData.subscriptionExpiresAt) : null;
         brokerState.currentFilter = filter;
+        brokerState.lastFetchTime = now;
+        brokerState.isInitialLoad = false;
 
         document.getElementById('broker-credits').textContent = brokerState.credits;
         document.getElementById('broker-subscription-tier').textContent = brokerState.subscriptionTier || 'Free';
@@ -698,23 +744,41 @@ function copyBrokerPaymentAddress() {
 async function trackBrokerOrder(orderId) {
     const authToken = localStorage.getItem('authToken');
     const userID = localStorage.getItem('userID');
+    const order = brokerState.orders.find(o => o._id === orderId);
+    const paymentLink = order?.paymentLink || order?.paymentUrl || order?.payment_link || order?.link;
+
+    if (paymentLink) {
+        window.open(paymentLink, '_blank');
+    }
 
     try {
+        const payload = { paymentLink };
+        if (order?.recipientPhone) payload.phone = order.recipientPhone;
+        if (order?.consignmentId) payload.consignmentId = order.consignmentId;
+
         const response = await fetch(`${API_BASE_URL}/broker/orders/${orderId}/track`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${authToken}`,
                 'X-User-ID': userID
-            }
+            },
+            body: JSON.stringify(payload)
         });
         const data = await response.json();
-        if (!response.ok) throw new Error(data.message || 'Failed to track order');
+
+        if (!response.ok) {
+            if (response.status === 404 && paymentLink) {
+                showSuccess('Opened payment link and tracking will continue from that page.');
+                return;
+            }
+            throw new Error(data.message || 'Failed to track order');
+        }
 
         const index = brokerState.orders.findIndex(o => o._id === orderId);
         if (index !== -1) {
             brokerState.orders[index] = data.order;
-            brokerState.active = brokerState.orders.filter(o => o.status === 'PENDING' || o.status === 'PICKUP').length;
+            brokerState.active = brokerState.orders.filter(o => ['PENDING', 'PICKUP', 'HOLD'].includes(o.status)).length;
             brokerState.completed = brokerState.orders.filter(o => o.status === 'DELIVERED').length;
             document.getElementById('broker-active-orders').textContent = brokerState.active;
             document.getElementById('broker-completed-orders').textContent = brokerState.completed;
@@ -724,6 +788,10 @@ async function trackBrokerOrder(orderId) {
         showSuccess('Order tracking refreshed successfully.');
     } catch (error) {
         console.error('Track broker order error:', error);
+        if (paymentLink && error.message?.toLowerCase().includes('broker order not found')) {
+            showSuccess('Opened payment link and could not refresh tracking due to backend order lookup.');
+            return;
+        }
         showError(error.message || 'Unable to track broker order.');
     }
 }
@@ -777,8 +845,23 @@ window.trackBrokerOrder = trackBrokerOrder;
 window.updateBrokerOrderStatus = updateBrokerOrderStatus;
 window.showBrokerOrderDetails = showBrokerOrderDetails;
 window.closeBrokerOrderDetailsModal = closeBrokerOrderDetailsModal;
+window.openBrokerDetailPanel = openBrokerDetailPanel;
+window.closeBrokerDetailPanel = closeBrokerDetailPanel;
+window.setBrokerFilter = setBrokerFilter;
+window.copyBrokerPaymentAddress = copyBrokerPaymentAddress;
+window.loadBrokerCreditPackages = loadBrokerCreditPackages;
+window.selectBrokerPackage = selectBrokerPackage;
 
 window.addEventListener('DOMContentLoaded', () => {
     loadBrokerAgents();
     loadBrokerData();
+    
+    // Add event listener to refresh button for force refresh
+    const refreshBtn = document.querySelector('.refresh-btn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            loadBrokerData({}, true); // Force refresh by bypassing cache
+        });
+    }
 });

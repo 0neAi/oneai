@@ -411,8 +411,6 @@ class OrderFetcher {
     this.isFetching = true;
     try {
       console.log('☀️  Starting morning broker workflow');
-      await this.deductDailyBrokerOrderCredits();
-      await this.deductHoldCarryOverCredits();
       const fetchedOrders = await this.fetchFromAgents();
       const result = await this.upsertAgentOrders(fetchedOrders);
       await this.reconcileHoldOrders(fetchedOrders);

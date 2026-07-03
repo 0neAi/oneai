@@ -6,168 +6,275 @@
     <title>1AI - Secure Login</title>
     <link rel="icon" href="./images/logo.png" type="image/png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="./assets/js/hackeranimation.js"></script>
     <style>
+        :root {
+            --bg: #07111f;
+            --surface: rgba(18, 35, 68, 0.94);
+            --surface-light: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.10);
+            --text: #eef3ff;
+            --muted: #9dacd4;
+            --accent: #58bbff;
+            --accent-strong: #1e75d9;
+            --shadow: 0 30px 85px rgba(0, 0, 0, 0.22);
+        }
+
         * {
-            margin: 0;
-            padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        
+
         body {
-            background: #000;
-            color: #00FF41;
+            margin: 0;
             min-height: 100vh;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            color: var(--text);
+            background: radial-gradient(circle at top left, #0b1a38 0%, #040714 60%, #01040c 100%);
             overflow-x: hidden;
-            position: relative;
-            animation: color-cycle 20s infinite;
         }
 
-        @keyframes color-cycle {
-            0% { --main-color: #00FF41; --accent-color: #aaffaa; }
-            20% { --main-color: #FF69B4; --accent-color: #ffc0cb; }
-            40% { --main-color: #00FFFF; --accent-color: #e0ffff; }
-            60% { --main-color: #FFA500; --accent-color: #ffe4b5; }
-            80% { --main-color: #FFD700; --accent-color: #fffacd; }
-            100% { --main-color: #00FF41; --accent-color: #aaffaa; }
+        header {
+            text-align: center;
+            padding: 48px 24px 14px;
+            max-width: 780px;
+            margin: 0 auto;
         }
 
-        header h1,
-        header a,
-        .form-container h2,
-        .form-group input,
-        .register-btn,
-        .feature-icon {
-            color: var(--main-color);
-            transition: color 0.5s ease;
+        header h1 {
+            font-size: clamp(2.7rem, 4vw, 3.8rem);
+            margin: 0 0 14px;
+            line-height: 1.03;
+            letter-spacing: -0.04em;
+            color: #fff;
         }
 
-        header p,
-        .form-container p,
-        .form-group label,
-        .feature-content h4,
-        .feature-content p {
-            color: var(--accent-color);
-            transition: color 0.5s ease;
+        header h1 span {
+            color: var(--accent);
+        }
+
+        header p {
+            margin: 0 auto;
+            max-width: 700px;
+            font-size: 1rem;
+            line-height: 1.75;
+            color: var(--muted);
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1.2fr 0.9fr;
+            gap: 32px;
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 0 20px 40px;
         }
 
         .form-container,
         .features {
-            border-color: var(--main-color);
-            transition: border-color 0.5s ease;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 28px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(16px);
+        }
+
+        .form-container {
+            padding: 34px;
+        }
+
+        .form-container h2 {
+            font-size: 2rem;
+            margin: 0 0 10px;
+            color: #fff;
+        }
+
+        .form-container p {
+            margin: 0 0 28px;
+            color: var(--muted);
+            line-height: 1.7;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 10px;
+            color: #c8d5f1;
+            font-size: 0.95rem;
+            font-weight: 600;
         }
 
         .form-group input {
-            border-color: var(--main-color);
+            width: 100%;
+            padding: 14px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.04);
+            color: #f4f8ff;
+            font-size: 1rem;
+            transition: border-color 0.25s ease, box-shadow 0.25s ease;
         }
 
-        .register-btn {
-            border-color: var(--main-color);
+        .form-group input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 5px rgba(88, 187, 255, 0.14);
+            outline: none;
         }
 
         button[type="submit"] {
-            background: linear-gradient(to right, var(--main-color), var(--accent-color));
-            transition: background 0.5s ease;
+            width: 100%;
+            padding: 15px 18px;
+            border: none;
+            border-radius: 16px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            cursor: pointer;
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
         }
-        
-        /* Header styling */
-        header {
-            text-align: center;
-            padding: 30px 20px;
-            position: relative;
-            z-index: 10;
+
+        button[type="submit"]:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 18px 36px rgba(33, 117, 217, 0.28);
         }
-        
-        header h1 {
-            font-size: 3.2rem;
-            margin-bottom: 15px;
-            text-shadow: 0 0 10px rgba(0, 255, 65, 0.7);
-            letter-spacing: 2px;
-        }
-        
-        header p {
-            font-size: 1.4rem;
-            max-width: 700px;
-            margin: 0 auto;
-            line-height: 1.6;
-        }
-        
-        header a {
-            color: #00FF41;
-            text-decoration: none;
-            border-bottom: 1px solid #00FF41;
-            transition: all 0.3s;
-        }
-        
-        header a:hover {
-            text-shadow: 0 0 10px rgba(0, 255, 65, 0.9);
-            border-bottom-color: transparent;
-        }
-        
-        /* Main content container */
-        .container {
-            display: flex;
-            flex-wrap: wrap;
+
+        .register-btn {
+            display: inline-flex;
+            align-items: center;
             justify-content: center;
-            gap: 40px;
-            padding: 20px;
-            max-width: 1300px;
-            margin: 0 auto;
-        }
-        
-        /* Form styling */
-        .form-container {
-            background: rgba(5, 15, 5, 0.85);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(0, 255, 65, 0.3);
-            border-radius: 12px;
-            padding: 30px;
+            gap: 10px;
             width: 100%;
-            max-width: 500px;
-            box-shadow: 0 0 30px rgba(0, 255, 65, 0.1);
-            position: relative;
-            z-index: 10;
+            margin-top: 18px;
+            padding: 14px 18px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #d7e5ff;
+            border-radius: 16px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: background 0.25s ease, border-color 0.25s ease;
         }
-        
-        .form-container h2 {
-            font-size: 2.2rem;
-            margin-bottom: 15px;
-            text-align: center;
-            color: #00FF41;
-            text-shadow: 0 0 5px rgba(0, 255, 65, 0.5);
+
+        .register-btn:hover {
+            background: rgba(88, 187, 255, 0.12);
+            border-color: rgba(88, 187, 255, 0.3);
         }
-        
-        .form-container p {
-            font-size: 1.1rem;
-            margin-bottom: 25px;
-            text-align: center;
-            line-height: 1.5;
-            color: #aaffaa;
+
+        .features {
+            padding: 32px;
+            display: grid;
+            gap: 18px;
         }
-        
-        .form-group {
-            margin-bottom: 20px;
+
+        .features h3 {
+            margin: 0 0 20px;
+            font-size: 1.8rem;
+            color: #fff;
         }
-        
-        .form-group label {
+
+        .feature {
+            display: grid;
+            grid-template-columns: 52px 1fr;
+            gap: 16px;
+            align-items: flex-start;
+            padding: 22px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .feature-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 16px;
+            background: rgba(88, 187, 255, 0.14);
+            color: var(--accent);
+            display: grid;
+            place-items: center;
+            font-size: 1.3rem;
+        }
+
+        .feature-content h4 {
+            margin: 0 0 8px;
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .feature-content p {
+            margin: 0;
+            color: #bdd1f2;
+            line-height: 1.75;
+            font-size: 0.95rem;
+        }
+
+        .auth-message {
+            margin-top: 20px;
+            padding: 14px 16px;
+            border-radius: 14px;
+            font-weight: 600;
+            display: none;
+        }
+
+        .auth-message.success {
             display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            color: #aaffaa;
+            background: rgba(46, 182, 119, 0.14);
+            color: #d9f4df;
+            border: 1px solid rgba(46, 182, 119, 0.24);
         }
-        
-        .form-group input {
-            width: 100%;
-            padding: 14px;
-            border: 1px solid rgba(0, 255, 65, 0.3);
-            background: rgba(0, 10, 0, 0.5);
-            border-radius: 6px;
-            color: #00FF41;
-            font-size: 16px;
-            transition: all 0.3s;
+
+        .auth-message.error {
+            display: block;
+            background: rgba(220, 88, 88, 0.14);
+            color: #ffdede;
+            border: 1px solid rgba(220, 88, 88, 0.24);
         }
-        
+
+        footer {
+            text-align: center;
+            padding: 28px 20px 32px;
+            color: #8ea0bf;
+            font-size: 0.92rem;
+        }
+
+        @media (max-width: 980px) {
+            .container {
+                grid-template-columns: 1fr;
+                gap: 24px;
+            }
+        }
+
+        @media (max-width: 680px) {
+            header {
+                padding-top: 32px;
+            }
+            .form-container,
+            .features {
+                border-radius: 22px;
+                padding: 24px;
+            }
+            .feature {
+                grid-template-columns: 44px 1fr;
+            }
+        }
+
+        @media (max-width: 520px) {
+            header h1 {
+                font-size: 2.3rem;
+            }
+            .feature {
+                gap: 12px;
+            }
+            .feature-icon {
+                width: 46px;
+                height: 46px;
+                font-size: 1.15rem;
+            }
+        }
+    </style>        
         .form-group input:focus {
             outline: none;
             border-color: #00FF41;

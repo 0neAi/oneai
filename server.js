@@ -703,6 +703,52 @@ app.get('/admin/broker-agent-records', adminAuth, async (req, res) => {
   }
 });
 
+app.put('/admin/broker-agent-records/:id', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, phone } = req.body;
+
+    if (!name || !phone) {
+      return res.status(400).json({ success: false, message: 'Name and phone are required.' });
+    }
+
+    const record = await AgentRecord.findById(id);
+    if (!record) {
+      return res.status(404).json({ success: false, message: 'Agent record not found.' });
+    }
+
+    record.name = String(name).trim();
+    record.phone = String(phone).trim();
+    await record.save();
+
+    console.log(`✏️ Admin updated agent record ${id}: name="${record.name}", phone="${record.phone}"`);
+    res.json({ success: true, record });
+  } catch (error) {
+    console.error('Error updating broker agent record:', error);
+    res.status(500).json({ success: false, message: 'Failed to update agent record.' });
+  }
+});
+
+app.delete('/admin/broker-agent-records/:id', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const record = await AgentRecord.findById(id);
+    if (!record) {
+      return res.status(404).json({ success: false, message: 'Agent record not found.' });
+    }
+
+    const deletedData = { name: record.name, phone: record.phone };
+    await AgentRecord.findByIdAndDelete(id);
+
+    console.log(`🗑️ Admin deleted agent record ${id}: ${deletedData.name} (${deletedData.phone})`);
+    res.json({ success: true, message: 'Agent record deleted successfully.', deleted: deletedData });
+  } catch (error) {
+    console.error('Error deleting broker agent record:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete agent record.' });
+  }
+});
+
 // Admin User Management Endpoints
 app.get('/admin/users', adminAuth, async (req, res) => {
   try {
@@ -2365,9 +2411,19 @@ app.post('/broker/orders/:id/track', validateUser, async (req, res) => {
     const { id } = req.params;
     const { paymentLink, phone, consignmentId } = req.body;
 
-    const order = await BrokerOrder.findOne({ _id: id, user: req.user._id });
+    // First try to find order where user is owner
+    let order = await BrokerOrder.findOne({ _id: id, user: req.user._id });
+    let isOwner = !!order;
+    let chargeCredit = false;
+
+    // If not owner, allow tracking with credit deduction
     if (!order) {
-      return res.status(404).json({ success: false, message: 'Broker order not found.' });
+      order = await BrokerOrder.findById(id);
+      if (!order) {
+        return res.status(404).json({ success: false, message: 'Broker order not found.' });
+      }
+      // Non-owner access requires 1 credit
+      chargeCredit = true;
     }
 
     const trackingPhone = phone || order.recipientPhone;
@@ -2377,12 +2433,45 @@ app.post('/broker/orders/:id/track', validateUser, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Recipient phone and consignment ID are required for tracking.' });
     }
 
+    // Check credits if non-owner or allow-tracking-charge flag
+    if (chargeCredit) {
+      const user = await User.findById(req.user._id).select('brokerCredits');
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found.' });
+      }
+      if (user.brokerCredits < 1) {
+        return res.status(403).json({
+          success: false,
+          message: 'You need 1 broker credit to trigger tracking for this order.'
+        });
+      }
+    }
+
     const trackingResult = paymentLink || order.paymentLink
       ? await trackOrderByLink(paymentLink || order.paymentLink, trackingPhone, trackingConsignmentId)
       : await trackOrder(trackingConsignmentId, trackingPhone);
 
     if (!trackingResult.success) {
       return res.status(502).json({ success: false, message: trackingResult.error || 'Failed to track shipment status.' });
+    }
+
+    // Deduct credit if non-owner
+    if (chargeCredit) {
+      const user = await User.findById(req.user._id);
+      user.brokerCredits = Math.max(0, user.brokerCredits - 1);
+      user.brokerUsageCount = (user.brokerUsageCount || 0) + 1;
+      await user.save();
+
+      const transaction = new BrokerCreditTransaction({
+        userId: user._id,
+        type: 'usage',
+        amount: 1,
+        balance: user.brokerCredits,
+        description: `Broker order tracking trigger for order ${order.orderId}`,
+        orderId: order._id
+      });
+      await transaction.save();
+      console.log(`💰 Deducted 1 credit from user ${req.user._id} for tracking order ${order.orderId}`);
     }
 
     order.status = trackingResult.status || order.status;
@@ -2432,12 +2521,14 @@ app.post('/broker/orders/:id/track', validateUser, async (req, res) => {
     }
     order.statusHistory.push({
       status: order.status,
-      note: `Public tracking refreshed${paymentLink || order.paymentLink ? ' from payment link' : ''}`
+      note: `Public tracking refreshed${paymentLink || order.paymentLink ? ' from payment link' : ''}${chargeCredit ? ' (triggered by non-owner)' : ''}`
     });
     await order.save();
 
+    // Notify order owner if available
+    const notifyUserId = order.user ? order.user.toString() : req.user._id.toString();
     wss.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN && client.userID === req.user._id.toString()) {
+      if (client.readyState === WebSocket.OPEN && client.userID === notifyUserId) {
         client.send(JSON.stringify({
           type: 'broker-order-updated',
           order
@@ -2445,7 +2536,7 @@ app.post('/broker/orders/:id/track', validateUser, async (req, res) => {
       }
     });
 
-    res.json({ success: true, order, tracking: trackingResult });
+    res.json({ success: true, order, tracking: trackingResult, creditDeducted: chargeCredit });
   } catch (error) {
     console.error('Error tracking broker order:', error);
     res.status(500).json({ success: false, message: 'Failed to track broker order.' });
