@@ -3,7 +3,7 @@ const BrokerOrder = require('../models/BrokerOrder');
 const User = require('../models/User');
 const BrokerCreditTransaction = require('../models/BrokerCreditTransaction');
 const { getWebSocketServer } = require('../websocket');
-const { trackOrder } = require('./trackingService');
+const { trackOrder, normalizePhoneForDB } = require('./trackingService');
 const PathaoApiClient = require('./pathaoClient');
 
 const DEFAULT_FETCH_INTERVAL_MINUTES = 15;
@@ -478,9 +478,17 @@ class OrderFetcher {
 
       let updatedCount = 0;
       for (const order of trackedOrders) {
-        const trackingResult = await trackOrder(order.consignmentId, order.recipientPhone);
+        // Normalize and validate phone before calling external tracking API
+        const normalizedPhone = normalizePhoneForDB(order.recipientPhone);
+        if (!normalizedPhone) {
+          console.warn(`⚠️ Tracking skip for ${order.orderId}: Invalid or missing recipient phone (${order.recipientPhone})`);
+          continue;
+        }
+
+        const trackingResult = await trackOrder(order.consignmentId, normalizedPhone);
         if (!trackingResult.success) {
-          console.warn(`⚠️ Tracking skip for ${order.orderId}: ${trackingResult.error}`);
+          // Include consignment and normalized phone in the log to help triage API errors such as "Invalid consignment"
+          console.warn(`⚠️ Tracking skip for ${order.orderId} (consignment: ${order.consignmentId}, phone: ${normalizedPhone}): ${trackingResult.error}`);
           continue;
         }
 

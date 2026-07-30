@@ -99,7 +99,6 @@ app.use(express.json({ limit: '10kb' }));
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
-  validate: { trustProxy: true },
   keyGenerator: (req) => req.ip || req.socket.remoteAddress
 });
 app.use(limiter);

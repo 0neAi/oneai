@@ -72,6 +72,18 @@ const userSchema = new mongoose.Schema({
   timestamps: true
 });
 
+// Virtual populate for vouchers (Voucher documents reference phone, not user _id)
+userSchema.virtual('vouchers', {
+  ref: 'Voucher',
+  localField: 'phone',
+  foreignField: 'phone',
+  justOne: false
+});
+
+// Include virtuals in toObject/toJSON outputs so populate('vouchers') works as expected
+userSchema.set('toObject', { virtuals: true });
+userSchema.set('toJSON', { virtuals: true });
+
 // Add password hashing middleware
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
