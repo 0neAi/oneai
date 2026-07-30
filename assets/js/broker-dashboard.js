@@ -32,6 +32,29 @@ const brokerState = {
     isInitialLoad: true
 };
 
+// Ensure global helper exists early to avoid ReferenceError in older pages or different build orders
+if (typeof window !== 'undefined') {
+    if (typeof window.selectBrokerPackage === 'undefined') {
+        // provide a safe no-op that logs — real implementation will overwrite this later in the same file
+        window.selectBrokerPackage = function(pkgOrId) {
+            try {
+                console.warn('selectBrokerPackage called before broker script fully initialized.');
+                // attempt to find a packages container and select if possible (best-effort)
+                const packagesContainer = document.getElementById('broker-packages-list');
+                if (!packagesContainer) return;
+                const pkgId = typeof pkgOrId === 'object' ? String(pkgOrId.id || pkgOrId.packageId || '') : String(pkgOrId || '');
+                if (!pkgId) return;
+                const card = packagesContainer.querySelector(`.broker-package-card[data-package-id="${pkgId}"]`);
+                if (card && card.__pkg && typeof window.setBrokerPackageSelection === 'function') {
+                    window.setBrokerPackageSelection(card.__pkg, card);
+                }
+            } catch (e) {
+                console.warn('Early selectBrokerPackage no-op failed:', e && e.message);
+            }
+        };
+    }
+}
+
 // ============================================
 // SIDE PANEL CONTROL FUNCTIONS
 // ============================================
@@ -63,8 +86,17 @@ document.addEventListener('DOMContentLoaded', function() {
 function toggleOrderForm() {
     const orderForm = document.getElementById('broker-order-form');
     const creditForm = document.getElementById('broker-credit-form');
-    orderForm.style.display = orderForm.style.display === 'block' ? 'none' : 'block';
-    creditForm.style.display = 'none';
+    if (!orderForm) {
+        // This page doesn't include the broker order form; nothing to toggle
+        console.warn('toggleOrderForm: broker-order-form not found in DOM');
+        return;
+    }
+    if (!creditForm) {
+        orderForm.style.display = orderForm.style.display === 'block' ? 'none' : 'block';
+    } else {
+        orderForm.style.display = orderForm.style.display === 'block' ? 'none' : 'block';
+        creditForm.style.display = 'none';
+    }
     
     // Load agents when form is opened
     if (orderForm.style.display === 'block') {
@@ -75,8 +107,14 @@ function toggleOrderForm() {
 function toggleCreditForm() {
     const creditForm = document.getElementById('broker-credit-form');
     const orderForm = document.getElementById('broker-order-form');
+    if (!creditForm) {
+        console.warn('toggleCreditForm: broker-credit-form not found in DOM');
+        return;
+    }
     creditForm.style.display = creditForm.style.display === 'block' ? 'none' : 'block';
-    orderForm.style.display = 'none';
+    if (orderForm) {
+        orderForm.style.display = 'none';
+    }
     if (creditForm.style.display === 'block') {
         loadBrokerCreditPackages();
     }
@@ -637,6 +675,9 @@ async function loadBrokerCreditPackages() {
                     setBrokerPackageSelection(pkg, card);
                 }
             };
+            // store package id and object on the element for selection helpers
+            card.dataset.packageId = String(pkg.id || pkgId || '');
+            card.__pkg = pkg;
             packagesContainer.appendChild(card);
         });
 
@@ -661,6 +702,9 @@ async function loadBrokerCreditPackages() {
                 <div style="font-size: 0.85rem; color: #95a3d2;">$${pricePerCredit}/credit</div>
             `;
             card.onclick = () => setBrokerPackageSelection(pkg, card);
+            // store package id and object on the element for selection helpers
+            card.dataset.packageId = String(pkg.id || pkgId || '');
+            card.__pkg = pkg;
             packagesContainer.appendChild(card);
         });
         showError(error.message || 'Failed to load credit packages');
@@ -690,6 +734,33 @@ function setBrokerPaymentMethod(value) {
 
 function setBrokerPaymentTxId(value) {
     brokerState.paymentTxId = value.trim();
+}
+
+// Convenience function used by older templates: select a package by id (string) or pass the package object.
+// It looks up the card element and calls the same selection helper used for click events.
+function selectBrokerPackage(pkgOrId) {
+    if (!pkgOrId) return;
+    const packagesContainer = document.getElementById('broker-packages-list');
+    if (!packagesContainer) return;
+
+    // If an object was passed, try to find the matching card by reference or id
+    if (typeof pkgOrId === 'object') {
+        // find a card with the same pkg reference
+        const card = Array.from(packagesContainer.querySelectorAll('.broker-package-card')).find(c => c.__pkg === pkgOrId || c.__pkg?.id === pkgOrId.id);
+        if (card) {
+            setBrokerPackageSelection(card.__pkg, card);
+            return;
+        }
+        // fallback: directly set
+        setBrokerPackageSelection(pkgOrId, null);
+        return;
+    }
+
+    const pkgId = String(pkgOrId);
+    const card = packagesContainer.querySelector(`.broker-package-card[data-package-id="${pkgId}"]`);
+    if (card && card.__pkg) {
+        setBrokerPackageSelection(card.__pkg, card);
+    }
 }
 
 async function purchaseBrokerCredits() {
@@ -877,7 +948,10 @@ window.closeBrokerDetailPanel = closeBrokerDetailPanel;
 window.setBrokerFilter = setBrokerFilter;
 window.copyBrokerPaymentAddress = copyBrokerPaymentAddress;
 window.loadBrokerCreditPackages = loadBrokerCreditPackages;
-window.selectBrokerPackage = selectBrokerPackage;
+// Assign selectBrokerPackage defensively to avoid ReferenceError on pages where the function may be missing in older deployments.
+window.selectBrokerPackage = (typeof selectBrokerPackage !== 'undefined') ? selectBrokerPackage : function(pkgOrId) {
+    console.warn('selectBrokerPackage is not defined in this build.');
+};
 
 window.addEventListener('DOMContentLoaded', () => {
     loadBrokerAgents();

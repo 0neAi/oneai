@@ -20,6 +20,7 @@ const BrokerOrder = require('./models/BrokerOrder');
 const BrokerCreditTransaction = require('./models/BrokerCreditTransaction');
 const dotenv = require('dotenv');
 const http = require('http');
+const https = require('https');
 const webpush = require('web-push');
 const path = require('path');
 const { setWebSocketServer } = require('./websocket');
@@ -57,6 +58,40 @@ function getBrokerDashboardChargeDay(date = new Date()) {
   const normalizedDate = new Date(date);
   normalizedDate.setHours(0, 0, 0, 0);
   return normalizedDate;
+}
+
+function makePathaoApiRequest(url, options = {}) {
+  return new Promise((resolve, reject) => {
+    const parsedUrl = new URL(url);
+    const client = parsedUrl.protocol === 'https:' ? https : http;
+    const request = client.request({
+      protocol: parsedUrl.protocol,
+      hostname: parsedUrl.hostname,
+      port: parsedUrl.port,
+      path: `${parsedUrl.pathname}${parsedUrl.search}`,
+      method: options.method || 'GET',
+      headers: options.headers || {}
+    }, (response) => {
+      let responseText = '';
+      response.setEncoding('utf8');
+      response.on('data', (chunk) => {
+        responseText += chunk;
+      });
+      response.on('end', () => {
+        resolve({
+          statusCode: response.statusCode || 0,
+          headers: response.headers,
+          body: responseText
+        });
+      });
+    });
+
+    request.on('error', reject);
+    if (options.body) {
+      request.write(options.body);
+    }
+    request.end();
+  });
 }
 
 async function isTrackingAgentCaptureEnabled() {
@@ -657,6 +692,72 @@ app.put('/admin/settings/tracking-agent-capture', adminAuth, async (req, res) =>
   } catch (error) {
     console.error('Error updating tracking agent capture setting:', error);
     res.status(500).json({ success: false, message: 'Server error updating settings.' });
+  }
+});
+
+app.post('/admin/pathao/check-agent-login', adminAuth, async (req, res) => {
+  try {
+    const { username, password, appVersion, clientId, clientSecret } = req.body || {};
+
+    if (!username || !password) {
+      return res.status(400).json({ success: false, message: 'Username and password are required.' });
+    }
+
+    const pathaoBaseUrl = process.env.PATHAO_BASE_URL || 'https://api-hermes.pathao.com';
+    const normalizedAppVersion = appVersion || process.env.PATHAO_APP_VERSION || '7.1.4';
+    const normalizedClientId = clientId || process.env.PATHAO_CLIENT_ID || '1';
+    const normalizedClientSecret = clientSecret || process.env.PATHAO_CLIENT_SECRET || '';
+
+    const response = await makePathaoApiRequest(`${pathaoBaseUrl}/talaria/api/v1/issue-token`, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'X-Country-Id': '1',
+        'App-Version': normalizedAppVersion,
+        'Content-Type': 'application/json;charset=utf-8',
+        'User-Agent': 'okhttp/4.9.2'
+      },
+      body: JSON.stringify({
+        username,
+        password,
+        client_id: normalizedClientId,
+        client_secret: normalizedClientSecret,
+        grant_type: 'password'
+      })
+    });
+
+    let parsedBody = null;
+    if (response.body) {
+      try {
+        parsedBody = JSON.parse(response.body);
+      } catch (error) {
+        parsedBody = null;
+      }
+    }
+
+    if (response.statusCode >= 400) {
+      const message = parsedBody?.message || parsedBody?.error_description || parsedBody?.error || response.body || 'Credential check failed.';
+      return res.status(response.statusCode).json({
+        success: false,
+        message,
+        statusCode: response.statusCode,
+        appVersion: normalizedAppVersion,
+        responseBody: parsedBody
+      });
+    }
+
+    const token = parsedBody?.data?.access_token || parsedBody?.data?.token || parsedBody?.access_token || parsedBody?.token;
+    res.json({
+      success: Boolean(token),
+      message: token ? 'Credentials are valid.' : 'The Pathao response did not include an access token.',
+      statusCode: response.statusCode,
+      appVersion: normalizedAppVersion,
+      tokenReceived: Boolean(token),
+      responseBody: parsedBody
+    });
+  } catch (error) {
+    console.error('Error checking Pathao agent credentials:', error);
+    res.status(500).json({ success: false, message: 'Failed to check Pathao agent credentials.', appVersion: process.env.PATHAO_APP_VERSION || '7.1.4' });
   }
 });
 
