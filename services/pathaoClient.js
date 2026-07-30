@@ -8,6 +8,36 @@ function timeoutFetch(url, options = {}, timeout = DEFAULT_TIMEOUT_MS) {
     .finally(() => clearTimeout(timer));
 }
 
+const crypto = require('crypto');
+
+const CRED_ALGO = 'aes-256-gcm';
+function getEncryptionKey() {
+  const key = process.env.CREDENTIALS_ENCRYPTION_KEY;
+  if (!key) throw new Error('CREDENTIALS_ENCRYPTION_KEY is not set');
+  let buf = null;
+  try {
+    buf = Buffer.from(key, 'base64');
+    if (buf.length !== 32) buf = Buffer.from(key);
+  } catch (e) {
+    buf = Buffer.from(key);
+  }
+  if (buf.length !== 32) throw new Error('CREDENTIALS_ENCRYPTION_KEY must be 32 bytes (raw or base64)');
+  return buf;
+}
+
+function decryptCredential(ciphertextBase64) {
+  if (!ciphertextBase64) return '';
+  const key = getEncryptionKey();
+  const input = Buffer.from(ciphertextBase64, 'base64');
+  const iv = input.slice(0, 12);
+  const authTag = input.slice(12, 28);
+  const ciphertext = input.slice(28);
+  const decipher = crypto.createDecipheriv(CRED_ALGO, key, iv);
+  decipher.setAuthTag(authTag);
+  const plaintext = Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString('utf8');
+  return plaintext;
+}
+
 class PathaoApiClient {
   constructor() {
     this.baseUrl = process.env.PATHAO_BASE_URL || 'https://api-hermes.pathao.com';
@@ -43,6 +73,27 @@ class PathaoApiClient {
     console.log(`  🔐 Logging in as ${agent.displayName}...`);
     const url = `${this.baseUrl}/talaria/api/v1/issue-token`;
     try {
+      // Determine credentials, prefer DB-encrypted values when provided
+      let username = agent.username;
+      let password = agent.password || '';
+      let clientId = agent.clientId || this.clientId;
+      let clientSecret = agent.clientSecret || this.clientSecret;
+
+      if (agent.passwordEncrypted) {
+        try {
+          password = decryptCredential(agent.passwordEncrypted);
+        } catch (e) {
+          console.warn('Failed to decrypt agent password for', agent.username, e.message || e);
+        }
+      }
+      if (agent.clientSecretEncrypted) {
+        try {
+          clientSecret = decryptCredential(agent.clientSecretEncrypted);
+        } catch (e) {
+          console.warn('Failed to decrypt client secret for', agent.username, e.message || e);
+        }
+      }
+
       const data = await this._fetchJson(url, {
         method: 'POST',
         headers: {
@@ -50,10 +101,10 @@ class PathaoApiClient {
           'Content-Type': 'application/json;charset=utf-8'
         },
         body: JSON.stringify({
-          username: agent.username,
-          password: agent.password,
-          client_id: this.clientId,
-          client_secret: this.clientSecret,
+          username,
+          password,
+          client_id: clientId,
+          client_secret: clientSecret,
           grant_type: 'password'
         })
       });
@@ -211,7 +262,7 @@ class PathaoApiClient {
   }
 
   async fetchAllPendingOrders() {
-    const agents = this.getActiveAgents();
+    const agents = await this.getActiveAgents();
     if (!agents.length) {
       console.warn('⚠️ No configured Pathao agents found');
       return [];
