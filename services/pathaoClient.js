@@ -153,33 +153,56 @@ class PathaoApiClient {
     }));
   }
 
-  getActiveAgents() {
+  async getActiveAgents() {
     const agents = [];
-    let index = 1;
 
-    while (true) {
-      const username = process.env[`AGENT${index}_USERNAME`];
-      const password = process.env[`AGENT${index}_PASSWORD`];
-      if (!username || !password) {
-        if (index === 1) {
-          console.warn('  ⚠️ No Pathao agent credentials found in environment. Set AGENT1_USERNAME and AGENT1_PASSWORD.');
-        } else {
-          console.warn(`  ⚠️ Stopped scanning Pathao agents after AGENT${index - 1} because AGENT${index}_USERNAME or AGENT${index}_PASSWORD is missing.`);
-        }
-        break;
+    // First, load credentials stored in DB (AgentCredential) if available
+    try {
+      const AgentCredential = require('../models/AgentCredential');
+      const creds = await AgentCredential.find({ active: true }).lean();
+      for (const [i, cred] of creds.entries()) {
+        agents.push({
+          id: `db_agent_${String(i + 1).padStart(3, '0')}`,
+          displayName: cred.username || cred.phone || `Agent ${i + 1}`,
+          username: cred.username || cred.phone,
+          passwordEncrypted: cred.encryptedPassword,
+          clientId: cred.clientId || this.clientId,
+          clientSecretEncrypted: cred.encryptedClientSecret || '',
+          source: 'db',
+          isActive: !!cred.active
+        });
       }
+    } catch (error) {
+      console.warn('  ⚠️ Could not load agent credentials from DB:', error.message || error);
+    }
 
-      const displayName = process.env[`AGENT${index}_DISPLAY`] || `Agent ${index}`;
-      const isActive = process.env[`AGENT${index}_ACTIVE`] !== 'false';
+    // Fallback to environment configured agents if none in DB
+    if (agents.length === 0) {
+      let index = 1;
+      while (true) {
+        const username = process.env[`AGENT${index}_USERNAME`];
+        const password = process.env[`AGENT${index}_PASSWORD`];
+        if (!username || !password) {
+          if (index === 1) {
+            console.warn('  ⚠️ No Pathao agent credentials found in environment. Set AGENT1_USERNAME and AGENT1_PASSWORD.');
+          } else {
+            console.warn(`  ⚠️ Stopped scanning Pathao agents after AGENT${index - 1} because AGENT${index}_USERNAME or AGENT${index}_PASSWORD is missing.`);
+          }
+          break;
+        }
 
-      agents.push({
-        id: `agent_${String(index).padStart(3, '0')}`,
-        displayName,
-        username,
-        password,
-        isActive
-      });
-      index += 1;
+        const displayName = process.env[`AGENT${index}_DISPLAY`] || `Agent ${index}`;
+        const isActive = process.env[`AGENT${index}_ACTIVE`] !== 'false';
+
+        agents.push({
+          id: `agent_${String(index).padStart(3, '0')}`,
+          displayName,
+          username,
+          password,
+          isActive
+        });
+        index += 1;
+      }
     }
 
     const activeAgents = agents.filter((agent) => agent.isActive);

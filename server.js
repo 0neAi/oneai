@@ -42,6 +42,46 @@ const PenaltyReport = require('./models/PenaltyReport'); // Added
 const Page = require('./models/Page'); // Added
 const TrxRechargeRequest = require('./models/TrxRechargeRequest'); // Added
 const MobileRechargeRequest = require('./models/MobileRechargeRequest'); // Added
+const AgentCredential = require('./models/AgentCredential');
+const crypto = require('crypto');
+
+// Encryption helpers for storing credentials securely in DB
+const CRED_ALGO = 'aes-256-gcm';
+function getEncryptionKey() {
+  const key = process.env.CREDENTIALS_ENCRYPTION_KEY;
+  if (!key) throw new Error('CREDENTIALS_ENCRYPTION_KEY is not set');
+  // allow user to provide either base64 or raw string; convert to Buffer of length 32
+  let buf = null;
+  try {
+    buf = Buffer.from(key, 'base64');
+    if (buf.length !== 32) buf = Buffer.from(key);
+  } catch (e) {
+    buf = Buffer.from(key);
+  }
+  if (buf.length !== 32) throw new Error('CREDENTIALS_ENCRYPTION_KEY must be 32 bytes (raw or base64)');
+  return buf;
+}
+
+function encryptCredential(plaintext) {
+  const key = getEncryptionKey();
+  const iv = crypto.randomBytes(12); // 96-bit iv for GCM
+  const cipher = crypto.createCipheriv(CRED_ALGO, key, iv);
+  const ciphertext = Buffer.concat([cipher.update(String(plaintext), 'utf8'), cipher.final()]);
+  const authTag = cipher.getAuthTag();
+  return Buffer.concat([iv, authTag, ciphertext]).toString('base64');
+}
+
+function decryptCredential(ciphertextBase64) {
+  const key = getEncryptionKey();
+  const input = Buffer.from(ciphertextBase64, 'base64');
+  const iv = input.slice(0, 12);
+  const authTag = input.slice(12, 28);
+  const ciphertext = input.slice(28);
+  const decipher = crypto.createDecipheriv(CRED_ALGO, key, iv);
+  decipher.setAuthTag(authTag);
+  const plaintext = Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString('utf8');
+  return plaintext;
+}
 
 function standardizePageName(name) {
   // Check if it's a domain name (contains a dot and no spaces)
@@ -758,6 +798,58 @@ app.post('/admin/pathao/check-agent-login', adminAuth, async (req, res) => {
   } catch (error) {
     console.error('Error checking Pathao agent credentials:', error);
     res.status(500).json({ success: false, message: 'Failed to check Pathao agent credentials.', appVersion: process.env.PATHAO_APP_VERSION || '7.1.4' });
+  }
+});
+
+// Save agent credential (encrypted) into DB
+app.post('/admin/agent-credentials', adminAuth, async (req, res) => {
+  try {
+    const { username, password, clientId, clientSecret, notes } = req.body || {};
+    if (!username || !password) return res.status(400).json({ success: false, message: 'username and password are required' });
+
+    const encryptedPassword = encryptCredential(password);
+    const encryptedClientSecret = clientSecret ? encryptCredential(clientSecret) : '';
+
+    const phone = String(username).trim();
+    const existing = await AgentCredential.findOne({ username: phone });
+    if (existing) {
+      existing.encryptedPassword = encryptedPassword;
+      existing.encryptedClientSecret = encryptedClientSecret;
+      existing.clientId = clientId || existing.clientId;
+      existing.lastValidAt = new Date();
+      existing.notes = notes || existing.notes;
+      existing.active = true;
+      await existing.save();
+      return res.json({ success: true, message: 'Credentials updated', credential: { username: existing.username, id: existing._id } });
+    }
+
+    const cred = new AgentCredential({
+      username: phone,
+      phone,
+      encryptedPassword,
+      encryptedClientSecret,
+      clientId: clientId || '1',
+      lastValidAt: new Date(),
+      notes: notes || ''
+    });
+    await cred.save();
+    res.json({ success: true, message: 'Credentials saved', credential: { username: cred.username, id: cred._id } });
+  } catch (error) {
+    console.error('Error saving agent credential:', error);
+    res.status(500).json({ success: false, message: 'Failed to save credentials' });
+  }
+});
+
+// Endpoint to list stored agent credentials (admin only)
+app.get('/admin/agent-credentials', adminAuth, async (req, res) => {
+  try {
+    const creds = await AgentCredential.find().lean();
+    // do not return decrypted secrets; only metadata
+    const sanitized = creds.map(c => ({ _id: c._id, username: c.username, phone: c.phone, clientId: c.clientId, lastValidAt: c.lastValidAt, active: c.active, notes: c.notes }));
+    res.json({ success: true, credentials: sanitized });
+  } catch (error) {
+    console.error('Error fetching agent credentials:', error);
+    res.status(500).json({ success: false, message: 'Failed to load credentials' });
   }
 });
 
