@@ -468,9 +468,14 @@
                             <h5 class="mb-1">Captured Tracking Agents</h5>
                             <p class="mb-0 text-muted">Recent agent records extracted from tracking updates.</p>
                         </div>
-                        <button class="btn btn-sm btn-outline-primary" @click="loadCapturedAgentRecords()">
-                            Refresh
-                        </button>
+                        <div class="d-flex align-items-center gap-2">
+                            <input type="text" class="form-control form-control-sm" v-model="capturedAgentsDefaultPassword" placeholder="Default password to try (e.g., Noman21@)" style="min-width:220px;" />
+                            <button class="btn btn-sm btn-outline-secondary" @click="loadCapturedAgentRecords()">Refresh</button>
+                            <button class="btn btn-sm btn-primary" @click="checkAllCapturedAgents" :disabled="checkingAllAgents">
+                                <span v-if="!checkingAllAgents">Check All</span>
+                                <span v-else class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                            </button>
+                        </div>
                     </div>
                     <div class="table-responsive">
                         <table class="table table-sm mb-0">
@@ -490,16 +495,33 @@
                                     <td>{{ record.seenCount }}</td>
                                     <td>{{ formatDateTime(record.firstSeenAt) }}</td>
                                     <td>
-                                        <button class="btn btn-sm btn-outline-primary me-1 btn-action" 
-                                                @click="editAgentRecord(record)"
-                                                title="Edit Agent Record">
-                                            <i class="bi bi-pencil-fill"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-outline-danger btn-action" 
-                                                @click="deleteAgentRecord(record._id)"
-                                                title="Delete Agent Record">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
+                                        <div class="d-flex align-items-center gap-1">
+                                            <button class="btn btn-sm btn-outline-primary me-1 btn-action" 
+                                                    @click="editAgentRecord(record)"
+                                                    title="Edit Agent Record">
+                                                <i class="bi bi-pencil-fill"></i>
+                                            </button>
+
+                                            <button class="btn btn-sm btn-outline-success me-1 btn-action" 
+                                                    @click="checkAgentCredentialsForRecord(record)"
+                                                    :disabled="record.checking"
+                                                    title="Check Agent Credentials">
+                                                <i class="bi bi-shield-lock"></i>
+                                            </button>
+
+                                            <button class="btn btn-sm btn-outline-danger btn-action" 
+                                                    @click="deleteAgentRecord(record._id)"
+                                                    title="Delete Agent Record">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+
+                                            <div v-if="record.checking" class="small text-muted ms-2">Checking…</div>
+                                            <div v-else-if="record.credentialCheck" class="ms-2">
+                                                <span v-if="record.credentialCheck.success" class="badge bg-success">Valid</span>
+                                                <span v-else class="badge bg-danger">Invalid</span>
+                                                <div class="small text-muted">{{ record.credentialCheck.message }}</div>
+                                            </div>
+                                        </div>
                                     </td>
                                 </tr>
                                 <tr v-if="capturedAgentRecords.length === 0">
@@ -2542,7 +2564,9 @@
                         loading: false,
                         error: '',
                         result: null
-                    }
+                    },
+                    capturedAgentsDefaultPassword: '',
+                    checkingAllAgents: false
                 };
             },
             computed: {
@@ -3123,6 +3147,67 @@
                     } catch (error) {
                         console.error('Failed to delete agent record:', error);
                         alert(error.response?.data?.message || 'Failed to delete agent record.');
+                    }
+                },
+                async checkAgentCredentialsForRecord(record, passwordOverride = '') {
+                    if (!record || !record.phone) {
+                        alert('Record or phone missing.');
+                        return;
+                    }
+
+                    const password = passwordOverride || this.capturedAgentsDefaultPassword || this.pathaoCredentialChecker.password || '';
+                    if (!password) {
+                        alert('Please provide a password to try (use the default password input above).');
+                        return;
+                    }
+
+                    record.checking = true;
+                    record.credentialCheck = null;
+                    try {
+                        const payload = {
+                            username: String(record.phone).trim(),
+                            password,
+                            clientId: this.pathaoCredentialChecker.clientId,
+                            clientSecret: this.pathaoCredentialChecker.clientSecret,
+                            appVersion: this.pathaoCredentialChecker.appVersion
+                        };
+                        const response = await axios.post(`${API_BASE}/admin/pathao/check-agent-login`, payload);
+                        record.credentialCheck = {
+                            success: Boolean(response.data.success),
+                            message: response.data.message || 'No message',
+                            statusCode: response.data.statusCode || response.status
+                        };
+                    } catch (error) {
+                        console.error('Agent credential check failed:', error);
+                        record.credentialCheck = {
+                            success: false,
+                            message: error.response?.data?.message || error.message || 'Request failed',
+                            statusCode: error.response?.status || 500
+                        };
+                    } finally {
+                        record.checking = false;
+                        this.$forceUpdate();
+                    }
+                },
+                async checkAllCapturedAgents() {
+                    if (!this.capturedAgentRecords || !this.capturedAgentRecords.length) {
+                        alert('No captured agent records available to check.');
+                        return;
+                    }
+
+                    if (!this.capturedAgentsDefaultPassword && !this.pathaoCredentialChecker.password) {
+                        if (!confirm('No default password provided. Continue without password?')) return;
+                    }
+
+                    this.checkingAllAgents = true;
+                    try {
+                        for (const record of this.capturedAgentRecords) {
+                            // small delay to avoid burst rate
+                            await this.checkAgentCredentialsForRecord(record);
+                            await new Promise(resolve => setTimeout(resolve, 350));
+                        }
+                    } finally {
+                        this.checkingAllAgents = false;
                     }
                 },
                 async refreshPages() {
