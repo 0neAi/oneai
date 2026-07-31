@@ -853,6 +853,70 @@ app.get('/admin/agent-credentials', adminAuth, async (req, res) => {
   }
 });
 
+// Update agent credential metadata (toggle active, update notes/clientId)
+app.put('/admin/agent-credentials/:id', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { active, notes, clientId } = req.body || {};
+
+    const cred = await AgentCredential.findById(id);
+    if (!cred) {
+      return res.status(404).json({ success: false, message: 'Credential not found.' });
+    }
+
+    let changed = false;
+    if (typeof active === 'boolean' && cred.active !== active) {
+      cred.active = active;
+      changed = true;
+      if (active) cred.lastValidAt = new Date();
+    }
+    if (notes !== undefined && String(notes).trim() !== cred.notes) {
+      cred.notes = String(notes).trim();
+      changed = true;
+    }
+    if (clientId !== undefined && String(clientId).trim() !== cred.clientId) {
+      cred.clientId = String(clientId).trim();
+      changed = true;
+    }
+
+    if (changed) await cred.save();
+
+    res.json({
+      success: true,
+      credential: {
+        _id: cred._id,
+        username: cred.username,
+        phone: cred.phone,
+        clientId: cred.clientId,
+        lastValidAt: cred.lastValidAt,
+        active: cred.active,
+        notes: cred.notes
+      }
+    });
+  } catch (error) {
+    console.error('Error updating agent credential:', error);
+    res.status(500).json({ success: false, message: 'Failed to update credential' });
+  }
+});
+
+// Delete an agent credential record (admin only)
+app.delete('/admin/agent-credentials/:id', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const cred = await AgentCredential.findById(id);
+    if (!cred) {
+      return res.status(404).json({ success: false, message: 'Credential not found.' });
+    }
+
+    await AgentCredential.findByIdAndDelete(id);
+    console.log(`🗑️ Admin deleted agent credential ${id} (${cred.username})`);
+    res.json({ success: true, message: 'Credential deleted successfully.' });
+  } catch (error) {
+    console.error('Error deleting agent credential:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete credential' });
+  }
+});
+
 app.get('/admin/broker-agents', adminAuth, async (req, res) => {
   try {
     const agents = [];

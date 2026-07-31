@@ -257,10 +257,7 @@ function setBrokerFilter(mode) {
 async function loadBrokerData(filter = {}, forceRefresh = false) {
     const authToken = localStorage.getItem('authToken');
     const userID = localStorage.getItem('userID');
-    const headers = {
-        'Authorization': `Bearer ${authToken}`,
-        'X-User-ID': userID
-    };
+    const headers = buildBrokerAuthHeaders();
 
     // Check cache validity
     const now = Date.now();
@@ -525,11 +522,7 @@ async function loadBrokerAgents() {
   try {
     const response = await fetch(`${API_BASE_URL}/broker/agents`, {
       method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${authToken}`,
-        'X-User-ID': userID,
-        'Content-Type': 'application/json'
-      }
+      headers: Object.assign({}, buildBrokerAuthHeaders(), { 'Content-Type': 'application/json' })
     });
     
     const data = await response.json();
@@ -613,11 +606,7 @@ async function createBrokerOrder() {
     try {
         const response = await fetch(`${API_BASE_URL}/broker/orders`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}`,
-                'X-User-ID': userID
-            },
+            headers: Object.assign({}, buildBrokerAuthHeaders(), { 'Content-Type': 'application/json' }),
             body: JSON.stringify(payload)
         });
         const data = await response.json();
@@ -639,10 +628,7 @@ async function createBrokerOrder() {
 async function loadBrokerCreditPackages() {
     const authToken = localStorage.getItem('authToken');
     const userID = localStorage.getItem('userID');
-    const headers = {
-        'Authorization': `Bearer ${authToken}`,
-        'X-User-ID': userID
-    };
+    const headers = buildBrokerAuthHeaders();
     const packagesContainer = document.getElementById('broker-packages-list');
 
     if (!packagesContainer) return;
@@ -788,11 +774,7 @@ async function purchaseBrokerCredits() {
     try {
         const response = await fetch(`${API_BASE_URL}/broker/credits/purchase`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}`,
-                'X-User-ID': userID
-            },
+            headers: Object.assign({}, buildBrokerAuthHeaders(), { 'Content-Type': 'application/json' }),
             body: JSON.stringify({
                 packageId: brokerState.selectedPackage.id,
                 paymentMethod,
@@ -856,14 +838,8 @@ async function trackBrokerOrder(orderId) {
 
         const response = await fetch(`${API_BASE_URL}/broker/orders/${orderId}/track`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}`,
-                'X-User-ID': userID
-            },
+            headers: Object.assign({}, buildBrokerAuthHeaders(), { 'Content-Type': 'application/json' }),
             body: JSON.stringify(payload)
-        });
-        const data = await response.json();
 
         if (!response.ok) {
             if (response.status === 404 && paymentLink) {
@@ -902,13 +878,8 @@ async function updateBrokerOrderStatus(orderId, status) {
         const response = await fetch(`${API_BASE_URL}/broker/orders/${orderId}/status`, {
             method: 'PUT',
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}`,
-                'X-User-ID': userID
-            },
+            headers: Object.assign({}, buildBrokerAuthHeaders(), { 'Content-Type': 'application/json' }),
             body: JSON.stringify({ status })
-        });
-        const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'Failed to update order status');
 
         const index = brokerState.orders.findIndex(o => o._id === orderId);
