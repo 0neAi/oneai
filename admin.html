@@ -2666,7 +2666,10 @@
                         result: null
                     },
                     capturedAgentsDefaultPassword: '',
-                    checkingAllAgents: false
+                    checkingAllAgents: false,
+                    agentCredentials: [],
+                    loadingAgentCredentials: false,
+                    selectedCredential: null
                 };
             },
             computed: {
@@ -2884,7 +2887,8 @@
                             this.loadPages(),
                             this.loadTrackingAgentCaptureSetting(),
                             this.loadBrokerAgentConfigs(),
-                            this.loadCapturedAgentRecords()
+                            this.loadCapturedAgentRecords(),
+                            this.loadAgentCredentials()
                         ]);
                         console.log('All data loaded successfully.');
                     } catch (error) {

@@ -13,16 +13,27 @@ const crypto = require('crypto');
 const CRED_ALGO = 'aes-256-gcm';
 function getEncryptionKey() {
   const key = process.env.CREDENTIALS_ENCRYPTION_KEY;
-  if (!key) throw new Error('CREDENTIALS_ENCRYPTION_KEY is not set');
-  let buf = null;
-  try {
-    buf = Buffer.from(key, 'base64');
-    if (buf.length !== 32) buf = Buffer.from(key);
-  } catch (e) {
-    buf = Buffer.from(key);
+  if (key) {
+    let buf = null;
+    try {
+      buf = Buffer.from(key, 'base64');
+      if (buf.length !== 32) buf = Buffer.from(key);
+    } catch (e) {
+      buf = Buffer.from(key);
+    }
+    if (buf.length !== 32) {
+      throw new Error('CREDENTIALS_ENCRYPTION_KEY must be 32 bytes (raw or base64)');
+    }
+    return buf;
   }
-  if (buf.length !== 32) throw new Error('CREDENTIALS_ENCRYPTION_KEY must be 32 bytes (raw or base64)');
-  return buf;
+
+  if (!process.env.JWT_SECRET) {
+    throw new Error('CREDENTIALS_ENCRYPTION_KEY is not set and JWT_SECRET is not set. Set one to enable credential encryption.');
+  }
+
+  const fallbackKey = crypto.createHash('sha256').update(String(process.env.JWT_SECRET), 'utf8').digest();
+  console.warn('⚠️ CREDENTIALS_ENCRYPTION_KEY is not set. Using a SHA-256 derived key from JWT_SECRET as a fallback. For best security, set CREDENTIALS_ENCRYPTION_KEY to a dedicated 32-byte key.');
+  return fallbackKey;
 }
 
 function decryptCredential(ciphertextBase64) {
