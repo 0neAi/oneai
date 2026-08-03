@@ -161,8 +161,7 @@ class PathaoApiClient {
         headers: {
           ...this.getDefaultHeaders(),
           Authorization: `Bearer ${token}`
-        }
-      });
+        
 
       const orders = this._extractOrders(data);
       console.log(`  📦 ${agent.displayName}: fetched ${orders.length} orders`);
