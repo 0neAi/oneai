@@ -678,7 +678,7 @@ async function loadBrokerCreditPackages() {
                 }
             };
             // store package id and object on the element for selection helpers
-            card.dataset.packageId = String(pkg.id || pkgId || '');
+            card.dataset.packageId = String(pkg.id || '');
             card.__pkg = pkg;
             packagesContainer.appendChild(card);
         });
@@ -705,7 +705,7 @@ async function loadBrokerCreditPackages() {
             `;
             card.onclick = () => setBrokerPackageSelection(pkg, card);
             // store package id and object on the element for selection helpers
-            card.dataset.packageId = String(pkg.id || pkgId || '');
+            card.dataset.packageId = String(pkg.id || '');
             card.__pkg = pkg;
             packagesContainer.appendChild(card);
         });
