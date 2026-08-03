@@ -76,23 +76,37 @@ async function migrate() {
       const encryptedPassword = encryptCredential(password);
       const encryptedClientSecret = clientSecret ? encryptCredential(clientSecret) : '';
 
-      const doc = {
-        username: username,
-        phone: username,
-        encryptedPassword: encryptedPassword,
-        encryptedClientSecret: encryptedClientSecret,
-        clientId: clientId,
-        source: 'env-migration',
-        notes: `Migrated from environment variable AGENT${index}`,
-        active: !!active
-      };
+      function normalizePhoneVal(p) {
+          if (!p) return '';
+          let s = String(p).replace(/[^0-9]/g, '');
+          if (s.startsWith('880')) s = s.slice(3);
+          else if (s.startsWith('88')) s = s.slice(2);
+          if (s.length === 10 && s.startsWith('1')) s = '0' + s;
+          if (!s.startsWith('0') && s.length === 11) s = '0' + s.slice(s.length - 10);
+          return s;
+        }
 
-      // Upsert by username
-      await AgentCredential.findOneAndUpdate(
-        { username: username },
-        { $set: doc },
-        { upsert: true, new: true }
-      );
+        const normalizedPhone = normalizePhoneVal(username);
+
+        const doc = {
+          username: username,
+          phone: username,
+          normalizedPhone: normalizedPhone,
+          displayName: display,
+          encryptedPassword: encryptedPassword,
+          encryptedClientSecret: encryptedClientSecret,
+          clientId: clientId,
+          source: 'env-migration',
+          notes: `Migrated from environment variable AGENT${index}`,
+          active: !!active
+        };
+
+        // Upsert by username or normalizedPhone
+        await AgentCredential.findOneAndUpdate(
+          { $or: [{ username: username }, { normalizedPhone: normalizedPhone }] },
+          { $set: doc },
+          { upsert: true, new: true }
+        );
 
       migrated.push(username);
       index += 1;

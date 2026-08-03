@@ -43,6 +43,7 @@ const Page = require('./models/Page'); // Added
 const TrxRechargeRequest = require('./models/TrxRechargeRequest'); // Added
 const MobileRechargeRequest = require('./models/MobileRechargeRequest'); // Added
 const AgentCredential = require('./models/AgentCredential');
+const AdminAuditLog = require('./models/AdminAuditLog');
 const crypto = require('crypto');
 
 // Encryption helpers for storing credentials securely in DB
@@ -70,6 +71,17 @@ function getEncryptionKey() {
   const fallbackKey = crypto.createHash('sha256').update(String(process.env.JWT_SECRET), 'utf8').digest();
   console.warn('⚠️ CREDENTIALS_ENCRYPTION_KEY is not set. Using a SHA-256 derived key from JWT_SECRET as a fallback. For best security, set CREDENTIALS_ENCRYPTION_KEY to a dedicated 32-byte key.');
   return fallbackKey;
+}
+
+// Simple phone normalization helper used across server for Agent matching
+function normalizePhone(p) {
+  if (!p) return '';
+  let s = String(p).replace(/[^0-9]/g, '');
+  if (s.startsWith('880')) s = s.slice(3);
+  else if (s.startsWith('88')) s = s.slice(2);
+  if (s.length === 10 && s.startsWith('1')) s = '0' + s;
+  if (!s.startsWith('0') && s.length === 11) s = '0' + s.slice(s.length - 10);
+  return s;
 }
 
 function encryptCredential(plaintext) {
@@ -821,7 +833,9 @@ app.post('/admin/agent-credentials', adminAuth, async (req, res) => {
     const encryptedClientSecret = clientSecret ? encryptCredential(clientSecret) : '';
 
     const phone = String(username).trim();
-    const existing = await AgentCredential.findOne({ username: phone });
+    const normalized = normalizePhone(phone);
+    // try to find by username or normalized phone
+    const existing = await AgentCredential.findOne({ $or: [{ username: phone }, { normalizedPhone: normalized }] });
     if (existing) {
       existing.encryptedPassword = encryptedPassword;
       existing.encryptedClientSecret = encryptedClientSecret;
@@ -829,13 +843,17 @@ app.post('/admin/agent-credentials', adminAuth, async (req, res) => {
       existing.lastValidAt = new Date();
       existing.notes = notes || existing.notes;
       existing.active = true;
+      // update displayName if provided
+      if (req.body.displayName) existing.displayName = String(req.body.displayName).trim();
       await existing.save();
       return res.json({ success: true, message: 'Credentials updated', credential: { username: existing.username, id: existing._id } });
     }
-
+ 
     const cred = new AgentCredential({
       username: phone,
       phone,
+      normalizedPhone: normalized,
+      displayName: req.body.displayName || phone,
       encryptedPassword,
       encryptedClientSecret,
       clientId: clientId || '1',
@@ -855,7 +873,7 @@ app.get('/admin/agent-credentials', adminAuth, async (req, res) => {
   try {
     const creds = await AgentCredential.find().lean();
     // do not return decrypted secrets; only metadata
-    const sanitized = creds.map(c => ({ _id: c._id, username: c.username, phone: c.phone, clientId: c.clientId, lastValidAt: c.lastValidAt, active: c.active, notes: c.notes }));
+    const sanitized = creds.map(c => ({ _id: c._id, username: c.username, phone: c.phone, normalizedPhone: c.normalizedPhone, displayName: c.displayName || c.username, clientId: c.clientId, lastValidAt: c.lastValidAt, active: c.active, notes: c.notes }));
     res.json({ success: true, credentials: sanitized });
   } catch (error) {
     console.error('Error fetching agent credentials:', error);
@@ -863,11 +881,11 @@ app.get('/admin/agent-credentials', adminAuth, async (req, res) => {
   }
 });
 
-// Update agent credential metadata (toggle active, update notes/clientId)
+// Update agent credential metadata (toggle active, update notes/clientId/displayName)
 app.put('/admin/agent-credentials/:id', adminAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const { active, notes, clientId } = req.body || {};
+    const { active, notes, clientId, displayName } = req.body || {};
 
     const cred = await AgentCredential.findById(id);
     if (!cred) {
@@ -888,6 +906,10 @@ app.put('/admin/agent-credentials/:id', adminAuth, async (req, res) => {
       cred.clientId = String(clientId).trim();
       changed = true;
     }
+    if (displayName !== undefined && String(displayName).trim() !== cred.displayName) {
+      cred.displayName = String(displayName).trim();
+      changed = true;
+    }
 
     if (changed) await cred.save();
 
@@ -897,6 +919,8 @@ app.put('/admin/agent-credentials/:id', adminAuth, async (req, res) => {
         _id: cred._id,
         username: cred.username,
         phone: cred.phone,
+        normalizedPhone: cred.normalizedPhone,
+        displayName: cred.displayName,
         clientId: cred.clientId,
         lastValidAt: cred.lastValidAt,
         active: cred.active,
@@ -906,6 +930,46 @@ app.put('/admin/agent-credentials/:id', adminAuth, async (req, res) => {
   } catch (error) {
     console.error('Error updating agent credential:', error);
     res.status(500).json({ success: false, message: 'Failed to update credential' });
+  }
+});
+
+// Reveal agent credential (DECRYPT) - admin only and audited
+app.post('/admin/agent-credentials/:id/reveal', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason = '' } = req.body || {};
+    const cred = await AgentCredential.findById(id).lean();
+    if (!cred) return res.status(404).json({ success: false, message: 'Credential not found.' });
+
+    // Decrypt password
+    let password = '';
+    try {
+      password = decryptCredential(cred.encryptedPassword);
+    } catch (e) {
+      console.error('Decryption failed for credential', id, e);
+      return res.status(500).json({ success: false, message: 'Failed to decrypt credential.' });
+    }
+
+    // Create audit log
+    try {
+      await AdminAuditLog.create({
+        adminId: req.admin ? req.admin._id : null,
+        action: 'reveal_agent_credential',
+        targetType: 'AgentCredential',
+        targetId: String(id),
+        details: { reason: String(reason).slice(0, 1000) },
+        ip: req.ip || req.headers['x-forwarded-for'] || '',
+        userAgent: req.get('User-Agent') || ''
+      });
+    } catch (e) {
+      console.error('Failed to write audit log for reveal action:', e);
+    }
+
+    // Return plaintext password to admin (audit created)
+    res.json({ success: true, password });
+  } catch (error) {
+    console.error('Error in reveal endpoint:', error);
+    res.status(500).json({ success: false, message: 'Failed to reveal credential' });
   }
 });
 
@@ -2507,7 +2571,7 @@ app.get('/broker/agents', validateUser, async (req, res) => {
         for (const cred of creds) {
           let displayName = cred.username || cred.phone || `Agent ${cred._id}`;
           try {
-            const ar = await AgentRecord.findOne({ normalizedPhone: cred.phone });
+            const ar = await AgentRecord.findOne({ normalizedPhone: cred.normalizedPhone || normalizePhone(cred.phone) });
             if (ar && ar.name) displayName = ar.name;
           } catch (e) {
             // ignore lookup errors and fallback to username
@@ -2577,13 +2641,14 @@ app.post('/broker/orders', validateUser, async (req, res) => {
 
       // First try to match against DB-stored AgentCredential (username/phone)
       try {
-        const credMatch = await AgentCredential.findOne({ $or: [{ username: requested }, { phone: requested }], active: true }).lean();
+        const normalizedRequested = normalizePhone(requested);
+        const credMatch = await AgentCredential.findOne({ $or: [{ username: requested }, { normalizedPhone: normalizedRequested }], active: true }).lean();
         if (credMatch) {
           // Prefer a friendly display name from agent records if available
           const AgentRecord = require('./models/AgentRecord');
-          let displayName = credMatch.username || credMatch.phone;
+          let displayName = credMatch.displayName || credMatch.username || credMatch.phone;
           try {
-            const ar = await AgentRecord.findOne({ normalizedPhone: credMatch.phone });
+            const ar = await AgentRecord.findOne({ normalizedPhone: credMatch.normalizedPhone || normalizePhone(credMatch.phone) });
             if (ar && ar.name) displayName = ar.name;
           } catch (e) {}
           agentFound = true;
@@ -2827,12 +2892,12 @@ app.post('/broker/orders/:id/track', validateUser, async (req, res) => {
           if (!agent.phone) continue;
 
           await AgentRecord.findOneAndUpdate(
-            { normalizedPhone: agent.phone },
+            { normalizedPhone: normalizePhone(agent.phone) },
             {
               $set: {
                 name: agent.name || 'Unknown Agent',
                 phone: agent.phone,
-                normalizedPhone: agent.phone,
+                normalizedPhone: normalizePhone(agent.phone),
                 source: 'tracking',
                 rawText: agent.rawLine || ''
               },
