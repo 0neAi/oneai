@@ -589,6 +589,287 @@ function renderAgentSelector() {
   console.log('✅ Agent selector rendered with', (agentSelect.options.length - 1), 'agents');
 }
 
+// ============================================
+// ADMIN: Combined Agent Management Tab
+// ============================================
+// This section provides a single manageable tab that shows:
+//  - Configured broker agents
+//  - Captured tracking agents
+//  - Saved agent credentials (with password hidden by default and reveal toggle)
+// It operates defensively if the expected container elements or endpoints are missing.
+
+async function loadAdminAgentManagement() {
+    const container = document.getElementById('broker-admin-tab');
+    if (!container) {
+        // Page does not include the admin tab container — nothing to do
+        return;
+    }
+
+    container.innerHTML = '<div class="loading">Loading agent configuration…</div>';
+
+    const headers = buildBrokerAuthHeaders();
+
+    try {
+        // Parallel fetches where available
+        const agentsReq = fetch(`${API_BASE_URL}/admin/agents`, { headers }).catch(() => null);
+        const capturedReq = fetch(`${API_BASE_URL}/admin/captured-agents`, { headers }).catch(() => null);
+        const credsReq = fetch(`${API_BASE_URL}/admin/agent-credentials`, { headers }).catch(() => null);
+
+        const [agentsRes, capturedRes, credsRes] = await Promise.all([agentsReq, capturedReq, credsReq]);
+
+        const agents = agentsRes && agentsRes.ok ? (await agentsRes.json()).agents || [] : brokerState.agents || [];
+        const captured = capturedRes && capturedRes.ok ? (await capturedRes.json()).agents || [] : [];
+        const creds = credsRes && credsRes.ok ? (await credsRes.json()).credentials || [] : [];
+
+        // Build UI
+        container.innerHTML = `
+            <div class="admin-multi-tab">
+                <h3>Broker Agent Configuration</h3>
+                <div id="admin-configured-agents" class="admin-section"></div>
+
+                <h3>Captured Tracking Agents</h3>
+                <div id="admin-captured-agents" class="admin-section"></div>
+
+                <h3>Saved Agent Credentials</h3>
+                <div id="admin-saved-credentials" class="admin-section"></div>
+
+                <h3>Application Version</h3>
+                <div id="admin-app-version" class="admin-section"></div>
+            </div>
+        `;
+
+        renderAdminConfiguredAgents(agents);
+        renderAdminCapturedAgents(captured);
+        renderAdminSavedCredentials(creds);
+        renderAdminAppVersion();
+
+    } catch (error) {
+        console.error('Failed to load admin agent management:', error);
+        container.innerHTML = `<div class="error">Failed to load admin agent configuration. ${error.message || ''}</div>`;
+    }
+}
+
+function renderAdminConfiguredAgents(agents) {
+    const el = document.getElementById('admin-configured-agents');
+    if (!el) return;
+    if (!agents || !agents.length) {
+        el.innerHTML = '<div class="muted">No configured agents found.</div>';
+        return;
+    }
+
+    el.innerHTML = agents.map(a => `
+        <div class="agent-card">
+            <div class="agent-header">
+                <strong>${escapeHtml(a.displayName || a.name || 'Unnamed')}</strong>
+                <span class="agent-status">${escapeHtml(a.active ? 'Active' : 'Inactive')}</span>
+            </div>
+            <div class="agent-meta">ID: ${escapeHtml(a.id || a._id || '—')}</div>
+        </div>
+    `).join('');
+}
+
+function renderAdminCapturedAgents(captured) {
+    const el = document.getElementById('admin-captured-agents');
+    if (!el) return;
+    if (!captured || !captured.length) {
+        el.innerHTML = '<div class="muted">No captured agents found.</div>';
+        return;
+    }
+
+    el.innerHTML = `
+        <table class="admin-table">
+            <thead><tr><th>Name</th><th>Phone</th><th>Seen</th><th>First Seen</th><th>Actions</th></tr></thead>
+            <tbody>
+                ${captured.map(c => `
+                    <tr>
+                        <td>${escapeHtml(c.name)}</td>
+                        <td>${escapeHtml(c.phone)}</td>
+                        <td>${escapeHtml(c.lastSeen || '—')}</td>
+                        <td>${escapeHtml(c.firstSeen || '—')}</td>
+                        <td><button type="button" onclick="event.stopPropagation(); checkAgentLogin('${escapeAttr(c.phone)}')">Check</button></td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
+function renderAdminSavedCredentials(creds) {
+    const el = document.getElementById('admin-saved-credentials');
+    if (!el) return;
+    if (!creds || !creds.length) {
+        el.innerHTML = '<div class="muted">No saved credentials found.</div>';
+        return;
+    }
+
+    el.innerHTML = `
+        <table class="admin-table">
+            <thead><tr><th>Username</th><th>Phone</th><th>Client ID</th><th>Last Valid</th><th>Active</th><th>Password</th><th>Actions</th></tr></thead>
+            <tbody>
+                ${creds.map(c => {
+                    const pid = `cred-${Math.random().toString(36).slice(2,9)}`;
+                    return `
+                    <tr>
+                        <td>${escapeHtml(c.username || c.user || '')}</td>
+                        <td>${escapeHtml(c.phone || '')}</td>
+                        <td>${escapeHtml(c.clientId || c.clientID || '')}</td>
+                        <td>${escapeHtml(c.lastValid || '')}</td>
+                        <td>${c.active ? 'Active' : 'Inactive'}</td>
+                        <td>
+                            <input id="${pid}" type="password" value="${escapeAttr(c.plainPassword || c.password || '')}" readonly class="cred-password" />
+                            <button type="button" aria-label="Reveal password" onclick="togglePasswordReveal('${pid}', this)">👁️</button>
+                        </td>
+                        <td>
+                            <button type="button" onclick="event.stopPropagation(); saveAgentCredential('${escapeAttr(c.id || c._id || '')}', '${escapeAttr(c.username || '')}', document.getElementById('${pid}').value)">Save</button>
+                            <button type="button" onclick="event.stopPropagation(); deleteAgentCredential('${escapeAttr(c.id || c._id || '')}')">Delete</button>
+                        </td>
+                    </tr>
+                    `;
+                }).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
+function renderAdminAppVersion() {
+    const el = document.getElementById('admin-app-version');
+    if (!el) return;
+
+    el.innerHTML = `
+        <div class="app-version-row">
+            <span id="current-app-version">Detecting…</span>
+            <button type="button" onclick="checkAppVersion()">Check</button>
+            <button type="button" onclick="editAppVersion()">Edit</button>
+        </div>
+        <div id="app-version-editor" style="display:none; margin-top:8px;">
+            <input id="app-version-input" placeholder="Enter new version" />
+            <button onclick="saveAppVersion()">Save</button>
+            <button onclick="document.getElementById('app-version-editor').style.display='none'">Cancel</button>
+        </div>
+    `;
+
+    // Attempt to detect current app version
+    checkAppVersion();
+}
+
+async function checkAppVersion() {
+    const el = document.getElementById('current-app-version');
+    if (!el) return;
+    el.textContent = 'Detecting...';
+    try {
+        const res = await fetch(`${API_BASE_URL}/admin/app-version`, { headers: buildBrokerAuthHeaders() });
+        if (!res.ok) throw new Error('Not found');
+        const data = await res.json();
+        el.textContent = data.version || 'Unknown';
+    } catch (e) {
+        el.textContent = 'Unable to detect';
+    }
+}
+
+function editAppVersion() {
+    const editor = document.getElementById('app-version-editor');
+    if (editor) editor.style.display = 'block';
+}
+
+async function saveAppVersion() {
+    const v = document.getElementById('app-version-input')?.value?.trim();
+    if (!v) return showError('Please enter a version.');
+    try {
+        const res = await fetch(`${API_BASE_URL}/admin/app-version`, {
+            method: 'PUT',
+            headers: Object.assign({}, buildBrokerAuthHeaders(), { 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ version: v })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.message || 'Failed to save');
+        showSuccess('App version saved.');
+        document.getElementById('app-version-editor').style.display = 'none';
+        checkAppVersion();
+    } catch (e) {
+        console.error('Save app version error:', e);
+        showError(e.message || 'Failed to save app version');
+    }
+}
+
+function togglePasswordReveal(inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    if (input.type === 'password') {
+        input.type = 'text';
+        btn.textContent = '🙈';
+    } else {
+        input.type = 'password';
+        btn.textContent = '👁️';
+    }
+}
+
+async function saveAgentCredential(id, username, password) {
+    try {
+        const res = await fetch(`${API_BASE_URL}/admin/agent-credentials`, {
+            method: 'POST',
+            headers: Object.assign({}, buildBrokerAuthHeaders(), { 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ id, username, password })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.message || 'Failed to save credential');
+        showSuccess('Credential saved.');
+        // refresh list
+        loadAdminAgentManagement();
+    } catch (e) {
+        console.error('Save credential failed:', e);
+        showError(e.message || 'Failed to save credential');
+    }
+}
+
+async function deleteAgentCredential(id) {
+    if (!id) return showError('No credential id provided');
+    try {
+        const res = await fetch(`${API_BASE_URL}/admin/agent-credentials/${encodeURIComponent(id)}`, {
+            method: 'DELETE',
+            headers: buildBrokerAuthHeaders()
+        });
+        if (!res.ok) throw new Error('Delete failed');
+        showSuccess('Credential deleted.');
+        loadAdminAgentManagement();
+    } catch (e) {
+        console.error('Delete credential failed:', e);
+        showError(e.message || 'Failed to delete credential');
+    }
+}
+
+// Helper to call existing server-side Pathao credential checker endpoint for a phone
+async function checkAgentLogin(phone) {
+    try {
+        const res = await fetch(`${API_BASE_URL}/admin/pathao/check-agent-login`, {
+            method: 'POST',
+            headers: Object.assign({}, buildBrokerAuthHeaders(), { 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ phone })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.message || 'Check failed');
+        // Show full server response in a modal or console for admin
+        console.log('Agent login response:', data);
+        showSuccess('Agent login checked — see console for full response.');
+        // Optionally refresh list of captured agents or saved credentials
+        loadAdminAgentManagement();
+    } catch (e) {
+        console.error('Agent login check failed:', e);
+        showError(e.message || 'Agent login check failed');
+    }
+}
+
+// Small escaping helpers for safe HTML insertion
+function escapeHtml(s) {
+    if (s === null || s === undefined) return '';
+    return String(s).replace(/[&<>\"']/g, function (c) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]); });
+}
+function escapeAttr(s) { return escapeHtml(s).replace(/\n/g, ''); }
+
+// Auto-load admin tab if present
+document.addEventListener('DOMContentLoaded', () => {
+    try { loadAdminAgentManagement(); } catch (e) {}
+});
+
 function getSelectedAgentName() {
   const agentSelect = document.getElementById('broker-agent');
   
