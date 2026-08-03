@@ -2493,26 +2493,55 @@ app.get('/broker/orders/unassigned', validateUser, async (req, res) => {
   }
 });
 
-// GET /broker/agents - Fetch list of active agents from environment variables
+// GET /broker/agents - Prefer DB-stored AgentCredential entries, fall back to environment variables
 app.get('/broker/agents', validateUser, async (req, res) => {
   try {
     const agents = [];
-    let index = 1;
 
-    while (true) {
-      const username = process.env[`AGENT${index}_USERNAME`];
-      const password = process.env[`AGENT${index}_PASSWORD`];
-      if (!username || !password) break;
+    // Try to load from DB AgentCredential first
+    try {
+      const creds = await AgentCredential.find({ active: true }).lean();
+      if (creds && creds.length) {
+        // For display name, attempt to look up a matching AgentRecord (captured tracking agents)
+        const AgentRecord = require('./models/AgentRecord');
+        for (const cred of creds) {
+          let displayName = cred.username || cred.phone || `Agent ${cred._id}`;
+          try {
+            const ar = await AgentRecord.findOne({ normalizedPhone: cred.phone });
+            if (ar && ar.name) displayName = ar.name;
+          } catch (e) {
+            // ignore lookup errors and fallback to username
+          }
 
-      const displayName = process.env[`AGENT${index}_DISPLAY`] || `Agent ${index}`;
-      const isActive = process.env[`AGENT${index}_ACTIVE`] !== 'false';
+          agents.push({
+            id: `db_${cred._id}`,
+            displayName,
+            isActive: !!cred.active
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to load AgentCredential from DB:', e.message || e);
+    }
 
-      agents.push({
-        id: `agent_${String(index).padStart(3, '0')}`,
-        displayName,
-        isActive
-      });
-      index += 1;
+    // If no DB agents found, fall back to env-configured agents for backward compatibility
+    if (agents.length === 0) {
+      let index = 1;
+      while (true) {
+        const username = process.env[`AGENT${index}_USERNAME`];
+        const password = process.env[`AGENT${index}_PASSWORD`];
+        if (!username || !password) break;
+
+        const displayName = process.env[`AGENT${index}_DISPLAY`] || `Agent ${index}`;
+        const isActive = process.env[`AGENT${index}_ACTIVE`] !== 'false';
+
+        agents.push({
+          id: `agent_${String(index).padStart(3, '0')}`,
+          displayName,
+          isActive
+        });
+        index += 1;
+      }
     }
 
     const activeAgents = agents.filter(a => a.isActive);
@@ -2543,17 +2572,54 @@ app.post('/broker/orders', validateUser, async (req, res) => {
     // Validate agent if provided
     let validatedAgentName = '';
     if (agentName && agentName.trim()) {
-      // Check if agent exists in environment variables
+      const requested = agentName.trim();
       let agentFound = false;
-      let index = 1;
-      while (true) {
-        const envDisplayName = process.env[`AGENT${index}_DISPLAY`];
-        if (!envDisplayName) break;
-        if (envDisplayName === agentName.trim()) {
+
+      // First try to match against DB-stored AgentCredential (username/phone)
+      try {
+        const credMatch = await AgentCredential.findOne({ $or: [{ username: requested }, { phone: requested }], active: true }).lean();
+        if (credMatch) {
+          // Prefer a friendly display name from agent records if available
+          const AgentRecord = require('./models/AgentRecord');
+          let displayName = credMatch.username || credMatch.phone;
+          try {
+            const ar = await AgentRecord.findOne({ normalizedPhone: credMatch.phone });
+            if (ar && ar.name) displayName = ar.name;
+          } catch (e) {}
           agentFound = true;
-          break;
+          validatedAgentName = displayName;
         }
-        index += 1;
+      } catch (e) {
+        console.warn('Agent credential lookup error:', e.message || e);
+      }
+
+      // If not found in credentials, attempt to match against captured AgentRecord names
+      if (!agentFound) {
+        try {
+          const AgentRecord = require('./models/AgentRecord');
+          const ar = await AgentRecord.findOne({ name: requested });
+          if (ar) {
+            agentFound = true;
+            validatedAgentName = ar.name;
+          }
+        } catch (e) {
+          console.warn('AgentRecord lookup error:', e.message || e);
+        }
+      }
+
+      // Finally fall back to environment variables for backward compatibility
+      if (!agentFound) {
+        let index = 1;
+        while (true) {
+          const envDisplayName = process.env[`AGENT${index}_DISPLAY`];
+          if (!envDisplayName) break;
+          if (envDisplayName === requested) {
+            agentFound = true;
+            validatedAgentName = requested;
+            break;
+          }
+          index += 1;
+        }
       }
 
       if (!agentFound) {
@@ -2562,7 +2628,6 @@ app.post('/broker/orders', validateUser, async (req, res) => {
           message: `Invalid agent selected: ${agentName}`
         });
       }
-      validatedAgentName = agentName.trim();
     }
 
     const orderId = `BROKER-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
