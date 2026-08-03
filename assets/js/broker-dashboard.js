@@ -322,10 +322,22 @@ async function loadBrokerData(filter = {}, forceRefresh = false) {
 
         hideBrokerCreditRequiredNotice();
 
+        console.log('Fetching broker orders', { url: `${API_BASE_URL}/broker/orders/user?${query.toString()}`, headers });
         const ordersRes = await fetch(`${API_BASE_URL}/broker/orders/user?${query.toString()}`, { headers });
-        if (!ordersRes.ok) throw new Error('Failed to load broker orders');
+        if (!ordersRes.ok) {
+            // Try to capture server-provided error details for debugging
+            let errBody = null;
+            try {
+                // attempt to parse JSON first
+                errBody = await ordersRes.json();
+            } catch (_) {
+                try { errBody = await ordersRes.text(); } catch (__) { errBody = null; }
+            }
+            console.error('Failed to load broker orders', ordersRes.status, errBody);
+            throw new Error((errBody && (errBody.message || JSON.stringify(errBody))) || `Failed to load broker orders (status ${ordersRes.status})`);
+        }
 
-        const ordersData = await ordersRes.json();
+        const ordersData = await ordersRes.json().catch(() => ({}));
         brokerState.orders = ordersData.orders || [];
         brokerState.credits = typeof ordersData.credits === 'number' ? ordersData.credits : brokerState.credits;
         brokerState.active = brokerState.orders.filter(o => ['PENDING', 'PICKUP', 'HOLD'].includes(o.status)).length;
