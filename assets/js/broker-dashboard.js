@@ -32,6 +32,22 @@ const brokerState = {
     isInitialLoad: true
 };
 
+// Lightweight auth headers helper — defined here defensively so this script can run in
+// pages that don't load the full global utilities bundle.
+function buildBrokerAuthHeaders() {
+    const headers = {};
+    try {
+        const token = localStorage.getItem('authToken') || '';
+        const userID = localStorage.getItem('userID') || '';
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        if (userID) headers['X-User-ID'] = String(userID);
+    } catch (e) {
+        // In environments where localStorage is restricted, return empty headers
+    }
+    return headers;
+}
+
+
 // Ensure global helper exists early to avoid ReferenceError in older pages or different build orders
 if (typeof window !== 'undefined') {
     if (typeof window.selectBrokerPackage === 'undefined') {
