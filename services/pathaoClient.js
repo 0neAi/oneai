@@ -106,18 +106,11 @@ class PathaoApiClient {
       }
 
       const data = await this._fetchJson(url, {
-        method: 'POST',
+        method: 'GET',
         headers: {
           ...this.getDefaultHeaders(),
-          'Content-Type': 'application/json;charset=utf-8'
-        },
-        body: JSON.stringify({
-          username,
-          password,
-          client_id: clientId,
-          client_secret: clientSecret,
-          grant_type: 'password'
-        })
+          Authorization: `Bearer ${token}`
+        }
       });
 
       const token = data?.data?.access_token || data?.data?.token || data?.access_token || data?.token;
