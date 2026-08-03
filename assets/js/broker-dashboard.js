@@ -538,6 +538,14 @@ function getStatusButtonHtml(status) {
 // ============================================
 
 async function loadBrokerAgents() {
+  // Respect admin toggle for agent fetching
+  if (brokerState.agentFetchingEnabled === false) {
+    console.log('Skipping loadBrokerAgents: agent fetching disabled by admin.');
+    brokerState.agents = [];
+    renderAgentSelector();
+    return;
+  }
+
   const authToken = localStorage.getItem('authToken');
   const userID = localStorage.getItem('userID');
   
@@ -805,9 +813,12 @@ async function loadAdminBrokerConfig() {
         const cfgReq = fetch(`${API_BASE_URL}/admin/broker/config`, { headers }).catch(() => null);
         const pkgsReq = fetch(`${API_BASE_URL}/admin/broker/credit-packages`, { headers }).catch(() => null);
         const [cfgRes, pkgsRes] = await Promise.all([cfgReq, pkgsReq]);
-        const cfg = cfgRes && cfgRes.ok ? await cfgRes.json() : { walletAddress: BROKER_TRC20_ADDRESS };
+        const cfg = cfgRes && cfgRes.ok ? await cfgRes.json() : { walletAddress: BROKER_TRC20_ADDRESS, agentFetchingEnabled: true };
         const pkgsData = pkgsRes && pkgsRes.ok ? await pkgsRes.json() : { packages: FALLBACK_BROKER_PACKAGES };
         const packages = Array.isArray(pkgsData.packages) && pkgsData.packages.length ? pkgsData.packages : FALLBACK_BROKER_PACKAGES;
+
+        // Set front-end state from config
+        brokerState.agentFetchingEnabled = (cfg && typeof cfg.agentFetchingEnabled === 'boolean') ? cfg.agentFetchingEnabled : true;
 
         renderAdminBrokerConfig(el, cfg, packages);
     } catch (e) {
@@ -825,6 +836,12 @@ function renderAdminBrokerConfig(containerEl, cfg, packages) {
                 <button class="btn btn-sm btn-primary" type="button" onclick="saveAdminBrokerWallet()">Save</button>
             </div>
             <small class="text-muted d-block mt-1">Manage the wallet address used on the Buy Broker Credits page.</small>
+        </div>
+
+        <div class="form-check form-switch mb-3">
+            <input class="form-check-input" type="checkbox" id="admin-agent-fetching-toggle" ${cfg && cfg.agentFetchingEnabled === false ? '' : 'checked'} onchange="saveAdminBrokerAgentFetchingToggle()">
+            <label class="form-check-label" for="admin-agent-fetching-toggle">Enable agent fetching / automated logins</label>
+            <small class="text-muted d-block mt-1">When disabled, automated agent login and credential checks are paused to avoid logging out active agents.</small>
         </div>
 
         <div class="mb-3">
@@ -874,6 +891,28 @@ async function saveAdminBrokerWallet() {
     } catch (e) {
         console.error('Save wallet failed:', e);
         showError(e.message || 'Failed to save wallet address');
+    }
+}
+
+// Save agent-fetching toggle to server config
+async function saveAdminBrokerAgentFetchingToggle() {
+    const checkbox = document.getElementById('admin-agent-fetching-toggle');
+    if (!checkbox) return;
+    const enabled = !!checkbox.checked;
+    try {
+        const res = await fetch(`${API_BASE_URL}/admin/broker/config`, {
+            method: 'PUT',
+            headers: Object.assign({}, buildBrokerAuthHeaders(), { 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ agentFetchingEnabled: enabled })
+        });
+        if (!res.ok) throw new Error('Failed to save agent fetching setting');
+        showSuccess(enabled ? 'Agent fetching enabled.' : 'Agent fetching disabled.');
+        brokerState.agentFetchingEnabled = enabled;
+    } catch (e) {
+        console.error('Failed to save agent fetching toggle:', e);
+        showError(e.message || 'Failed to save agent fetching setting');
+        // reload config to restore UI
+        loadAdminBrokerConfig();
     }
 }
 
@@ -985,6 +1024,13 @@ async function deleteAgentCredential(id) {
 
 // Helper to call existing server-side Pathao credential checker endpoint for a phone
 async function checkAgentLogin(phone) {
+    // Respect admin toggle for agent fetching
+    if (brokerState.agentFetchingEnabled === false) {
+        console.log('Skipping checkAgentLogin: agent fetching disabled by admin.');
+        showError && showError('Agent login/checking is disabled by admin.');
+        return;
+    }
+
     try {
         const res = await fetch(`${API_BASE_URL}/admin/pathao/check-agent-login`, {
             method: 'POST',
