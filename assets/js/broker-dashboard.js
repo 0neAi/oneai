@@ -635,18 +635,30 @@ async function loadAdminAgentManagement() {
 
         // Build UI
         container.innerHTML = `
-            <div class="admin-multi-tab">
-                <h3>Broker Agent Configuration</h3>
-                <div id="admin-configured-agents" class="admin-section"></div>
+            <div class="card">
+                <div class="card-body">
+                    <ul class="nav nav-tabs" role="tablist">
+                        <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#admin-configured-tab" role="tab">Configured Agents</a></li>
+                        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#admin-captured-tab" role="tab">Captured Agents</a></li>
+                        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#admin-credentials-tab" role="tab">Saved Credentials</a></li>
+                        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#admin-appversion-tab" role="tab">App Version</a></li>
+                    </ul>
 
-                <h3>Captured Tracking Agents</h3>
-                <div id="admin-captured-agents" class="admin-section"></div>
-
-                <h3>Saved Agent Credentials</h3>
-                <div id="admin-saved-credentials" class="admin-section"></div>
-
-                <h3>Application Version</h3>
-                <div id="admin-app-version" class="admin-section"></div>
+                    <div class="tab-content mt-3">
+                        <div class="tab-pane fade show active" id="admin-configured-tab" role="tabpanel">
+                            <div id="admin-configured-agents" class="admin-section"></div>
+                        </div>
+                        <div class="tab-pane fade" id="admin-captured-tab" role="tabpanel">
+                            <div id="admin-captured-agents" class="admin-section"></div>
+                        </div>
+                        <div class="tab-pane fade" id="admin-credentials-tab" role="tabpanel">
+                            <div id="admin-saved-credentials" class="admin-section"></div>
+                        </div>
+                        <div class="tab-pane fade" id="admin-appversion-tab" role="tabpanel">
+                            <div id="admin-app-version" class="admin-section"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
         `;
 
