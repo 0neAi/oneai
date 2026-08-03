@@ -600,8 +600,9 @@ function renderAgentSelector() {
   if (brokerState.agents && brokerState.agents.length > 0) {
     brokerState.agents.forEach(agent => {
       const option = document.createElement('option');
-      option.value = agent.displayName;
-      option.textContent = agent.displayName;
+      // Use a stable identifier for the option value: prefer username/phone/id, fallback to displayName
+      option.value = agent.username || agent.phone || agent.id || agent.displayName || '';
+      option.textContent = agent.displayName || agent.username || agent.phone || '';
       agentSelect.appendChild(option);
     });
   }
