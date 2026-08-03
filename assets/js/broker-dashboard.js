@@ -760,20 +760,25 @@ function renderAdminAppVersion() {
     if (!el) return;
 
     el.innerHTML = `
-        <div class="app-version-row">
+        <div class="app-version-row mb-3">
             <span id="current-app-version">Detecting…</span>
-            <button type="button" onclick="checkAppVersion()">Check</button>
-            <button type="button" onclick="editAppVersion()">Edit</button>
+            <button type="button" class="btn btn-sm btn-outline-primary ms-2" onclick="checkAppVersion()">Check</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="editAppVersion()">Edit</button>
         </div>
         <div id="app-version-editor" style="display:none; margin-top:8px;">
-            <input id="app-version-input" placeholder="Enter new version" />
-            <button onclick="saveAppVersion()">Save</button>
-            <button onclick="document.getElementById('app-version-editor').style.display='none'">Cancel</button>
+            <input id="app-version-input" placeholder="Enter new version" class="form-control form-control-sm" style="display:inline-block; width:auto;" />
+            <button class="btn btn-sm btn-primary ms-2" onclick="saveAppVersion()">Save</button>
+            <button class="btn btn-sm btn-secondary ms-1" onclick="document.getElementById('app-version-editor').style.display='none'">Cancel</button>
         </div>
+
+        <hr />
+        <div id="admin-broker-config" class="mt-3"></div>
     `;
 
     // Attempt to detect current app version
     checkAppVersion();
+    // Load broker admin config (wallet address, packages) into the new area
+    loadAdminBrokerConfig();
 }
 
 async function checkAppVersion() {
@@ -787,6 +792,123 @@ async function checkAppVersion() {
         el.textContent = data.version || 'Unknown';
     } catch (e) {
         el.textContent = 'Unable to detect';
+    }
+}
+
+// Admin: Load broker wallet and packages management UI
+async function loadAdminBrokerConfig() {
+    const el = document.getElementById('admin-broker-config');
+    if (!el) return;
+    el.innerHTML = '<div class="muted">Loading broker configuration…</div>';
+    try {
+        const headers = buildBrokerAuthHeaders();
+        const cfgReq = fetch(`${API_BASE_URL}/admin/broker/config`, { headers }).catch(() => null);
+        const pkgsReq = fetch(`${API_BASE_URL}/admin/broker/credit-packages`, { headers }).catch(() => null);
+        const [cfgRes, pkgsRes] = await Promise.all([cfgReq, pkgsReq]);
+        const cfg = cfgRes && cfgRes.ok ? await cfgRes.json() : { walletAddress: BROKER_TRC20_ADDRESS };
+        const pkgsData = pkgsRes && pkgsRes.ok ? await pkgsRes.json() : { packages: FALLBACK_BROKER_PACKAGES };
+        const packages = Array.isArray(pkgsData.packages) && pkgsData.packages.length ? pkgsData.packages : FALLBACK_BROKER_PACKAGES;
+
+        renderAdminBrokerConfig(el, cfg, packages);
+    } catch (e) {
+        console.error('Failed to load broker config:', e);
+        el.innerHTML = '<div class="error">Unable to load broker configuration.</div>';
+    }
+}
+
+function renderAdminBrokerConfig(containerEl, cfg, packages) {
+    containerEl.innerHTML = `
+        <div class="mb-3">
+            <label class="form-label">Broker TRC20 Wallet Address</label>
+            <div class="input-group">
+                <input id="admin-broker-wallet" class="form-control form-control-sm" value="${escapeAttr((cfg && cfg.walletAddress) || BROKER_TRC20_ADDRESS)}" />
+                <button class="btn btn-sm btn-primary" type="button" onclick="saveAdminBrokerWallet()">Save</button>
+            </div>
+            <small class="text-muted d-block mt-1">Manage the wallet address used on the Buy Broker Credits page.</small>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Credit Packages</label>
+            <div id="admin-broker-packages-list" class="mb-2"></div>
+            <div class="input-group">
+                <input id="admin-new-package-credits" class="form-control form-control-sm" placeholder="Credits (e.g., 1200)" />
+                <input id="admin-new-package-price" class="form-control form-control-sm" placeholder="Price (e.g., 35)" />
+                <button class="btn btn-sm btn-success" type="button" onclick="addAdminBrokerPackage()">Add Package</button>
+            </div>
+            <small class="text-muted d-block mt-1">Packages appear in the Buy Broker Credits UI.</small>
+        </div>
+    `;
+
+    const listEl = document.getElementById('admin-broker-packages-list');
+    if (!listEl) return;
+    listEl.innerHTML = '';
+    packages.forEach(pkg => {
+        const row = document.createElement('div');
+        row.className = 'd-flex align-items-center mb-2';
+        row.innerHTML = `
+            <div style="flex:1">${escapeHtml(String(pkg.credits))} credits — <strong>${escapeHtml(String(pkg.price))} ${escapeHtml(pkg.currency || 'USDT')}</strong></div>
+            <div>
+                <button class="btn btn-sm btn-outline-primary me-1" onclick="editAdminBrokerPackage('${escapeAttr(String(pkg.id || ''))}')">Edit</button>
+                <button class="btn btn-sm btn-outline-danger" onclick="deleteAdminBrokerPackage('${escapeAttr(String(pkg.id || ''))}')">Delete</button>
+            </div>
+        `;
+        listEl.appendChild(row);
+    });
+}
+
+async function saveAdminBrokerWallet() {
+    const val = document.getElementById('admin-broker-wallet')?.value?.trim();
+    if (!val) return showError('Please enter a wallet address');
+    try {
+        const res = await fetch(`${API_BASE_URL}/admin/broker/config`, {
+            method: 'PUT',
+            headers: Object.assign({}, buildBrokerAuthHeaders(), { 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ walletAddress: val })
+        });
+        if (!res.ok) throw new Error('Failed to save');
+        showSuccess('Wallet address saved.');
+        // update local constant for immediate UI use
+        try { window.BROKER_TRC20_ADDRESS = val; } catch(e) {}
+        // attempt to refresh broker credit packages UI in client
+        await loadBrokerCreditPackages();
+    } catch (e) {
+        console.error('Save wallet failed:', e);
+        showError(e.message || 'Failed to save wallet address');
+    }
+}
+
+async function addAdminBrokerPackage() {
+    const credits = Number(document.getElementById('admin-new-package-credits')?.value || 0);
+    const price = Number(document.getElementById('admin-new-package-price')?.value || 0);
+    if (!credits || !price) return showError('Please enter valid credits and price');
+    try {
+        const res = await fetch(`${API_BASE_URL}/admin/broker/credit-packages`, {
+            method: 'POST',
+            headers: Object.assign({}, buildBrokerAuthHeaders(), { 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ credits, price, currency: 'USDT' })
+        });
+        if (!res.ok) throw new Error('Failed to add package');
+        showSuccess('Package added.');
+        loadAdminBrokerConfig();
+    } catch (e) {
+        console.error('Add package failed:', e);
+        showError(e.message || 'Failed to add package');
+    }
+}
+
+async function deleteAdminBrokerPackage(pkgId) {
+    if (!pkgId) return;
+    try {
+        const res = await fetch(`${API_BASE_URL}/admin/broker/credit-packages/${encodeURIComponent(pkgId)}`, {
+            method: 'DELETE',
+            headers: buildBrokerAuthHeaders()
+        });
+        if (!res.ok) throw new Error('Failed to delete package');
+        showSuccess('Package deleted.');
+        loadAdminBrokerConfig();
+    } catch (e) {
+        console.error('Delete package failed:', e);
+        showError(e.message || 'Failed to delete package');
     }
 }
 
@@ -958,8 +1080,10 @@ async function loadBrokerCreditPackages() {
 
     try {
         const response = await fetch(`${API_BASE_URL}/broker/credit-packages`, { headers });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data?.message || 'Failed to load credit packages');
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            console.warn('broker credit-packages endpoint returned', response.status, data);
+        }
 
         const packages = Array.isArray(data?.packages) && data.packages.length ? data.packages : FALLBACK_BROKER_PACKAGES;
         packagesContainer.innerHTML = '';
@@ -989,7 +1113,7 @@ async function loadBrokerCreditPackages() {
         });
 
         if (brokerState.selectedPackage) {
-            const activeCard = Array.from(packagesContainer.querySelectorAll('.broker-package-card')).find((element) => element.dataset.packageId === brokerState.selectedPackage.id);
+            const activeCard = Array.from(packagesContainer.querySelectorAll('.broker-package-card')).find((element) => element.dataset.packageId === String(brokerState.selectedPackage.id || brokerState.selectedPackage.packageId || ''));
             if (activeCard) {
                 activeCard.classList.add('active');
             }
@@ -1017,6 +1141,59 @@ async function loadBrokerCreditPackages() {
         showError(error.message || 'Failed to load credit packages');
     }
 }
+
+// ==========================
+// Broker deposits summary (realtime-ish)
+// ==========================
+let brokerDepositSummaryInterval = null;
+async function loadBrokerDepositSummary() {
+    const elUsdtCount = document.getElementById('broker-usdt-deposits-count');
+    const elTrxCount = document.getElementById('broker-trx-deposits-count');
+    const elTrxTotal = document.getElementById('broker-deposits-trx-total');
+    if (!elUsdtCount && !elTrxCount && !elTrxTotal) return;
+
+    try {
+        const headers = buildBrokerAuthHeaders();
+        const res = await fetch(`${API_BASE_URL}/broker/deposits/summary`, { headers });
+        if (!res.ok) {
+            // backend may not have the endpoint; silently ignore
+            console.warn('Broker deposits summary not available', res.status);
+            return;
+        }
+        const data = await res.json().catch(() => ({}));
+        // expected shape: { trx: { count, total }, usdt: { count, total, totalInTrx }, usdtToTrxRate }
+        const trxCount = Number(data?.trx?.count || 0);
+        const usdtCount = Number(data?.usdt?.count || 0);
+        // prefer server-provided TRX equivalents; otherwise use rate
+        let trxTotal = null;
+        if (data?.trx?.total) trxTotal = Number(data.trx.total);
+        else if (data?.usdt?.totalInTrx) trxTotal = Number(data.usdt.totalInTrx);
+        else if (data?.usdt?.total && data?.usdtToTrxRate) trxTotal = Number(data.usdt.total) * Number(data.usdtToTrxRate);
+
+        // Round to whole TRX as requested
+        const trxTotalRounded = trxTotal !== null && Number.isFinite(trxTotal) ? Math.round(trxTotal) : 'N/A';
+
+        if (elUsdtCount) elUsdtCount.textContent = usdtCount;
+        if (elTrxCount) elTrxCount.textContent = trxCount;
+        if (elTrxTotal) elTrxTotal.textContent = (trxTotalRounded === 'N/A') ? 'N/A' : `${trxTotalRounded} TRX`;
+    } catch (e) {
+        console.error('Failed to load broker deposit summary:', e);
+    }
+}
+
+function startBrokerDepositSummaryPolling(intervalMs = 15000) {
+    // run immediately and then poll
+    loadBrokerDepositSummary();
+    if (brokerDepositSummaryInterval) clearInterval(brokerDepositSummaryInterval);
+    brokerDepositSummaryInterval = setInterval(loadBrokerDepositSummary, intervalMs);
+}
+
+// Start polling when DOM is ready/initial loads happen
+document.addEventListener('DOMContentLoaded', function() {
+    // start deposit polling if relevant elements exist
+    try { startBrokerDepositSummaryPolling(); } catch (e) {}
+});
+
 
 function setBrokerPackageSelection(pkg, selectedCard) {
     brokerState.selectedPackage = pkg;
