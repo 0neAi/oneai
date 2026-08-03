@@ -839,23 +839,30 @@ async function trackBrokerOrder(orderId) {
         const response = await fetch(`${API_BASE_URL}/broker/orders/${orderId}/track`, {
             method: 'POST',
             headers: Object.assign({}, buildBrokerAuthHeaders(), { 'Content-Type': 'application/json' }),
-            body: JSON.stringify(payload)
+            body: JSON.stringify(payload),
+        });
 
         if (!response.ok) {
+            // If backend can't find the order but a payment link exists, treat as opened link case
             if (response.status === 404 && paymentLink) {
                 showSuccess('Opened payment link and tracking will continue from that page.');
                 return;
             }
-            throw new Error(data.message || 'Failed to track order');
+            const errBody = await response.json().catch(() => ({}));
+            throw new Error(errBody.message || 'Failed to track order');
         }
+
+        const data = await response.json().catch(() => ({}));
 
         const index = brokerState.orders.findIndex(o => o._id === orderId);
         if (index !== -1) {
-            brokerState.orders[index] = data.order;
+            brokerState.orders[index] = data.order || brokerState.orders[index];
             brokerState.active = brokerState.orders.filter(o => ['PENDING', 'PICKUP', 'HOLD'].includes(o.status)).length;
             brokerState.completed = brokerState.orders.filter(o => o.status === 'DELIVERED').length;
-            document.getElementById('broker-active-orders').textContent = brokerState.active;
-            document.getElementById('broker-completed-orders').textContent = brokerState.completed;
+            const activeEl = document.getElementById('broker-active-orders');
+            const completedEl = document.getElementById('broker-completed-orders');
+            if (activeEl) activeEl.textContent = brokerState.active;
+            if (completedEl) completedEl.textContent = brokerState.completed;
             renderBrokerOrders();
         }
 
@@ -877,18 +884,26 @@ async function updateBrokerOrderStatus(orderId, status) {
     try {
         const response = await fetch(`${API_BASE_URL}/broker/orders/${orderId}/status`, {
             method: 'PUT',
-            headers: {
             headers: Object.assign({}, buildBrokerAuthHeaders(), { 'Content-Type': 'application/json' }),
-            body: JSON.stringify({ status })
-        if (!response.ok) throw new Error(data.message || 'Failed to update order status');
+            body: JSON.stringify({ status }),
+        });
+
+        if (!response.ok) {
+            const errBody = await response.json().catch(() => ({}));
+            throw new Error(errBody.message || 'Failed to update order status');
+        }
+
+        const data = await response.json().catch(() => ({}));
 
         const index = brokerState.orders.findIndex(o => o._id === orderId);
         if (index !== -1) {
-            brokerState.orders[index] = data.order;
+            brokerState.orders[index] = data.order || brokerState.orders[index];
             brokerState.active = brokerState.orders.filter(o => o.status === 'PENDING' || o.status === 'PICKUP').length;
             brokerState.completed = brokerState.orders.filter(o => o.status === 'DELIVERED').length;
-            document.getElementById('broker-active-orders').textContent = brokerState.active;
-            document.getElementById('broker-completed-orders').textContent = brokerState.completed;
+            const activeEl = document.getElementById('broker-active-orders');
+            const completedEl = document.getElementById('broker-completed-orders');
+            if (activeEl) activeEl.textContent = brokerState.active;
+            if (completedEl) completedEl.textContent = brokerState.completed;
             renderBrokerOrders();
         }
 
