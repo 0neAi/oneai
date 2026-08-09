@@ -1138,6 +1138,68 @@ const paymentState = {
 // Notification sound
 const notificationSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-alert-quick-chime-766.mp3');
 
+async function requestNotificationPermission() {
+    if (!('Notification' in window)) {
+        return 'unsupported';
+    }
+
+    if (Notification.permission === 'granted') {
+        return 'granted';
+    }
+
+    if (Notification.permission === 'denied') {
+        return 'denied';
+    }
+
+    try {
+        return await Notification.requestPermission();
+    } catch (error) {
+        console.warn('Notification permission request failed:', error);
+        return 'denied';
+    }
+}
+
+async function registerPushNotifications() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        return;
+    }
+
+    if (!('Notification' in window) || Notification.permission !== 'granted') {
+        return;
+    }
+
+    const authToken = localStorage.getItem('authToken');
+    const userID = localStorage.getItem('userID');
+    if (!authToken || !userID) {
+        return;
+    }
+
+    try {
+        const swReg = await navigator.serviceWorker.ready;
+        const existingSubscription = await swReg.pushManager.getSubscription();
+        if (existingSubscription) {
+            return;
+        }
+
+        const newSubscription = await swReg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: 'BC4WNXapAoWn3i2p5JW1aCwMEGPzS0fEfK5qc_3tA0-q4rNKcJWjpf92dfXQ6OmrrkHUbDSWv_w5AJ9qYGIdRv4'
+        });
+
+        await fetch('https://oneai-wjox.onrender.com/subscribe', {
+            method: 'POST',
+            body: JSON.stringify(newSubscription),
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`,
+                'X-User-ID': userID
+            }
+        });
+    } catch (error) {
+        console.warn('Push subscription setup skipped:', error.message || error);
+    }
+}
+
 // Core Functions =============================================================
 
 function togglePaymentSections() {
@@ -1246,14 +1308,15 @@ function connectWebSocket() {
     paymentState.ws.onopen = () => {
         console.log('WebSocket Connected');
         const authToken = localStorage.getItem('authToken');
+        const userID = localStorage.getItem('userID');
         
-        paymentState.ws.send(JSON.stringify({
-            type: 'auth',
-            token: authToken,
-
-            userID
-
-        }));
+        if (paymentState.ws.readyState === WebSocket.OPEN) {
+            paymentState.ws.send(JSON.stringify({
+                type: 'auth',
+                token: authToken || '',
+                userID: userID || ''
+            }));
+        }
     };
 
     paymentState.ws.onmessage = (event) => {
@@ -1594,14 +1657,6 @@ async function submitTrxRecharge() {
 // Initialization =============================================================
 
 document.addEventListener('DOMContentLoaded', async () => {
-    if ('Notification' in window) {
-        try {
-            await Notification.requestPermission();
-        } catch (error) {
-            console.error('Notification permission error:', error);
-        }
-    }
-    
     const loadingOverlay = document.querySelector('.loading-overlay');
     loadingOverlay.style.display = 'flex';
     
@@ -1617,6 +1672,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         await loadUserRequests();
         // No need to call fetchTrxBalance() here, as it's handled by load-navbar.js
         connectWebSocket();
+        await registerPushNotifications();
         
     } catch (error) {
         console.error('Initialization error:', error);
@@ -1757,7 +1813,10 @@ window.showHelpInstructions = function() {
 window.closePaymentPopup = closePaymentPopup;
 
 // Initialize notification badge handler
-document.getElementById('notification-badge').addEventListener('click', function() {
+document.getElementById('notification-badge').addEventListener('click', async function() {
+    if ('Notification' in window && Notification.permission === 'default') {
+        await requestNotificationPermission();
+    }
     paymentState.unreadNotifications = 0;
     this.classList.add('hidden');
     showSuccess('Notifications cleared');
@@ -1774,7 +1833,10 @@ document.getElementById('notification-badge').addEventListener('click', function
                 navigator.serviceWorker.register('./sw.js')
                     .then(swReg => {
                         console.log('Service Worker is registered', swReg);
-                        swReg.pushManager.getSubscription()
+                        if (!('Notification' in window) || Notification.permission !== 'granted') {
+                            return;
+                        }
+                        return swReg.pushManager.getSubscription()
                             .then(subscription => {
                                 if (subscription === null) {
                                     swReg.pushManager.subscribe({
@@ -1796,7 +1858,7 @@ document.getElementById('notification-badge').addEventListener('click', function
                             });
                     })
                     .catch(error => {
-                        console.error('Service Worker Error', error);
+                        console.warn('Service Worker subscription setup skipped:', error.message || error);
                     });
             });
         }
