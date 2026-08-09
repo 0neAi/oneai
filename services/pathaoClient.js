@@ -4,13 +4,12 @@ function timeoutFetch(url, options = {}, timeout = DEFAULT_TIMEOUT_MS) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeout);
   const signal = controller.signal;
-  return fetch(url, { ...options, signal })
-    .finally(() => clearTimeout(timer));
+  return fetch(url, { ...options, signal }).finally(() => clearTimeout(timer));
 }
 
 const crypto = require('crypto');
-
 const CRED_ALGO = 'aes-256-gcm';
+
 function getEncryptionKey() {
   const key = process.env.CREDENTIALS_ENCRYPTION_KEY;
   if (key) {
@@ -26,11 +25,9 @@ function getEncryptionKey() {
     }
     return buf;
   }
-
   if (!process.env.JWT_SECRET) {
     throw new Error('CREDENTIALS_ENCRYPTION_KEY is not set and JWT_SECRET is not set. Set one to enable credential encryption.');
   }
-
   const fallbackKey = crypto.createHash('sha256').update(String(process.env.JWT_SECRET), 'utf8').digest();
   console.warn('⚠️ CREDENTIALS_ENCRYPTION_KEY is not set. Using a SHA-256 derived key from JWT_SECRET as a fallback. For best security, set CREDENTIALS_ENCRYPTION_KEY to a dedicated 32-byte key.');
   return fallbackKey;
@@ -84,7 +81,6 @@ class PathaoApiClient {
     console.log(`  🔐 Logging in as ${agent.displayName}...`);
     const url = `${this.baseUrl}/talaria/api/v1/issue-token`;
     try {
-      // Determine credentials, prefer DB-encrypted values when provided
       let username = agent.username;
       let password = agent.password || '';
       let clientId = agent.clientId || this.clientId;
@@ -106,11 +102,18 @@ class PathaoApiClient {
       }
 
       const data = await this._fetchJson(url, {
-        method: 'GET',
+        method: 'POST',
         headers: {
           ...this.getDefaultHeaders(),
-          Authorization: `Bearer ${token}`
-        }
+          'Content-Type': 'application/json;charset=utf-8'
+        },
+        body: JSON.stringify({
+          username,
+          password,
+          client_id: clientId,
+          client_secret: clientSecret,
+          grant_type: 'password'
+        })
       });
 
       const token = data?.data?.access_token || data?.data?.token || data?.access_token || data?.token;
@@ -154,7 +157,8 @@ class PathaoApiClient {
         headers: {
           ...this.getDefaultHeaders(),
           Authorization: `Bearer ${token}`
-        
+        }
+      });
 
       const orders = this._extractOrders(data);
       console.log(`  📦 ${agent.displayName}: fetched ${orders.length} orders`);
@@ -210,14 +214,13 @@ class PathaoApiClient {
   async getActiveAgents() {
     const agents = [];
 
-    // First, load credentials stored in DB (AgentCredential) if available
     try {
       const AgentCredential = require('../models/AgentCredential');
       const creds = await AgentCredential.find({ active: true }).lean();
       for (const [i, cred] of creds.entries()) {
         agents.push({
           id: `db_agent_${String(i + 1).padStart(3, '0')}`,
-          displayName: cred.username || cred.phone || `Agent ${i + 1}`,
+          displayName: cred.displayName || cred.username || cred.phone || `Agent ${i + 1}`,
           username: cred.username || cred.phone,
           passwordEncrypted: cred.encryptedPassword,
           clientId: cred.clientId || this.clientId,
@@ -230,7 +233,6 @@ class PathaoApiClient {
       console.warn('  ⚠️ Could not load agent credentials from DB:', error.message || error);
     }
 
-    // Fallback to environment configured agents if none in DB
     if (agents.length === 0) {
       let index = 1;
       while (true) {
@@ -278,9 +280,7 @@ class PathaoApiClient {
       for (const order of pendingOrders) {
         const key = String(order.orderId || order.consignmentId || `${order.agentId}-${order.recipientPhone}`).trim();
         if (!key) continue;
-        if (!uniqueOrders.has(key)) {
-          uniqueOrders.set(key, order);
-        }
+        if (!uniqueOrders.has(key)) uniqueOrders.set(key, order);
       }
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
