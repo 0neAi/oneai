@@ -16,7 +16,8 @@ function normalizeAgentStatus(rawStatus) {
 
   if (!status) return 'PENDING';
   if (['delivered', 'delivery completed', 'complete', 'completed'].includes(status)) return 'DELIVERED';
-  if (['return', 'returned', 'returned by customer', 'return requested', 'returned to sender'].includes(status)) return 'RETURNED';
+  if (['return', 'returned', 'returned by customer', 'return requested', 'returned to sender', 'paid return', 'paid return.', 'paid-return', 'paid_return'].includes(status)) return 'RETURNED';
+  if (status.includes('paid return') || status.includes('paid-return') || status.includes('paid_return')) return 'RETURNED';
   if (['hold', 'on hold', 'onhold', 'holding', 'holded'].includes(status)) return 'HOLD';
   if (['cancelled', 'canceled', 'cancel'].includes(status)) return 'CANCELLED';
   if (['failed', 'failure', 'failed to deliver'].includes(status)) return 'FAILED';
@@ -46,6 +47,11 @@ function holdCreditCostForTier(tier) {
   }
 }
 
+function isExpectedTrackingSkip(errorMessage) {
+  const message = String(errorMessage || '').trim().toLowerCase();
+  return !message || /consignment/i.test(message) || /phone/i.test(message) || /not found/i.test(message) || /invalid/i.test(message) || /required/i.test(message) || /no tracking/i.test(message);
+}
+
 class OrderFetcher {
   constructor() {
     this.client = new PathaoApiClient();
@@ -55,8 +61,8 @@ class OrderFetcher {
   }
 
   async fetchFromAgents() {
-    const agents = this.client.getActiveAgents();
-    if (!agents.length) {
+    const agents = await this.client.getActiveAgents();
+    if (!Array.isArray(agents) || !agents.length) {
       console.warn('⚠️ No active Pathao agents configured');
       return [];
     }
@@ -477,18 +483,29 @@ class OrderFetcher {
       }
 
       let updatedCount = 0;
+      let skippedInvalidData = 0;
+      let skippedApiErrors = 0;
       for (const order of trackedOrders) {
-        // Normalize and validate phone before calling external tracking API
         const normalizedPhone = normalizePhoneForDB(order.recipientPhone);
         if (!normalizedPhone) {
-          console.warn(`⚠️ Tracking skip for ${order.orderId}: Invalid or missing recipient phone (${order.recipientPhone})`);
+          skippedInvalidData += 1;
+          continue;
+        }
+
+        if (!order.consignmentId) {
+          skippedInvalidData += 1;
           continue;
         }
 
         const trackingResult = await trackOrder(order.consignmentId, normalizedPhone);
         if (!trackingResult.success) {
-          // Include consignment and normalized phone in the log to help triage API errors such as "Invalid consignment"
-          console.warn(`⚠️ Tracking skip for ${order.orderId} (consignment: ${order.consignmentId}, phone: ${normalizedPhone}): ${trackingResult.error}`);
+          if (isExpectedTrackingSkip(trackingResult.error)) {
+            skippedInvalidData += 1;
+            continue;
+          }
+
+          skippedApiErrors += 1;
+          console.warn(`⚠️ Tracking API error for ${order.orderId}: ${trackingResult.error}`);
           continue;
         }
 
@@ -518,7 +535,11 @@ class OrderFetcher {
         await new Promise((resolve) => setTimeout(resolve, 200));
       }
 
-      console.log(`✅ Tracked broker orders updated: ${updatedCount}`);
+      if (skippedInvalidData || skippedApiErrors) {
+        console.log(`ℹ️ Tracking summary: ${updatedCount} updated, ${skippedInvalidData} skipped for invalid/missing data, ${skippedApiErrors} failed with API errors`);
+      } else {
+        console.log(`✅ Tracked broker orders updated: ${updatedCount}`);
+      }
     } catch (error) {
       console.error('❌ Tracked orders update error:', error.message || error);
     } finally {

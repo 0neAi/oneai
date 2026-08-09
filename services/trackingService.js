@@ -5,7 +5,8 @@ function normalizeStatus(rawStatus) {
 
   if (!status) return 'PENDING';
   if (['delivered', 'delivery completed', 'complete', 'completed'].includes(status)) return 'DELIVERED';
-  if (['return', 'returned', 'returned by customer', 'return requested', 'returned to sender'].includes(status)) return 'RETURNED';
+  if (['return', 'returned', 'returned by customer', 'return requested', 'returned to sender', 'paid return', 'paid return.', 'paid-return', 'paid_return'].includes(status)) return 'RETURNED';
+  if (status.includes('paid return') || status.includes('paid-return') || status.includes('paid_return')) return 'RETURNED';
   if (['hold', 'on hold', 'holding', 'holded'].includes(status)) return 'HOLD';
   if (['cancelled', 'canceled', 'cancel'].includes(status)) return 'CANCELLED';
   if (['failed', 'failure', 'failed to deliver'].includes(status)) return 'FAILED';
