@@ -537,6 +537,114 @@
                 </div>
             </div>
 
+            <!-- Broker Orders Analytics -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h5 class="mb-1">Broker Orders Analytics</h5>
+                            <p class="mb-0 text-muted">Top pages, returns, page-level counts, and customer analytics (repeat & spending).</p>
+                        </div>
+                        <div class="d-flex gap-2 align-items-center">
+                            <input type="date" class="form-control form-control-sm" v-model="analyticsStartDate" />
+                            <input type="date" class="form-control form-control-sm" v-model="analyticsEndDate" />
+                            <button class="btn btn-sm btn-outline-primary" @click="loadBrokerOrdersAnalytics">Refresh</button>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <h6 class="mb-2">Top 50 Repeated Pages</h6>
+                            <div class="table-responsive" style="max-height:360px; overflow:auto;">
+                                <table class="table table-sm mb-0">
+                                    <thead class="table-light"><tr><th>Page</th><th>Orders</th><th>Total Spent</th><th>Avg Price</th></tr></thead>
+                                    <tbody>
+                                        <tr v-for="p in brokerAnalytics.topPages" :key="p._id">
+                                            <td>{{ p._id || '—' }}</td>
+                                            <td>{{ p.count }}</td>
+                                            <td>৳{{ (p.totalSpent || 0).toFixed(2) }}</td>
+                                            <td>৳{{ (p.avgPrice || 0).toFixed(2) }}</td>
+                                        </tr>
+                                        <tr v-if="!brokerAnalytics.topPages || brokerAnalytics.topPages.length === 0"><td colspan="4" class="text-muted">No data</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <h6 class="mb-2">Top Returned Pages</h6>
+                            <div class="table-responsive" style="max-height:360px; overflow:auto;">
+                                <table class="table table-sm mb-0">
+                                    <thead class="table-light"><tr><th>Page</th><th>Returns</th></tr></thead>
+                                    <tbody>
+                                        <tr v-for="p in brokerAnalytics.topReturnedPages" :key="p._id">
+                                            <td>{{ p._id || '—' }}</td>
+                                            <td>{{ p.returnedCount }}</td>
+                                        </tr>
+                                        <tr v-if="!brokerAnalytics.topReturnedPages || brokerAnalytics.topReturnedPages.length === 0"><td colspan="2" class="text-muted">No data</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <h6 class="mb-2">Every Page Order Count</h6>
+                            <div class="table-responsive" style="max-height:260px; overflow:auto;">
+                                <table class="table table-sm mb-0">
+                                    <thead class="table-light"><tr><th>Page</th><th>Orders</th><th>Returns</th><th>Total Spent</th></tr></thead>
+                                    <tbody>
+                                        <tr v-for="p in brokerAnalytics.pageOrderCounts" :key="p._id">
+                                            <td>{{ p._id || '—' }}</td>
+                                            <td>{{ p.count }}</td>
+                                            <td>{{ p.returnedCount || 0 }}</td>
+                                            <td>৳{{ (p.totalSpent || 0).toFixed(2) }}</td>
+                                        </tr>
+                                        <tr v-if="!brokerAnalytics.pageOrderCounts || brokerAnalytics.pageOrderCounts.length === 0"><td colspan="4" class="text-muted">No data</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <h6 class="mb-2">Top 50 Repeated Customers</h6>
+                            <div class="table-responsive" style="max-height:360px; overflow:auto;">
+                                <table class="table table-sm mb-0">
+                                    <thead class="table-light"><tr><th>Name</th><th>Phone</th><th>Orders</th><th>Unique Pages</th></tr></thead>
+                                    <tbody>
+                                        <tr v-for="c in brokerAnalytics.topCustomersByOrders" :key="c.phone || c._id">
+                                            <td>{{ c.name || '—' }}</td>
+                                            <td>{{ c.phone || '—' }}</td>
+                                            <td>{{ c.count }}</td>
+                                            <td>{{ c.uniquePages }}</td>
+                                        </tr>
+                                        <tr v-if="!brokerAnalytics.topCustomersByOrders || brokerAnalytics.topCustomersByOrders.length === 0"><td colspan="4" class="text-muted">No data</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <h6 class="mb-2">Top 50 Spending Customers</h6>
+                            <div class="table-responsive" style="max-height:360px; overflow:auto;">
+                                <table class="table table-sm mb-0">
+                                    <thead class="table-light"><tr><th>Name</th><th>Phone</th><th>Total Spent</th><th>Orders</th></tr></thead>
+                                    <tbody>
+                                        <tr v-for="c in brokerAnalytics.topCustomersBySpent" :key="c.phone || c._id">
+                                            <td>{{ c.name || '—' }}</td>
+                                            <td>{{ c.phone || '—' }}</td>
+                                            <td>৳{{ (c.totalSpent || 0).toFixed(2) }}</td>
+                                            <td>{{ c.orders }}</td>
+                                        </tr>
+                                        <tr v-if="!brokerAnalytics.topCustomersBySpent || brokerAnalytics.topCustomersBySpent.length === 0"><td colspan="4" class="text-muted">No data</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
             <div class="card shadow-sm mb-4">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -2727,6 +2835,16 @@
                         pageNames: '',
                         cost: 20
                     },
+                    // Analytics controls
+                    analyticsStartDate: '',
+                    analyticsEndDate: '',
+                    brokerAnalytics: {
+                        topPages: [],
+                        topReturnedPages: [],
+                        pageOrderCounts: [],
+                        topCustomersByOrders: [],
+                        topCustomersBySpent: []
+                    },
                     capturedAgentRecords: [],
                     penaltyReports: [],
                     premiumPayments: [],
@@ -3009,6 +3127,7 @@
                             this.loadBrokerAgentConfigs(),
                             this.loadBrokerSmartFilters(),
                             this.loadBrokerSmartFilterSuggestions(),
+                            this.loadBrokerOrdersAnalytics(),
                             this.loadCapturedAgentRecords(),
                             this.loadAgentCredentials()
                         ]);
@@ -3359,6 +3478,37 @@
                         this.brokerSmartFilterSuggestions = { pageNames: [], keywords: [] };
                     }
                 },
+
+                // Load analytics aggregations for broker orders
+                async loadBrokerOrdersAnalytics() {
+                    try {
+                        const params = {};
+                        if (this.analyticsStartDate) params.startDate = this.analyticsStartDate;
+                        if (this.analyticsEndDate) params.endDate = this.analyticsEndDate;
+                        // default limit for top lists
+                        params.limit = 50;
+
+                        const response = await axios.get(`${API_BASE}/admin/broker-orders/analytics`, { params });
+                        const data = response.data || {};
+
+                        this.brokerAnalytics.topPages = data.topPages || [];
+                        this.brokerAnalytics.topReturnedPages = data.topReturnedPages || [];
+                        this.brokerAnalytics.pageOrderCounts = data.pageOrderCounts || [];
+                        this.brokerAnalytics.topCustomersByOrders = data.topCustomersByOrders || [];
+                        this.brokerAnalytics.topCustomersBySpent = data.topCustomersBySpent || [];
+                    } catch (error) {
+                        console.error('Error loading broker orders analytics:', error);
+                        this.brokerAnalytics = {
+                            topPages: [],
+                            topReturnedPages: [],
+                            pageOrderCounts: [],
+                            topCustomersByOrders: [],
+                            topCustomersBySpent: []
+                        };
+                        alert('Failed to load broker orders analytics.');
+                    }
+                },
+
                 async saveBrokerSmartFilterSettings() {
                     try {
                         const response = await axios.post(`${API_BASE}/admin/broker-smart-filter-settings`, {

@@ -3468,6 +3468,72 @@ app.get('/admin/broker-orders', adminAuth, async (req, res) => {
   }
 });
 
+// Admin analytics endpoint for broker orders
+app.get('/admin/broker-orders/analytics', adminAuth, async (req, res) => {
+  try {
+    const { startDate, endDate, limit = 50 } = req.query;
+    const match = {};
+
+    if (startDate) {
+      const sd = new Date(startDate);
+      if (!isNaN(sd)) match.createdAt = { ...(match.createdAt || {}), $gte: sd };
+    }
+    if (endDate) {
+      const ed = new Date(endDate);
+      if (!isNaN(ed)) match.createdAt = { ...(match.createdAt || {}), $lte: ed };
+    }
+
+    const topPagesPipeline = [
+      { $match: match },
+      { $group: { _id: { $ifNull: ["$merchantName", "Unknown"] }, count: { $sum: 1 }, totalSpent: { $sum: "$price" }, avgPrice: { $avg: "$price" } } },
+      { $sort: { count: -1, totalSpent: -1 } },
+      { $limit: Number(limit) }
+    ];
+
+    const topReturnedPagesPipeline = [
+      { $match: Object.assign({}, match, { status: 'RETURNED' }) },
+      { $group: { _id: { $ifNull: ["$merchantName", "Unknown"] }, returnedCount: { $sum: 1 } } },
+      { $sort: { returnedCount: -1 } },
+      { $limit: Number(limit) }
+    ];
+
+    const pageOrderCountsPipeline = [
+      { $match: match },
+      { $group: { _id: { $ifNull: ["$merchantName", "Unknown"] }, count: { $sum: 1 }, returnedCount: { $sum: { $cond: [{ $eq: ["$status", 'RETURNED'] }, 1, 0] } }, totalSpent: { $sum: "$price" } } },
+      { $sort: { count: -1 } }
+    ];
+
+    const topCustomersByOrdersPipeline = [
+      { $match: match },
+      { $group: { _id: { phone: { $ifNull: ["$recipientPhone", "Unknown"] }, name: { $ifNull: ["$recipientName", ""] } }, count: { $sum: 1 }, pages: { $addToSet: "$merchantName" } } },
+      { $project: { _id: 0, phone: "$_id.phone", name: "$_id.name", count: 1, uniquePages: { $size: "$pages" } } },
+      { $sort: { count: -1 } },
+      { $limit: Number(limit) }
+    ];
+
+    const topCustomersBySpentPipeline = [
+      { $match: match },
+      { $group: { _id: { phone: { $ifNull: ["$recipientPhone", "Unknown"] }, name: { $ifNull: ["$recipientName", ""] } }, totalSpent: { $sum: "$price" }, orders: { $sum: 1 } } },
+      { $project: { _id: 0, phone: "$_id.phone", name: "$_id.name", totalSpent: 1, orders: 1 } },
+      { $sort: { totalSpent: -1 } },
+      { $limit: Number(limit) }
+    ];
+
+    const [ topPages, topReturnedPages, pageOrderCounts, topCustomersByOrders, topCustomersBySpent ] = await Promise.all([
+      BrokerOrder.aggregate(topPagesPipeline),
+      BrokerOrder.aggregate(topReturnedPagesPipeline),
+      BrokerOrder.aggregate(pageOrderCountsPipeline),
+      BrokerOrder.aggregate(topCustomersByOrdersPipeline),
+      BrokerOrder.aggregate(topCustomersBySpentPipeline)
+    ]);
+
+    res.json({ success: true, topPages, topReturnedPages, pageOrderCounts, topCustomersByOrders, topCustomersBySpent });
+  } catch (error) {
+    console.error('Error computing broker orders analytics:', error);
+    res.status(500).json({ success: false, message: 'Failed to compute broker orders analytics.' });
+  }
+});
+
 app.put('/admin/broker-orders/:id/status', adminAuth, async (req, res) => {
   try {
     const { id } = req.params;
