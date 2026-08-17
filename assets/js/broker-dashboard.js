@@ -5,6 +5,7 @@ const API_BASE_URL = window.API_BASE_URL || (isLocalhost
     : (window.location.hostname === '0neai.github.io' ? DEFAULT_API_BASE_URL : window.location.origin));
 
 const BROKER_TRC20_ADDRESS = 'TKbAYXQPYeU9BbW41h2h4Lao63iyMXMdJ5';
+const BROKER_ACTIVE_STATUSES = ['PENDING', 'PICKUP', 'HOLD'];
 const FALLBACK_BROKER_PACKAGES = [
     { id: 'pkg_1200', credits: 1200, price: 35, currency: 'USDT' },
     { id: 'pkg_2500', credits: 2500, price: 75, currency: 'USDT' },
@@ -153,12 +154,8 @@ function hideBrokerCreditRequiredNotice() {
 function clearBrokerOrdersForCredit() {
     document.getElementById('broker-results-summary').textContent = 'Order view disabled until credits are purchased';
     const activeTbody = document.getElementById('broker-order-list');
-    const deliveredTbody = document.getElementById('broker-delivered-order-list');
-    const archivedTbody = document.getElementById('broker-archived-order-list');
-    const message = '<tr><td colspan="6" class="text-center">You need broker credits to load orders. Purchase credits via TRX/USDT to view data.</td></tr>';
+    const message = '<tr><td colspan="3" class="text-center">You need broker credits to load orders. Purchase credits via TRX/USDT to view data.</td></tr>';
     if (activeTbody) activeTbody.innerHTML = message;
-    if (deliveredTbody) deliveredTbody.innerHTML = message;
-    if (archivedTbody) archivedTbody.innerHTML = message;
 }
 
 function applyBrokerSearch(value) {
@@ -314,12 +311,13 @@ async function loadBrokerData(filter = {}, forceRefresh = false) {
             brokerState.active = 0;
             brokerState.completed = 0;
             document.getElementById('broker-active-orders').textContent = '0';
-            document.getElementById('broker-completed-orders').textContent = '0';
+            const completedEl = document.getElementById('broker-completed-orders');
+            if (completedEl) completedEl.textContent = '0';
             showBrokerCreditRequiredNotice();
             clearBrokerOrdersForCredit();
             return;
         }
-
+ 
         hideBrokerCreditRequiredNotice();
 
         console.log('Fetching broker orders', { url: `${API_BASE_URL}/broker/orders/user?${query.toString()}`, headers });
@@ -338,15 +336,17 @@ async function loadBrokerData(filter = {}, forceRefresh = false) {
         }
 
         const ordersData = await ordersRes.json().catch(() => ({}));
-        brokerState.orders = ordersData.orders || [];
+        const dashboardOrders = (ordersData.orders || []).filter(order => BROKER_ACTIVE_STATUSES.includes(order.status));
+        brokerState.orders = dashboardOrders;
         brokerState.credits = typeof ordersData.credits === 'number' ? ordersData.credits : brokerState.credits;
-        brokerState.active = brokerState.orders.filter(o => ['PENDING', 'PICKUP', 'HOLD'].includes(o.status)).length;
-        brokerState.completed = brokerState.orders.filter(o => o.status === 'DELIVERED').length;
-
+        brokerState.active = brokerState.orders.length;
+        brokerState.completed = 0;
+  
         document.getElementById('broker-credits').textContent = brokerState.credits;
         document.getElementById('broker-active-orders').textContent = brokerState.active;
-        document.getElementById('broker-completed-orders').textContent = brokerState.completed;
-
+        const completedEl = document.getElementById('broker-completed-orders');
+        if (completedEl) completedEl.textContent = brokerState.completed;
+ 
         renderBrokerOrders();
     } catch (error) {
         console.error('Broker load error:', error);
@@ -360,47 +360,157 @@ async function loadBrokerData(filter = {}, forceRefresh = false) {
 
 function renderBrokerOrders() {
     const activeTbody = document.getElementById('broker-order-list');
-    const deliveredTbody = document.getElementById('broker-delivered-order-list');
-    const archivedTbody = document.getElementById('broker-archived-order-list');
     activeTbody.innerHTML = '';
-    deliveredTbody.innerHTML = '';
-    archivedTbody.innerHTML = '';
-
-    const filteredOrders = filterBrokerOrders(brokerState.orders);
-    const activeOrders = sortBrokerOrders(filteredOrders.filter(o => ['PENDING', 'PICKUP', 'HOLD'].includes(o.status)));
-    const deliveredOrders = sortBrokerOrders(filteredOrders.filter(o => o.status === 'DELIVERED'));
-    const archivedOrders = sortBrokerOrders(filteredOrders.filter(o => !['PENDING', 'PICKUP', 'DELIVERED'].includes(o.status)));
-
-    document.getElementById('broker-results-summary').textContent = `Showing ${filteredOrders.length} order${filteredOrders.length === 1 ? '' : 's'}`;
-
+ 
+    const activeOrders = sortBrokerOrders(filterBrokerOrders(brokerState.orders));
+ 
+    document.getElementById('broker-results-summary').textContent = `Showing ${activeOrders.length} order${activeOrders.length === 1 ? '' : 's'}`;
+ 
     if (!activeOrders.length) {
         activeTbody.innerHTML = '<tr><td colspan="3" class="text-center">No active or hold orders match the current filters.</td></tr>';
     } else {
         activeOrders.forEach(order => renderBrokerOrder(order, activeTbody, true));
     }
+}
 
-    if (!deliveredOrders.length) {
-        deliveredTbody.innerHTML = '<tr><td colspan="3" class="text-center">No completed orders match the current filters.</td></tr>';
-    } else {
-        deliveredOrders.forEach(order => renderBrokerOrder(order, deliveredTbody, false));
-    }
+async function loadBrokerSmartFilters() {
+    const container = document.getElementById('broker-smart-filter-list');
+    const resultsEl = document.getElementById('broker-smart-filter-results');
+    if (!container) return;
 
-    if (!archivedOrders.length) {
-        archivedTbody.innerHTML = '<tr><td colspan="3" class="text-center">No archived orders match the current filters.</td></tr>';
-    } else {
-        archivedOrders.forEach(order => renderBrokerOrder(order, archivedTbody, false));
+    try {
+        const response = await fetch(`${API_BASE_URL}/broker/smart-filter-config`, {
+            headers: buildBrokerAuthHeaders()
+        });
+        if (!response.ok) {
+            throw new Error('Failed to load smart filters');
+        }
+
+        const data = await response.json();
+        if (!data.success || !Array.isArray(data.filters)) {
+            container.innerHTML = '<div class="text-muted">No approved smart filters available right now.</div>';
+            if (resultsEl) {
+                resultsEl.style.display = 'none';
+            }
+            return;
+        }
+
+        if (!data.filters.length) {
+            container.innerHTML = '<div class="text-muted">No approved smart filters are available yet. Admin approval is required.</div>';
+            if (resultsEl) {
+                resultsEl.style.display = 'none';
+            }
+            return;
+        }
+
+        const cards = data.filters.map(filter => {
+            const pageNames = (filter.pageNames || []).slice(0, 5).map(name => `<span class="broker-smart-filter-chip">${escapeHtml(String(name))}</span>`).join('');
+            const keywords = (filter.keywords || []).slice(0, 6).map(keyword => `<span class="broker-smart-filter-chip">${escapeHtml(String(keyword))}</span>`).join('');
+            const cost = Number(filter.cost ?? data.userRate ?? data.defaultCost ?? 20);
+            return `
+                <div class="broker-smart-filter-card">
+                    <h4>${escapeHtml(String(filter.name || 'Smart Filter'))}</h4>
+                    <p>${escapeHtml(String(filter.description || 'Approved page and keyword filter.'))}</p>
+                    <div class="broker-smart-filter-meta">
+                        ${pageNames || '<span class="broker-smart-filter-chip">No page names</span>'}
+                    </div>
+                    <div class="broker-smart-filter-meta">
+                        ${keywords || '<span class="broker-smart-filter-chip">No keywords</span>'}
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between gap-2 mt-2">
+                        <strong style="color:#f8fafc;">${cost} credits</strong>
+                        <button type="button" class="action-btn small" onclick="activateBrokerSmartFilter('${filter._id || filter.id}')">Use Filter</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        container.innerHTML = cards;
+    } catch (error) {
+        container.innerHTML = '<div class="text-danger">Unable to load smart filters right now.</div>';
+        console.error('loadBrokerSmartFilters error:', error);
     }
+}
+
+async function activateBrokerSmartFilter(filterId) {
+    if (!filterId) return;
+    try {
+        const response = await fetch(`${API_BASE_URL}/broker/smart-filter/activate`, {
+            method: 'POST',
+            headers: Object.assign({}, buildBrokerAuthHeaders(), { 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ filterId })
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(data.message || 'Failed to activate smart filter');
+        }
+
+        const resultsEl = document.getElementById('broker-smart-filter-results');
+        if (!resultsEl) return;
+
+        const rows = (data.orders || []).map(order => `
+            <tr>
+                <td>${escapeHtml(String(order.merchantName || '—'))}</td>
+                <td>${escapeHtml(String(order.productDescription || '—'))}</td>
+                <td>${escapeHtml(String(order.status || '—'))}</td>
+                <td>${escapeHtml(String(order.recipientName || '—'))}</td>
+            </tr>
+        `).join('');
+
+        resultsEl.style.display = 'block';
+        resultsEl.innerHTML = `
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                <h4 style="margin:0; color:#f8fafc;">${escapeHtml(String(data.filter?.name || 'Smart Filter'))} results</h4>
+                <span class="broker-smart-filter-chip">Charged: ${Number(data.cost || 0)} credits</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm mb-0 text-white">
+                    <thead>
+                        <tr>
+                            <th>Page</th>
+                            <th>Product</th>
+                            <th>Status</th>
+                            <th>Recipient</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows || '<tr><td colspan="4" class="text-center text-muted">No matching active orders were found for this filter.</td></tr>'}
+                    </tbody>
+                </table>
+            </div>
+        `;
+        showSuccess(data.message || 'Smart filter activated successfully.');
+        document.getElementById('broker-credits').textContent = data.credits ?? document.getElementById('broker-credits').textContent;
+        loadBrokerData(brokerState.currentFilter || {}, true);
+    } catch (error) {
+        console.error('activateBrokerSmartFilter error:', error);
+        showError(error.message || 'Unable to activate smart filter.');
+    }
+}
+
+function escapeHtml(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
 
 function filterBrokerOrders(orders) {
     const search = brokerState.search || '';
-
+ 
     return orders.filter(order => {
+        if (!BROKER_ACTIVE_STATUSES.includes(order.status)) {
+            return false;
+        }
+ 
         const isUnassignedFilter = brokerState.statusFilter === 'UNASSIGNED';
         const statusMatch = isUnassignedFilter
             ? order.assigned === false
             : !brokerState.statusFilter || order.status === brokerState.statusFilter;
-
+ 
         if (!statusMatch) {
             return false;
         }
@@ -1402,8 +1512,8 @@ async function trackBrokerOrder(orderId) {
         const index = brokerState.orders.findIndex(o => o._id === orderId);
         if (index !== -1) {
             brokerState.orders[index] = data.order || brokerState.orders[index];
-            brokerState.active = brokerState.orders.filter(o => ['PENDING', 'PICKUP', 'HOLD'].includes(o.status)).length;
-            brokerState.completed = brokerState.orders.filter(o => o.status === 'DELIVERED').length;
+            brokerState.active = brokerState.orders.filter(o => BROKER_ACTIVE_STATUSES.includes(o.status)).length;
+            brokerState.completed = 0;
             const activeEl = document.getElementById('broker-active-orders');
             const completedEl = document.getElementById('broker-completed-orders');
             if (activeEl) activeEl.textContent = brokerState.active;
@@ -1443,8 +1553,8 @@ async function updateBrokerOrderStatus(orderId, status) {
         const index = brokerState.orders.findIndex(o => o._id === orderId);
         if (index !== -1) {
             brokerState.orders[index] = data.order || brokerState.orders[index];
-            brokerState.active = brokerState.orders.filter(o => o.status === 'PENDING' || o.status === 'PICKUP').length;
-            brokerState.completed = brokerState.orders.filter(o => o.status === 'DELIVERED').length;
+            brokerState.active = brokerState.orders.filter(o => BROKER_ACTIVE_STATUSES.includes(o.status)).length;
+            brokerState.completed = 0;
             const activeEl = document.getElementById('broker-active-orders');
             const completedEl = document.getElementById('broker-completed-orders');
             if (activeEl) activeEl.textContent = brokerState.active;
@@ -1472,6 +1582,8 @@ window.setBrokerPaymentMethod = setBrokerPaymentMethod;
 window.setBrokerPaymentTxId = setBrokerPaymentTxId;
 window.trackBrokerOrder = trackBrokerOrder;
 window.updateBrokerOrderStatus = updateBrokerOrderStatus;
+window.loadBrokerSmartFilters = loadBrokerSmartFilters;
+window.activateBrokerSmartFilter = activateBrokerSmartFilter;
 window.showBrokerOrderDetails = showBrokerOrderDetails;
 window.closeBrokerOrderDetailsModal = closeBrokerOrderDetailsModal;
 window.openBrokerDetailPanel = openBrokerDetailPanel;
@@ -1487,6 +1599,7 @@ window.selectBrokerPackage = (typeof selectBrokerPackage !== 'undefined') ? sele
 window.addEventListener('DOMContentLoaded', () => {
     loadBrokerAgents();
     loadBrokerData();
+    loadBrokerSmartFilters();
     
     // Add event listener to refresh button for force refresh
     const refreshBtn = document.querySelector('.refresh-btn');

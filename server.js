@@ -122,6 +122,77 @@ function getBrokerDashboardChargeDay(date = new Date()) {
   return normalizedDate;
 }
 
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+async function getBrokerSmartFilterConfig(user = null) {
+  const defaultSetting = await AppSetting.findOne({ key: 'broker_smart_filter_default_cost' });
+  const enabledSetting = await AppSetting.findOne({ key: 'broker_smart_filter_enabled' });
+  const filterSetting = await AppSetting.findOne({ key: 'broker_smart_filters' });
+
+  const defaultCost = Number(defaultSetting?.value ?? 20);
+  const enabled = enabledSetting?.value !== undefined ? Boolean(enabledSetting.value) : true;
+  const filters = Array.isArray(filterSetting?.value) ? filterSetting.value.filter((filter) => filter && filter.enabled && filter.approved) : [];
+  const userRate = user && user.brokerSmartFilterRate !== null && user.brokerSmartFilterRate !== undefined
+    ? Number(user.brokerSmartFilterRate)
+    : defaultCost;
+
+  return {
+    enabled,
+    defaultCost: Number.isFinite(defaultCost) && defaultCost > 0 ? defaultCost : 20,
+    userRate: Number.isFinite(userRate) && userRate > 0 ? userRate : (Number.isFinite(defaultCost) && defaultCost > 0 ? defaultCost : 20),
+    filters
+  };
+}
+
+async function getBrokerSmartFilterSuggestions() {
+  const orders = await BrokerOrder.find({ completed: true }).select('merchantName productDescription deliveryInstruction recipientAddress recipientName status').limit(500).lean();
+  const pageNames = [];
+  const keywordCounts = new Map();
+  const addKeyword = (token) => {
+    if (!token || token.length < 3) return;
+    const lower = token.toLowerCase();
+    if (['delivery', 'order', 'product', 'customer', 'merchant', 'page', 'address', 'phone', 'name', 'details', 'service', 'from', 'to'].includes(lower)) return;
+    keywordCounts.set(lower, (keywordCounts.get(lower) || 0) + 1);
+  };
+
+  for (const order of orders) {
+    const candidatePage = String(order.merchantName || '').trim();
+    if (candidatePage) {
+      const existing = pageNames.find((name) => name.toLowerCase() === candidatePage.toLowerCase());
+      if (!existing) pageNames.push(candidatePage);
+    }
+
+    const searchableText = [
+      order.merchantName,
+      order.productDescription,
+      order.deliveryInstruction,
+      order.recipientAddress,
+      order.recipientName,
+      order.status
+    ].join(' ');
+
+    const tokens = String(searchableText || '')
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+      .split(/\s+/)
+      .filter(Boolean);
+
+    for (const token of tokens) {
+      addKeyword(token);
+    }
+  }
+
+  return {
+    pageNames: pageNames.slice(0, 40).sort((a, b) => a.localeCompare(b)),
+    keywords: [...keywordCounts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 25)
+      .map(([keyword]) => keyword)
+  };
+}
+
 function makePathaoApiRequest(url, options = {}) {
   return new Promise((resolve, reject) => {
     const parsedUrl = new URL(url);
@@ -2460,8 +2531,15 @@ app.get('/broker/orders/user', validateUser, async (req, res) => {
       filter.user = req.user._id;
     }
 
-    if (req.query.status) {
-      filter.status = String(req.query.status).toUpperCase();
+    const brokerActiveStatuses = ['PENDING', 'PICKUP', 'HOLD'];
+    const requestedStatus = req.query.status ? String(req.query.status).toUpperCase() : '';
+
+    if (requestedStatus && brokerActiveStatuses.includes(requestedStatus)) {
+      filter.status = requestedStatus;
+    } else if (!requestedStatus) {
+      filter.status = { $in: brokerActiveStatuses };
+    } else {
+      filter.status = { $in: brokerActiveStatuses };
     }
 
     if (req.query.assigned === 'true') {
@@ -2472,16 +2550,12 @@ app.get('/broker/orders/user', validateUser, async (req, res) => {
       filter.assigned = false;
     }
 
-    if (req.query.completed === 'true') {
-      filter.completed = true;
-    }
-
-    if (req.query.completed === 'false') {
-      filter.completed = false;
-    }
+    // Public broker dashboard must only show active/hold orders. Completed orders remain admin-only.
+    filter.completed = false;
 
     const orders = await BrokerOrder.find(filter).sort({ createdAt: -1 });
-    const loadedOrderCount = orders.length;
+    const activeOrders = orders.filter(order => !order.completed && brokerActiveStatuses.includes(order.status));
+    const loadedOrderCount = activeOrders.length;
     const today = getBrokerDashboardChargeDay();
     const lastChargeDate = user.brokerDashboardChargeDate ? getBrokerDashboardChargeDay(user.brokerDashboardChargeDate) : null;
 
@@ -2524,10 +2598,285 @@ app.get('/broker/orders/user', validateUser, async (req, res) => {
       await user.save();
     }
 
-    res.json({ success: true, orders, credits: user.brokerCredits, chargedOrderCount: user.brokerDashboardChargedOrderCount });
+    const visibleOrders = activeOrders;
+    res.json({ success: true, orders: visibleOrders, credits: user.brokerCredits, chargedOrderCount: user.brokerDashboardChargedOrderCount });
   } catch (error) {
     console.error('Error fetching broker orders:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch broker orders' });
+  }
+});
+
+app.get('/broker/smart-filter-config', validateUser, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select('brokerSmartFilterRate brokerCredits');
+    const config = await getBrokerSmartFilterConfig(user || { brokerSmartFilterRate: null });
+    res.json({
+      success: true,
+      enabled: config.enabled,
+      defaultCost: config.defaultCost,
+      userRate: config.userRate,
+      credits: user ? user.brokerCredits : 0,
+      filters: config.filters
+    });
+  } catch (error) {
+    console.error('Error fetching broker smart filter config:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch smart filter config.' });
+  }
+});
+
+app.post('/broker/smart-filter/activate', validateUser, async (req, res) => {
+  try {
+    const { filterId } = req.body || {};
+    if (!filterId) {
+      return res.status(400).json({ success: false, message: 'Smart filter ID is required.' });
+    }
+
+    const user = await User.findById(req.user._id).select('brokerCredits brokerSmartFilterRate');
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    const config = await getBrokerSmartFilterConfig(user);
+    if (!config.enabled) {
+      return res.status(403).json({ success: false, message: 'Smart filtering is disabled by admin.' });
+    }
+
+    const filterSetting = await AppSetting.findOne({ key: 'broker_smart_filters' });
+    const filters = Array.isArray(filterSetting?.value) ? filterSetting.value : [];
+    const filter = filters.find((item) => String(item?._id || item?.id) === String(filterId));
+    if (!filter || !filter.approved || !filter.enabled) {
+      return res.status(404).json({ success: false, message: 'Smart filter not found or not approved yet.' });
+    }
+
+    const chargeAmount = Number(filter.cost ?? config.userRate ?? config.defaultCost ?? 20);
+    const effectiveCost = Number.isFinite(chargeAmount) && chargeAmount > 0 ? chargeAmount : (Number.isFinite(config.userRate) ? config.userRate : config.defaultCost);
+
+    if ((user.brokerCredits || 0) < effectiveCost) {
+      return res.status(403).json({ success: false, message: `You need ${effectiveCost} credits to use this smart filter.`, requiredCredits: effectiveCost, availableCredits: user.brokerCredits || 0 });
+    }
+
+    const keywordPatterns = (filter.keywords || []).map(keyword => new RegExp(escapeRegExp(String(keyword).trim()), 'i'));
+    const pageNames = (filter.pageNames || []).map(name => String(name).trim()).filter(Boolean);
+    const orderQuery = {
+      completed: false,
+      status: { $in: ['PENDING', 'PICKUP', 'HOLD'] },
+      $or: []
+    };
+
+    if (pageNames.length) {
+      orderQuery.$or.push({ merchantName: { $in: pageNames } });
+    }
+
+    if (keywordPatterns.length) {
+      const keywordMatch = {
+        $or: [
+          { merchantName: { $in: keywordPatterns } },
+          { productDescription: { $in: keywordPatterns } },
+          { deliveryInstruction: { $in: keywordPatterns } },
+          { recipientAddress: { $in: keywordPatterns } },
+          { recipientName: { $in: keywordPatterns } }
+        ]
+      };
+      orderQuery.$or.push(keywordMatch);
+    }
+
+    if (!orderQuery.$or.length) {
+      orderQuery.$or.push({ merchantName: '' });
+    }
+
+    const orders = await BrokerOrder.find(orderQuery).sort({ createdAt: -1 }).lean();
+
+    user.brokerCredits = Math.max(0, (user.brokerCredits || 0) - effectiveCost);
+    await user.save();
+
+    await BrokerCreditTransaction.create({
+      userId: user._id,
+      type: 'usage',
+      amount: effectiveCost,
+      balance: user.brokerCredits,
+      description: `Smart broker filter: ${filter.name}`,
+      orderId: null
+    });
+
+    res.json({
+      success: true,
+      message: `Smart filter activated for ${filter.name}.`,
+      filter,
+      cost: effectiveCost,
+      orders,
+      credits: user.brokerCredits
+    });
+  } catch (error) {
+    console.error('Error activating broker smart filter:', error);
+    res.status(500).json({ success: false, message: 'Failed to activate smart filter.' });
+  }
+});
+
+app.get('/admin/broker-smart-filter-suggestions', adminAuth, async (req, res) => {
+  try {
+    const suggestions = await getBrokerSmartFilterSuggestions();
+    const config = await getBrokerSmartFilterConfig();
+    res.json({
+      success: true,
+      defaultCost: config.defaultCost,
+      enabled: config.enabled,
+      suggestions
+    });
+  } catch (error) {
+    console.error('Error fetching broker smart filter suggestions:', error);
+    res.status(500).json({ success: false, message: 'Failed to load smart filter suggestions.' });
+  }
+});
+
+app.get('/admin/broker-smart-filters', adminAuth, async (req, res) => {
+  try {
+    const filterSetting = await AppSetting.findOne({ key: 'broker_smart_filters' });
+    const filters = Array.isArray(filterSetting?.value) ? filterSetting.value : [];
+    const suggestions = await getBrokerSmartFilterSuggestions();
+    const defaultCost = Number((await AppSetting.findOne({ key: 'broker_smart_filter_default_cost' })?.value) ?? 20);
+    const enabled = Boolean((await AppSetting.findOne({ key: 'broker_smart_filter_enabled' })?.value) ?? true);
+    res.json({ success: true, filters, suggestions, defaultCost, enabled });
+  } catch (error) {
+    console.error('Error fetching admin broker smart filters:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch smart filters.' });
+  }
+});
+
+app.post('/admin/broker-smart-filters', adminAuth, async (req, res) => {
+  try {
+    const { name, description, keywords, pageNames, approved, enabled, cost } = req.body || {};
+    if (!name || !String(name).trim()) {
+      return res.status(400).json({ success: false, message: 'Smart filter name is required.' });
+    }
+
+    const parsedKeywords = Array.isArray(keywords) ? keywords.map(keyword => String(keyword).trim()).filter(Boolean) : [];
+    const parsedPageNames = Array.isArray(pageNames) ? pageNames.map(name => String(name).trim()).filter(Boolean) : [];
+    const nextCost = Number(cost ?? 20);
+
+    const setting = await AppSetting.findOne({ key: 'broker_smart_filters' });
+    const existing = Array.isArray(setting?.value) ? setting.value : [];
+    const record = {
+      _id: String(Date.now() + Math.random().toString(16).slice(2)),
+      name: String(name).trim(),
+      description: String(description || '').trim(),
+      keywords: parsedKeywords,
+      pageNames: parsedPageNames,
+      approved: Boolean(approved),
+      enabled: enabled === undefined ? true : Boolean(enabled),
+      cost: Number.isFinite(nextCost) && nextCost > 0 ? nextCost : 20,
+      createdAt: new Date().toISOString()
+    };
+
+    existing.push(record);
+    await AppSetting.findOneAndUpdate(
+      { key: 'broker_smart_filters' },
+      { value: existing, description: 'Approved broker smart filter definitions' },
+      { upsert: true, new: true }
+    );
+
+    res.status(201).json({ success: true, message: 'Smart filter saved.', filter: record });
+  } catch (error) {
+    console.error('Error saving admin broker smart filter:', error);
+    res.status(500).json({ success: false, message: 'Failed to save smart filter.' });
+  }
+});
+
+app.put('/admin/broker-smart-filters/:id', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, description, keywords, pageNames, approved, enabled, cost } = req.body || {};
+    const setting = await AppSetting.findOne({ key: 'broker_smart_filters' });
+    const existing = Array.isArray(setting?.value) ? setting.value : [];
+    const index = existing.findIndex((item) => String(item?._id || item?.id) === String(id));
+    if (index === -1) return res.status(404).json({ success: false, message: 'Smart filter not found.' });
+
+    existing[index] = {
+      ...existing[index],
+      name: String(name || existing[index].name).trim(),
+      description: String(description ?? existing[index].description ?? '').trim(),
+      keywords: Array.isArray(keywords) ? keywords.map(k => String(k).trim()).filter(Boolean) : (existing[index].keywords || []),
+      pageNames: Array.isArray(pageNames) ? pageNames.map(p => String(p).trim()).filter(Boolean) : (existing[index].pageNames || []),
+      approved: Boolean(approved ?? existing[index].approved),
+      enabled: enabled === undefined ? Boolean(existing[index].enabled !== false) : Boolean(enabled),
+      cost: Number.isFinite(Number(cost)) && Number(cost) > 0 ? Number(cost) : (existing[index].cost || 20),
+      updatedAt: new Date().toISOString()
+    };
+
+    await AppSetting.findOneAndUpdate(
+      { key: 'broker_smart_filters' },
+      { value: existing, description: 'Approved broker smart filter definitions' },
+      { upsert: true, new: true }
+    );
+
+    res.json({ success: true, message: 'Smart filter updated.', filter: existing[index] });
+  } catch (error) {
+    console.error('Error updating admin broker smart filter:', error);
+    res.status(500).json({ success: false, message: 'Failed to update smart filter.' });
+  }
+});
+
+app.delete('/admin/broker-smart-filters/:id', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const setting = await AppSetting.findOne({ key: 'broker_smart_filters' });
+    const existing = Array.isArray(setting?.value) ? setting.value : [];
+    const nextValue = existing.filter((item) => String(item?._id || item?.id) !== String(id));
+    await AppSetting.findOneAndUpdate(
+      { key: 'broker_smart_filters' },
+      { value: nextValue, description: 'Approved broker smart filter definitions' },
+      { upsert: true, new: true }
+    );
+    res.json({ success: true, message: 'Smart filter deleted.' });
+  } catch (error) {
+    console.error('Error deleting admin broker smart filter:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete smart filter.' });
+  }
+});
+
+app.post('/admin/broker-smart-filter-settings', adminAuth, async (req, res) => {
+  try {
+    const { defaultCost, enabled } = req.body || {};
+    if (defaultCost !== undefined) {
+      const parsedCost = Number(defaultCost);
+      await AppSetting.findOneAndUpdate(
+        { key: 'broker_smart_filter_default_cost' },
+        { value: Number.isFinite(parsedCost) && parsedCost > 0 ? parsedCost : 20, description: 'Default broker smart filter credit cost' },
+        { upsert: true, new: true }
+      );
+    }
+    if (enabled !== undefined) {
+      await AppSetting.findOneAndUpdate(
+        { key: 'broker_smart_filter_enabled' },
+        { value: Boolean(enabled), description: 'Enable or disable broker smart filtering' },
+        { upsert: true, new: true }
+      );
+    }
+    const config = await getBrokerSmartFilterConfig();
+    res.json({ success: true, message: 'Smart filter settings updated.', defaultCost: config.defaultCost, enabled: config.enabled });
+  } catch (error) {
+    console.error('Error updating broker smart filter settings:', error);
+    res.status(500).json({ success: false, message: 'Failed to update smart filter settings.' });
+  }
+});
+
+app.put('/admin/users/:id/broker-smart-filter-rate', adminAuth, async (req, res) => {
+  try {
+    const { rate } = req.body || {};
+    const parsedRate = Number(rate);
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { brokerSmartFilterRate: Number.isFinite(parsedRate) && parsedRate > 0 ? parsedRate : null },
+      { new: true }
+    ).select('email phone brokerSmartFilterRate');
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    res.json({ success: true, user });
+  } catch (error) {
+    console.error('Error updating user smart filter rate:', error);
+    res.status(500).json({ success: false, message: 'Failed to update user smart filter rate.' });
   }
 });
 

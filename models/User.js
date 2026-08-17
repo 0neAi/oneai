@@ -65,6 +65,7 @@ const userSchema = new mongoose.Schema({
   },
   brokerSubscriptionExpiresAt: { type: Date },
   brokerUsageCount: { type: Number, default: 0 },
+  brokerSmartFilterRate: { type: Number, default: null },
   brokerLastAccessedAt: { type: Date },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }

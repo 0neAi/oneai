@@ -438,6 +438,109 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <div>
+                            <h5 class="mb-1">Broker Smart Filters</h5>
+                            <p class="mb-0 text-muted">Create, approve, and manage page-based filter packs that charge special broker credits.</p>
+                        </div>
+                        <button class="btn btn-sm btn-outline-primary" @click="loadBrokerSmartFilters()">
+                            Refresh
+                        </button>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-12 col-md-4">
+                            <label class="form-label">Default special-cost</label>
+                            <input type="number" class="form-control" min="1" v-model.number="brokerSmartFilterDefaultCost" />
+                        </div>
+                        <div class="col-12 col-md-4 d-flex align-items-end">
+                            <div class="form-check form-switch mt-4">
+                                <input class="form-check-input" type="checkbox" id="brokerSmartFilterEnabledToggle" v-model="brokerSmartFilterEnabled">
+                                <label class="form-check-label" for="brokerSmartFilterEnabledToggle">Enabled</label>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-4 d-flex align-items-end">
+                            <button class="btn btn-primary w-100" @click="saveBrokerSmartFilterSettings">Save Settings</button>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label">Filter name</label>
+                            <input type="text" class="form-control" v-model="smartFilterDraft.name" placeholder="Prime page filter" />
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label">Special cost</label>
+                            <input type="number" class="form-control" min="1" v-model.number="smartFilterDraft.cost" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" rows="2" v-model="smartFilterDraft.description" placeholder="Filter for high-demand pages and products"></textarea>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label">Page names (comma-separated)</label>
+                            <textarea class="form-control" rows="3" v-model="smartFilterDraft.pageNames" placeholder="Example: Dhaka Mart, Boi Ghor"></textarea>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label">Search keywords (comma-separated)</label>
+                            <textarea class="form-control" rows="3" v-model="smartFilterDraft.keywords" placeholder="Example: shawarma, nike, baby, laundry"></textarea>
+                        </div>
+                        <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <div class="small text-muted">Suggested archived pages: {{ brokerSmartFilterSuggestions.pageNames.slice(0, 8).join(', ') || 'None yet' }}</div>
+                            <button class="btn btn-outline-primary" @click="addBrokerSmartFilter">Save & Submit for Approval</button>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <div class="small text-muted mb-2">Suggested keywords: {{ brokerSmartFilterSuggestions.keywords.slice(0, 12).join(', ') || 'None yet' }}</div>
+                        </div>
+                        <div class="col-12" v-for="filter in brokerSmartFilters" :key="filter._id || filter.id">
+                            <div class="border rounded p-3">
+                                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+                                    <div>
+                                        <h6 class="mb-1">{{ filter.name }}</h6>
+                                        <div class="small text-muted">{{ filter.description || 'No description' }}</div>
+                                    </div>
+                                    <span class="badge" :class="filter.approved ? 'bg-success' : 'bg-warning text-dark'">
+                                        {{ filter.approved ? 'Approved' : 'Pending' }}
+                                    </span>
+                                </div>
+                                <div class="mb-2">
+                                    <strong class="me-2">Cost:</strong>{{ filter.cost || 20 }} credits
+                                    <span class="badge ms-2" :class="filter.enabled ? 'bg-info' : 'bg-secondary'">{{ filter.enabled ? 'Enabled' : 'Disabled' }}</span>
+                                </div>
+                                <div class="mb-2">
+                                    <strong>Pages:</strong>
+                                    <span v-if="filter.pageNames && filter.pageNames.length" class="d-inline-flex flex-wrap gap-1 ms-1">
+                                        <span v-for="page in filter.pageNames" :key="page" class="badge bg-light text-dark">{{ page }}</span>
+                                    </span>
+                                    <span v-else class="text-muted">No page names</span>
+                                </div>
+                                <div class="mb-3">
+                                    <strong>Keywords:</strong>
+                                    <span v-if="filter.keywords && filter.keywords.length" class="d-inline-flex flex-wrap gap-1 ms-1">
+                                        <span v-for="keyword in filter.keywords" :key="keyword" class="badge bg-light text-dark">{{ keyword }}</span>
+                                    </span>
+                                    <span v-else class="text-muted">No keywords</span>
+                                </div>
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <button class="btn btn-sm btn-outline-success" @click="toggleBrokerSmartFilter(filter, true)" v-if="!filter.approved">Approve</button>
+                                    <button class="btn btn-sm btn-outline-secondary" @click="toggleBrokerSmartFilter(filter, false)" v-if="filter.approved">Unapprove</button>
+                                    <button class="btn btn-sm btn-outline-info" @click="toggleBrokerSmartFilterEnabled(filter)">{{ filter.enabled ? 'Disable' : 'Enable' }}</button>
+                                    <button class="btn btn-sm btn-outline-danger" @click="deleteBrokerSmartFilter(filter)">Delete</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-if="brokerSmartFilters.length === 0" class="col-12">
+                            <div class="alert alert-warning mb-0">No broker smart filters created yet.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
                             <h5 class="mb-1">Broker Agent Configuration</h5>
                             <p class="mb-0 text-muted">View the configured Pathao agents that are available in the broker dashboard.</p>
                         </div>
@@ -1080,6 +1183,9 @@
                                         <td>
                                             <button class="btn btn-sm btn-outline-primary me-1" @click="viewUserDetails(user._id)">
                                                 <i class="bi bi-eye-fill me-1"></i>Details
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-info me-1" @click="setUserSmartFilterRate(user)">
+                                                Smart Cost
                                             </button>
                                             <button v-if="!user.isApproved" class="btn btn-sm btn-outline-success" @click="showApproveUserModal(user)">
                                                 Approve
@@ -2610,6 +2716,17 @@
                     },
                     merchantIssues: [],
                     brokerAgentConfigs: [],
+                    brokerSmartFilters: [],
+                    brokerSmartFilterSuggestions: { pageNames: [], keywords: [] },
+                    brokerSmartFilterDefaultCost: 20,
+                    brokerSmartFilterEnabled: true,
+                    smartFilterDraft: {
+                        name: '',
+                        description: '',
+                        keywords: '',
+                        pageNames: '',
+                        cost: 20
+                    },
                     capturedAgentRecords: [],
                     penaltyReports: [],
                     premiumPayments: [],
@@ -2886,10 +3003,12 @@
                             this.loadPremiumPayments(),
                             this.loadFexiloadRequests(),
                             this.loadLocationTrackerRequests(),
-                            this.loadTrxRechargeRequests(), // Added
+                            this.loadTrxRechargeRequests(),
                             this.loadPages(),
                             this.loadTrackingAgentCaptureSetting(),
                             this.loadBrokerAgentConfigs(),
+                            this.loadBrokerSmartFilters(),
+                            this.loadBrokerSmartFilterSuggestions(),
                             this.loadCapturedAgentRecords(),
                             this.loadAgentCredentials()
                         ]);
@@ -3211,6 +3330,144 @@
                     } catch (error) {
                         console.error('Failed to load broker agent configs:', error);
                         this.brokerAgentConfigs = [];
+                    }
+                },
+                parseSmartFilterList(value) {
+                    if (!value) return [];
+                    if (Array.isArray(value)) return value.map(item => String(item).trim()).filter(Boolean);
+                    return String(value).split(',').map(item => item.trim()).filter(Boolean);
+                },
+                async loadBrokerSmartFilters() {
+                    try {
+                        const response = await axios.get(`${API_BASE}/admin/broker-smart-filters`);
+                        this.brokerSmartFilters = response.data.filters || [];
+                        this.brokerSmartFilterDefaultCost = Number(response.data.defaultCost || 20);
+                        this.brokerSmartFilterEnabled = Boolean(response.data.enabled !== false);
+                    } catch (error) {
+                        console.error('Error loading broker smart filters:', error);
+                        this.brokerSmartFilters = [];
+                    }
+                },
+                async loadBrokerSmartFilterSuggestions() {
+                    try {
+                        const response = await axios.get(`${API_BASE}/admin/broker-smart-filter-suggestions`);
+                        this.brokerSmartFilterSuggestions = response.data.suggestions || { pageNames: [], keywords: [] };
+                        if (response.data.defaultCost) this.brokerSmartFilterDefaultCost = Number(response.data.defaultCost);
+                        if (response.data.enabled !== undefined) this.brokerSmartFilterEnabled = Boolean(response.data.enabled);
+                    } catch (error) {
+                        console.error('Error loading broker smart filter suggestions:', error);
+                        this.brokerSmartFilterSuggestions = { pageNames: [], keywords: [] };
+                    }
+                },
+                async saveBrokerSmartFilterSettings() {
+                    try {
+                        const response = await axios.post(`${API_BASE}/admin/broker-smart-filter-settings`, {
+                            defaultCost: Number(this.brokerSmartFilterDefaultCost) || 20,
+                            enabled: Boolean(this.brokerSmartFilterEnabled)
+                        });
+                        this.brokerSmartFilterDefaultCost = Number(response.data.defaultCost || 20);
+                        this.brokerSmartFilterEnabled = Boolean(response.data.enabled !== false);
+                        alert('Smart filter settings saved.');
+                    } catch (error) {
+                        console.error('Error saving broker smart filter settings:', error);
+                        alert(error.response?.data?.message || 'Failed to save smart filter settings.');
+                    }
+                },
+                async addBrokerSmartFilter() {
+                    const name = String(this.smartFilterDraft.name || '').trim();
+                    if (!name) {
+                        alert('Please enter a filter name.');
+                        return;
+                    }
+
+                    try {
+                        const response = await axios.post(`${API_BASE}/admin/broker-smart-filters`, {
+                            name,
+                            description: String(this.smartFilterDraft.description || '').trim(),
+                            keywords: this.parseSmartFilterList(this.smartFilterDraft.keywords),
+                            pageNames: this.parseSmartFilterList(this.smartFilterDraft.pageNames),
+                            approved: false,
+                            enabled: true,
+                            cost: Number(this.smartFilterDraft.cost) || 20
+                        });
+                        this.smartFilterDraft = { name: '', description: '', keywords: '', pageNames: '', cost: this.brokerSmartFilterDefaultCost || 20 };
+                        await this.loadBrokerSmartFilters();
+                        alert(response.data.message || 'Smart filter submitted for approval.');
+                    } catch (error) {
+                        console.error('Error creating broker smart filter:', error);
+                        alert(error.response?.data?.message || 'Failed to create smart filter.');
+                    }
+                },
+                async toggleBrokerSmartFilter(filter, approved) {
+                    try {
+                        const response = await axios.put(`${API_BASE}/admin/broker-smart-filters/${filter._id || filter.id}`, {
+                            name: filter.name,
+                            description: filter.description || '',
+                            keywords: filter.keywords || [],
+                            pageNames: filter.pageNames || [],
+                            approved,
+                            enabled: filter.enabled !== false,
+                            cost: Number(filter.cost) || 20
+                        });
+                        const updated = response.data.filter;
+                        const index = this.brokerSmartFilters.findIndex(item => String(item._id || item.id) === String(updated._id || updated.id));
+                        if (index !== -1) this.brokerSmartFilters.splice(index, 1, updated);
+                        else this.brokerSmartFilters.unshift(updated);
+                    } catch (error) {
+                        console.error('Error toggling broker smart filter approval:', error);
+                        alert(error.response?.data?.message || 'Failed to update smart filter approval.');
+                    }
+                },
+                async toggleBrokerSmartFilterEnabled(filter) {
+                    try {
+                        const response = await axios.put(`${API_BASE}/admin/broker-smart-filters/${filter._id || filter.id}`, {
+                            name: filter.name,
+                            description: filter.description || '',
+                            keywords: filter.keywords || [],
+                            pageNames: filter.pageNames || [],
+                            approved: Boolean(filter.approved),
+                            enabled: !Boolean(filter.enabled),
+                            cost: Number(filter.cost) || 20
+                        });
+                        const updated = response.data.filter;
+                        const index = this.brokerSmartFilters.findIndex(item => String(item._id || item.id) === String(updated._id || updated.id));
+                        if (index !== -1) this.brokerSmartFilters.splice(index, 1, updated);
+                    } catch (error) {
+                        console.error('Error toggling broker smart filter enabled state:', error);
+                        alert(error.response?.data?.message || 'Failed to update smart filter status.');
+                    }
+                },
+                async deleteBrokerSmartFilter(filter) {
+                    const id = filter._id || filter.id;
+                    if (!id) return;
+                    if (!confirm(`Delete smart filter "${filter.name}"?`)) return;
+                    try {
+                        await axios.delete(`${API_BASE}/admin/broker-smart-filters/${id}`);
+                        this.brokerSmartFilters = this.brokerSmartFilters.filter(item => String(item._id || item.id) !== String(id));
+                    } catch (error) {
+                        console.error('Error deleting broker smart filter:', error);
+                        alert(error.response?.data?.message || 'Failed to delete smart filter.');
+                    }
+                },
+                async setUserSmartFilterRate(user) {
+                    const current = user.brokerSmartFilterRate ?? this.brokerSmartFilterDefaultCost ?? 20;
+                    const nextPrompt = window.prompt(`Set the smart-filter credit cost for ${user.email || user.phone || 'this user'} (current: ${current})`, String(current));
+                    if (nextPrompt === null) return;
+                    const nextRate = Number(nextPrompt);
+                    if (!Number.isFinite(nextRate) || nextRate <= 0) {
+                        alert('Please enter a valid positive number.');
+                        return;
+                    }
+                    try {
+                        const response = await axios.put(`${API_BASE}/admin/users/${user._id}/broker-smart-filter-rate`, { rate: nextRate });
+                        const userIndex = this.users.findIndex(item => item._id === user._id);
+                        if (userIndex !== -1) {
+                            this.users.splice(userIndex, 1, { ...this.users[userIndex], ...response.data.user });
+                        }
+                        alert('User smart filter rate updated.');
+                    } catch (error) {
+                        console.error('Error saving user smart filter rate:', error);
+                        alert(error.response?.data?.message || 'Failed to set smart filter rate.');
                     }
                 },
                 async loadCapturedAgentRecords() {

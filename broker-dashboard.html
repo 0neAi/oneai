@@ -161,6 +161,51 @@
             color: #f8fafc;
             font-size: 1.25rem;
         }
+        .broker-smart-filter-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            gap: 14px;
+            margin-top: 16px;
+        }
+        .broker-smart-filter-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 16px;
+        }
+        .broker-smart-filter-card h4 {
+            margin: 0 0 10px;
+            color: #f8fafc;
+            font-size: 1.05rem;
+        }
+        .broker-smart-filter-card p {
+            margin: 0 0 12px;
+            color: #c8cee3;
+            font-size: 0.9rem;
+        }
+        .broker-smart-filter-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .broker-smart-filter-chip {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 999px;
+            background: rgba(96,165,250,0.12);
+            color: #bfdbfe;
+            border: 1px solid rgba(96,165,250,0.2);
+            padding: 5px 8px;
+            font-size: 0.78rem;
+        }
+        .broker-smart-filter-results {
+            margin-top: 20px;
+            background: rgba(8, 12, 24, 0.76);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 16px;
+        }
         .broker-form .form-group {
             margin-bottom: 16px;
         }
@@ -877,11 +922,6 @@
                 <small>Pending, pickup, and hold orders in progress.</small>
             </div>
             <div class="broker-summary-card">
-                <h3><i class="fas fa-check-circle"></i> Completed Orders</h3>
-                <div class="value" id="broker-completed-orders">0</div>
-                <small>Orders delivered successfully.</small>
-            </div>
-            <div class="broker-summary-card">
                 <h3><i class="fas fa-clock"></i> Subscription</h3>
                 <div class="value" id="broker-subscription-tier">Free</div>
                 <small id="broker-subscription-expires">No active plan</small>
@@ -901,9 +941,6 @@
                         <option value="PENDING">Pending</option>
                         <option value="PICKUP">Pickup</option>
                         <option value="HOLD">Hold</option>
-                        <option value="DELIVERED">Delivered</option>
-                        <option value="CANCELLED">Cancelled</option>
-                        <option value="RETURNED">Returned</option>
                     </select>
                     <select id="broker-sort" onchange="applyBrokerSort(this.value)">
                         <option value="recent">Sort by recent</option>
@@ -951,6 +988,18 @@
         </section>
 
 
+        <section class="broker-form">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div>
+                    <h3>Smart Page Filters</h3>
+                    <p style="margin:0; color:#c8cee3;">Approved page-name and keyword filters generated from archived order data. These are charged as a special credit use.</p>
+                </div>
+                <button type="button" class="action-btn small" onclick="loadBrokerSmartFilters()">Refresh</button>
+            </div>
+            <div id="broker-smart-filter-list" class="broker-smart-filter-list"></div>
+            <div id="broker-smart-filter-results" class="broker-smart-filter-results" style="display:none;"></div>
+        </section>
+
         <section class="broker-table-wrapper">
             <div class="broker-table-heading"><h2>Active / Hold Orders</h2></div>
             <table>
@@ -967,37 +1016,6 @@
             </table>
         </section>
 
-        <section class="broker-table-wrapper">
-            <div class="broker-table-heading"><h2>Completed Orders</h2></div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Order</th>
-                        <th>Recipient</th>
-                        <th>Details</th>
-                    </tr>
-                </thead>
-                <tbody id="broker-delivered-order-list">
-                    <tr><td colspan="3" class="text-center">Loading completed orders…</td></tr>
-                </tbody>
-            </table>
-        </section>
-
-        <section class="broker-table-wrapper">
-            <div class="broker-table-heading"><h2>Archived Orders</h2></div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Order</th>
-                        <th>Recipient</th>
-                        <th>Details</th>
-                    </tr>
-                </thead>
-                <tbody id="broker-archived-order-list">
-                    <tr><td colspan="3" class="text-center">Loading archived orders…</td></tr>
-                </tbody>
-            </table>
-        </section>
 
         <!-- Side Panel for Order Details -->
         <div id="broker-modal-overlay" class="broker-modal-overlay"></div>
