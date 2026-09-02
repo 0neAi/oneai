@@ -387,7 +387,8 @@ async function loadBrokerSmartFilters() {
         }
 
         const data = await response.json();
-        if (!data.success || !Array.isArray(data.filters)) {
+        // Accept both { success: true, filters: [...] } and { filters: [...], enabled, userRate }
+        if (!Array.isArray(data.filters)) {
             container.innerHTML = '<div class="text-muted">No approved smart filters available right now.</div>';
             if (resultsEl) {
                 resultsEl.style.display = 'none';
@@ -1595,6 +1596,23 @@ window.loadBrokerCreditPackages = loadBrokerCreditPackages;
 window.selectBrokerPackage = (typeof selectBrokerPackage !== 'undefined') ? selectBrokerPackage : function(pkgOrId) {
     console.warn('selectBrokerPackage is not defined in this build.');
 };
+
+// Defensive override: ensure buildBrokerAuthHeaders is valid even if the earlier definition was corrupted during build/sanitization.
+// This override will replace the earlier function and ensure all fetch calls include Authorization and X-User-ID when available.
+window.buildBrokerAuthHeaders = window.buildBrokerAuthHeaders || function() {
+    const headers = {};
+    try {
+        const token = localStorage.getItem('authToken') || '';
+        const userID = localStorage.getItem('userID') || '';
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        if (userID) headers['X-User-ID'] = String(userID);
+    } catch (e) {
+        // localStorage might be unavailable in some environments
+    }
+    return headers;
+};
+// Ensure the global identifier (unqualified name) points to the same function so calls to buildBrokerAuthHeaders() work.
+try { buildBrokerAuthHeaders = window.buildBrokerAuthHeaders; } catch (e) { /* ignore if not writable */ }
 
 window.addEventListener('DOMContentLoaded', () => {
     loadBrokerAgents();

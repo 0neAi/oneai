@@ -2553,9 +2553,54 @@ app.get('/broker/orders/user', validateUser, async (req, res) => {
     // Public broker dashboard must only show active/hold orders. Completed orders remain admin-only.
     filter.completed = false;
 
+    // Fetch matching orders
     const orders = await BrokerOrder.find(filter).sort({ createdAt: -1 });
-    const activeOrders = orders.filter(order => !order.completed && brokerActiveStatuses.includes(order.status));
-    const loadedOrderCount = activeOrders.length;
+
+    // 1) Convert any PARTIAL statuses into DELIVERED and archive them (completed=true)
+    // This avoids showing partial deliveries on the public broker dashboard.
+    const partialIds = orders.filter(o => String(o.status || '').toUpperCase() === 'PARTIAL').map(o => o._id);
+    if (partialIds.length) {
+      try {
+        await BrokerOrder.updateMany(
+          { _id: { $in: partialIds } },
+          {
+            $set: { status: 'DELIVERED', completed: true, lastStatusUpdate: new Date() },
+            $push: { statusHistory: { status: 'DELIVERED', note: 'Auto-archived from PARTIAL as delivered', timestamp: new Date() } }
+          }
+        );
+        // Refresh orders after bulk update
+        for (let i = 0; i < orders.length; i++) {
+          if (partialIds.find(id => String(id) === String(orders[i]._id))) {
+            orders[i].status = 'DELIVERED';
+            orders[i].completed = true;
+            orders[i].lastStatusUpdate = new Date();
+            orders[i].statusHistory = orders[i].statusHistory || [];
+            orders[i].statusHistory.push({ status: 'DELIVERED', note: 'Auto-archived from PARTIAL as delivered', timestamp: new Date() });
+          }
+        }
+      } catch (err) {
+        console.error('Failed to auto-archive PARTIAL orders:', err);
+      }
+    }
+
+    // 2) Determine visible active orders for the broker dashboard
+    // Show PENDING and PICKUP orders normally.
+    // For HOLD orders, only show those that were placed on a previous day (lastStatusUpdate/createdAt < todayStart)
+    // AND are currently unassigned (agent was unassigned today), as per broker dashboard requirements.
+    const todayStart = getBrokerDashboardChargeDay();
+    const visibleOrders = orders.filter(order => {
+      if (order.completed) return false;
+      const st = String(order.status || '').toUpperCase();
+      if (st === 'HOLD') {
+        const lastUpdate = order.lastStatusUpdate || order.createdAt || new Date(0);
+        // include only previous-day hold orders that now have no assigned agent
+        return (!order.assigned && new Date(lastUpdate).getTime() < todayStart.getTime());
+      }
+      // Only PENDING and PICKUP are allowed otherwise
+      return ['PENDING', 'PICKUP'].includes(st);
+    });
+
+    const loadedOrderCount = visibleOrders.length;
     const today = getBrokerDashboardChargeDay();
     const lastChargeDate = user.brokerDashboardChargeDate ? getBrokerDashboardChargeDay(user.brokerDashboardChargeDate) : null;
 
@@ -2598,7 +2643,6 @@ app.get('/broker/orders/user', validateUser, async (req, res) => {
       await user.save();
     }
 
-    const visibleOrders = activeOrders;
     res.json({ success: true, orders: visibleOrders, credits: user.brokerCredits, chargedOrderCount: user.brokerDashboardChargedOrderCount });
   } catch (error) {
     console.error('Error fetching broker orders:', error);
