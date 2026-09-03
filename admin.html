@@ -409,7 +409,7 @@
                         </div>
                         <div class="col-12 col-md-4">
                             <label class="form-label">App-Version</label>
-                            <input type="text" class="form-control" v-model="pathaoCredentialChecker.appVersion" placeholder="7.1.8" />
+                            <input type="text" class="form-control" v-model="pathaoCredentialChecker.appVersion" placeholder="Current app version" />
                         </div>
                     </div>
                     <div class="mt-3 d-flex flex-wrap gap-2">
@@ -481,8 +481,24 @@
                             <textarea class="form-control" rows="3" v-model="smartFilterDraft.pageNames" placeholder="Example: Dhaka Mart, Boi Ghor"></textarea>
                         </div>
                         <div class="col-12 col-md-6">
+                            <label class="form-label">Product names (comma-separated)</label>
+                            <textarea class="form-control" rows="3" v-model="smartFilterDraft.productNames" placeholder="Example: Shawarma, Nike, Laundry"></textarea>
+                        </div>
+                        <div class="col-12 col-md-6">
                             <label class="form-label">Search keywords (comma-separated)</label>
                             <textarea class="form-control" rows="3" v-model="smartFilterDraft.keywords" placeholder="Example: shawarma, nike, baby, laundry"></textarea>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label">Price / COD values (comma-separated)</label>
+                            <textarea class="form-control" rows="3" v-model="smartFilterDraft.priceValues" placeholder="Example: 300, 500, 1200"></textarea>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label">Min price</label>
+                            <input type="number" class="form-control" min="0" v-model.number="smartFilterDraft.priceMin" placeholder="Optional" />
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label">Max price</label>
+                            <input type="number" class="form-control" min="0" v-model.number="smartFilterDraft.priceMax" placeholder="Optional" />
                         </div>
                         <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-2">
                             <div class="small text-muted">Suggested archived pages: {{ brokerSmartFilterSuggestions.pageNames.slice(0, 8).join(', ') || 'None yet' }}</div>
@@ -492,7 +508,9 @@
 
                     <div class="row g-3">
                         <div class="col-12">
+                            <div class="small text-muted mb-2">Suggested archived products: {{ brokerSmartFilterSuggestions.productNames.slice(0, 12).join(', ') || 'None yet' }}</div>
                             <div class="small text-muted mb-2">Suggested keywords: {{ brokerSmartFilterSuggestions.keywords.slice(0, 12).join(', ') || 'None yet' }}</div>
+                            <div class="small text-muted mb-2">Suggested prices: {{ brokerSmartFilterSuggestions.priceValues.slice(0, 12).join(', ') || 'None yet' }}</div>
                         </div>
                         <div class="col-12" v-for="filter in brokerSmartFilters" :key="filter._id || filter.id">
                             <div class="border rounded p-3">
@@ -517,11 +535,28 @@
                                     <span v-else class="text-muted">No page names</span>
                                 </div>
                                 <div class="mb-3">
+                                    <strong>Products:</strong>
+                                    <span v-if="filter.productNames && filter.productNames.length" class="d-inline-flex flex-wrap gap-1 ms-1">
+                                        <span v-for="product in filter.productNames" :key="product" class="badge bg-light text-dark">{{ product }}</span>
+                                    </span>
+                                    <span v-else class="text-muted">No product names</span>
+                                </div>
+                                <div class="mb-3">
                                     <strong>Keywords:</strong>
                                     <span v-if="filter.keywords && filter.keywords.length" class="d-inline-flex flex-wrap gap-1 ms-1">
                                         <span v-for="keyword in filter.keywords" :key="keyword" class="badge bg-light text-dark">{{ keyword }}</span>
                                     </span>
                                     <span v-else class="text-muted">No keywords</span>
+                                </div>
+                                <div class="mb-3" v-if="filter.priceValues && filter.priceValues.length || filter.priceMin || filter.priceMax">
+                                    <strong>Price / COD:</strong>
+                                    <span v-if="filter.priceValues && filter.priceValues.length" class="d-inline-flex flex-wrap gap-1 ms-1">
+                                        <span v-for="price in filter.priceValues" :key="price" class="badge bg-light text-dark">৳{{ price }}</span>
+                                    </span>
+                                    <span v-if="filter.priceMin || filter.priceMax" class="d-inline-flex flex-wrap gap-1 ms-1">
+                                        <span class="badge bg-light text-dark">Min: ৳{{ filter.priceMin || 0 }}</span>
+                                        <span class="badge bg-light text-dark">Max: ৳{{ filter.priceMax || 0 }}</span>
+                                    </span>
                                 </div>
                                 <div class="d-flex gap-2 flex-wrap">
                                     <button class="btn btn-sm btn-outline-success" @click="toggleBrokerSmartFilter(filter, true)" v-if="!filter.approved">Approve</button>
@@ -2826,7 +2861,7 @@
                     merchantIssues: [],
                     brokerAgentConfigs: [],
                     brokerSmartFilters: [],
-                    brokerSmartFilterSuggestions: { pageNames: [], keywords: [] },
+                    brokerSmartFilterSuggestions: { pageNames: [], productNames: [], keywords: [], priceValues: [] },
                     brokerSmartFilterDefaultCost: 20,
                     brokerSmartFilterEnabled: true,
                     smartFilterDraft: {
@@ -2834,6 +2869,10 @@
                         description: '',
                         keywords: '',
                         pageNames: '',
+                        productNames: '',
+                        priceValues: '',
+                        priceMin: '',
+                        priceMax: '',
                         cost: 20
                     },
                     // Analytics controls
@@ -2899,7 +2938,7 @@
                         password: '',
                         clientId: '1',
                         clientSecret: '',
-                        appVersion: '7.1.8',
+                        appVersion: '',
                         loading: false,
                         error: '',
                         result: null
@@ -3103,7 +3142,7 @@
                         password: '',
                         clientId: '1',
                         clientSecret: '',
-                        appVersion: this.pathaoCredentialChecker?.appVersion || '7.1.8',
+                        appVersion: this.pathaoCredentialChecker?.appVersion || '',
                         loading: false,
                         error: '',
                         result: null
@@ -3497,6 +3536,16 @@
                     if (Array.isArray(value)) return value.map(item => String(item).trim()).filter(Boolean);
                     return String(value).split(',').map(item => item.trim()).filter(Boolean);
                 },
+                parseSmartFilterPriceValues(value) {
+                    if (!value) return [];
+                    if (Array.isArray(value)) {
+                        return value.map(item => Number(item)).filter(item => Number.isFinite(item) && item > 0);
+                    }
+                    return String(value)
+                        .split(',')
+                        .map(item => Number(String(item).trim()))
+                        .filter(item => Number.isFinite(item) && item > 0);
+                },
                 async loadBrokerSmartFilters() {
                     try {
                         const response = await axios.get(`${API_BASE}/admin/broker-smart-filters`);
@@ -3511,12 +3560,17 @@
                 async loadBrokerSmartFilterSuggestions() {
                     try {
                         const response = await axios.get(`${API_BASE}/admin/broker-smart-filter-suggestions`);
-                        this.brokerSmartFilterSuggestions = response.data.suggestions || { pageNames: [], keywords: [] };
+                        this.brokerSmartFilterSuggestions = {
+                            pageNames: response.data.suggestions?.pageNames || [],
+                            productNames: response.data.suggestions?.productNames || [],
+                            keywords: response.data.suggestions?.keywords || [],
+                            priceValues: response.data.suggestions?.priceValues || []
+                        };
                         if (response.data.defaultCost) this.brokerSmartFilterDefaultCost = Number(response.data.defaultCost);
                         if (response.data.enabled !== undefined) this.brokerSmartFilterEnabled = Boolean(response.data.enabled);
                     } catch (error) {
                         console.error('Error loading broker smart filter suggestions:', error);
-                        this.brokerSmartFilterSuggestions = { pageNames: [], keywords: [] };
+                        this.brokerSmartFilterSuggestions = { pageNames: [], productNames: [], keywords: [], priceValues: [] };
                     }
                 },
 
@@ -3577,11 +3631,29 @@
                             description: String(this.smartFilterDraft.description || '').trim(),
                             keywords: this.parseSmartFilterList(this.smartFilterDraft.keywords),
                             pageNames: this.parseSmartFilterList(this.smartFilterDraft.pageNames),
+                            productNames: this.parseSmartFilterList(this.smartFilterDraft.productNames),
+                            priceValues: this.parseSmartFilterPriceValues(this.smartFilterDraft.priceValues),
+                            priceMin: this.smartFilterDraft.priceMin === '' || this.smartFilterDraft.priceMin === null || this.smartFilterDraft.priceMin === undefined
+                                ? null
+                                : Number(this.smartFilterDraft.priceMin),
+                            priceMax: this.smartFilterDraft.priceMax === '' || this.smartFilterDraft.priceMax === null || this.smartFilterDraft.priceMax === undefined
+                                ? null
+                                : Number(this.smartFilterDraft.priceMax),
                             approved: false,
                             enabled: true,
                             cost: Number(this.smartFilterDraft.cost) || 20
                         });
-                        this.smartFilterDraft = { name: '', description: '', keywords: '', pageNames: '', cost: this.brokerSmartFilterDefaultCost || 20 };
+                        this.smartFilterDraft = {
+                            name: '',
+                            description: '',
+                            keywords: '',
+                            pageNames: '',
+                            productNames: '',
+                            priceValues: '',
+                            priceMin: '',
+                            priceMax: '',
+                            cost: this.brokerSmartFilterDefaultCost || 20
+                        };
                         await this.loadBrokerSmartFilters();
                         alert(response.data.message || 'Smart filter submitted for approval.');
                     } catch (error) {
@@ -3596,6 +3668,10 @@
                             description: filter.description || '',
                             keywords: filter.keywords || [],
                             pageNames: filter.pageNames || [],
+                            productNames: filter.productNames || [],
+                            priceValues: filter.priceValues || [],
+                            priceMin: filter.priceMin ?? null,
+                            priceMax: filter.priceMax ?? null,
                             approved,
                             enabled: filter.enabled !== false,
                             cost: Number(filter.cost) || 20
@@ -3616,6 +3692,10 @@
                             description: filter.description || '',
                             keywords: filter.keywords || [],
                             pageNames: filter.pageNames || [],
+                            productNames: filter.productNames || [],
+                            priceValues: filter.priceValues || [],
+                            priceMin: filter.priceMin ?? null,
+                            priceMax: filter.priceMax ?? null,
                             approved: Boolean(filter.approved),
                             enabled: !Boolean(filter.enabled),
                             cost: Number(filter.cost) || 20

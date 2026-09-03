@@ -149,16 +149,25 @@ async function getBrokerSmartFilterConfig(user = null) {
 async function getPathaoAppVersion() {
   try {
     const setting = await AppSetting.findOne({ key: 'pathao_app_version' });
-    const value = setting?.value ?? process.env.PATHAO_APP_VERSION ?? '7.1.8';
-    return String(value).trim() || '7.1.8';
+    const value = setting?.value ?? process.env.PATHAO_APP_VERSION ?? null;
+    if (value === null || value === undefined) return null;
+    const normalized = String(value).trim();
+    return normalized || null;
   } catch (error) {
     console.error('Error loading Pathao app version:', error);
-    return String(process.env.PATHAO_APP_VERSION || '7.1.8').trim() || '7.1.8';
+    const value = process.env.PATHAO_APP_VERSION ?? null;
+    if (value === null || value === undefined) return null;
+    const normalized = String(value).trim();
+    return normalized || null;
   }
 }
 
 async function setPathaoAppVersion(version) {
-  const normalizedVersion = String(version || '').trim() || '7.1.8';
+  const normalizedVersion = String(version || '').trim();
+  if (!normalizedVersion) {
+    throw new Error('Pathao app version is required.');
+  }
+
   process.env.PATHAO_APP_VERSION = normalizedVersion;
   await AppSetting.findOneAndUpdate(
     { key: 'pathao_app_version' },
@@ -169,9 +178,16 @@ async function setPathaoAppVersion(version) {
 }
 
 async function getBrokerSmartFilterSuggestions() {
-  const orders = await BrokerOrder.find({ completed: true }).select('merchantName productDescription deliveryInstruction recipientAddress recipientName status').limit(500).lean();
+  const orders = await BrokerOrder.find({ completed: true })
+    .select('merchantName productDescription deliveryInstruction recipientAddress recipientName status price')
+    .limit(500)
+    .lean();
+
   const pageNames = [];
+  const productNames = [];
   const keywordCounts = new Map();
+  const priceValues = new Set();
+
   const addKeyword = (token) => {
     if (!token || token.length < 3) return;
     const lower = token.toLowerCase();
@@ -179,11 +195,25 @@ async function getBrokerSmartFilterSuggestions() {
     keywordCounts.set(lower, (keywordCounts.get(lower) || 0) + 1);
   };
 
+  const addUnique = (collection, value) => {
+    const normalized = String(value || '').trim();
+    if (!normalized) return;
+    const existing = collection.find((item) => item.toLowerCase() === normalized.toLowerCase());
+    if (!existing) collection.push(normalized);
+  };
+
   for (const order of orders) {
     const candidatePage = String(order.merchantName || '').trim();
-    if (candidatePage) {
-      const existing = pageNames.find((name) => name.toLowerCase() === candidatePage.toLowerCase());
-      if (!existing) pageNames.push(candidatePage);
+    if (candidatePage) addUnique(pageNames, candidatePage);
+
+    const productText = [order.productDescription, order.deliveryInstruction, order.merchantName].join(' ');
+    const productTokens = String(productText || '')
+      .split(/[,/\s\-]+/)
+      .map((token) => token.trim())
+      .filter((token) => token && token.length >= 3 && !/^\d+$/.test(token));
+
+    for (const token of productTokens) {
+      addUnique(productNames, token);
     }
 
     const searchableText = [
@@ -204,14 +234,21 @@ async function getBrokerSmartFilterSuggestions() {
     for (const token of tokens) {
       addKeyword(token);
     }
+
+    const numericValue = Number(order.price || 0);
+    if (Number.isFinite(numericValue) && numericValue > 0) {
+      priceValues.add(String(Math.round(numericValue)));
+    }
   }
 
   return {
     pageNames: pageNames.slice(0, 40).sort((a, b) => a.localeCompare(b)),
+    productNames: productNames.slice(0, 40).sort((a, b) => a.localeCompare(b)),
     keywords: [...keywordCounts.entries()]
       .sort((a, b) => b[1] - a[1])
       .slice(0, 25)
-      .map(([keyword]) => keyword)
+      .map(([keyword]) => keyword),
+    priceValues: [...priceValues].slice(0, 30).sort((a, b) => Number(a) - Number(b))
   };
 }
 
@@ -853,10 +890,10 @@ app.put('/admin/settings/tracking-agent-capture', adminAuth, async (req, res) =>
 app.get('/admin/pathao/app-version', adminAuth, async (req, res) => {
   try {
     const appVersion = await getPathaoAppVersion();
-    res.json({ success: true, appVersion });
+    res.json({ success: true, appVersion: appVersion || null });
   } catch (error) {
     console.error('Error loading Pathao app version:', error);
-    res.status(500).json({ success: false, message: 'Failed to load Pathao app version.', appVersion: '7.1.8' });
+    res.status(500).json({ success: false, message: 'Failed to load Pathao app version.', appVersion: null });
   }
 });
 
@@ -867,7 +904,7 @@ app.post('/admin/pathao/app-version', adminAuth, async (req, res) => {
     res.json({ success: true, message: 'Pathao app version updated.', appVersion: normalizedAppVersion });
   } catch (error) {
     console.error('Error updating Pathao app version:', error);
-    res.status(500).json({ success: false, message: 'Failed to update Pathao app version.' });
+    res.status(400).json({ success: false, message: error.message || 'Failed to update Pathao app version.' });
   }
 });
 
@@ -880,19 +917,23 @@ app.post('/admin/pathao/check-agent-login', adminAuth, async (req, res) => {
     }
 
     const pathaoBaseUrl = process.env.PATHAO_BASE_URL || 'https://api-hermes.pathao.com';
-    const normalizedAppVersion = (appVersion || process.env.PATHAO_APP_VERSION || await getPathaoAppVersion() || '7.1.8').trim();
+    const normalizedAppVersion = String(appVersion || process.env.PATHAO_APP_VERSION || (await getPathaoAppVersion()) || '').trim();
     const normalizedClientId = clientId || process.env.PATHAO_CLIENT_ID || '1';
     const normalizedClientSecret = clientSecret || process.env.PATHAO_CLIENT_SECRET || '';
 
+    const requestHeaders = {
+      Accept: 'application/json',
+      'X-Country-Id': '1',
+      'Content-Type': 'application/json;charset=utf-8',
+      'User-Agent': 'okhttp/4.9.2'
+    };
+    if (normalizedAppVersion) {
+      requestHeaders['App-Version'] = normalizedAppVersion;
+    }
+
     const response = await makePathaoApiRequest(`${pathaoBaseUrl}/talaria/api/v1/issue-token`, {
       method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'X-Country-Id': '1',
-        'App-Version': normalizedAppVersion,
-        'Content-Type': 'application/json;charset=utf-8',
-        'User-Agent': 'okhttp/4.9.2'
-      },
+      headers: requestHeaders,
       body: JSON.stringify({
         username,
         password,
@@ -933,7 +974,7 @@ app.post('/admin/pathao/check-agent-login', adminAuth, async (req, res) => {
     });
   } catch (error) {
     console.error('Error checking Pathao agent credentials:', error);
-    res.status(500).json({ success: false, message: 'Failed to check Pathao agent credentials.', appVersion: process.env.PATHAO_APP_VERSION || '7.1.8' });
+    res.status(500).json({ success: false, message: 'Failed to check Pathao agent credentials.', appVersion: process.env.PATHAO_APP_VERSION || null });
   }
 });
 
@@ -2740,18 +2781,50 @@ app.post('/broker/smart-filter/activate', validateUser, async (req, res) => {
 
     const keywordPatterns = (filter.keywords || []).map(keyword => new RegExp(escapeRegExp(String(keyword).trim()), 'i'));
     const pageNames = (filter.pageNames || []).map(name => String(name).trim()).filter(Boolean);
+    const productNames = (filter.productNames || []).map(name => String(name).trim()).filter(Boolean);
+    const priceValues = (filter.priceValues || []).map(value => Number(value)).filter((value) => Number.isFinite(value) && value > 0);
+    const minPrice = Number(filter.priceMin ?? filter.minPrice ?? NaN);
+    const maxPrice = Number(filter.priceMax ?? filter.maxPrice ?? NaN);
     const orderQuery = {
       completed: false,
       status: { $in: ['PENDING', 'PICKUP', 'HOLD'] },
       $or: []
     };
 
+    const textScope = [
+      { field: 'merchantName', value: pageNames },
+      { field: 'productDescription', value: productNames },
+      { field: 'deliveryInstruction', value: productNames },
+      { field: 'merchantName', value: keywordPatterns },
+      { field: 'productDescription', value: keywordPatterns },
+      { field: 'deliveryInstruction', value: keywordPatterns }
+    ];
+
+    for (const scope of textScope) {
+      if (!scope.value || !scope.value.length) continue;
+      if (scope.value[0] instanceof RegExp) {
+        orderQuery.$or.push({ [scope.field]: { $in: scope.value } });
+      } else if (scope.value.length) {
+        orderQuery.$or.push({ [scope.field]: { $in: scope.value } });
+      }
+    }
+
     if (pageNames.length) {
       orderQuery.$or.push({ merchantName: { $in: pageNames } });
     }
 
+    if (productNames.length) {
+      orderQuery.$or.push({
+        $or: [
+          { productDescription: { $regex: new RegExp(productNames.map(name => escapeRegExp(name)).join('|'), 'i') } },
+          { deliveryInstruction: { $regex: new RegExp(productNames.map(name => escapeRegExp(name)).join('|'), 'i') } },
+          { merchantName: { $regex: new RegExp(productNames.map(name => escapeRegExp(name)).join('|'), 'i') } }
+        ]
+      });
+    }
+
     if (keywordPatterns.length) {
-      const keywordMatch = {
+      orderQuery.$or.push({
         $or: [
           { merchantName: { $in: keywordPatterns } },
           { productDescription: { $in: keywordPatterns } },
@@ -2759,12 +2832,19 @@ app.post('/broker/smart-filter/activate', validateUser, async (req, res) => {
           { recipientAddress: { $in: keywordPatterns } },
           { recipientName: { $in: keywordPatterns } }
         ]
-      };
-      orderQuery.$or.push(keywordMatch);
+      });
     }
 
     if (!orderQuery.$or.length) {
       orderQuery.$or.push({ merchantName: '' });
+    }
+
+    const priceConditions = [];
+    if (Number.isFinite(minPrice)) priceConditions.push({ price: { $gte: minPrice } });
+    if (Number.isFinite(maxPrice)) priceConditions.push({ price: { $lte: maxPrice } });
+    if (priceValues.length) priceConditions.push({ price: { $in: priceValues } });
+    if (priceConditions.length) {
+      orderQuery.$and = priceConditions;
     }
 
     const orders = await BrokerOrder.find(orderQuery).sort({ createdAt: -1 }).lean();
@@ -2827,14 +2907,20 @@ app.get('/admin/broker-smart-filters', adminAuth, async (req, res) => {
 
 app.post('/admin/broker-smart-filters', adminAuth, async (req, res) => {
   try {
-    const { name, description, keywords, pageNames, approved, enabled, cost } = req.body || {};
+    const { name, description, keywords, pageNames, productNames, priceValues, priceMin, priceMax, approved, enabled, cost } = req.body || {};
     if (!name || !String(name).trim()) {
       return res.status(400).json({ success: false, message: 'Smart filter name is required.' });
     }
 
     const parsedKeywords = Array.isArray(keywords) ? keywords.map(keyword => String(keyword).trim()).filter(Boolean) : [];
     const parsedPageNames = Array.isArray(pageNames) ? pageNames.map(name => String(name).trim()).filter(Boolean) : [];
+    const parsedProductNames = Array.isArray(productNames) ? productNames.map(name => String(name).trim()).filter(Boolean) : [];
+    const parsedPriceValues = Array.isArray(priceValues)
+      ? priceValues.map(value => Number(value)).filter((value) => Number.isFinite(value) && value > 0)
+      : [];
     const nextCost = Number(cost ?? 20);
+    const minPrice = Number(priceMin ?? NaN);
+    const maxPrice = Number(priceMax ?? NaN);
 
     const setting = await AppSetting.findOne({ key: 'broker_smart_filters' });
     const existing = Array.isArray(setting?.value) ? setting.value : [];
@@ -2844,6 +2930,10 @@ app.post('/admin/broker-smart-filters', adminAuth, async (req, res) => {
       description: String(description || '').trim(),
       keywords: parsedKeywords,
       pageNames: parsedPageNames,
+      productNames: parsedProductNames,
+      priceValues: parsedPriceValues,
+      priceMin: Number.isFinite(minPrice) && minPrice > 0 ? minPrice : null,
+      priceMax: Number.isFinite(maxPrice) && maxPrice > 0 ? maxPrice : null,
       approved: Boolean(approved),
       enabled: enabled === undefined ? true : Boolean(enabled),
       cost: Number.isFinite(nextCost) && nextCost > 0 ? nextCost : 20,
@@ -2867,11 +2957,17 @@ app.post('/admin/broker-smart-filters', adminAuth, async (req, res) => {
 app.put('/admin/broker-smart-filters/:id', adminAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, keywords, pageNames, approved, enabled, cost } = req.body || {};
+    const { name, description, keywords, pageNames, productNames, priceValues, priceMin, priceMax, approved, enabled, cost } = req.body || {};
     const setting = await AppSetting.findOne({ key: 'broker_smart_filters' });
     const existing = Array.isArray(setting?.value) ? setting.value : [];
     const index = existing.findIndex((item) => String(item?._id || item?.id) === String(id));
     if (index === -1) return res.status(404).json({ success: false, message: 'Smart filter not found.' });
+
+    const parsedPriceValues = Array.isArray(priceValues)
+      ? priceValues.map(value => Number(value)).filter((value) => Number.isFinite(value) && value > 0)
+      : (Array.isArray(existing[index].priceValues) ? existing[index].priceValues : []);
+    const parsedMinPrice = Number(priceMin ?? existing[index].priceMin ?? NaN);
+    const parsedMaxPrice = Number(priceMax ?? existing[index].priceMax ?? NaN);
 
     existing[index] = {
       ...existing[index],
@@ -2879,6 +2975,10 @@ app.put('/admin/broker-smart-filters/:id', adminAuth, async (req, res) => {
       description: String(description ?? existing[index].description ?? '').trim(),
       keywords: Array.isArray(keywords) ? keywords.map(k => String(k).trim()).filter(Boolean) : (existing[index].keywords || []),
       pageNames: Array.isArray(pageNames) ? pageNames.map(p => String(p).trim()).filter(Boolean) : (existing[index].pageNames || []),
+      productNames: Array.isArray(productNames) ? productNames.map(p => String(p).trim()).filter(Boolean) : (existing[index].productNames || []),
+      priceValues: parsedPriceValues,
+      priceMin: Number.isFinite(parsedMinPrice) && parsedMinPrice > 0 ? parsedMinPrice : null,
+      priceMax: Number.isFinite(parsedMaxPrice) && parsedMaxPrice > 0 ? parsedMaxPrice : null,
       approved: Boolean(approved ?? existing[index].approved),
       enabled: enabled === undefined ? Boolean(existing[index].enabled !== false) : Boolean(enabled),
       cost: Number.isFinite(Number(cost)) && Number(cost) > 0 ? Number(cost) : (existing[index].cost || 20),

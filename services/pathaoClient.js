@@ -51,17 +51,48 @@ class PathaoApiClient {
     this.baseUrl = process.env.PATHAO_BASE_URL || 'https://api-hermes.pathao.com';
     this.clientId = process.env.PATHAO_CLIENT_ID || '1';
     this.clientSecret = process.env.PATHAO_CLIENT_SECRET || '';
-    this.appVersion = process.env.PATHAO_APP_VERSION || '7.1.8';
+    this.appVersion = process.env.PATHAO_APP_VERSION || null;
     this.tokens = {};
   }
 
-  getDefaultHeaders() {
-    return {
+  async refreshAppVersion() {
+    try {
+      const AppSetting = require('../models/AppSetting');
+      const setting = await AppSetting.findOne({ key: 'pathao_app_version' }).lean();
+      const value = setting?.value ?? process.env.PATHAO_APP_VERSION ?? this.appVersion ?? null;
+      const normalized = value === null || value === undefined ? null : String(value).trim();
+      if (normalized) {
+        this.appVersion = normalized;
+        process.env.PATHAO_APP_VERSION = normalized;
+      } else {
+        this.appVersion = null;
+      }
+      return this.appVersion;
+    } catch (error) {
+      const value = process.env.PATHAO_APP_VERSION ?? this.appVersion ?? null;
+      const normalized = value === null || value === undefined ? null : String(value).trim();
+      this.appVersion = normalized;
+      return normalized;
+    }
+  }
+
+  async getDefaultHeaders() {
+    const appVersion = await this.refreshAppVersion();
+    const headers = {
       Accept: 'application/json',
       'X-Country-Id': '1',
-      'App-Version': this.appVersion,
+      'X-Client-Id': this.clientId || '1',
+      'X-Device-Type': 'android',
+      'X-App-Locale': 'en',
       'User-Agent': 'okhttp/4.9.2'
     };
+
+    if (appVersion) {
+      headers['App-Version'] = appVersion;
+      headers['X-App-Version'] = appVersion;
+    }
+
+    return headers;
   }
 
   async _fetchJson(url, options = {}) {
@@ -101,10 +132,11 @@ class PathaoApiClient {
         }
       }
 
+      const headers = await this.getDefaultHeaders();
       const data = await this._fetchJson(url, {
         method: 'POST',
         headers: {
-          ...this.getDefaultHeaders(),
+          ...headers,
           'Content-Type': 'application/json;charset=utf-8'
         },
         body: JSON.stringify({
@@ -152,21 +184,45 @@ class PathaoApiClient {
 
     const url = `${this.baseUrl}/talaria/api/v1/user/delivery?page=1&limit=1000`;
     try {
-      const data = await this._fetchJson(url, {
-        method: 'GET',
-        headers: {
-          ...this.getDefaultHeaders(),
-          Authorization: `Bearer ${token}`
-        }
-      });
+      const baseHeaders = await this.getDefaultHeaders();
+      const headerOptions = [
+        { Authorization: `Bearer ${token}` },
+        { Authorization: token },
+        { Authorization: `Token ${token}` }
+      ];
 
-      const orders = this._extractOrders(data);
-      console.log(`  📦 ${agent.displayName}: fetched ${orders.length} orders`);
-      return orders.map((order) => ({
-        ...order,
-        agentId: agent.id,
-        agentDisplayName: agent.displayName
-      }));
+      let lastError = null;
+      for (const authHeader of headerOptions) {
+        try {
+          const data = await this._fetchJson(url, {
+            method: 'GET',
+            headers: {
+              ...baseHeaders,
+              ...authHeader,
+              'X-Client-Id': String(agent.clientId || this.clientId || '1'),
+              'X-App-Version': baseHeaders['App-Version'],
+              'X-Device-Type': 'android',
+              'X-App-Locale': 'en'
+            }
+          });
+
+          const orders = this._extractOrders(data);
+          console.log(`  📦 ${agent.displayName}: fetched ${orders.length} orders`);
+          return orders.map((order) => ({
+            ...order,
+            agentId: agent.id,
+            agentDisplayName: agent.displayName
+          }));
+        } catch (error) {
+          lastError = error;
+          const message = String(error.message || error);
+          if (!/HTTP 4\d\d|HTTP 5\d\d/.test(message)) {
+            throw error;
+          }
+        }
+      }
+
+      throw lastError || new Error('Failed to fetch Pathao delivery list');
     } catch (error) {
       console.error(`  ❌ Fetch failed for ${agent.displayName}:`, error.message || error);
       return [];
