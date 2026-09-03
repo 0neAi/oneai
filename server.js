@@ -2779,65 +2779,33 @@ app.post('/broker/smart-filter/activate', validateUser, async (req, res) => {
       return res.status(403).json({ success: false, message: `You need ${effectiveCost} credits to use this smart filter.`, requiredCredits: effectiveCost, availableCredits: user.brokerCredits || 0 });
     }
 
-    const keywordPatterns = (filter.keywords || []).map(keyword => new RegExp(escapeRegExp(String(keyword).trim()), 'i'));
     const pageNames = (filter.pageNames || []).map(name => String(name).trim()).filter(Boolean);
     const productNames = (filter.productNames || []).map(name => String(name).trim()).filter(Boolean);
+    const keywords = (filter.keywords || []).map(keyword => String(keyword).trim()).filter(Boolean);
     const priceValues = (filter.priceValues || []).map(value => Number(value)).filter((value) => Number.isFinite(value) && value > 0);
     const minPrice = Number(filter.priceMin ?? filter.minPrice ?? NaN);
     const maxPrice = Number(filter.priceMax ?? filter.maxPrice ?? NaN);
-    const orderQuery = {
-      completed: false,
-      status: { $in: ['PENDING', 'PICKUP', 'HOLD'] },
-      $or: []
-    };
 
-    const textScope = [
-      { field: 'merchantName', value: pageNames },
-      { field: 'productDescription', value: productNames },
-      { field: 'deliveryInstruction', value: productNames },
-      { field: 'merchantName', value: keywordPatterns },
-      { field: 'productDescription', value: keywordPatterns },
-      { field: 'deliveryInstruction', value: keywordPatterns }
+    const fieldMatches = [];
+    const patterns = [
+      ...pageNames.map(name => ({ value: name, fields: ['merchantName', 'productDescription', 'deliveryInstruction'] })),
+      ...productNames.map(name => ({ value: name, fields: ['merchantName', 'productDescription', 'deliveryInstruction'] })),
+      ...keywords.map(keyword => ({ value: keyword, fields: ['merchantName', 'productDescription', 'deliveryInstruction', 'recipientName', 'recipientAddress'] }))
     ];
 
-    for (const scope of textScope) {
-      if (!scope.value || !scope.value.length) continue;
-      if (scope.value[0] instanceof RegExp) {
-        orderQuery.$or.push({ [scope.field]: { $in: scope.value } });
-      } else if (scope.value.length) {
-        orderQuery.$or.push({ [scope.field]: { $in: scope.value } });
+    for (const item of patterns) {
+      if (!item.value) continue;
+      const regex = new RegExp(escapeRegExp(item.value), 'i');
+      for (const field of item.fields) {
+        fieldMatches.push({ [field]: { $regex: regex } });
       }
     }
 
-    if (pageNames.length) {
-      orderQuery.$or.push({ merchantName: { $in: pageNames } });
-    }
-
-    if (productNames.length) {
-      orderQuery.$or.push({
-        $or: [
-          { productDescription: { $regex: new RegExp(productNames.map(name => escapeRegExp(name)).join('|'), 'i') } },
-          { deliveryInstruction: { $regex: new RegExp(productNames.map(name => escapeRegExp(name)).join('|'), 'i') } },
-          { merchantName: { $regex: new RegExp(productNames.map(name => escapeRegExp(name)).join('|'), 'i') } }
-        ]
-      });
-    }
-
-    if (keywordPatterns.length) {
-      orderQuery.$or.push({
-        $or: [
-          { merchantName: { $in: keywordPatterns } },
-          { productDescription: { $in: keywordPatterns } },
-          { deliveryInstruction: { $in: keywordPatterns } },
-          { recipientAddress: { $in: keywordPatterns } },
-          { recipientName: { $in: keywordPatterns } }
-        ]
-      });
-    }
-
-    if (!orderQuery.$or.length) {
-      orderQuery.$or.push({ merchantName: '' });
-    }
+    const orderQuery = {
+      completed: false,
+      status: { $in: ['PENDING', 'PICKUP', 'HOLD'] },
+      $or: fieldMatches.length ? fieldMatches : [{ merchantName: { $regex: /./, $options: 'i' } }]
+    };
 
     const priceConditions = [];
     if (Number.isFinite(minPrice)) priceConditions.push({ price: { $gte: minPrice } });
