@@ -27,11 +27,34 @@ const brokerState = {
     search: '',
     statusFilter: '',
     sortBy: 'recent',
+    lastScrollTop: 0,
+    lastScrollLeft: 0,
     // Caching properties
     lastFetchTime: null,
     cacheExpiry: 5 * 60 * 1000, // 5 minutes cache
     isInitialLoad: true
 };
+
+function saveBrokerScrollPosition() {
+    const scroller = document.scrollingElement || document.documentElement || document.body;
+    if (!scroller) return;
+    brokerState.lastScrollTop = window.scrollY || scroller.scrollTop || 0;
+    brokerState.lastScrollLeft = window.scrollX || scroller.scrollLeft || 0;
+}
+
+function restoreBrokerScrollPosition() {
+    const scroller = document.scrollingElement || document.documentElement || document.body;
+    if (!scroller) return;
+    const restoreTop = brokerState.lastScrollTop || 0;
+    const restoreLeft = brokerState.lastScrollLeft || 0;
+    window.requestAnimationFrame(() => {
+        window.scrollTo({
+            top: restoreTop,
+            left: restoreLeft,
+            behavior: 'auto'
+        });
+    });
+}
 
 // Lightweight auth headers helper — defined here defensively so this script can run in
 // pages that don't load the full global utilities bundle.
@@ -77,8 +100,10 @@ if (typeof window !== 'undefined') {
 // ============================================
 
 function openBrokerDetailPanel() {
+    saveBrokerScrollPosition();
     const panel = document.getElementById('broker-detail-panel');
     const overlay = document.getElementById('broker-modal-overlay');
+    if (!panel || !overlay) return;
     panel.classList.add('active');
     overlay.classList.add('active');
     document.body.style.overflow = 'hidden';
@@ -87,9 +112,11 @@ function openBrokerDetailPanel() {
 function closeBrokerDetailPanel() {
     const panel = document.getElementById('broker-detail-panel');
     const overlay = document.getElementById('broker-modal-overlay');
-    panel.classList.remove('active');
-    overlay.classList.remove('active');
+    if (panel) panel.classList.remove('active');
+    if (overlay) overlay.classList.remove('active');
     document.body.style.overflow = '';
+    document.body.classList.remove('broker-detail-open');
+    restoreBrokerScrollPosition();
 }
 
 // Close panel when overlay is clicked
@@ -216,7 +243,11 @@ function showBrokerOrderDetails(orderId) {
     const order = brokerState.orders.find(o => o._id === orderId);
     if (!order) return;
 
+    saveBrokerScrollPosition();
+    document.body.classList.add('broker-detail-open');
+
     const content = document.getElementById('broker-order-details-content');
+    if (!content) return;
     const items = buildBrokerOrderDetailItems(order);
     content.innerHTML = `
         ${items.map(item => `
@@ -360,16 +391,30 @@ async function loadBrokerData(filter = {}, forceRefresh = false) {
 
 function renderBrokerOrders() {
     const activeTbody = document.getElementById('broker-order-list');
+    if (!activeTbody) return;
+
+    const currentScroll = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+    const restoreAfterRender = currentScroll > 0 && !document.body.classList.contains('broker-detail-open');
+    saveBrokerScrollPosition();
     activeTbody.innerHTML = '';
- 
+  
     const activeOrders = sortBrokerOrders(filterBrokerOrders(brokerState.orders));
- 
-    document.getElementById('broker-results-summary').textContent = `Showing ${activeOrders.length} order${activeOrders.length === 1 ? '' : 's'}`;
- 
+  
+    const summaryEl = document.getElementById('broker-results-summary');
+    if (summaryEl) {
+        summaryEl.textContent = `Showing ${activeOrders.length} order${activeOrders.length === 1 ? '' : 's'}`;
+    }
+  
     if (!activeOrders.length) {
         activeTbody.innerHTML = '<tr><td colspan="3" class="text-center">No active or hold orders match the current filters.</td></tr>';
     } else {
         activeOrders.forEach(order => renderBrokerOrder(order, activeTbody, true));
+    }
+
+    if (restoreAfterRender) {
+        requestAnimationFrame(() => {
+            window.scrollTo({ top: currentScroll, left: 0, behavior: 'auto' });
+        });
     }
 }
 
@@ -578,7 +623,15 @@ function sortBrokerOrders(orders) {
 function renderBrokerOrder(order, tbody, showActions) {
     const row = document.createElement('tr');
     row.className = 'broker-order-clickable';
-    row.onclick = () => showBrokerOrderDetails(order._id);
+    row.addEventListener('click', (event) => {
+        if (event.target && event.target.closest('button')) {
+            return;
+        }
+        if (event.defaultPrevented) return;
+        event.preventDefault();
+        saveBrokerScrollPosition();
+        showBrokerOrderDetails(order._id);
+    });
 
     const actions = [];
     if (showActions && ['PENDING', 'PICKUP', 'HOLD'].includes(order.status)) {
