@@ -409,7 +409,7 @@
                         </div>
                         <div class="col-12 col-md-4">
                             <label class="form-label">App-Version</label>
-                            <input type="text" class="form-control" v-model="pathaoCredentialChecker.appVersion" placeholder="7.1.4" />
+                            <input type="text" class="form-control" v-model="pathaoCredentialChecker.appVersion" placeholder="7.1.8" />
                         </div>
                     </div>
                     <div class="mt-3 d-flex flex-wrap gap-2">
@@ -417,6 +417,7 @@
                             <span v-if="!pathaoCredentialChecker.loading">Check Credentials</span>
                             <span v-else class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                         </button>
+                        <button class="btn btn-outline-primary" @click="savePathaoAppVersion" :disabled="pathaoCredentialChecker.loading">Save App-Version</button>
                         <button class="btn btn-outline-secondary" @click="resetPathaoCredentialChecker">Reset</button>
                     </div>
                     <div v-if="pathaoCredentialChecker.error" class="alert alert-danger mt-3 mb-0">
@@ -2898,7 +2899,7 @@
                         password: '',
                         clientId: '1',
                         clientSecret: '',
-                        appVersion: '7.1.4',
+                        appVersion: '7.1.8',
                         loading: false,
                         error: '',
                         result: null
@@ -3057,13 +3058,52 @@
                         console.log('Login process finished, loginLoading:', this.loginLoading);
                     }
                 },
+                async loadPathaoAppVersion() {
+                    try {
+                        const response = await axios.get(`${API_BASE}/admin/pathao/app-version`);
+                        if (response.data && response.data.appVersion) {
+                            this.pathaoCredentialChecker.appVersion = response.data.appVersion;
+                        }
+                    } catch (error) {
+                        console.error('Failed to load Pathao app version:', error);
+                    }
+                },
+                async savePathaoAppVersion() {
+                    const version = String(this.pathaoCredentialChecker.appVersion || '').trim();
+                    if (!version) {
+                        this.pathaoCredentialChecker.error = 'Please enter an App-Version before saving.';
+                        this.pathaoCredentialChecker.result = null;
+                        return;
+                    }
+
+                    this.pathaoCredentialChecker.error = '';
+                    this.pathaoCredentialChecker.loading = true;
+
+                    try {
+                        const response = await axios.post(`${API_BASE}/admin/pathao/app-version`, {
+                            appVersion: version
+                        });
+
+                        this.pathaoCredentialChecker.appVersion = response.data.appVersion || version;
+                        this.pathaoCredentialChecker.result = {
+                            success: true,
+                            message: response.data.message || 'Pathao app version saved successfully.',
+                            appVersion: this.pathaoCredentialChecker.appVersion
+                        };
+                    } catch (error) {
+                        this.pathaoCredentialChecker.error = error.response?.data?.message || 'Failed to save Pathao app version.';
+                        this.pathaoCredentialChecker.result = null;
+                    } finally {
+                        this.pathaoCredentialChecker.loading = false;
+                    }
+                },
                 resetPathaoCredentialChecker() {
                     this.pathaoCredentialChecker = {
                         username: '',
                         password: '',
                         clientId: '1',
                         clientSecret: '',
-                        appVersion: '7.1.4',
+                        appVersion: this.pathaoCredentialChecker?.appVersion || '7.1.8',
                         loading: false,
                         error: '',
                         result: null
@@ -3129,7 +3169,8 @@
                             this.loadBrokerSmartFilterSuggestions(),
                             this.loadBrokerOrdersAnalytics(),
                             this.loadCapturedAgentRecords(),
-                            this.loadAgentCredentials()
+                            this.loadAgentCredentials(),
+                            this.loadPathaoAppVersion()
                         ]);
                         console.log('All data loaded successfully.');
                     } catch (error) {

@@ -1,10 +1,11 @@
 const DEFAULT_TRACKING_TIMEOUT_MS = 15000;
 
 function normalizeStatus(rawStatus) {
-  const status = String(rawStatus || '').trim().toLowerCase();
+  const status = String(rawStatus || '').trim().toLowerCase().replace(/[_\s]+/g, ' ');
 
   if (!status) return 'PENDING';
   if (['delivered', 'delivery completed', 'complete', 'completed'].includes(status)) return 'DELIVERED';
+  if (['partial delivery', 'partially delivered', 'partial', 'partially delivered.', 'partial delivery.'].includes(status) || /partial(?:ly)?\s*delivery/.test(status)) return 'DELIVERED';
   if (['return', 'returned', 'returned by customer', 'return requested', 'returned to sender', 'paid return', 'paid return.', 'paid-return', 'paid_return'].includes(status)) return 'RETURNED';
   if (status.includes('paid return') || status.includes('paid-return') || status.includes('paid_return')) return 'RETURNED';
   if (['hold', 'on hold', 'holding', 'holded'].includes(status)) return 'HOLD';

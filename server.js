@@ -146,6 +146,28 @@ async function getBrokerSmartFilterConfig(user = null) {
   };
 }
 
+async function getPathaoAppVersion() {
+  try {
+    const setting = await AppSetting.findOne({ key: 'pathao_app_version' });
+    const value = setting?.value ?? process.env.PATHAO_APP_VERSION ?? '7.1.8';
+    return String(value).trim() || '7.1.8';
+  } catch (error) {
+    console.error('Error loading Pathao app version:', error);
+    return String(process.env.PATHAO_APP_VERSION || '7.1.8').trim() || '7.1.8';
+  }
+}
+
+async function setPathaoAppVersion(version) {
+  const normalizedVersion = String(version || '').trim() || '7.1.8';
+  process.env.PATHAO_APP_VERSION = normalizedVersion;
+  await AppSetting.findOneAndUpdate(
+    { key: 'pathao_app_version' },
+    { $set: { key: 'pathao_app_version', value: normalizedVersion, description: 'Pathao app version used for agent login headers.' } },
+    { upsert: true, new: true, setDefaultsOnInsert: true }
+  );
+  return normalizedVersion;
+}
+
 async function getBrokerSmartFilterSuggestions() {
   const orders = await BrokerOrder.find({ completed: true }).select('merchantName productDescription deliveryInstruction recipientAddress recipientName status').limit(500).lean();
   const pageNames = [];
@@ -828,6 +850,27 @@ app.put('/admin/settings/tracking-agent-capture', adminAuth, async (req, res) =>
   }
 });
 
+app.get('/admin/pathao/app-version', adminAuth, async (req, res) => {
+  try {
+    const appVersion = await getPathaoAppVersion();
+    res.json({ success: true, appVersion });
+  } catch (error) {
+    console.error('Error loading Pathao app version:', error);
+    res.status(500).json({ success: false, message: 'Failed to load Pathao app version.', appVersion: '7.1.8' });
+  }
+});
+
+app.post('/admin/pathao/app-version', adminAuth, async (req, res) => {
+  try {
+    const { appVersion } = req.body || {};
+    const normalizedAppVersion = await setPathaoAppVersion(appVersion);
+    res.json({ success: true, message: 'Pathao app version updated.', appVersion: normalizedAppVersion });
+  } catch (error) {
+    console.error('Error updating Pathao app version:', error);
+    res.status(500).json({ success: false, message: 'Failed to update Pathao app version.' });
+  }
+});
+
 app.post('/admin/pathao/check-agent-login', adminAuth, async (req, res) => {
   try {
     const { username, password, appVersion, clientId, clientSecret } = req.body || {};
@@ -837,7 +880,7 @@ app.post('/admin/pathao/check-agent-login', adminAuth, async (req, res) => {
     }
 
     const pathaoBaseUrl = process.env.PATHAO_BASE_URL || 'https://api-hermes.pathao.com';
-    const normalizedAppVersion = appVersion || process.env.PATHAO_APP_VERSION || '7.1.4';
+    const normalizedAppVersion = (appVersion || process.env.PATHAO_APP_VERSION || await getPathaoAppVersion() || '7.1.8').trim();
     const normalizedClientId = clientId || process.env.PATHAO_CLIENT_ID || '1';
     const normalizedClientSecret = clientSecret || process.env.PATHAO_CLIENT_SECRET || '';
 
@@ -890,7 +933,7 @@ app.post('/admin/pathao/check-agent-login', adminAuth, async (req, res) => {
     });
   } catch (error) {
     console.error('Error checking Pathao agent credentials:', error);
-    res.status(500).json({ success: false, message: 'Failed to check Pathao agent credentials.', appVersion: process.env.PATHAO_APP_VERSION || '7.1.4' });
+    res.status(500).json({ success: false, message: 'Failed to check Pathao agent credentials.', appVersion: process.env.PATHAO_APP_VERSION || '7.1.8' });
   }
 });
 
@@ -2556,47 +2599,43 @@ app.get('/broker/orders/user', validateUser, async (req, res) => {
     // Fetch matching orders
     const orders = await BrokerOrder.find(filter).sort({ createdAt: -1 });
 
-    // 1) Convert any PARTIAL statuses into DELIVERED and archive them (completed=true)
-    // This avoids showing partial deliveries on the public broker dashboard.
-    const partialIds = orders.filter(o => String(o.status || '').toUpperCase() === 'PARTIAL').map(o => o._id);
+    // 1) Convert any PARTIAL delivery statuses into DELIVERED and archive them (completed=true)
+    // This avoids showing partial-delivery orders on the public broker dashboard.
+    const partialIds = orders
+      .filter(o => {
+        const status = String(o.status || '').toUpperCase();
+        return status.includes('PARTIAL') || status.includes('PARTIALLY');
+      })
+      .map(o => o._id);
     if (partialIds.length) {
       try {
         await BrokerOrder.updateMany(
           { _id: { $in: partialIds } },
           {
             $set: { status: 'DELIVERED', completed: true, lastStatusUpdate: new Date() },
-            $push: { statusHistory: { status: 'DELIVERED', note: 'Auto-archived from PARTIAL as delivered', timestamp: new Date() } }
+            $push: { statusHistory: { status: 'DELIVERED', note: 'Auto-archived from partial delivery as delivered', timestamp: new Date() } }
           }
         );
-        // Refresh orders after bulk update
         for (let i = 0; i < orders.length; i++) {
           if (partialIds.find(id => String(id) === String(orders[i]._id))) {
             orders[i].status = 'DELIVERED';
             orders[i].completed = true;
             orders[i].lastStatusUpdate = new Date();
             orders[i].statusHistory = orders[i].statusHistory || [];
-            orders[i].statusHistory.push({ status: 'DELIVERED', note: 'Auto-archived from PARTIAL as delivered', timestamp: new Date() });
+            orders[i].statusHistory.push({ status: 'DELIVERED', note: 'Auto-archived from partial delivery as delivered', timestamp: new Date() });
           }
         }
       } catch (err) {
-        console.error('Failed to auto-archive PARTIAL orders:', err);
+        console.error('Failed to auto-archive partial-delivery orders:', err);
       }
     }
 
-    // 2) Determine visible active orders for the broker dashboard
-    // Show PENDING and PICKUP orders normally.
-    // For HOLD orders, only show those that were placed on a previous day (lastStatusUpdate/createdAt < todayStart)
-    // AND are currently unassigned (agent was unassigned today), as per broker dashboard requirements.
-    const todayStart = getBrokerDashboardChargeDay();
+    // 2) Public broker dashboard should display active HOLD orders as well as PENDING/PICKUP.
     const visibleOrders = orders.filter(order => {
       if (order.completed) return false;
       const st = String(order.status || '').toUpperCase();
-      if (st === 'HOLD') {
-        const lastUpdate = order.lastStatusUpdate || order.createdAt || new Date(0);
-        // include only previous-day hold orders that now have no assigned agent
-        return (!order.assigned && new Date(lastUpdate).getTime() < todayStart.getTime());
-      }
-      // Only PENDING and PICKUP are allowed otherwise
+      if (st.includes('PARTIAL') || st.includes('PARTIALLY')) return false;
+      if (st === 'HOLD') return true;
       return ['PENDING', 'PICKUP'].includes(st);
     });
 

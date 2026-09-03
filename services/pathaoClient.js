@@ -51,7 +51,7 @@ class PathaoApiClient {
     this.baseUrl = process.env.PATHAO_BASE_URL || 'https://api-hermes.pathao.com';
     this.clientId = process.env.PATHAO_CLIENT_ID || '1';
     this.clientSecret = process.env.PATHAO_CLIENT_SECRET || '';
-    this.appVersion = process.env.PATHAO_APP_VERSION || '7.1.2';
+    this.appVersion = process.env.PATHAO_APP_VERSION || '7.1.8';
     this.tokens = {};
   }
 
