@@ -2112,6 +2112,154 @@
             </div>
         </div>
 
+        <!-- Broker Order Details Modal -->
+        <div class="modal fade" id="brokerOrderDetailsModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-xl modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Broker Order Details</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div v-if="selectedBrokerOrder">
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-3">
+                                    <label class="form-label text-muted small mb-1">Order ID</label>
+                                    <div class="form-control-plaintext fw-semibold">{{ selectedBrokerOrder.orderId || selectedBrokerOrder._id || '—' }}</div>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label text-muted small mb-1">Status</label>
+                                    <div class="form-control-plaintext fw-semibold">{{ selectedBrokerOrder.status || '—' }}</div>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label text-muted small mb-1">Assigned</label>
+                                    <div class="form-control-plaintext fw-semibold">{{ selectedBrokerOrder.assigned ? 'Yes' : 'No' }}</div>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label text-muted small mb-1">Created</label>
+                                    <div class="form-control-plaintext fw-semibold">{{ formatDateTime(selectedBrokerOrder.createdAt) }}</div>
+                                </div>
+                            </div>
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small mb-1">User</label>
+                                    <div class="form-control-plaintext">{{ selectedBrokerOrder.user?.email || 'Unassigned' }}</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small mb-1">Credits Used</label>
+                                    <div class="form-control-plaintext">{{ selectedBrokerOrder.creditsUsed || 0 }}</div>
+                                </div>
+                            </div>
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small mb-1">Merchant / Page</label>
+                                    <div class="form-control-plaintext">{{ selectedBrokerOrder.merchantName || '—' }}</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small mb-1">Merchant Phone</label>
+                                    <div class="form-control-plaintext">{{ selectedBrokerOrder.merchantPhone || '—' }}</div>
+                                </div>
+                            </div>
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small mb-1">Product / Product Description</label>
+                                    <div class="form-control-plaintext whitespace-pre-wrap">{{ selectedBrokerOrder.productDescription || '—' }}</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small mb-1">Product Price</label>
+                                    <div class="form-control-plaintext">
+                                        {{ (() => {
+                                            const productPrice = selectedBrokerOrder.price ?? selectedBrokerOrder.amount ?? selectedBrokerOrder.totalAmount ?? selectedBrokerOrder.bdtPrice ?? 0;
+                                            const estimatedPrice = Number(productPrice);
+                                            return Number.isFinite(estimatedPrice) ? `৳${estimatedPrice.toFixed(2)}` : (productPrice ? String(productPrice) : '—');
+                                        })() }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small mb-1">Quantity</label>
+                                    <div class="form-control-plaintext">{{ selectedBrokerOrder.quantity || 1 }}</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small mb-1">Consignment ID</label>
+                                    <div class="form-control-plaintext">{{ selectedBrokerOrder.consignmentId || '—' }}</div>
+                                </div>
+                            </div>
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small mb-1">Recipient</label>
+                                    <div class="form-control-plaintext">{{ selectedBrokerOrder.recipientName || '—' }} {{ selectedBrokerOrder.recipientPhone ? `(${selectedBrokerOrder.recipientPhone})` : '' }}</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small mb-1">Recipient Address</label>
+                                    <div class="form-control-plaintext">{{ selectedBrokerOrder.recipientAddress || '—' }}</div>
+                                </div>
+                            </div>
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small mb-1">Delivery Instructions</label>
+                                    <div class="form-control-plaintext whitespace-pre-wrap">{{ selectedBrokerOrder.deliveryInstruction || '—' }}</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small mb-1">Payment Link</label>
+                                    <div class="form-control-plaintext">
+                                        <a v-if="selectedBrokerOrder.paymentLink" :href="selectedBrokerOrder.paymentLink" target="_blank" rel="noopener noreferrer">Open link</a>
+                                        <span v-else>—</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small mb-1">Previous Assigned Agents</label>
+                                    <div class="form-control-plaintext">
+                                        {{ (() => {
+                                            const previousAssignedAgents = [
+                                                selectedBrokerOrder.agentName,
+                                                selectedBrokerOrder.agentAssigned,
+                                                selectedBrokerOrder.agentDisplayName,
+                                                ...(Array.isArray(selectedBrokerOrder.statusHistory) ? selectedBrokerOrder.statusHistory.map(entry => entry?.agentName || entry?.agentAssigned || entry?.agentDisplayName || entry?.agent || entry?.name).filter(Boolean) : [])
+                                            ].filter((value, index, arr) => value && arr.indexOf(value) === index);
+                                            return previousAssignedAgents.length ? previousAssignedAgents.join(', ') : '—';
+                                        })() }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small mb-1">Failed Reason</label>
+                                    <div class="form-control-plaintext">{{ selectedBrokerOrder.failedReason || '—' }}</div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label text-muted small mb-1">Status History</label>
+                                <div class="border rounded p-3 bg-light-subtle">
+                                    <ul class="mb-0 ps-3" v-if="selectedBrokerOrder.statusHistory && selectedBrokerOrder.statusHistory.length">
+                                        <li v-for="(entry, index) in selectedBrokerOrder.statusHistory.slice(0, 8)" :key="index">
+                                            <strong>{{ formatDateTime(entry.timestamp || selectedBrokerOrder.createdAt) }}</strong>
+                                            <span class="text-muted"> · </span>
+                                            <span>{{ entry.status || 'Status' }}</span>
+                                            <span v-if="entry.note"> <span class="text-muted">·</span> {{ entry.note }}</span>
+                                        </li>
+                                    </ul>
+                                    <div v-else class="text-muted">No status history available.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- User Details Modal -->
         <div class="modal fade" id="userDetailsModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-lg">
@@ -2903,6 +3051,7 @@
                     selectedPremiumPayment: null,
                     selectedFexiloadRequest: null,
                     selectedUserDetail: null,
+                    selectedBrokerOrder: null,
                     selectedUser: null,
                     stats: { totalUsers: 0, totalPayments: 0, pendingPayments: 0, issueReports: 0 },
                     discountPercentage: 10,
@@ -3321,8 +3470,13 @@
                     }
                 },
                 async viewBrokerOrderDetails(order) {
-                    const details = `Order ID: ${order.orderId}\nStatus: ${order.status}\nUser: ${order.user?.email || 'Unassigned'}\nCredits Used: ${order.creditsUsed || 0}\nAssigned: ${order.assigned ? 'Yes' : 'No'}\nCreated: ${this.formatDateTime(order.createdAt)}\nMerchant: ${order.merchantName || '—'}\nProduct: ${order.productDescription || '—'}\nRecipient: ${order.recipientName || '—'} ${order.recipientPhone || ''}\nAddress: ${order.recipientAddress || '—'}`;
-                    alert(details);
+                    this.selectedBrokerOrder = order || null;
+                    this.$nextTick(() => {
+                        const modalEl = document.getElementById('brokerOrderDetailsModal');
+                        if (!modalEl || !window.bootstrap || !window.bootstrap.Modal) return;
+                        const modal = window.bootstrap.Modal.getOrCreateInstance(modalEl);
+                        modal.show();
+                    });
                 },
                 async updateBrokerOrderStatus(order) {
                     const status = window.prompt('Enter new order status: PENDING, PICKUP, DELIVERED, CANCELLED, FAILED, RETURNED', order.status);
