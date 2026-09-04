@@ -131,7 +131,7 @@ function normalizeSmartMatchText(value) {
 function smartTextIncludes(orderText, configuredValue) {
   const orderValue = normalizeSmartMatchText(orderText);
   const filterValue = normalizeSmartMatchText(configuredValue);
-  return Boolean(filterValue && orderValue.includes(filterValue));
+  return Boolean(filterValue.length >= 2 && orderValue.includes(filterValue));
 }
 
 function getSmartOrderPrice(order) {
@@ -2839,9 +2839,20 @@ app.post('/broker/smart-filter/activate', validateUser, async (req, res) => {
       Number(matchesSmartFilterPrice(a, filter)) - Number(matchesSmartFilterPrice(b, filter))
     ));
     const matchedAt = new Date();
-    if (matchedOrders.length) {
+    const activeOrderIds = orders.map((order) => order._id);
+    const matchedOrderIds = matchedOrders.map((order) => order._id);
+    if (activeOrderIds.length) {
       await BrokerOrder.updateMany(
-        { _id: { $in: matchedOrders.map((order) => order._id) } },
+        { _id: { $in: activeOrderIds } },
+        {
+          $set: { smartOrder: false },
+          $unset: { smartFilterName: '', smartMatchedKeywords: '', smartMatchedAt: '' }
+        }
+      );
+    }
+    if (matchedOrderIds.length) {
+      await BrokerOrder.updateMany(
+        { _id: { $in: matchedOrderIds } },
         {
           $set: {
             smartOrder: true,

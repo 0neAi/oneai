@@ -456,6 +456,13 @@ async function loadBrokerSmartFilters() {
     const container = document.getElementById('broker-smart-filter-list');
     const resultsEl = document.getElementById('broker-smart-filter-results');
     if (!container) return;
+    brokerState.smartOrders = [];
+    brokerState.smartFilterName = '';
+    brokerState.smartFilterCost = 0;
+    if (resultsEl) {
+        resultsEl.style.display = 'none';
+        resultsEl.innerHTML = '';
+    }
 
     try {
         const response = await fetch(`${API_BASE_URL}/broker/smart-filter-config`, {
