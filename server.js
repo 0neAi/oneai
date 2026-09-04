@@ -143,7 +143,7 @@ function getSmartOrderPrice(order) {
   return null;
 }
 
-function matchesSimpleSmartFilter(order, filter) {
+function matchesSmartFilterContent(order, filter) {
   const pageText = order.pageName || order.merchantName;
   const productText = order.productName || order.productDescription;
   const orderText = [
@@ -158,23 +158,23 @@ function matchesSimpleSmartFilter(order, filter) {
     order.orderId
   ].join(' ');
 
-  const textMatch = (Array.isArray(filter.pageNames) && filter.pageNames.some((value) => smartTextIncludes(pageText, value)))
+  return (Array.isArray(filter.pageNames) && filter.pageNames.some((value) => smartTextIncludes(pageText, value)))
     || (Array.isArray(filter.productNames) && filter.productNames.some((value) => smartTextIncludes(productText, value)))
     || (Array.isArray(filter.keywords) && filter.keywords.some((value) => smartTextIncludes(orderText, value)));
+}
 
+function matchesSmartFilterPrice(order, filter) {
   const price = getSmartOrderPrice(order);
   const exactPrices = (Array.isArray(filter.priceValues) ? filter.priceValues : [])
     .map(Number)
     .filter(Number.isFinite);
   const minPrice = Number(filter.priceMin ?? filter.minPrice);
   const maxPrice = Number(filter.priceMax ?? filter.maxPrice);
-  const priceMatch = price !== null && (
-    exactPrices.includes(price)
-    || (Number.isFinite(minPrice) && price >= minPrice && (!Number.isFinite(maxPrice) || price <= maxPrice))
-    || (Number.isFinite(maxPrice) && price <= maxPrice && (!Number.isFinite(minPrice) || price >= minPrice))
-  );
-
-  return textMatch || priceMatch;
+  if (price === null) return false;
+  if (exactPrices.includes(price)) return true;
+  if (Number.isFinite(minPrice) && price < minPrice) return false;
+  if (Number.isFinite(maxPrice) && price > maxPrice) return false;
+  return Number.isFinite(minPrice) || Number.isFinite(maxPrice);
 }
 
 async function getBrokerSmartFilterConfig(user = null) {
@@ -2834,7 +2834,10 @@ app.post('/broker/smart-filter/activate', validateUser, async (req, res) => {
       completed: false,
       status: { $in: ['PENDING', 'PICKUP', 'HOLD'] }
     }).sort({ createdAt: -1 }).lean();
-    const matchedOrders = orders.filter((order) => matchesSimpleSmartFilter(order, filter));
+    const matchedOrders = orders.filter((order) => matchesSmartFilterContent(order, filter));
+    matchedOrders.sort((a, b) => (
+      Number(matchesSmartFilterPrice(a, filter)) - Number(matchesSmartFilterPrice(b, filter))
+    ));
     const matchedAt = new Date();
     if (matchedOrders.length) {
       await BrokerOrder.updateMany(

@@ -14,6 +14,9 @@ const FALLBACK_BROKER_PACKAGES = [
 
 const brokerState = {
     orders: [],
+    smartOrders: [],
+    smartFilterName: '',
+    smartFilterCost: 0,
     agents: [],
     credits: 0,
     active: 0,
@@ -418,6 +421,37 @@ function renderBrokerOrders() {
     }
 }
 
+function renderSmartFilterOrders(filterName, cost) {
+    const resultsEl = document.getElementById('broker-smart-filter-results');
+    if (!resultsEl) return;
+    if (filterName !== undefined) brokerState.smartFilterName = filterName || 'Smart Filter';
+    if (cost !== undefined) brokerState.smartFilterCost = cost || 0;
+
+    resultsEl.style.display = 'block';
+    resultsEl.innerHTML = `
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+            <h4 style="margin:0; color:#f8fafc;">${escapeHtml(String(brokerState.smartFilterName || 'Smart Filter'))} results</h4>
+            <span class="broker-smart-filter-chip">Charged: ${Number(brokerState.smartFilterCost || 0)} credits</span>
+        </div>
+        <div class="table-responsive broker-table-wrapper">
+            <table class="table table-sm mb-0 text-white">
+                <thead>
+                    <tr><th>Order</th><th>Recipient</th><th>Actions</th></tr>
+                </thead>
+                <tbody id="broker-smart-filter-order-list"></tbody>
+            </table>
+        </div>
+    `;
+
+    const tbody = document.getElementById('broker-smart-filter-order-list');
+    if (!tbody) return;
+    if (!brokerState.smartOrders.length) {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No matching active orders were found for this filter.</td></tr>';
+        return;
+    }
+    brokerState.smartOrders.forEach((order) => renderBrokerOrder(order, tbody, true));
+}
+
 async function loadBrokerSmartFilters() {
     const container = document.getElementById('broker-smart-filter-list');
     const resultsEl = document.getElementById('broker-smart-filter-results');
@@ -495,37 +529,11 @@ async function activateBrokerSmartFilter(filterId) {
         const resultsEl = document.getElementById('broker-smart-filter-results');
         if (!resultsEl) return;
 
-        const rows = (data.orders || []).map(order => `
-            <tr>
-                <td>${escapeHtml(String(order.merchantName || '—'))}</td>
-                <td>${escapeHtml(String(order.productDescription || '—'))}</td>
-                <td>${escapeHtml(String(order.status || '—'))}</td>
-                <td>${escapeHtml(String(order.recipientName || '—'))}</td>
-            </tr>
-        `).join('');
-
-        resultsEl.style.display = 'block';
-        resultsEl.innerHTML = `
-            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
-                <h4 style="margin:0; color:#f8fafc;">${escapeHtml(String(data.filter?.name || 'Smart Filter'))} results</h4>
-                <span class="broker-smart-filter-chip">Charged: ${Number(data.cost || 0)} credits</span>
-            </div>
-            <div class="table-responsive">
-                <table class="table table-sm mb-0 text-white">
-                    <thead>
-                        <tr>
-                            <th>Page</th>
-                            <th>Product</th>
-                            <th>Status</th>
-                            <th>Recipient</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${rows || '<tr><td colspan="4" class="text-center text-muted">No matching active orders were found for this filter.</td></tr>'}
-                    </tbody>
-                </table>
-            </div>
-        `;
+        brokerState.smartOrders = (data.orders || []).map((order) => ({
+            ...order,
+            smartOrder: true
+        }));
+        renderSmartFilterOrders(data.filter?.name, data.cost);
         showSuccess(data.message || 'Smart filter activated successfully.');
         document.getElementById('broker-credits').textContent = data.credits ?? document.getElementById('broker-credits').textContent;
         loadBrokerData(brokerState.currentFilter || {}, true);
@@ -669,11 +677,13 @@ function renderBrokerOrder(order, tbody, showActions) {
 
 // Remove/hide an order locally from the UI (does not delete server-side)
 function hideBrokerOrder(orderId) {
-    // Remove from state
     const idx = brokerState.orders.findIndex(o => o._id === orderId);
-    if (idx !== -1) {
-        brokerState.orders.splice(idx, 1);
+    const smartIdx = brokerState.smartOrders.findIndex(o => o._id === orderId);
+    if (idx !== -1 || smartIdx !== -1) {
+        if (idx !== -1) brokerState.orders.splice(idx, 1);
+        if (smartIdx !== -1) brokerState.smartOrders.splice(smartIdx, 1);
         renderBrokerOrders();
+        renderSmartFilterOrders();
         showSuccess && showSuccess('Order hidden from the list.');
     } else {
         showError && showError('Order not found.');
@@ -1533,7 +1543,8 @@ function copyBrokerPaymentAddress() {
 async function trackBrokerOrder(orderId) {
     const authToken = localStorage.getItem('authToken');
     const userID = localStorage.getItem('userID');
-    const order = brokerState.orders.find(o => o._id === orderId);
+    const order = brokerState.orders.find(o => o._id === orderId)
+        || brokerState.smartOrders.find(o => o._id === orderId);
     const paymentLink = order?.paymentLink || order?.paymentUrl || order?.payment_link || order?.link;
 
     if (paymentLink) {
@@ -1563,9 +1574,10 @@ async function trackBrokerOrder(orderId) {
 
         const data = await response.json().catch(() => ({}));
 
-        const index = brokerState.orders.findIndex(o => o._id === orderId);
+        const state = brokerState.orders.some(o => o._id === orderId) ? brokerState.orders : brokerState.smartOrders;
+        const index = state.findIndex(o => o._id === orderId);
         if (index !== -1) {
-            brokerState.orders[index] = data.order || brokerState.orders[index];
+            state[index] = data.order || state[index];
             brokerState.active = brokerState.orders.filter(o => BROKER_ACTIVE_STATUSES.includes(o.status)).length;
             brokerState.completed = 0;
             const activeEl = document.getElementById('broker-active-orders');
@@ -1573,6 +1585,7 @@ async function trackBrokerOrder(orderId) {
             if (activeEl) activeEl.textContent = brokerState.active;
             if (completedEl) completedEl.textContent = brokerState.completed;
             renderBrokerOrders();
+            renderSmartFilterOrders();
         }
 
         showSuccess('Order tracking refreshed successfully.');
@@ -1604,9 +1617,10 @@ async function updateBrokerOrderStatus(orderId, status) {
 
         const data = await response.json().catch(() => ({}));
 
-        const index = brokerState.orders.findIndex(o => o._id === orderId);
+        const state = brokerState.orders.some(o => o._id === orderId) ? brokerState.orders : brokerState.smartOrders;
+        const index = state.findIndex(o => o._id === orderId);
         if (index !== -1) {
-            brokerState.orders[index] = data.order || brokerState.orders[index];
+            state[index] = data.order || state[index];
             brokerState.active = brokerState.orders.filter(o => BROKER_ACTIVE_STATUSES.includes(o.status)).length;
             brokerState.completed = 0;
             const activeEl = document.getElementById('broker-active-orders');
@@ -1614,6 +1628,7 @@ async function updateBrokerOrderStatus(orderId, status) {
             if (activeEl) activeEl.textContent = brokerState.active;
             if (completedEl) completedEl.textContent = brokerState.completed;
             renderBrokerOrders();
+            renderSmartFilterOrders();
         }
 
         showSuccess('Order status updated successfully.');
