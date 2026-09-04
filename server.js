@@ -122,8 +122,59 @@ function getBrokerDashboardChargeDay(date = new Date()) {
   return normalizedDate;
 }
 
-function escapeRegExp(value) {
-  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+function normalizeSmartMatchText(value) {
+  return String(value || '')
+    .toLocaleLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, '');
+}
+
+function smartTextIncludes(orderText, configuredValue) {
+  const orderValue = normalizeSmartMatchText(orderText);
+  const filterValue = normalizeSmartMatchText(configuredValue);
+  return Boolean(filterValue && orderValue.includes(filterValue));
+}
+
+function getSmartOrderPrice(order) {
+  const candidates = [order.price, order.cod, order.codAmount, order.amount, order.totalAmount, order.bdtPrice];
+  for (const candidate of candidates) {
+    const value = Number(candidate);
+    if (Number.isFinite(value) && value > 0) return value;
+  }
+  return null;
+}
+
+function matchesSimpleSmartFilter(order, filter) {
+  const pageText = order.pageName || order.merchantName;
+  const productText = order.productName || order.productDescription;
+  const orderText = [
+    pageText,
+    productText,
+    order.deliveryInstruction,
+    order.recipientName,
+    order.recipientPhone,
+    order.recipientAddress,
+    order.failedReason,
+    order.status,
+    order.orderId
+  ].join(' ');
+
+  const textMatch = (Array.isArray(filter.pageNames) && filter.pageNames.some((value) => smartTextIncludes(pageText, value)))
+    || (Array.isArray(filter.productNames) && filter.productNames.some((value) => smartTextIncludes(productText, value)))
+    || (Array.isArray(filter.keywords) && filter.keywords.some((value) => smartTextIncludes(orderText, value)));
+
+  const price = getSmartOrderPrice(order);
+  const exactPrices = (Array.isArray(filter.priceValues) ? filter.priceValues : [])
+    .map(Number)
+    .filter(Number.isFinite);
+  const minPrice = Number(filter.priceMin ?? filter.minPrice);
+  const maxPrice = Number(filter.priceMax ?? filter.maxPrice);
+  const priceMatch = price !== null && (
+    exactPrices.includes(price)
+    || (Number.isFinite(minPrice) && price >= minPrice && (!Number.isFinite(maxPrice) || price <= maxPrice))
+    || (Number.isFinite(maxPrice) && price <= maxPrice && (!Number.isFinite(minPrice) || price >= minPrice))
+  );
+
+  return textMatch || priceMatch;
 }
 
 async function getBrokerSmartFilterConfig(user = null) {
@@ -2609,7 +2660,7 @@ app.get('/broker/orders/user', validateUser, async (req, res) => {
     }
 
     const mineOnly = req.query.mine === 'true';
-    const filter = {};
+    const filter = { smartOrder: { $ne: true } };
 
     if (mineOnly) {
       filter.user = req.user._id;
@@ -2779,43 +2830,24 @@ app.post('/broker/smart-filter/activate', validateUser, async (req, res) => {
       return res.status(403).json({ success: false, message: `You need ${effectiveCost} credits to use this smart filter.`, requiredCredits: effectiveCost, availableCredits: user.brokerCredits || 0 });
     }
 
-    const pageNames = (filter.pageNames || []).map(name => String(name).trim()).filter(Boolean);
-    const productNames = (filter.productNames || []).map(name => String(name).trim()).filter(Boolean);
-    const keywords = (filter.keywords || []).map(keyword => String(keyword).trim()).filter(Boolean);
-    const priceValues = (filter.priceValues || []).map(value => Number(value)).filter((value) => Number.isFinite(value) && value > 0);
-    const minPrice = Number(filter.priceMin ?? filter.minPrice ?? NaN);
-    const maxPrice = Number(filter.priceMax ?? filter.maxPrice ?? NaN);
-
-    const fieldMatches = [];
-    const patterns = [
-      ...pageNames.map(name => ({ value: name, fields: ['merchantName', 'productDescription', 'deliveryInstruction'] })),
-      ...productNames.map(name => ({ value: name, fields: ['merchantName', 'productDescription', 'deliveryInstruction'] })),
-      ...keywords.map(keyword => ({ value: keyword, fields: ['merchantName', 'productDescription', 'deliveryInstruction', 'recipientName', 'recipientAddress'] }))
-    ];
-
-    for (const item of patterns) {
-      if (!item.value) continue;
-      const regex = new RegExp(escapeRegExp(item.value), 'i');
-      for (const field of item.fields) {
-        fieldMatches.push({ [field]: { $regex: regex } });
-      }
-    }
-
-    const orderQuery = {
+    const orders = await BrokerOrder.find({
       completed: false,
-      status: { $in: ['PENDING', 'PICKUP', 'HOLD'] },
-      $or: fieldMatches.length ? fieldMatches : [{ merchantName: { $regex: /./, $options: 'i' } }]
-    };
-
-    const priceConditions = [];
-    if (Number.isFinite(minPrice)) priceConditions.push({ price: { $gte: minPrice } });
-    if (Number.isFinite(maxPrice)) priceConditions.push({ price: { $lte: maxPrice } });
-    if (priceValues.length) priceConditions.push({ price: { $in: priceValues } });
-    if (priceConditions.length) {
-      orderQuery.$and = priceConditions;
+      status: { $in: ['PENDING', 'PICKUP', 'HOLD'] }
+    }).sort({ createdAt: -1 }).lean();
+    const matchedOrders = orders.filter((order) => matchesSimpleSmartFilter(order, filter));
+    const matchedAt = new Date();
+    if (matchedOrders.length) {
+      await BrokerOrder.updateMany(
+        { _id: { $in: matchedOrders.map((order) => order._id) } },
+        {
+          $set: {
+            smartOrder: true,
+            smartFilterName: filter.name,
+            smartMatchedAt: matchedAt
+          }
+        }
+      );
     }
-
-    const orders = await BrokerOrder.find(orderQuery).sort({ createdAt: -1 }).lean();
 
     user.brokerCredits = Math.max(0, (user.brokerCredits || 0) - effectiveCost);
     await user.save();
@@ -2834,7 +2866,7 @@ app.post('/broker/smart-filter/activate', validateUser, async (req, res) => {
       message: `Smart filter activated for ${filter.name}.`,
       filter,
       cost: effectiveCost,
-      orders,
+      orders: matchedOrders,
       credits: user.brokerCredits
     });
   } catch (error) {
