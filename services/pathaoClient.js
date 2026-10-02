@@ -182,47 +182,31 @@ class PathaoApiClient {
       return [];
     }
 
-    const url = `${this.baseUrl}/talaria/api/v1/user/delivery?page=1&limit=1000`;
+    const url = `${this.baseUrl}/talaria/api/v1/user/delivery`;
     try {
       const baseHeaders = await this.getDefaultHeaders();
-      const headerOptions = [
-        { Authorization: `Bearer ${token}` },
-        { Authorization: token },
-        { Authorization: `Token ${token}` }
-      ];
-
-      let lastError = null;
-      for (const authHeader of headerOptions) {
-        try {
-          const data = await this._fetchJson(url, {
-            method: 'GET',
-            headers: {
-              ...baseHeaders,
-              ...authHeader,
-              'X-Client-Id': String(agent.clientId || this.clientId || '1'),
-              'X-App-Version': baseHeaders['App-Version'],
-              'X-Device-Type': 'android',
-              'X-App-Locale': 'en'
-            }
-          });
-
-          const orders = this._extractOrders(data);
-          console.log(`  📦 ${agent.displayName}: fetched ${orders.length} orders`);
-          return orders.map((order) => ({
-            ...order,
-            agentId: agent.id,
-            agentDisplayName: agent.displayName
-          }));
-        } catch (error) {
-          lastError = error;
-          const message = String(error.message || error);
-          if (!/HTTP 4\d\d|HTTP 5\d\d/.test(message)) {
-            throw error;
-          }
-        }
+      const headers = {
+        Accept: 'application/json',
+        'X-Country-Id': '1',
+        'User-Agent': 'okhttp/4.9.2',
+        Authorization: `Bearer ${token}`
+      };
+      if (baseHeaders['App-Version']) {
+        headers['App-Version'] = baseHeaders['App-Version'];
       }
 
-      throw lastError || new Error('Failed to fetch Pathao delivery list');
+      const data = await this._fetchJson(url, {
+        method: 'GET',
+        headers
+      });
+
+      const orders = this._extractOrders(data);
+      console.log(`  📦 ${agent.displayName}: fetched ${orders.length} orders`);
+      return orders.map((order) => ({
+        ...order,
+        agentId: agent.id,
+        agentDisplayName: agent.displayName
+      }));
     } catch (error) {
       console.error(`  ❌ Fetch failed for ${agent.displayName}:`, error.message || error);
       return [];
