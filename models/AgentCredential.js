@@ -10,6 +10,16 @@ const agentCredentialSchema = new mongoose.Schema({
   displayName: { type: String, default: '' },
   source: { type: String, default: 'admin' },
   lastValidAt: { type: Date },
+  lastLoginAt: { type: Date },
+  lastLoginStatus: { type: String, default: 'not_checked' },
+  lastLoginMessage: { type: String, default: '' },
+  invalidSince: { type: Date },
+  consecutiveLoginFailures: { type: Number, default: 0 },
+  loginHistory: [{
+    status: { type: String, required: true },
+    message: { type: String, default: '' },
+    attemptedAt: { type: Date, default: Date.now }
+  }],
   notes: { type: String, default: '' },
   active: { type: Boolean, default: true }
 }, {

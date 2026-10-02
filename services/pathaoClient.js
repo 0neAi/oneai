@@ -67,6 +67,27 @@ function decryptCredential(ciphertextBase64) {
   return plaintext;
 }
 
+function getLoginFailureType(error) {
+  const errorMessage = String(error?.message || error || '');
+  const responseMatch = errorMessage.match(/^HTTP (\d{3}):\s*([\s\S]*)$/);
+  if (!responseMatch) return 'error';
+
+  const statusCode = Number(responseMatch[1]);
+  let responseBody;
+  try {
+    responseBody = JSON.parse(responseMatch[2]);
+  } catch {
+    responseBody = null;
+  }
+
+  const message = String(responseBody?.message || '').toLowerCase();
+  if (statusCode === 400 && /credentials were incorrect|incorrect credentials|invalid credentials/.test(message)) {
+    return 'invalid_credentials';
+  }
+  if (statusCode === 429) return 'rate_limited';
+  return 'error';
+}
+
 class PathaoApiClient {
   constructor() {
     this.baseUrl = process.env.PATHAO_BASE_URL || 'https://api-hermes.pathao.com';
@@ -180,6 +201,7 @@ class PathaoApiClient {
       const token = data?.data?.access_token || data?.data?.token || data?.access_token || data?.token;
       if (!token) {
         console.error(`  ❌ No token returned for ${agent.displayName}`);
+        await this.recordAgentLogin(agent, 'error', 'Pathao login response did not include a token.');
         return null;
       }
 
@@ -188,11 +210,58 @@ class PathaoApiClient {
         expiresAt: new Date(Date.now() + 23 * 60 * 60 * 1000)
       };
 
+      await this.recordAgentLogin(agent, 'success', 'Login successful.');
       console.log(`  ✅ ${agent.displayName} logged in successfully`);
       return token;
     } catch (error) {
       console.error(`  ❌ Login failed for ${agent.displayName}:`, error.message || error);
+      const status = getLoginFailureType(error);
+      const message = status === 'invalid_credentials'
+        ? 'Pathao rejected the saved username or password.'
+        : status === 'rate_limited'
+          ? 'Pathao rate limited the login request.'
+          : String(error.message || error).slice(0, 500);
+      await this.recordAgentLogin(agent, status, message);
       return null;
+    }
+  }
+
+  async recordAgentLogin(agent, status, message) {
+    if (!agent.credentialId) return;
+
+    try {
+      const AgentCredential = require('../models/AgentCredential');
+      const attemptedAt = new Date();
+      const update = {
+        $set: {
+          lastLoginAt: attemptedAt,
+          lastLoginStatus: status,
+          lastLoginMessage: message
+        },
+        $push: {
+          loginHistory: {
+            $each: [{ status, message, attemptedAt }],
+            $slice: -10
+          }
+        }
+      };
+
+      if (status === 'success') {
+        update.$set.lastValidAt = attemptedAt;
+        update.$set.consecutiveLoginFailures = 0;
+        update.$unset = { invalidSince: 1 };
+      } else if (status === 'invalid_credentials') {
+        update.$set.active = false;
+        update.$set.invalidSince = attemptedAt;
+        update.$inc = { consecutiveLoginFailures: 1 };
+      }
+
+      await AgentCredential.updateOne({ _id: agent.credentialId }, update);
+      if (status === 'invalid_credentials') {
+        console.warn(`  ⛔ Disabled saved credentials for ${agent.displayName} after Pathao rejected the login.`);
+      }
+    } catch (error) {
+      console.error(`  ❌ Failed to record Pathao login status for ${agent.displayName}:`, error.message || error);
     }
   }
 
@@ -282,13 +351,16 @@ class PathaoApiClient {
 
   async getActiveAgents() {
     const agents = [];
+    let hasStoredCredentials = false;
 
     try {
       const AgentCredential = require('../models/AgentCredential');
-      const creds = await AgentCredential.find({ active: true }).lean();
-      for (const [i, cred] of creds.entries()) {
+      const creds = await AgentCredential.find().lean();
+      hasStoredCredentials = creds.length > 0;
+      for (const [i, cred] of creds.filter((credential) => credential.active).entries()) {
         agents.push({
-          id: `db_agent_${String(i + 1).padStart(3, '0')}`,
+          id: `db_agent_${String(cred._id)}`,
+          credentialId: String(cred._id),
           displayName: cred.displayName || cred.username || cred.phone || `Agent ${i + 1}`,
           username: cred.username || cred.phone,
           passwordEncrypted: cred.encryptedPassword,
@@ -302,7 +374,7 @@ class PathaoApiClient {
       console.warn('  ⚠️ Could not load agent credentials from DB:', error.message || error);
     }
 
-    if (agents.length === 0) {
+    if (!hasStoredCredentials) {
       let index = 1;
       while (true) {
         const username = process.env[`AGENT${index}_USERNAME`];

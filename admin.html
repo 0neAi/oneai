@@ -790,6 +790,30 @@
             <!-- Saved Agent Credentials -->
             <div class="card shadow-sm mb-4">
                 <div class="card-body">
+                    <div v-if="invalidAgentCredentials.length" class="alert alert-danger">
+                        <h5 class="alert-heading">Invalid Pathao credentials detected</h5>
+                        <p class="mb-2">These saved credentials were rejected by Pathao and have been disabled to prevent repeated login attempts. Update the password or delete the saved credential.</p>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered mb-0 align-middle">
+                                <thead>
+                                    <tr><th>Agent</th><th>Username</th><th>Detected</th><th>Login attempts</th><th>Last error</th><th>Action</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="cred in invalidAgentCredentials" :key="cred._id">
+                                        <td>{{ cred.displayName || '—' }}</td>
+                                        <td>{{ cred.username || cred.phone || '—' }}</td>
+                                        <td>{{ formatDateTime(cred.invalidSince || cred.lastLoginAt) }}</td>
+                                        <td>{{ cred.consecutiveLoginFailures || 0 }}</td>
+                                        <td>{{ cred.lastLoginMessage || 'Pathao rejected the saved username or password.' }}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary me-1" @click="viewCredentialDetails(cred)">Log</button>
+                                            <button class="btn btn-sm btn-danger" @click="deleteAgentCredential(cred._id)">Delete</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <div>
                             <h5 class="mb-1">Saved Agent Credentials</h5>
@@ -809,6 +833,8 @@
                                     <th>Phone</th>
                                     <th>Client ID</th>
                                     <th>Last Valid</th>
+                                    <th>Login Status</th>
+                                    <th>Last Attempt</th>
                                     <th>Active</th>
                                     <th>Actions</th>
                                 </tr>
@@ -819,6 +845,12 @@
                                     <td>{{ cred.phone || cred.username || '—' }}</td>
                                     <td>{{ cred.clientId || '—' }}</td>
                                     <td>{{ formatDateTime(cred.lastValidAt) }}</td>
+                                    <td>
+                                        <span class="badge" :class="cred.lastLoginStatus === 'invalid_credentials' ? 'bg-danger' : cred.lastLoginStatus === 'success' ? 'bg-success' : cred.lastLoginStatus === 'rate_limited' ? 'bg-warning text-dark' : 'bg-secondary'">
+                                            {{ cred.lastLoginStatus || 'not_checked' }}
+                                        </span>
+                                    </td>
+                                    <td>{{ formatDateTime(cred.lastLoginAt) }}</td>
                                     <td>
                                         <span class="badge" :class="cred.active ? 'bg-success' : 'bg-secondary'">{{ cred.active ? 'Active' : 'Inactive' }}</span>
                                     </td>
@@ -831,7 +863,7 @@
                                     </td>
                                 </tr>
                                 <tr v-if="agentCredentials.length === 0">
-                                    <td colspan="6" class="text-center text-muted py-3">No saved agent credentials found.</td>
+                                    <td colspan="8" class="text-center text-muted py-3">No saved agent credentials found.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -1896,6 +1928,27 @@
                             <div class="mb-3">
                                 <label class="form-label">Active</label>
                                 <input type="text" class="form-control" :value="selectedCredential.active ? 'Yes' : 'No'" readonly />
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Last Login Status</label>
+                                <input type="text" class="form-control" :value="selectedCredential.lastLoginStatus || 'Not checked'" readonly />
+                            </div>
+                            <div class="mb-3" v-if="selectedCredential.lastLoginMessage">
+                                <label class="form-label">Last Login Message</label>
+                                <textarea class="form-control" rows="2" readonly>{{ selectedCredential.lastLoginMessage }}</textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Recent Login History</label>
+                                <div v-if="selectedCredential.loginHistory && selectedCredential.loginHistory.length" class="list-group">
+                                    <div v-for="entry in selectedCredential.loginHistory.slice().reverse()" :key="entry._id || entry.attemptedAt" class="list-group-item py-2">
+                                        <div class="d-flex justify-content-between gap-2">
+                                            <strong>{{ entry.status }}</strong>
+                                            <small>{{ formatDateTime(entry.attemptedAt) }}</small>
+                                        </div>
+                                        <small>{{ entry.message }}</small>
+                                    </div>
+                                </div>
+                                <div v-else class="text-muted">No login attempts recorded.</div>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Notes</label>
@@ -3121,6 +3174,11 @@
                     return this.penaltyReports.filter(report => 
                         report.status === this.penaltyFilter
                     );
+                },
+                invalidAgentCredentials() {
+                return (this.agentCredentials || []).filter(credential =>
+                    credential.lastLoginStatus === 'invalid_credentials'
+                );
                 },
                 filteredBrokerOrders() {
                     let orders = this.brokerOrders || [];

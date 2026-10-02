@@ -1046,7 +1046,11 @@ app.post('/admin/agent-credentials', adminAuth, async (req, res) => {
       existing.encryptedPassword = encryptedPassword;
       existing.encryptedClientSecret = encryptedClientSecret;
       existing.clientId = clientId || existing.clientId;
-      existing.lastValidAt = new Date();
+      existing.lastLoginAt = undefined;
+      existing.lastLoginStatus = 'not_checked';
+      existing.lastLoginMessage = '';
+      existing.invalidSince = undefined;
+      existing.consecutiveLoginFailures = 0;
       existing.notes = notes || existing.notes;
       existing.active = true;
       // update displayName if provided
@@ -1063,7 +1067,7 @@ app.post('/admin/agent-credentials', adminAuth, async (req, res) => {
       encryptedPassword,
       encryptedClientSecret,
       clientId: clientId || '1',
-      lastValidAt: new Date(),
+      lastLoginStatus: 'not_checked',
       notes: notes || ''
     });
     await cred.save();
@@ -1079,7 +1083,23 @@ app.get('/admin/agent-credentials', adminAuth, async (req, res) => {
   try {
     const creds = await AgentCredential.find().lean();
     // do not return decrypted secrets; only metadata
-    const sanitized = creds.map(c => ({ _id: c._id, username: c.username, phone: c.phone, normalizedPhone: c.normalizedPhone, displayName: c.displayName || c.username, clientId: c.clientId, lastValidAt: c.lastValidAt, active: c.active, notes: c.notes }));
+    const sanitized = creds.map(c => ({
+      _id: c._id,
+      username: c.username,
+      phone: c.phone,
+      normalizedPhone: c.normalizedPhone,
+      displayName: c.displayName || c.username,
+      clientId: c.clientId,
+      lastValidAt: c.lastValidAt,
+      lastLoginAt: c.lastLoginAt,
+      lastLoginStatus: c.lastLoginStatus,
+      lastLoginMessage: c.lastLoginMessage,
+      invalidSince: c.invalidSince,
+      consecutiveLoginFailures: c.consecutiveLoginFailures,
+      loginHistory: c.loginHistory,
+      active: c.active,
+      notes: c.notes
+    }));
     res.json({ success: true, credentials: sanitized });
   } catch (error) {
     console.error('Error fetching agent credentials:', error);
