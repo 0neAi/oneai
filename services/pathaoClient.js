@@ -1,4 +1,25 @@
 const DEFAULT_TIMEOUT_MS = 30000;
+const MAX_RATE_LIMIT_RETRIES = 3;
+const DEFAULT_RATE_LIMIT_DELAY_MS = 60000;
+const MAX_RATE_LIMIT_DELAY_MS = 10 * 60 * 1000;
+
+function getRateLimitDelayMs(retryAfter, retryNumber) {
+  const retryAfterValue = String(retryAfter || '').trim();
+  if (retryAfterValue) {
+    const seconds = Number(retryAfterValue);
+    const retryAt = Number.isFinite(seconds)
+      ? Date.now() + seconds * 1000
+      : Date.parse(retryAfterValue);
+    if (Number.isFinite(retryAt)) {
+      return Math.max(0, retryAt - Date.now());
+    }
+  }
+
+  return Math.min(
+    MAX_RATE_LIMIT_DELAY_MS,
+    DEFAULT_RATE_LIMIT_DELAY_MS * (2 ** retryNumber)
+  );
+}
 
 function timeoutFetch(url, options = {}, timeout = DEFAULT_TIMEOUT_MS) {
   const controller = new AbortController();
@@ -96,15 +117,23 @@ class PathaoApiClient {
   }
 
   async _fetchJson(url, options = {}) {
-    const response = await timeoutFetch(url, options, DEFAULT_TIMEOUT_MS);
-    const text = await response.text();
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${text}`);
-    }
-    try {
-      return JSON.parse(text);
-    } catch (error) {
-      throw new Error(`Invalid JSON from Pathao API: ${error.message}`);
+    for (let retryNumber = 0; ; retryNumber += 1) {
+      const response = await timeoutFetch(url, options, DEFAULT_TIMEOUT_MS);
+      const text = await response.text();
+      if (response.status === 429 && retryNumber < MAX_RATE_LIMIT_RETRIES) {
+        const delay = getRateLimitDelayMs(response.headers?.get('retry-after'), retryNumber);
+        console.warn(`⏳ Pathao rate limit reached; retrying in ${Math.ceil(delay / 1000)}s (${retryNumber + 1}/${MAX_RATE_LIMIT_RETRIES})`);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        continue;
+      }
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${text}`);
+      }
+      try {
+        return JSON.parse(text);
+      } catch (error) {
+        throw new Error(`Invalid JSON from Pathao API: ${error.message}`);
+      }
     }
   }
 

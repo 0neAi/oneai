@@ -10,6 +10,7 @@ const DEFAULT_FETCH_INTERVAL_MINUTES = 15;
 const DEFAULT_TRACK_INTERVAL_MINUTES = 5;
 const DEFAULT_MORNING_FETCH_HOUR = 7;
 const DEFAULT_EVENING_CLOSE_HOUR = 22;
+const AGENT_FETCH_DELAY_MS = 60000;
 
 function normalizeAgentStatus(rawStatus) {
   const status = String(rawStatus || '').trim().toLowerCase().replace(/[_\s]+/g, ' ');
@@ -69,24 +70,26 @@ class OrderFetcher {
     }
 
     const orderMap = new Map();
-    for (const agent of agents) {
+    for (const [index, agent] of agents.entries()) {
       const agentOrders = await this.client.fetchAgentOrders(agent);
-      if (!agentOrders.length) continue;
 
-      const validOrders = agentOrders.filter((order) => order.orderId && String(order.orderId).trim());
-      if (!validOrders.length) {
-        console.warn(`⚠️ ${agent.displayName}: skipped orders without orderId`);
-        continue;
-      }
+      if (agentOrders.length) {
+        const validOrders = agentOrders.filter((order) => order.orderId && String(order.orderId).trim());
+        if (!validOrders.length) {
+          console.warn(`⚠️ ${agent.displayName}: skipped orders without orderId`);
+        }
 
-      for (const order of validOrders) {
-        const key = String(order.orderId).trim();
-        if (!orderMap.has(key)) {
-          orderMap.set(key, order);
+        for (const order of validOrders) {
+          const key = String(order.orderId).trim();
+          if (!orderMap.has(key)) {
+            orderMap.set(key, order);
+          }
         }
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      if (index < agents.length - 1) {
+        await new Promise((resolve) => setTimeout(resolve, AGENT_FETCH_DELAY_MS));
+      }
     }
 
     return Array.from(orderMap.values());
